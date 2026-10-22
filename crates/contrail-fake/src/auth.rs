@@ -6,6 +6,7 @@ use std::time::Duration as StdDuration;
 
 use async_trait::async_trait;
 use contrail_core::auth::{AuthError, AuthProvider, AwsCtx, CallerIdentity, LoginProgress};
+use contrail_core::error::SourceError;
 use contrail_core::profile::{Profile, ProfileAuth};
 use contrail_core::sso::{CachedToken, SessionStatus, session_status};
 use time::{Duration, OffsetDateTime};
@@ -102,6 +103,32 @@ impl FakeAuth {
     }
 }
 
+impl FakeAuth {
+    /// What an AWS call with this profile's credentials would see: the account ID, or the error
+    /// AWS would return for missing/expired credentials. Shared with the fake ECS and Logs sources.
+    pub fn check_credentials(&self, profile: &str) -> Result<String, SourceError> {
+        let profile = self
+            .profile(profile)
+            .map_err(|_| SourceError::Config(format!("profile \"{profile}\" not found")))?;
+        let account = match &profile.auth {
+            ProfileAuth::Sso { account_id, .. } => account_id.clone(),
+            ProfileAuth::Misconfigured { problem } => {
+                return Err(SourceError::Config(problem.clone()));
+            }
+            _ => "999988887777".to_owned(),
+        };
+        match self.status_now(profile) {
+            SessionStatus::Expired { .. } | SessionStatus::LoggedOut => {
+                Err(SourceError::Credentials {
+                    profile: profile.name.clone(),
+                    message: "the SSO session has expired or doesn't exist".to_owned(),
+                })
+            }
+            _ => Ok(account),
+        }
+    }
+}
+
 impl Default for FakeAuth {
     fn default() -> Self {
         Self::new()
@@ -119,27 +146,12 @@ impl AuthProvider for FakeAuth {
     }
 
     async fn caller_identity(&self, ctx: &AwsCtx) -> Result<CallerIdentity, AuthError> {
-        let profile = self.profile(&ctx.profile)?;
-        let account = match &profile.auth {
-            ProfileAuth::Sso { account_id, .. } => account_id.clone(),
-            ProfileAuth::Misconfigured { problem } => {
-                return Err(AuthError::Config(problem.clone()));
-            }
-            _ => "999988887777".to_owned(),
-        };
-        match self.status_now(profile) {
-            SessionStatus::Expired { .. } | SessionStatus::LoggedOut => {
-                Err(AuthError::Credentials {
-                    profile: profile.name.clone(),
-                    message: "the SSO session has expired or doesn't exist".to_owned(),
-                })
-            }
-            _ => Ok(CallerIdentity {
-                arn: format!("arn:aws:sts::{account}:assumed-role/DemoReadOnly/demo.user"),
-                user_id: "AROADEMOEXAMPLE:demo.user".to_owned(),
-                account,
-            }),
-        }
+        let account = self.check_credentials(&ctx.profile)?;
+        Ok(CallerIdentity {
+            arn: format!("arn:aws:sts::{account}:assumed-role/DemoReadOnly/demo.user"),
+            user_id: "AROADEMOEXAMPLE:demo.user".to_owned(),
+            account,
+        })
     }
 
     async fn login(
