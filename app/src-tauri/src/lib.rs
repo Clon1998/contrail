@@ -21,7 +21,7 @@ const BINDINGS_PATH: &str = "../ui/src/bindings.ts";
 /// functions for them, so the frontend can't call a command with the wrong name or arguments.
 /// It's a separate function so both [`run`] and the `export_bindings` test can use it.
 fn specta_builder() -> Builder<tauri::Wry> {
-    use commands::{app, auth};
+    use commands::{app, auth, ecs};
 
     Builder::<tauri::Wry>::new().commands(collect_commands![
         app::app_info,
@@ -29,6 +29,10 @@ fn specta_builder() -> Builder<tauri::Wry> {
         auth::session_status,
         auth::caller_identity,
         auth::sso_login,
+        ecs::list_clusters,
+        ecs::list_services,
+        ecs::describe_service,
+        ecs::list_tasks,
     ])
 }
 

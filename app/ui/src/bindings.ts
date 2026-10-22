@@ -20,6 +20,14 @@ export const commands = {
 	 *  it, cheaper than global events. The log views will stream batches the same way.
 	 */
 	ssoLogin: (profile: string, onProgress: Channel<LoginProgress>) => typedError<null, ApiError>(__TAURI_INVOKE("sso_login", { profile, onProgress })),
+	/**  All clusters of the profile's account in the selected region. */
+	listClusters: (ctx: AwsCtx) => typedError<ClusterSummary[], ApiError>(__TAURI_INVOKE("list_clusters", { ctx })),
+	/**  All services of a cluster. */
+	listServices: (ctx: AwsCtx, clusterArn: string) => typedError<ServiceSummary[], ApiError>(__TAURI_INVOKE("list_services", { ctx, clusterArn })),
+	/**  Counts, deployments, task definition and recent events of one service. */
+	describeService: (ctx: AwsCtx, service: ServiceRef) => typedError<ServiceDetail, ApiError>(__TAURI_INVOKE("describe_service", { ctx, service })),
+	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
+	listTasks: (ctx: AwsCtx, service: ServiceRef, includeStopped: boolean) => typedError<Task[], ApiError>(__TAURI_INVOKE("list_tasks", { ctx, service, includeStopped })),
 };
 
 /* Types */
@@ -54,8 +62,51 @@ export type CallerIdentity = {
 	userId: string,
 };
 
+export type ClusterSummary = {
+	arn: string,
+	name: string,
+	/**  `ACTIVE`, `PROVISIONING`, `INACTIVE`, … */
+	status: string,
+	activeServices: number,
+	runningTasks: number,
+	pendingTasks: number,
+};
+
+export type ContainerDefinitionInfo = {
+	name: string,
+	image: string,
+	/**  `awslogs` when logs go to CloudWatch (needed from M3 on). */
+	logDriver: string | null,
+};
+
+export type ContainerState = {
+	name: string,
+	lastStatus: string | null,
+	exitCode: number | null,
+	reason: string | null,
+	healthStatus: string | null,
+	image: string | null,
+};
+
+export type Deployment = {
+	id: string,
+	/**  `PRIMARY`, `ACTIVE` (being replaced) or `INACTIVE`. */
+	status: string,
+	/**  `COMPLETED`, `IN_PROGRESS` or `FAILED`. */
+	rolloutState: string | null,
+	rolloutReason: string | null,
+	/**  `family:revision`. */
+	taskDefinition: string,
+	desired: number,
+	running: number,
+	pending: number,
+	failed: number,
+	createdAt: Timestamp | null,
+	updatedAt: Timestamp | null,
+};
+
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
-export type ErrorCode = "profileNotFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config";
+export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config";
 
 /**  Progress of a running `aws sso login`, streamed to the UI. */
 export type LoginProgress = 
@@ -97,6 +148,46 @@ sessionName: string | null } |
 /**  The profile is broken, e.g. it references an `[sso-session]` that doesn't exist. */
 { kind: "misconfigured"; problem: string };
 
+/**  Everything the service overview shows. */
+export type ServiceDetail = {
+	summary: ServiceSummary,
+	createdAt: Timestamp | null,
+	platformVersion: string | null,
+	/**  Newest first; the `PRIMARY` deployment is the one being rolled out (or done). */
+	deployments: Deployment[],
+	/**  The task definition of the primary deployment. */
+	taskDefinition: TaskDefinitionInfo | null,
+	/**  The most recent service events ("has reached a steady state", placement errors, …). */
+	events: ServiceEvent[],
+};
+
+export type ServiceEvent = {
+	id: string,
+	createdAt: Timestamp | null,
+	message: string,
+};
+
+/**  Identifies a service: ECS service names are only unique within a cluster. */
+export type ServiceRef = {
+	clusterArn: string,
+	serviceName: string,
+};
+
+export type ServiceSummary = {
+	arn: string,
+	name: string,
+	clusterArn: string,
+	/**  `ACTIVE`, `DRAINING` or `INACTIVE`. */
+	status: string,
+	desired: number,
+	running: number,
+	pending: number,
+	/**  `FARGATE`, `EC2` or `EXTERNAL`; `None` when a capacity provider strategy decides. */
+	launchType: string | null,
+	/**  The current task definition as `family:revision`. */
+	taskDefinition: string,
+};
+
 /**  The state of a profile's SSO session, as shown in the profile switcher. */
 export type SessionStatus = 
 /**  The access token is valid until `expires_at`. */
@@ -115,6 +206,38 @@ export type SessionStatus =
 { state: "loggedOut" } | 
 /**  The profile doesn't use SSO; Contrail can't tell whether its credentials are valid. */
 { state: "notSso" };
+
+export type Task = {
+	arn: string,
+	/**  The last part of the ARN, as shown in the console. */
+	id: string,
+	/**  `PROVISIONING`, `PENDING`, `RUNNING`, `STOPPING`, `STOPPED`, … */
+	lastStatus: string,
+	desiredStatus: string,
+	/**  `HEALTHY`, `UNHEALTHY` or `UNKNOWN` (no health check). */
+	healthStatus: string | null,
+	createdAt: Timestamp | null,
+	startedAt: Timestamp | null,
+	stoppedAt: Timestamp | null,
+	/**  e.g. `EssentialContainerExited`, `TaskFailedToStart`, `ServiceSchedulerInitiated`. */
+	stopCode: string | null,
+	stoppedReason: string | null,
+	availabilityZone: string | null,
+	/**  `family:revision`. */
+	taskDefinition: string,
+	launchType: string | null,
+	/**  One per container. Contrail's services have one, but the model doesn't assume it. */
+	containers: ContainerState[],
+};
+
+export type TaskDefinitionInfo = {
+	family: string,
+	revision: number,
+	/**  CPU units and memory in MiB, as ECS reports them (strings, e.g. `"512"`). */
+	cpu: string | null,
+	memory: string | null,
+	containers: ContainerDefinitionInfo[],
+};
 
 /**
  *  An `OffsetDateTime` that serializes as an RFC 3339 string (`2026-10-22T12:00:00Z`).
