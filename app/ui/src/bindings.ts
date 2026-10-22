@@ -28,8 +28,12 @@ export const commands = {
 	describeService: (ctx: AwsCtx, service: ServiceRef) => typedError<ServiceDetail, ApiError>(__TAURI_INVOKE("describe_service", { ctx, service })),
 	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
 	listTasks: (ctx: AwsCtx, service: ServiceRef, includeStopped: boolean) => typedError<Task[], ApiError>(__TAURI_INVOKE("list_tasks", { ctx, service, includeStopped })),
-	/**  Opens a service's logs: backfills the last `minutes` of all its tasks into a new view. */
-	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, minutes: number) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, minutes })),
+	/**
+	 *  Opens a service's logs: backfills the last `minutes` into a new view. Without `task_id` the
+	 *  view merges all tasks of the service (running and recently stopped); with it, only that
+	 *  task's stream (the task view).
+	 */
+	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, minutes, taskId })),
 	/**  Up to `limit` events of a view from `offset` (oldest first). */
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**  Frees a view's buffer. */

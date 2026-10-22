@@ -217,8 +217,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return profile.auth.kind === "sso" ? profile.auth.accountId : "999988887777";
   }
 
-  /** Open log views: their events by view ID. */
-  const views = new Map<number, LogEvent[]>();
+  /** Open log views: their events by view ID (an array, or generated on demand). */
+  const views = new Map<number, LogEvent[] | ((offset: number, limit: number) => LogEvent[])>();
   let nextViewId = 1;
 
   function ecs(ctx: AwsCtx): RecordedEcs {
@@ -295,9 +295,14 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const recordedService = logsData(account, ctx.region ?? "eu-central-1").services[
           `${cluster}/${service.serviceName}`
         ];
-        const events = recordedService?.events ?? [];
+        const taskId = args?.taskId as string | null;
+        const events = (recordedService?.events ?? []).filter(
+          (e) => taskId === null || e.taskId === taskId,
+        );
         const viewId = nextViewId++;
-        views.set(viewId, events);
+        // The high-volume demo service gets 100,000 generated events, for scrolling tests.
+        const big = service.serviceName === "event-ingest";
+        views.set(viewId, big ? generatedRows(service.serviceName) : events);
         const minutes = args?.minutes as number;
         const info: LogViewInfo = {
           viewId,
@@ -307,10 +312,17 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             streamPrefix: "ecs",
             container: service.serviceName,
           },
-          streams: recordedService?.streams ?? 0,
+          streams: taskId !== null ? 1 : big ? 6 : (recordedService?.streams ?? 0),
           // The recording keeps a sample of the events; the counts describe all of them.
-          stats: { ...(recordedService?.stats ?? emptyStats()), total: events.length },
-          truncated: recordedService?.truncated ?? false,
+          stats: big
+            ? {
+                ...emptyStats(),
+                total: BIG_VIEW,
+                info: BIG_VIEW - BIG_VIEW / 50,
+                warn: BIG_VIEW / 50,
+              }
+            : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
+          truncated: big || (recordedService?.truncated ?? false),
           from: new Date(Date.now() - minutes * 60_000).toISOString(),
           to: new Date().toISOString(),
         };
@@ -320,7 +332,10 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const events = views.get(args?.viewId as number);
         if (!events) throw apiError("notFound", "log view is closed");
         const offset = args?.offset as number;
-        return events.slice(offset, offset + (args?.limit as number));
+        const limit = args?.limit as number;
+        return typeof events === "function"
+          ? events(offset, limit)
+          : events.slice(offset, offset + limit);
       }
       case "close_log_view":
         views.delete(args?.viewId as number);
@@ -374,4 +389,37 @@ export function installFakeBackend(options?: FakeBackendOptions) {
 
 function emptyStats(): BufferStats {
   return { total: 0, evicted: 0, trace: 0, debug: 0, info: 0, warn: 0, error: 0, unknown: 0 };
+}
+
+/** Size of the generated high-volume view. */
+const BIG_VIEW = 100_000;
+
+/** 100,000 simple events, made only for the rows that are asked for. */
+function generatedRows(service: string) {
+  const start = Date.now() - BIG_VIEW * 9;
+  return (offset: number, limit: number): LogEvent[] => {
+    const rows: LogEvent[] = [];
+    for (let i = offset; i < Math.min(offset + limit, BIG_VIEW); i++) {
+      const timestamp = new Date(start + i * 9).toISOString();
+      const warn = i % 50 === 0;
+      rows.push({
+        seq: i + 1,
+        timestamp,
+        cwTimestamp: timestamp,
+        stream: `ecs/${service}/task${i % 6}`,
+        taskId: `${(i % 6).toString().repeat(8)}aaaabbbbccccdddd00001111`,
+        raw: `event ${i + 1}`,
+        line: {
+          kind: "ecs",
+          timestamp,
+          level: warn ? "WARN" : "INFO",
+          message: `Ingested event #${i + 1} from example.events.v1`,
+          fields: [{ key: "log.logger", value: "com.example.ingest.Consumer" }],
+          error: null,
+          jsonSpan: null,
+        },
+      });
+    }
+    return rows;
+  };
 }

@@ -1,14 +1,21 @@
 import { useEffect } from "react";
-import { CircleAlertIcon, Loader2Icon, RefreshCwIcon, StarIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  Loader2Icon,
+  RefreshCwIcon,
+  ScrollTextIcon,
+  StarIcon,
+} from "lucide-react";
 import { cn } from "cn";
 import type { Deployment, ServiceDetail, Task } from "@/bindings";
-import { LogsPanel } from "@/components/logs/LogsPanel";
+import { LogViewer } from "@/components/logs/LogViewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNow } from "@/hooks/useNow";
 import { formatAgo, formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { useEcs } from "@/stores/ecs";
+import { useLogs } from "@/stores/logs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 import { HealthDot } from "./HealthDot";
@@ -20,6 +27,8 @@ export function ServiceView() {
   const selected = useEcs((s) => s.selected);
   const detail = useEcs((s) => s.detail);
   const refresh = useEcs((s) => s.refreshService);
+  const tab = useLogs((s) => s.tab);
+  const setTab = useLogs((s) => s.setTab);
 
   useEffect(() => {
     const timer = setInterval(() => void refresh(), REFRESH_MS);
@@ -35,7 +44,11 @@ export function ServiceView() {
       className="flex min-w-0 flex-1 flex-col overflow-hidden"
     >
       <Header />
-      <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col gap-0">
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setTab(value === "logs" ? "logs" : "overview")}
+        className="flex min-h-0 flex-1 flex-col gap-0"
+      >
         <TabsList className="mx-4 mt-2">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
@@ -67,7 +80,7 @@ export function ServiceView() {
           )}
         </TabsContent>
         <TabsContent value="logs" className="flex min-h-0 flex-col">
-          <LogsPanel />
+          <LogViewer />
         </TabsContent>
       </Tabs>
     </main>
@@ -256,6 +269,8 @@ function Tasks() {
   const tasks = useEcs((s) => s.tasks);
   const includeStopped = useEcs((s) => s.includeStopped);
   const setIncludeStopped = useEcs((s) => s.setIncludeStopped);
+  const selected = useEcs((s) => s.selected);
+  const showTask = useLogs((s) => s.showTask);
   const now = useNow();
   const timeZone = useTimeZone();
   const list = "data" in tasks ? (tasks.data ?? []) : [];
@@ -292,6 +307,9 @@ function Tasks() {
               <th className={TH}>Zone</th>
               <th className={TH}>Revision</th>
               <th className={TH}>Stopped</th>
+              <th className={TH}>
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -341,6 +359,16 @@ function Tasks() {
                     ) : (
                       "—"
                     )}
+                  </td>
+                  <td className={TD}>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      aria-label={`Logs of task ${shortTaskId(task.id)}`}
+                      onClick={() => selected && showTask(selected, task.id)}
+                    >
+                      <ScrollTextIcon /> Logs
+                    </Button>
                   </td>
                 </tr>
               );

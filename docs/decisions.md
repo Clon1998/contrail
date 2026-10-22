@@ -99,3 +99,15 @@ of date, so Rust and TypeScript demo data can't drift.
 - **UI:** a simple debug list of the newest 1,000 events; the virtualized viewer is M4.
 - **Fixtures:** synthetic ones are committed (`crates/contrail-core/tests/fixtures/`); the real samples were only
   used locally to check that every line parses (it does).
+
+## 2026-10-22 — M4 log viewer: scope notes
+
+- **Rows stay in Rust.** The UI asks for pages of 500 rows as they scroll into view (`get_log_rows`); only
+  the visible window (plus margin) exists in the DOM (TanStack Virtual). Checked with a generated 100,000-line
+  view in the Playwright tests.
+- **Pause** only makes sense with a live stream, so it moves to M5 with the live tail. Follow mode (start at
+  the newest event, "Jump to latest" after scrolling up) is in M4.
+- **Optional columns** (logger, thread, correlation/trace ID) are chosen per session; saving column layouts
+  per service comes with M7's settings work.
+- **Task view:** a task's "Logs" button opens a view of that task's stream only; the chip in the toolbar
+  returns to all tasks.
