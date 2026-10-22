@@ -1,0 +1,87 @@
+---
+source: crates/contrail-core/src/profile.rs
+expression: "parse_profiles(CONFIG, Some(CREDENTIALS))"
+---
+[
+    Profile {
+        name: "default",
+        region: Some(
+            "eu-central-1",
+        ),
+        auth: StaticKeys,
+    },
+    Profile {
+        name: "assume",
+        region: None,
+        auth: AssumeRole {
+            source_profile: Some(
+                "dev",
+            ),
+        },
+    },
+    Profile {
+        name: "broken",
+        region: None,
+        auth: Misconfigured {
+            problem: "sso_session \"missing\" has no [sso-session missing] section",
+        },
+    },
+    Profile {
+        name: "ci",
+        region: None,
+        auth: StaticKeys,
+    },
+    Profile {
+        name: "dev",
+        region: Some(
+            "eu-central-1",
+        ),
+        auth: Sso {
+            account_id: "111111111111",
+            role_name: "ReadOnly",
+            start_url: "https://example.awsapps.com/start",
+            sso_region: "eu-central-1",
+            session_name: Some(
+                "corp",
+            ),
+        },
+    },
+    Profile {
+        name: "incomplete",
+        region: None,
+        auth: Misconfigured {
+            problem: "SSO profile is missing sso_account_id, sso_role_name",
+        },
+    },
+    Profile {
+        name: "legacy",
+        region: None,
+        auth: Sso {
+            account_id: "333333333333",
+            role_name: "Admin",
+            start_url: "https://legacy.awsapps.com/start",
+            sso_region: "us-east-1",
+            session_name: None,
+        },
+    },
+    Profile {
+        name: "prod",
+        region: Some(
+            "eu-west-1",
+        ),
+        auth: Sso {
+            account_id: "222222222222",
+            role_name: "ReadOnly",
+            start_url: "https://example.awsapps.com/start",
+            sso_region: "eu-central-1",
+            session_name: Some(
+                "corp",
+            ),
+        },
+    },
+    Profile {
+        name: "tool",
+        region: None,
+        auth: CredentialProcess,
+    },
+]

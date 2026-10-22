@@ -29,6 +29,9 @@ contrail-fake = { path = "crates/contrail-fake" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 thiserror = "2.0.21"
+async-trait = "0.1.92"
+time = { version = "0.3.55", features = ["serde", "parsing", "formatting", "macros"] }
+sha1 = "0.11.0"
 tokio = { version = "1.54.1", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
@@ -38,6 +41,10 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 specta = { version = "=2.0.0-rc.26", features = ["derive"] }
 specta-typescript = "0.0.13"
 tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
+
+# Testing
+insta = "1.49.0"
+tempfile = "3.27.0"
 
 # Lints shared by every crate (each crate opts in with `[lints] workspace = true`).
 [workspace.lints.rust]

@@ -4,6 +4,9 @@
 //! traits defined here; `contrail-aws` and `contrail-fake` provide the implementations
 //! (comparable to a Java interface module with two implementation modules).
 
+mod ini;
+pub mod profile;
+
 /// Builds the greeting returned by the hello-world IPC command.
 ///
 /// `&str` is a *borrowed* string slice: the function only reads the caller's text and does not
