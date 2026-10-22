@@ -20,6 +20,7 @@ beforeEach(() => {
   // The settings test changes the page's colour mode and accent.
   document.documentElement.className = "dark";
   delete document.documentElement.dataset.accent;
+  document.documentElement.removeAttribute("style");
 });
 
 afterEach(() => {
@@ -169,7 +170,7 @@ describe("App", () => {
     expect(within(recent).getByText("event-ingest")).toBeTruthy();
   });
 
-  it("changes colour mode, accent and time zone in the settings dialog", async () => {
+  it("changes theme, accent, sizes and time zone in the settings dialog", async () => {
     installFakeBackend();
     render(<App />);
     await screen.findByText("DemoReadOnly/demo.user");
@@ -178,17 +179,20 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: ",", metaKey: true });
     const dialog = await screen.findByRole("dialog", { name: "Settings" });
 
-    fireEvent.click(within(dialog).getByRole("radio", { name: "Light" }));
+    const theme = within(dialog).getByRole("group", { name: "Theme" });
+    fireEvent.click(within(theme).getByRole("button", { name: "Light" }));
     await waitFor(() => expect(document.documentElement.classList.contains("dark")).toBe(false));
-
-    fireEvent.click(within(dialog).getByRole("radio", { name: "Violet" }));
-    await waitFor(() => expect(document.documentElement.dataset.accent).toBe("violet"));
-
-    fireEvent.click(within(dialog).getByRole("radio", { name: "UTC" }));
-    await waitFor(() => expect(usePrefs.getState().prefs.settings.timeZone).toBe("utc"));
-    expect(within(dialog).getByRole("radio", { name: "UTC" }).getAttribute("aria-checked")).toBe(
+    expect(within(theme).getByRole("button", { name: "Light" }).getAttribute("aria-pressed")).toBe(
       "true",
     );
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Violet" }));
+    await waitFor(() => expect(document.documentElement.dataset.accent).toBe("violet"));
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Logs" }));
+    const timestamps = within(dialog).getByRole("group", { name: "Timestamps" });
+    fireEvent.click(within(timestamps).getByRole("button", { name: "UTC" }));
+    await waitFor(() => expect(usePrefs.getState().prefs.settings.timeZone).toBe("utc"));
   });
 
   it("shows a service's backfilled logs with joined stack traces", async () => {

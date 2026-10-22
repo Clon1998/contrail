@@ -13,6 +13,15 @@ export function applyAppearance(dark: boolean, accent: Accent, root = document.d
 }
 
 /**
+ * Applies the UI size (the root font size, which all `rem` sizes follow) and the log font size
+ * (the `--log-font-size` variable the log list uses).
+ */
+export function applySizes(uiScale: number, logFontSize: number, root = document.documentElement) {
+  root.style.fontSize = uiScale === 100 ? "" : `${uiScale}%`;
+  root.style.setProperty("--log-font-size", `${logFontSize}px`);
+}
+
+/**
  * Makes the native window chrome (macOS title bar, …) follow the colour mode; `null` lets it
  * follow the system. Outside Tauri (tests, plain browser) there is no window to change.
  */

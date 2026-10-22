@@ -140,6 +140,11 @@
   --color-ring: var(--ring);
 }
 
+/* The log font size setting (src/lib/appearance.ts). */
+:root {
+  --log-font-size: 12px;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

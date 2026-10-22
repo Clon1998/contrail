@@ -25,8 +25,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   CloudWatch: ECS JSON (nested or dotted), Spring Boot's console pattern and plain text are parsed, and Java
   stack traces that CloudWatch split into one event per line are joined again. The log group comes from the
   task definition (`awslogs` driver with a stream prefix).
-- **Settings** (gear icon or ⌘, / Ctrl+,): colour mode (dark / light / system), accent colour, timestamps in local
-  time or UTC.
+- **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
+  default log time window and timestamps in local time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in
   [docs/iam-policy.json](docs/iam-policy.json).
 
