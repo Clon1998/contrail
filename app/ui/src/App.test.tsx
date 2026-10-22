@@ -142,4 +142,24 @@ describe("App", () => {
     const favorites = await screen.findByRole("region", { name: "Favorites" });
     expect(within(favorites).getByText("payments-worker")).toBeTruthy();
   });
+
+  it("jumps to a service with the ⌘K palette and lists it under recent", async () => {
+    installFakeBackend();
+    render(<App />);
+    await screen.findByRole("tree", { name: "Clusters" });
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    const palette = await screen.findByRole("dialog", { name: "Go to service" });
+    fireEvent.change(within(palette).getByPlaceholderText("Go to service…"), {
+      target: { value: "ingest" },
+    });
+    fireEvent.click(await within(palette).findByText("event-ingest"));
+
+    expect(await screen.findByRole("main", { name: "Service event-ingest" })).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    const again = await screen.findByRole("dialog", { name: "Go to service" });
+    const recent = within(again).getByRole("group", { name: "Recent" });
+    expect(within(recent).getByText("event-ingest")).toBeTruthy();
+  });
 });

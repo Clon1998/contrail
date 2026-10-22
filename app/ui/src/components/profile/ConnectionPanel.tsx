@@ -38,7 +38,7 @@ export function ConnectionPanel() {
     [title, detail, problem] = [identity.error.message, identity.error.hint, true];
   } else if (identity.state === "ok") {
     title = `Connected to ${profile.name}`;
-    detail = `Account ${identity.identity.account}. Pick a service in the sidebar.`;
+    detail = `Account ${identity.identity.account}. Pick a service in the sidebar, or press ⌘K / Ctrl+K.`;
   } else {
     title = "Checking credentials…";
   }

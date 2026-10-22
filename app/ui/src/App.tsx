@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { commands, type AppInfo } from "@/bindings";
+import { ServicePalette } from "@/components/ecs/ServicePalette";
 import { ServiceView } from "@/components/ecs/ServiceView";
 import { Sidebar } from "@/components/ecs/Sidebar";
 import { ConnectionPanel } from "@/components/profile/ConnectionPanel";
@@ -45,6 +46,7 @@ export default function App() {
         {showTree && <Sidebar />}
         {serviceOpen ? <ServiceView /> : <ConnectionPanel />}
       </div>
+      <ServicePalette />
     </div>
   );
 }
