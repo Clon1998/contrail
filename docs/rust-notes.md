@@ -139,3 +139,56 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   real SDK client whose responses come from the rule, without HTTP. Similar to Mockito, but at the SDK's
   interceptor level, so request building and response mapping are still exercised.
 - **Where:** tests in `crates/contrail-aws/src/sts.rs`.
+
+## Paginators and concurrent batches (`chunks` + `try_join_all`)
+
+- **What:** SDK list calls return pages; `into_paginator().items().send().collect::<Result<Vec<_>, _>>()`
+  walks all pages and stops at the first error. Describe calls take limited batches, so the ARNs are split with
+  `slice.chunks(10)`, each chunk becomes an `async move { … }` block (a future, not yet running), and
+  `futures::future::try_join_all` runs them concurrently and fails fast — like `CompletableFuture.allOf` with
+  short-circuiting on the first exception.
+- **Where:** `list_services` in `crates/contrail-aws/src/ecs.rs`.
+
+## Don't hold a `std::sync::Mutex` across `.await`
+
+- **What:** the SDK client cache locks, checks, and *releases* the lock before awaiting the (slow) client
+  creation, then locks again to insert. Holding a std mutex guard across an `.await` can block the executor
+  thread (and the guard isn't `Send`). Two concurrent misses may both build a client; harmless here.
+- **Where:** `AwsEcs::client` in `crates/contrail-aws/src/ecs.rs`.
+
+## `Option` combinators instead of nested `if let`
+
+- **What:** `deployments().iter().find(…).and_then(|d| d.task_definition()).or(svc.task_definition())` reads
+  as "the primary deployment's task definition, else the service's" — like `Optional.flatMap(…).or(…)` in Java.
+- **Where:** `describe_service` in `crates/contrail-aws/src/ecs.rs`.
+
+## Sorting with tuple keys and `Reverse`
+
+- **What:** `sort_by_key(|t| (t.last_status == "STOPPED", Reverse(time)))` sorts by several criteria at once:
+  tuples compare element by element, `false < true` puts running tasks first, `Reverse` flips to newest first.
+- **Where:** `sort_tasks` in `crates/contrail-core/src/ecs.rs`.
+
+## `impl FnOnce(&mut T)` for "apply a change, then save"
+
+- **What:** `PrefsStore::update(|p| p.add_recent(key))` takes a closure that is called once with a mutable
+  borrow of the preferences while the lock is held; the store then writes the file. The caller can't forget
+  to save or to lock. (`FnOnce` = may consume what it captures, e.g. `key`.)
+- **Where:** `app/src-tauri/src/prefs_store.rs`, used in `app/src-tauri/src/commands/prefs.rs`.
+
+## Atomic file writes
+
+- **What:** write to `prefs.json.tmp`, then `rename` over `prefs.json`. Rename is atomic on the same file
+  system, so a crash never leaves half a file behind.
+- **Where:** `write_atomically` in `app/src-tauri/src/prefs_store.rs`.
+
+## Tauri's `setup` hook
+
+- **What:** `Builder::setup(|app| …)` runs once the app exists, when paths like `app_data_dir()` are known;
+  the state is created there and registered with `app.manage(state)`. Errors returned with `?` abort start-up.
+- **Where:** `run` in `app/src-tauri/src/lib.rs`.
+
+## Test data generated from Rust (`#[cfg(test)] mod demo_data`)
+
+- **What:** a test records the demo ECS landscape as JSON for the frontend's fake backend (like the
+  `bindings.ts` export). A module behind `#[cfg(test)]` exists only in test builds.
+- **Where:** `app/src-tauri/src/demo_data.rs`.

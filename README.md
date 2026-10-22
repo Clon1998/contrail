@@ -4,7 +4,7 @@ A fast, focused desktop log viewer for AWS ECS services.
 Switch AWS SSO profiles, browse clusters → services → tasks, and jump straight into live,
 readable logs — structured (ECS JSON) or plain — with session search.
 
-> **Status:** early development. Profiles and SSO login work (M1); ECS browsing and logs come next.
+> **Status:** early development. Profiles, SSO login and ECS browsing work (M1–M2); logs come next.
 > See [plan.md](plan.md) for scope and milestones.
 
 Contrail is strictly **read-only** towards AWS and never stores credentials.
@@ -15,6 +15,13 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Log in** runs `aws sso login --profile <name>` for you, so [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
   must be installed. Contrail only reads the expiry of the SSO token cache; the AWS SDK handles credentials.
 - Switch profiles with ⌘⇧P / Ctrl+Shift+P (search by name, account ID or region).
+- Browse **Cluster → Service** in the sidebar; a service shows its tasks (running and recently stopped, with
+  stop reasons and exit codes), deployments, task definition and recent events. It refreshes every 30 s.
+- **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile.
+  Star a service to pin it to the sidebar. Favorites, recent services, the last profile and region overrides
+  are kept in `prefs.json` in Contrail's app data folder (never credentials).
+- Contrail only reads from AWS. Teammates without admin rights need the permissions in
+  [docs/iam-policy.json](docs/iam-policy.json).
 
 ### Demo mode
 
