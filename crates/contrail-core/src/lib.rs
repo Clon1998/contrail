@@ -6,6 +6,7 @@
 
 mod ini;
 pub mod profile;
+pub mod sso;
 
 /// Builds the greeting returned by the hello-world IPC command.
 ///
