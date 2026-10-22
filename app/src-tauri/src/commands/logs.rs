@@ -32,7 +32,9 @@ pub struct LogViewInfo {
     pub to: Timestamp,
 }
 
-/// Opens a service's logs: backfills the last `minutes` of all its tasks into a new view.
+/// Opens a service's logs: backfills the last `minutes` into a new view. Without `task_id` the
+/// view merges all tasks of the service (running and recently stopped); with it, only that
+/// task's stream (the task view).
 #[tauri::command]
 #[specta::specta]
 pub async fn open_service_logs(
@@ -40,9 +42,10 @@ pub async fn open_service_logs(
     ctx: AwsCtx,
     service: ServiceRef,
     minutes: u32,
+    task_id: Option<String>,
 ) -> ApiResult<LogViewInfo> {
     // `State` derefs to `&AppState`; the logic lives in a plain function so tests can call it.
-    open_logs(&state, ctx, service, minutes).await
+    open_logs(&state, ctx, service, minutes, task_id).await
 }
 
 async fn open_logs(
@@ -50,6 +53,7 @@ async fn open_logs(
     ctx: AwsCtx,
     service: ServiceRef,
     minutes: u32,
+    task_id: Option<String>,
 ) -> ApiResult<LogViewInfo> {
     let detail = state.ecs.describe_service(&ctx, &service).await?;
     let task_definition = detail.task_definition.ok_or_else(|| {
@@ -59,7 +63,17 @@ async fn open_logs(
         )
     })?;
     let location = resolve_log_location(&task_definition)?;
-    let tasks = state.ecs.list_tasks(&ctx, &service, true).await?;
+    let mut tasks = state.ecs.list_tasks(&ctx, &service, true).await?;
+    if let Some(task_id) = &task_id {
+        tasks.retain(|t| &t.id == task_id);
+        if tasks.is_empty() {
+            return Err(ApiError::new(
+                ErrorCode::NotFound,
+                format!("task {task_id} is no longer known to ECS"),
+            )
+            .with_hint("ECS forgets stopped tasks after about an hour."));
+        }
+    }
     let selection = location.selection(&tasks);
 
     let now = OffsetDateTime::now_utc();
@@ -140,7 +154,7 @@ mod tests {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
 
-        let info = open_logs(&state, ctx, service, 15).await.unwrap();
+        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
 
         assert_eq!(info.location.log_group, "/ecs/legacy-gateway");
         assert_eq!(info.streams, 2);
@@ -160,7 +174,39 @@ mod tests {
             profile: "demo-prod".into(),
             region: None,
         };
-        let error = open_logs(&state, ctx, service, 15).await.unwrap_err();
+        let error = open_logs(&state, ctx, service, 15, None).await.unwrap_err();
         assert_eq!(error.code, ErrorCode::Credentials);
+    }
+
+    #[tokio::test]
+    async fn a_task_view_reads_only_that_task() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
+        let tasks = state.ecs.list_tasks(&ctx, &service, true).await.unwrap();
+        let task_id = tasks[0].id.clone();
+
+        let info = open_logs(
+            &state,
+            ctx.clone(),
+            service.clone(),
+            15,
+            Some(task_id.clone()),
+        )
+        .await
+        .unwrap();
+        assert_eq!(info.streams, 1);
+        {
+            // A block limits the lock to these lines: a std mutex must not be held across the
+            // `.await` below.
+            let views = state.views.lock().unwrap();
+            let rows = views[&info.view_id].buffer.window(0, usize::MAX);
+            assert!(!rows.is_empty());
+            assert!(rows.iter().all(|e| e.task_id == task_id));
+        }
+
+        let unknown = open_logs(&state, ctx, service, 15, Some("gone".into()))
+            .await
+            .unwrap_err();
+        assert_eq!(unknown.code, ErrorCode::NotFound);
     }
 }

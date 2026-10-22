@@ -40,7 +40,7 @@ export const useLogs = create<LogsState>((set, get) => ({
     await get().close();
     set({ service, loading: true, error: null, rows: [] });
 
-    const opened = await commands.openServiceLogs(ctx, service, minutes);
+    const opened = await commands.openServiceLogs(ctx, service, minutes, null);
     if (mine !== generation) {
       if (opened.status === "ok") void commands.closeLogView(opened.data.viewId);
       return;
