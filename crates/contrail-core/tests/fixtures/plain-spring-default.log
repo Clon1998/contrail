@@ -1,0 +1,11 @@
+2026-01-15T11:31:40.012Z  INFO 1 --- [ingest-gateway] [           main] c.e.i.IngestGatewayApplication           : Starting IngestGatewayApplication v1.8.0 using Java 21.0.5 with PID 1
+2026-01-15T11:31:44.307Z  INFO 1 --- [ingest-gateway] [           main] o.s.b.w.e.tomcat.TomcatWebServer         : Tomcat started on port 8080 (http) with context path '/'
+2026-01-15T11:31:46.629Z ERROR 1 --- [ingest-gateway] [   scheduling-1] c.e.i.p.s.ShipmentPollingService         : Error while polling shipment 9F2K: 404 Not Found: "{"title":"Shipment not found","status":404,"instance":"/api/shipments/9F2K"}"
+2026-01-15T11:31:47.001Z  WARN 1 --- [ingest-gateway] [http-nio-8080-exec-3] c.e.i.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)
+2026-01-15T11:31:47.250Z DEBUG 1 --- [ingest-gateway] [http-nio-8080-exec-3] c.e.i.web.RequestLogger                  : GET /actuator/health 200 2ms
+2026-01-15T11:31:48.000+01:00  INFO 1 --- [ingest-gateway] [   scheduling-1] c.e.i.p.s.ShipmentPollingService         : Polled 12 shipments, 0 changed
+2026-01-15T11:31:49.100Z TRACE 1 --- [ingest-gateway] [   scheduling-1] c.e.i.p.s.ShipmentPollingService         : Next poll in 30000 ms
+2026-01-15T11:31:50.000Z  INFO 1 --- [           main] c.e.i.LegacyStartup                      : Older Spring Boot versions log without the application name block
+[2m2026-01-15T11:31:51.000Z[0;39m [32m INFO[0;39m [35m1[0;39m [2m---[0;39m [2m[ingest-gateway] [           main][0;39m [36mc.e.i.ColourConsole                     [0;39m [2m:[0;39m Coloured console output (ANSI) is kept
+Plain line from a shell script without any level
+[entrypoint] WARNING: JAVA_OPTS not set, using defaults

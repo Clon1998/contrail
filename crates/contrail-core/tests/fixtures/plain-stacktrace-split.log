@@ -1,0 +1,11 @@
+2026-01-15T11:40:02.118Z ERROR 1 --- [ingest-gateway] [   scheduling-2] c.e.i.p.s.ShipmentPollingService         : Polling failed
+org.springframework.web.client.ResourceAccessException: I/O error on GET request for "https://partner.example.com/api/shipments": Read timed out
+	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:905)
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:885)
+	at com.example.ingest.partner.PartnerClient.fetchShipments(PartnerClient.java:58)
+	at com.example.ingest.polling.ShipmentPollingService.poll(ShipmentPollingService.java:41)
+Caused by: java.net.SocketTimeoutException: Read timed out
+	at java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)
+	at java.base/java.net.Socket$SocketInputStream.read(Socket.java:1099)
+	... 12 common frames omitted
+2026-01-15T11:40:02.500Z  INFO 1 --- [ingest-gateway] [   scheduling-2] c.e.i.p.s.ShipmentPollingService         : Next poll in 30000 ms

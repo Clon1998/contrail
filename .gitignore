@@ -24,6 +24,8 @@ playwright-report/
 
 # --- Logs ---
 *.log
+# …except the synthetic parser fixtures, which are test data.
+!/crates/contrail-core/tests/fixtures/*.log
 npm-debug.log*
 pnpm-debug.log*
 
