@@ -4,7 +4,7 @@
 > Switch AWS SSO profiles, browse clusters → services → tasks, and jump straight into
 > live, readable logs — structured (ECS JSON) or plain — with session search.
 
-**Owner:** Patrick · **License:** MIT · **Stack:** Tauri 2 (Rust) + Nuxt (SPA) — same approach as Frida
+**Owner:** Patrick · **License:** MIT · **Stack:** Tauri 2 (Rust) + React (Vite SPA, shadcn/ui) — same stack as Frida
 **Audience (v1):** Patrick and his team. Built in free time.
 
 ---
@@ -38,7 +38,7 @@ works for deep history, but structured logs make it hard to focus on the actual 
 | Log format | Spring Boot structured logging, format `ecs` — but real samples show **three formats in prod**: nested ECS, dotted ECS (older Spring Boot), and Spring Boot's default plain-text console pattern | All three are first-class parsers (see §5.3); real samples in gitignored `fixtures/`, synthetic ones committed |
 | Containers | One container per task, no sidecars | Task view = that container's stream; keep a `container` field in the model anyway |
 | Permissions | Patrick is admin; Live Tail allowed | Live Tail is the default streaming mode |
-| Platform | Desktop app, Mac/Linux/Windows, same as Frida | Tauri 2 + Nuxt in SPA mode |
+| Platform | Desktop app, Mac/Linux/Windows, same as Frida | Tauri 2 + React/Vite SPA |
 
 ---
 
@@ -129,12 +129,12 @@ works for deep history, but structured logs make it hard to focus on the actual 
 ## 4. Architecture
 
 ```
-┌──────────────────────── Nuxt (SPA, ssr:false) ────────────────────────┐
-│ pages/components (Nuxt UI) · Pinia stores · virtual log list           │
+┌───────────────────────── React (Vite SPA) ─────────────────────────────┐
+│ components (shadcn/ui) · zustand stores · virtual log list             │
 │   ↑ events via Tauri Channel (batched)   ↓ invoke() commands           │
 └───────────────────────────────┬────────────────────────────────────────┘
                                 │ Tauri IPC
-┌───────────────────────────────┴──────── src-tauri (app crate) ────────┐
+┌───────────────────────────────┴──────── app/src-tauri (app crate) ────┐
 │ commands/  state (AppState: sessions, views)  settings (plugin-store) │
 └──────────────┬───────────────────────────────┬────────────────────────┘
                │                               │
@@ -148,18 +148,25 @@ works for deep history, but structured logs make it hard to focus on the actual 
 ```
 
 ### 4.1 Workspace layout
+Same structure as Frida: Rust crates at the root, everything for the desktop app under `app/`, the
+frontend as its own pnpm package in `app/ui/`.
 ```
 contrail/
-├─ Cargo.toml                 # workspace
+├─ Cargo.toml                 # workspace: crates/* + app/src-tauri
+├─ rust-toolchain.toml · lefthook.yml · LICENSE (MIT) · README.md · CLAUDE.md · plan.md
 ├─ crates/
 │  ├─ contrail-core/          # no AWS deps; domain, traits, parsing, buffer, query
 │  ├─ contrail-aws/           # real AWS implementations
 │  └─ contrail-fake/          # fake implementations + realistic log generators
-├─ src-tauri/                 # Tauri app crate: commands, state, wiring
-├─ app/                       # Nuxt 4+ app dir (components, pages, stores, composables)
-├─ tests/e2e/                 # Playwright (UI with mocked IPC) + WebdriverIO/tauri-driver
-├─ docs/                      # architecture.md, rust-notes.md, iam-policy.json, query-syntax.md
-├─ nuxt.config.ts · package.json · LICENSE (MIT) · README.md · CLAUDE.md
+├─ app/                       # the desktop app; small pnpm workspace (Tauri CLI, hooks tooling)
+│  ├─ package.json · pnpm-workspace.yaml · pnpm-lock.yaml
+│  ├─ src-tauri/              # Tauri app crate: commands, state, wiring
+│  ├─ e2e/                    # WebdriverIO + tauri-driver app smoke tests (demo mode)
+│  └─ ui/                     # React + Vite SPA (own package.json, vite.config.ts, lint/test config)
+│     ├─ src/                 # components, components/ui (shadcn), stores, lib; *.test.ts(x) beside the code
+│     └─ e2e/                 # Playwright (UI with mocked IPC)
+├─ assets/                    # source artwork (icon.svg)
+└─ docs/                      # architecture.md, rust-notes.md, decisions.md, iam-policy.json, query-syntax.md
 ```
 
 ### 4.2 Key traits (contrail-core)
@@ -235,8 +242,9 @@ Task: lastStatus, desiredStatus, healthStatus, createdAt/startedAt/stoppedAt, st
 container exitCode/reason, AZ, task def revision.
 
 ### 5.3 Log formats (from real, anonymized prod samples)
-Real samples live in `fixtures/` (company name replaced with `acme`, one event per line). Copy them to
-`crates/contrail-core/tests/fixtures/` in M3 and build parser + snapshot tests on them.
+Real samples live in the gitignored `fixtures/` (company name replaced with `acme`, one event per line).
+They are never committed. In M3, create **synthetic** look-alikes in `crates/contrail-core/tests/fixtures/`
+(see CLAUDE.md) and build parser + snapshot tests on those; use the real ones only for local sanity checks.
 
 | Fixture | Format | Seen in |
 |---|---|---|
@@ -293,8 +301,8 @@ Direct AWS access is not available in tests. Layers:
 | Rust component | `cargo test` with `contrail-fake` | log pipeline end-to-end (backfill → live → dedupe → buffer), reconnect logic, auto-pause |
 | Rust AWS adapter | `wiremock`/`aws-smithy-mocks` (whichever fits current SDK best) | request building + response mapping for ECS + CloudWatch Logs calls |
 | Emulator integration (optional, `#[ignore]` by default / separate CI job) | AWS emulator via `testcontainers` | ECS + CloudWatch Logs read paths against an emulator |
-| Frontend unit | Vitest + `@nuxt/test-utils` + Vue Test Utils | stores, composables, components (log row rendering, filter chips, palette) |
-| UI e2e | Playwright against the Nuxt dev server with Tauri IPC mocked (`@tauri-apps/api/mocks`), backed by recorded fake data | user flows: pick profile → service → view logs → search → expand → export |
+| Frontend unit | Vitest + Testing Library (jsdom) | stores, hooks, components (log row rendering, filter chips, palette) |
+| UI e2e | Playwright against the Vite dev server with Tauri IPC mocked (`@tauri-apps/api/mocks`), backed by recorded fake data | user flows: pick profile → service → view logs → search → expand → export |
 | App e2e (smoke) | WebdriverIO + `tauri-driver` on Linux CI, app started in **demo mode** | app boots, tree loads from fake source, logs stream, search works |
 
 **Emulator note:** LocalStack's free community image was replaced in March 2026 by an image that requires
@@ -315,9 +323,9 @@ Each milestone ends with: all tests green, lint clean, README/docs updated, merg
 Commits are small and conventional throughout (see CLAUDE.md).
 
 ### M0 — Scaffold & tooling
-- Cargo workspace (core, aws, fake, src-tauri), Tauri 2 app, Nuxt (SPA, `ssr: false`), pnpm.
+- Cargo workspace (core, aws, fake, app/src-tauri), Tauri 2 app, React + Vite SPA with shadcn/ui in `app/ui`, pnpm (§4.1).
 - MIT `LICENSE`, `README.md` skeleton, `docs/`.
-- Lint/format: `rustfmt`, `clippy -D warnings`, ESLint (`@nuxt/eslint`), Prettier or ESLint stylistic, `vue-tsc` typecheck.
+- Lint/format: `rustfmt`, `clippy -D warnings`, ESLint (typescript-eslint, React hooks rules), Prettier, `tsc` typecheck.
 - Git hooks (lefthook or husky) for format + commitlint (Conventional Commits).
 - GitHub Actions CI: Rust fmt/clippy/test, frontend lint/typecheck/test, on Linux (+ build check on macOS/Windows).
 - Hello-world IPC command with a passing Rust test and a passing Vitest test.
@@ -340,7 +348,7 @@ Commits are small and conventional throughout (see CLAUDE.md).
 ### M3 — Log pipeline core (Rust-heavy)
 - Log location resolution from task definitions.
 - Parsers: ECS (dotted + nested), Spring Boot default console pattern, generic JSON, plain (level regex, ANSI kept).
-  Snapshot tests on every event in `fixtures/`.
+  Snapshot tests on every event in the synthetic fixtures (`crates/contrail-core/tests/fixtures/`).
 - Multi-line joiner, ring buffer, dedupe, backfill via `FilterLogEvents`.
 - Fake generators for realistic ECS/plain logs incl. stack traces.
 - **Done when:** extensive unit tests + snapshot tests on fixtures; backfill works in demo and real mode (debug UI ok).

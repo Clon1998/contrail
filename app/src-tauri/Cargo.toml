@@ -1,0 +1,23 @@
+[package]
+name = "contrail"
+description = "Contrail desktop app: Tauri command layer over the contrail-* crates."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# All app code lives in the library so it can be unit-tested; main.rs only calls `run()`.
+[lib]
+name = "contrail_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+contrail-core = { workspace = true }
+tauri = { version = "2.12.5", features = [] }
+
+[lints]
+workspace = true

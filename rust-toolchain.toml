@@ -1,0 +1,6 @@
+# Pins the Rust compiler for everyone (and CI), like a Maven toolchains.xml / .sdkmanrc.
+# rustup reads this file and installs the exact version on first use.
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

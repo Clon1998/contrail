@@ -1,6 +1,6 @@
 # CLAUDE.md — Contrail
 
-Contrail is a desktop log viewer for AWS ECS services (Tauri 2 + Rust backend, Nuxt SPA frontend).
+Contrail is a desktop log viewer for AWS ECS services (Tauri 2 + Rust backend, React SPA frontend).
 **Read `plan.md` first** — it is the source of truth for scope, architecture and milestones.
 Work through the milestones in order. Do not start a milestone before the previous one meets its "Done when".
 
@@ -17,16 +17,17 @@ Work through the milestones in order. Do not start a milestone before the previo
 - **Tauri 2** (latest 2.x) + official plugins as needed (`store`, `window-state`, `shell`/process spawning, `dialog`, `clipboard-manager`).
 - **AWS SDK for Rust**: `aws-config` (SSO support), `aws-sdk-ecs`, `aws-sdk-cloudwatchlogs` (incl. `start_live_tail`), `aws-sdk-sts`.
 - **Async/runtime**: `tokio`; errors: `thiserror` in libraries, a serializable error type at the Tauri command boundary; logging: `tracing`.
-- **Frontend**: **Nuxt latest stable major** (Nuxt 4.x at time of writing; if Nuxt 5 is stable, use it) in SPA mode
-  (`ssr: false`), TypeScript strict, Vue 3, Pinia, Nuxt UI + Tailwind CSS (latest), a virtual-list library for the log view.
-  If Frida's UI stack differs and Patrick prefers consistency, match Frida.
+- **Frontend**: **the same stack as Frida** — React (latest) + Vite SPA, TypeScript strict, shadcn/ui (Radix) +
+  Tailwind CSS 4, zustand for state, lucide icons, a virtual-list library for the log view (e.g. TanStack Virtual).
+  When in doubt about a frontend pattern, look at how Frida (`../frida-api-tool/app/ui`) does it.
 - **Package manager**: pnpm.
-- **Tests**: `cargo test`, `insta`, `proptest` (where useful), HTTP/SDK mocking for AWS adapters, Vitest + `@nuxt/test-utils`,
+- **Tests**: `cargo test`, `insta`, `proptest` (where useful), HTTP/SDK mocking for AWS adapters, Vitest + Testing Library,
   Playwright (UI with mocked Tauri IPC), WebdriverIO + `tauri-driver` (app smoke tests on Linux CI).
 - Check docs for each dependency before using APIs you're unsure about; do not guess API shapes from memory.
 
 ## Architecture rules
-- Workspace crates: `contrail-core` (no AWS deps: domain, traits, parsing, buffer, query), `contrail-aws`, `contrail-fake`, `src-tauri`.
+- Workspace crates: `contrail-core` (no AWS deps: domain, traits, parsing, buffer, query), `contrail-aws`, `contrail-fake`, `app/src-tauri`;
+  frontend in `app/ui` (same layout as Frida, see plan.md §4.1).
 - The app depends on **traits** (`AuthProvider`, `EcsSource`, `LogSource`), never on `aws-sdk-*` types directly.
   AWS types are mapped to domain types inside `contrail-aws`.
 - Log buffering, parsing and filtering run **in Rust**; the frontend renders windows of rows from a virtual list.
@@ -56,21 +57,31 @@ Work through the milestones in order. Do not start a milestone before the previo
   not one big commit per milestone. Tests belong in the same commit as the code they cover, or immediately before it (TDD).
 - Every commit must build, pass `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, `pnpm lint`, `pnpm typecheck`, `pnpm test`.
   Never commit failing tests, commented-out code, or debug prints.
-- One branch per milestone (`feat/m3-log-pipeline`), merged into `main` when its "Done when" is met.
-  Tag milestones in the commit message body if helpful. **Do not push or open PRs unless Patrick asks.**
+- One branch per milestone (`feat/m3-log-pipeline`). When its "Done when" is met locally, merge it into `main`
+  (`git merge --no-ff`) and push `main` to `origin` (github.com/Clon1998/contrail, private): that push triggers CI.
+  Watch the run (`gh run watch`); if it fails, fix it on `main` with a normal commit before starting the next
+  milestone. A milestone counts as done only with CI green. Don't push feature branches or open PRs unless
+  Patrick asks.
 - Never rewrite published history. Never commit secrets, real account IDs, ARNs, real log content or anything from `fixtures/`.
 - Update `README.md` / `docs/` in the same change when behaviour or setup changes.
 
 ## Commands (keep this section current as the project evolves)
 ```bash
-pnpm install
-pnpm tauri dev                 # run the app
-pnpm tauri dev -- -- --demo    # run in demo mode (adjust once the flag exists)
-cargo test --workspace         # Rust tests
+# Rust: from the repo root
+cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all
-pnpm lint && pnpm typecheck && pnpm test   # frontend
-pnpm test:e2e                  # Playwright
+
+# App: from app/ (pnpm workspace root; app/ui is the React frontend package)
+pnpm install                   # also installs git hooks (lefthook: fmt/lint on commit, commitlint, full suite on push)
+pnpm dev                       # run the app (tauri dev: Vite dev server on :1420 + Tauri window)
+pnpm dev -- -- --demo          # run in demo mode (adjust once the flag exists)
+pnpm build                     # build installers for this OS (tauri build)
+pnpm build --debug --no-bundle # quick full build check (what CI runs on macOS/Windows)
+pnpm lint && pnpm typecheck && pnpm test   # frontend (delegates to app/ui; *.test.ts(x) beside the code)
+pnpm format                    # auto-fix ESLint + Prettier
+pnpm --dir ui dev              # frontend only, in a browser (no Tauri IPC)
+pnpm test:e2e                  # Playwright (added in a later milestone)
 ```
 
 ## Working style

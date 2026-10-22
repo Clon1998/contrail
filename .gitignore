@@ -1,2 +1,43 @@
-fixtures/
-fixtures/
+# --- Real production log samples: NEVER commit (see CLAUDE.md) ---
+/fixtures/
+
+# --- Rust ---
+/target/
+# Pending insta snapshots (review with `cargo insta review`)
+*.snap.new
+*.pending-snap
+
+# --- Tauri ---
+# Generated at build time (capability JSON schemas)
+/app/src-tauri/gen/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# --- Editors / IDEs ---
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Claude Code (personal settings) ---
+.claude/settings.local.json
