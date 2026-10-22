@@ -1,0 +1,45 @@
+# Cargo workspace for Contrail.
+#
+# Think of this like a Maven parent POM: it lists the member crates (modules) and centrally
+# defines dependency versions (`[workspace.dependencies]`, like `<dependencyManagement>`).
+# Member crates then write `foo = { workspace = true }` instead of repeating the version.
+[workspace]
+resolver = "3"
+members = [
+    "crates/contrail-core",
+    "crates/contrail-aws",
+    "crates/contrail-fake",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+contrail-core = { path = "crates/contrail-core" }
+contrail-aws = { path = "crates/contrail-aws" }
+contrail-fake = { path = "crates/contrail-fake" }
+
+# Shared third-party crates
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+tokio = { version = "1.54.1", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+
+# Lints shared by every crate (each crate opts in with `[lints] workspace = true`).
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+# Dependencies (the AWS SDK alone is large) are built without debug info in dev/test builds:
+# smaller target folder and faster linking. Our own crates keep full debug info.
+[profile.dev.package."*"]
+debug = false
