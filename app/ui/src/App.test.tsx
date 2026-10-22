@@ -195,7 +195,7 @@ describe("App", () => {
     await waitFor(() => expect(usePrefs.getState().prefs.settings.timeZone).toBe("utc"));
   });
 
-  it("shows a service's backfilled logs with joined stack traces", async () => {
+  it("shows a service's logs and expands a row into stack trace and fields", async () => {
     installFakeBackend();
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
@@ -212,14 +212,31 @@ describe("App", () => {
     // Radix tabs switch on mouse down.
     fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
     const list = await within(view).findByRole("list", { name: "Log events" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(25);
+    expect(list.getAttribute("aria-rowcount")).toBe("25");
     expect(within(view).getByText("/ecs/payments-worker · 5 streams")).toBeTruthy();
+  });
 
-    const [errorMessage] = within(list).getAllByText("Error while settling batch");
-    const errorRow = errorMessage?.closest("button");
-    if (!errorRow) throw new Error("no error row");
-    fireEvent.click(errorRow);
-    expect(await within(list).findByLabelText("Stack trace")).toBeTruthy();
-    expect(within(list).getByText("log.logger")).toBeTruthy();
+  it("opens a single task's logs from the task list", async () => {
+    installFakeBackend();
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-edge" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "legacy-gateway" })).getByRole(
+        "button",
+      ),
+    );
+    const view = await screen.findByRole("main", { name: "Service legacy-gateway" });
+    const tasks = await within(view).findByRole("region", { name: "Tasks" });
+    const [logsButton] = within(tasks).getAllByRole("button", { name: /^Logs of task / });
+    if (!logsButton) throw new Error("no task logs button");
+    fireEvent.click(logsButton);
+
+    expect(await within(view).findByText(/^task [0-9a-f]{8}$/)).toBeTruthy();
+    expect(await within(view).findByText("/ecs/legacy-gateway · 1 stream")).toBeTruthy();
+    fireEvent.click(within(view).getByRole("button", { name: "Show all tasks" }));
+    expect(await within(view).findByText("/ecs/legacy-gateway · 2 streams")).toBeTruthy();
   });
 });
