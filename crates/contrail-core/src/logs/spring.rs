@@ -41,7 +41,7 @@ pub(super) fn parse_spring(line: &str) -> Option<ParsedLine> {
     let mut push = |key: &str, value: Value| {
         fields.push(Field {
             key: key.to_owned(),
-            value,
+            value: value.into(),
         })
     };
     let level = group("level").and_then(Level::parse);

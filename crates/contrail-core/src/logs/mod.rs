@@ -65,8 +65,43 @@ pub enum LogKind {
 #[serde(rename_all = "camelCase")]
 pub struct Field {
     pub key: String,
-    /// The JSON value: strings stay strings, numbers stay numbers.
-    pub value: serde_json::Value,
+    pub value: FieldValue,
+}
+
+/// A field's value: strings stay strings, numbers stay numbers.
+///
+/// `#[serde(untagged)]` serializes just the inner value (`"x"`, `42`, `true`), so TypeScript
+/// sees `string | number | boolean`. Fields whose value is `null` are left out by the parser.
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(untagged)]
+pub enum FieldValue {
+    Text(String),
+    /// Kept as JSON's number (exact digits); a plain `number` in TypeScript.
+    Number(#[specta(type = f64)] serde_json::Number),
+    Bool(bool),
+}
+
+impl From<serde_json::Value> for FieldValue {
+    fn from(value: serde_json::Value) -> Self {
+        use serde_json::Value;
+        match value {
+            Value::String(s) => FieldValue::Text(s),
+            Value::Number(n) => FieldValue::Number(n),
+            Value::Bool(b) => FieldValue::Bool(b),
+            // Arrays (and objects inside them) are rare in logs: shown as compact JSON. (The
+            // parser drops nulls before they get here.)
+            other => FieldValue::Text(other.to_string()),
+        }
+    }
+}
+
+impl FieldValue {
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            FieldValue::Text(s) => Some(s),
+            _ => None,
+        }
+    }
 }
 
 /// An exception attached to an event (ECS `error.*`, or a joined plain-text stack trace).
@@ -99,7 +134,7 @@ pub struct ParsedLine {
 
 impl ParsedLine {
     /// The value of a field by its dotted name.
-    pub fn field(&self, key: &str) -> Option<&serde_json::Value> {
+    pub fn field(&self, key: &str) -> Option<&FieldValue> {
         self.fields.iter().find(|f| f.key == key).map(|f| &f.value)
     }
 }

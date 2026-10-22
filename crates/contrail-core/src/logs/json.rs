@@ -3,10 +3,10 @@
 use serde_json::{Map, Value};
 
 use super::parse::{find_json_span, parse_timestamp};
-use super::{Field, Level, LogError, LogKind, ParsedLine};
+use super::{Field, FieldValue, Level, LogError, LogKind, ParsedLine};
 
 /// Flattens nested objects into dotted keys: `{"log":{"level":"INFO"}}` → `log.level`.
-/// Empty objects (`"node":{}`) disappear; arrays are kept as values.
+/// Empty objects (`"node":{}`) and `null` values disappear; arrays are kept as values.
 fn flatten(prefix: &str, map: Map<String, Value>, out: &mut Vec<Field>) {
     for (key, value) in map {
         let key = if prefix.is_empty() {
@@ -16,27 +16,31 @@ fn flatten(prefix: &str, map: Map<String, Value>, out: &mut Vec<Field>) {
         };
         match value {
             Value::Object(inner) => flatten(&key, inner, out),
-            value => out.push(Field { key, value }),
+            Value::Null => {}
+            value => out.push(Field {
+                key,
+                value: value.into(),
+            }),
         }
     }
 }
 
 /// Removes the first field named any of `keys` and returns its value.
-fn take(fields: &mut Vec<Field>, keys: &[&str]) -> Option<Value> {
+fn take(fields: &mut Vec<Field>, keys: &[&str]) -> Option<FieldValue> {
     let index = fields.iter().position(|f| keys.contains(&f.key.as_str()))?;
     Some(fields.remove(index).value)
 }
 
-fn get<'a>(fields: &'a [Field], key: &str) -> Option<&'a Value> {
+fn get<'a>(fields: &'a [Field], key: &str) -> Option<&'a FieldValue> {
     fields.iter().find(|f| f.key == key).map(|f| &f.value)
 }
 
-fn as_text(value: &Value) -> Option<String> {
-    match value {
-        Value::String(s) => Some(s.clone()),
-        Value::Null => None,
-        other => Some(other.to_string()),
-    }
+fn as_text(value: &FieldValue) -> Option<String> {
+    Some(match value {
+        FieldValue::Text(s) => s.clone(),
+        FieldValue::Number(n) => n.to_string(),
+        FieldValue::Bool(b) => b.to_string(),
+    })
 }
 
 /// Parses a line that is a JSON object; `None` if it isn't.
@@ -66,14 +70,14 @@ pub(super) fn parse_json(line: &str) -> Option<ParsedLine> {
             .iter()
             .find_map(|key| get(&fields, key))
             .and_then(|value| match value {
-                Value::String(text) => parse_timestamp(text),
-                Value::Number(n) => n.as_i64().and_then(epoch_timestamp),
+                FieldValue::Text(text) => parse_timestamp(text),
+                FieldValue::Number(n) => n.as_i64().and_then(epoch_timestamp),
                 _ => None,
             });
     let level = level_keys
         .iter()
         .find_map(|key| get(&fields, key))
-        .and_then(Value::as_str)
+        .and_then(FieldValue::as_str)
         .and_then(Level::parse);
     let message = take(&mut fields, message_keys)
         .and_then(|v| as_text(&v))

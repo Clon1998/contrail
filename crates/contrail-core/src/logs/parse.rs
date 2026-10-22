@@ -121,6 +121,7 @@ fn balanced_end(bytes: &[u8], start: usize) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::logs::FieldValue;
     use time::macros::datetime;
 
     #[test]
@@ -187,7 +188,16 @@ mod tests {
             parsed.timestamp.map(|t| t.0),
             Some(datetime!(2026-01-15 10:12:01 UTC))
         );
-        assert_eq!(parsed.field("disk"), Some(&serde_json::json!("/data")));
+        assert_eq!(
+            parsed.field("disk"),
+            Some(&FieldValue::Text("/data".into()))
+        );
+    }
+
+    #[test]
+    fn null_fields_are_left_out() {
+        let parsed = parse_line(r#"{"message":"m","trace":{"id":null},"user":null}"#);
+        assert!(parsed.fields.is_empty());
     }
 
     #[test]
@@ -195,6 +205,9 @@ mod tests {
         assert_eq!(parse_line("[1,2,3]").kind, LogKind::Plain);
         assert_eq!(parse_line("{ not json").kind, LogKind::Plain);
         let parsed = parse_line(r#"{"message":"m","tags":["a","b"]}"#);
-        assert_eq!(parsed.field("tags"), Some(&serde_json::json!(["a", "b"])));
+        assert_eq!(
+            parsed.field("tags"),
+            Some(&FieldValue::Text(r#"["a","b"]"#.into()))
+        );
     }
 }
