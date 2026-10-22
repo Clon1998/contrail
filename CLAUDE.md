@@ -57,8 +57,11 @@ Work through the milestones in order. Do not start a milestone before the previo
   not one big commit per milestone. Tests belong in the same commit as the code they cover, or immediately before it (TDD).
 - Every commit must build, pass `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, `pnpm lint`, `pnpm typecheck`, `pnpm test`.
   Never commit failing tests, commented-out code, or debug prints.
-- One branch per milestone (`feat/m3-log-pipeline`), merged into `main` when its "Done when" is met.
-  Tag milestones in the commit message body if helpful. **Do not push or open PRs unless Patrick asks.**
+- One branch per milestone (`feat/m3-log-pipeline`). When its "Done when" is met locally, merge it into `main`
+  (`git merge --no-ff`) and push `main` to `origin` (github.com/Clon1998/contrail, private): that push triggers CI.
+  Watch the run (`gh run watch`); if it fails, fix it on `main` with a normal commit before starting the next
+  milestone. A milestone counts as done only with CI green. Don't push feature branches or open PRs unless
+  Patrick asks.
 - Never rewrite published history. Never commit secrets, real account IDs, ARNs, real log content or anything from `fixtures/`.
 - Update `README.md` / `docs/` in the same change when behaviour or setup changes.
 
