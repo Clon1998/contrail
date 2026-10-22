@@ -45,12 +45,9 @@ impl ServiceKey {
     }
 }
 
-/// Everything Contrail remembers between starts.
-///
-/// `#[serde(default)]` fills in missing fields when reading an older file, so new fields can be
-/// added without breaking existing preferences.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
-#[serde(rename_all = "camelCase", default)]
+/// Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub struct Prefs {
     pub last_profile: Option<String>,
     /// Region chosen in the region selector, per profile.
@@ -62,6 +59,29 @@ pub struct Prefs {
 }
 
 impl Prefs {
+    /// Reads a saved preferences file. Fields missing in older files get their defaults, so new
+    /// fields can be added without breaking existing preferences.
+    pub fn from_json(json: &str) -> serde_json::Result<Self> {
+        /// The file format. `#[serde(default)]` lives here rather than on [`Prefs`], so the
+        /// TypeScript type of `Prefs` keeps all fields required (they are always sent).
+        #[derive(Deserialize, Default)]
+        #[serde(rename_all = "camelCase", default)]
+        struct Stored {
+            last_profile: Option<String>,
+            region_overrides: BTreeMap<String, String>,
+            favorites: Vec<ServiceKey>,
+            recent: Vec<ServiceKey>,
+        }
+
+        let stored: Stored = serde_json::from_str(json)?;
+        Ok(Self {
+            last_profile: stored.last_profile,
+            region_overrides: stored.region_overrides,
+            favorites: stored.favorites,
+            recent: stored.recent,
+        })
+    }
+
     pub fn set_region_override(&mut self, profile: &str, region: Option<String>) {
         match region {
             Some(region) => self.region_overrides.insert(profile.to_owned(), region),
@@ -149,8 +169,17 @@ mod tests {
     }
 
     #[test]
+    fn round_trips_through_json() {
+        let mut prefs = Prefs::default();
+        prefs.add_recent(key("dev", "orders"));
+        prefs.set_region_override("dev", Some("us-west-2".into()));
+        let json = serde_json::to_string(&prefs).unwrap();
+        assert_eq!(Prefs::from_json(&json).unwrap(), prefs);
+    }
+
+    #[test]
     fn reads_older_files_with_missing_fields() {
-        let prefs: Prefs = serde_json::from_str(r#"{"lastProfile":"dev"}"#).unwrap();
+        let prefs = Prefs::from_json(r#"{"lastProfile":"dev"}"#).unwrap();
         assert_eq!(prefs.last_profile.as_deref(), Some("dev"));
         assert!(prefs.favorites.is_empty());
     }

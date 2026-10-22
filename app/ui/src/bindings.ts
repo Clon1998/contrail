@@ -124,20 +124,15 @@ export type LoginProgress =
  */
 { kind: "output"; line: string };
 
-/**
- *  Everything Contrail remembers between starts.
- * 
- *  `#[serde(default)]` fills in missing fields when reading an older file, so new fields can be
- *  added without breaking existing preferences.
- */
+/**  Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`]. */
 export type Prefs = {
-	lastProfile?: string | null,
+	lastProfile: string | null,
 	/**  Region chosen in the region selector, per profile. */
-	regionOverrides?: { [key in string]: string },
+	regionOverrides: { [key in string]: string },
 	/**  Pinned services, in the order they were pinned. */
-	favorites?: ServiceKey[],
+	favorites: ServiceKey[],
 	/**  Recently opened services, newest first, at most [`MAX_RECENT`]. */
-	recent?: ServiceKey[],
+	recent: ServiceKey[],
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */

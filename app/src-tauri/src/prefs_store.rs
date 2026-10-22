@@ -17,7 +17,7 @@ impl PrefsStore {
     /// with defaults on the next save (preferences aren't worth refusing to start over).
     pub fn load(path: PathBuf) -> Self {
         let prefs = match std::fs::read_to_string(&path) {
-            Ok(json) => serde_json::from_str(&json).unwrap_or_else(|err| {
+            Ok(json) => Prefs::from_json(&json).unwrap_or_else(|err| {
                 tracing::warn!(path = %path.display(), %err, "ignoring invalid preferences file");
                 Prefs::default()
             }),
