@@ -235,8 +235,9 @@ Task: lastStatus, desiredStatus, healthStatus, createdAt/startedAt/stoppedAt, st
 container exitCode/reason, AZ, task def revision.
 
 ### 5.3 Log formats (from real, anonymized prod samples)
-Real samples live in `fixtures/` (company name replaced with `acme`, one event per line). Copy them to
-`crates/contrail-core/tests/fixtures/` in M3 and build parser + snapshot tests on them.
+Real samples live in the gitignored `fixtures/` (company name replaced with `acme`, one event per line).
+They are never committed. In M3, create **synthetic** look-alikes in `crates/contrail-core/tests/fixtures/`
+(see CLAUDE.md) and build parser + snapshot tests on those; use the real ones only for local sanity checks.
 
 | Fixture | Format | Seen in |
 |---|---|---|
@@ -340,7 +341,7 @@ Commits are small and conventional throughout (see CLAUDE.md).
 ### M3 — Log pipeline core (Rust-heavy)
 - Log location resolution from task definitions.
 - Parsers: ECS (dotted + nested), Spring Boot default console pattern, generic JSON, plain (level regex, ANSI kept).
-  Snapshot tests on every event in `fixtures/`.
+  Snapshot tests on every event in the synthetic fixtures (`crates/contrail-core/tests/fixtures/`).
 - Multi-line joiner, ring buffer, dedupe, backfill via `FilterLogEvents`.
 - Fake generators for realistic ECS/plain logs incl. stack traces.
 - **Done when:** extensive unit tests + snapshot tests on fixtures; backfill works in demo and real mode (debug UI ok).
