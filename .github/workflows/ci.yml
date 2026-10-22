@@ -73,4 +73,4 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Runs `pnpm generate` first (beforeBuildCommand in tauri.conf.json).
       - name: Build app (no installer bundles)
-        run: pnpm tauri build --debug --no-bundle
+        run: pnpm build --debug --no-bundle

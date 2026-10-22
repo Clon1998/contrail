@@ -64,15 +64,16 @@ Work through the milestones in order. Do not start a milestone before the previo
 ## Commands (keep this section current as the project evolves)
 ```bash
 pnpm install                   # also installs git hooks (lefthook: fmt/lint on commit, commitlint, full suite on push)
-pnpm tauri dev                 # run the app (Nuxt dev server on :3000 + Tauri window)
-pnpm tauri dev -- -- --demo    # run in demo mode (adjust once the flag exists)
-pnpm dev                       # frontend only, in a browser (no Tauri IPC)
+pnpm dev                       # run the app (tauri dev: Nuxt dev server on :3000 + Tauri window)
+pnpm dev -- -- --demo          # run in demo mode (adjust once the flag exists)
+pnpm dev:web                   # frontend only, in a browser (no Tauri IPC)
+pnpm build                     # build installers for this OS (tauri build)
 cargo test --workspace         # Rust tests
 cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all
 pnpm lint && pnpm typecheck && pnpm test   # frontend (tests live in tests/nuxt/)
 pnpm format                    # auto-fix ESLint + Prettier
-pnpm tauri build --debug --no-bundle       # quick full build check (what CI runs on macOS/Windows)
+pnpm build --debug --no-bundle             # quick full build check (what CI runs on macOS/Windows)
 pnpm test:e2e                  # Playwright (added in a later milestone)
 ```
 

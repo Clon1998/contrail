@@ -19,7 +19,8 @@ Prerequisites:
 
 ```bash
 pnpm install          # also installs the git hooks (lefthook)
-pnpm tauri dev        # run the app with hot reload
+pnpm dev              # run the app with hot reload (tauri dev)
+pnpm build            # build installers for this OS (tauri build)
 ```
 
 Checks (the same ones CI runs):

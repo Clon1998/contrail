@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "identifier": "io.github.clon1998.contrail",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm dev:web",
     "devUrl": "http://localhost:3000",
     "beforeBuildCommand": "pnpm generate",
     "frontendDist": "../.output/public"
