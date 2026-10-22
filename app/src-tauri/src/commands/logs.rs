@@ -41,6 +41,16 @@ pub async fn open_service_logs(
     service: ServiceRef,
     minutes: u32,
 ) -> ApiResult<LogViewInfo> {
+    // `State` derefs to `&AppState`; the logic lives in a plain function so tests can call it.
+    open_logs(&state, ctx, service, minutes).await
+}
+
+async fn open_logs(
+    state: &AppState,
+    ctx: AwsCtx,
+    service: ServiceRef,
+    minutes: u32,
+) -> ApiResult<LogViewInfo> {
     let detail = state.ecs.describe_service(&ctx, &service).await?;
     let task_definition = detail.task_definition.ok_or_else(|| {
         ApiError::new(
@@ -106,4 +116,51 @@ pub fn close_log_view(state: State<'_, AppState>, view_id: u32) {
         .lock()
         .expect("views lock poisoned")
         .remove(&view_id);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn demo_service(cluster: &str, name: &str) -> (AwsCtx, ServiceRef) {
+        (
+            AwsCtx {
+                profile: "demo-dev".into(),
+                region: None,
+            },
+            ServiceRef {
+                cluster_arn: format!("arn:aws:ecs:eu-central-1:111122223333:cluster/{cluster}"),
+                service_name: name.into(),
+            },
+        )
+    }
+
+    #[tokio::test]
+    async fn opens_a_demo_service_and_keeps_its_events_in_a_view() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
+
+        let info = open_logs(&state, ctx, service, 15).await.unwrap();
+
+        assert_eq!(info.location.log_group, "/ecs/legacy-gateway");
+        assert_eq!(info.streams, 2);
+        assert!(info.stats.total > 300, "2 tasks × 15 min / 5 s");
+        let views = state.views.lock().unwrap();
+        let rows = views[&info.view_id].buffer.window(0, usize::MAX);
+        // Split stack traces arrive joined.
+        assert!(rows.iter().any(|e| e.line.error.is_some()));
+        assert!(rows.iter().all(|e| !e.line.message.starts_with("\tat ")));
+    }
+
+    #[tokio::test]
+    async fn expired_sessions_fail_with_a_credentials_error() {
+        let state = AppState::demo();
+        let (_, service) = demo_service("demo-core", "orders-api");
+        let ctx = AwsCtx {
+            profile: "demo-prod".into(),
+            region: None,
+        };
+        let error = open_logs(&state, ctx, service, 15).await.unwrap_err();
+        assert_eq!(error.code, ErrorCode::Credentials);
+    }
 }
