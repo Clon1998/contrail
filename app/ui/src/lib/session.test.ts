@@ -30,6 +30,7 @@ describe("formatDuration", () => {
     expect(formatDuration(30_000)).toBe("<1m");
     expect(formatDuration(9 * 60_000)).toBe("9m");
     expect(formatDuration((2 * 60 + 5) * 60_000)).toBe("2h 05m");
+    expect(formatDuration((9 * 24 + 3) * 3_600_000)).toBe("9d 3h");
   });
 });
 

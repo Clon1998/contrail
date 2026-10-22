@@ -1,5 +1,5 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
 import { installFakeBackend } from "@/e2e/fakeBackend";
@@ -112,5 +112,34 @@ describe("App", () => {
     render(<App />);
     expect(await screen.findByText("Log in to demo-prod")).toBeTruthy();
     expect(screen.queryByRole("tree")).toBeNull();
+  });
+
+  it("opens a service with deployments, tasks and stop reasons, and pins it", async () => {
+    installFakeBackend();
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "payments-worker" })).getByRole(
+        "button",
+      ),
+    );
+
+    const view = await screen.findByRole("main", { name: "Service payments-worker" });
+    const deployments = await within(view).findByRole("region", { name: "Deployments" });
+    expect(deployments.textContent).toContain("payments-worker:17");
+    const tasks = within(view).getByRole("region", { name: "Tasks" });
+    expect(within(tasks).getAllByText("EssentialContainerExited")).toHaveLength(2);
+    expect(within(tasks).getAllByText("exit 1")).toHaveLength(2);
+    expect(within(tasks).getByText(/CannotPullContainerError: ref not found/)).toBeTruthy();
+
+    fireEvent.click(within(tasks).getByRole("button", { name: "Hide stopped" }));
+    await waitFor(() => expect(within(tasks).queryByText("exit 1")).toBeNull());
+
+    fireEvent.click(within(view).getByRole("button", { name: "Add to favorites" }));
+    const favorites = await screen.findByRole("region", { name: "Favorites" });
+    expect(within(favorites).getByText("payments-worker")).toBeTruthy();
   });
 });

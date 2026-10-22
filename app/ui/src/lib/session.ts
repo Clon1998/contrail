@@ -6,11 +6,12 @@ export interface SessionView {
   tone: "ok" | "warn" | "bad" | "muted";
 }
 
-/** Formats a duration as `2h 05m`, `9m` or `<1m`. */
+/** Formats a duration as `3d 4h`, `2h 05m`, `9m` or `<1m`. */
 export function formatDuration(ms: number): string {
   const minutes = Math.floor(Math.abs(ms) / 60_000);
   if (minutes < 1) return "<1m";
   const hours = Math.floor(minutes / 60);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
   const rest = minutes % 60;
   return hours > 0 ? `${hours}h ${String(rest).padStart(2, "0")}m` : `${rest}m`;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { commands, type AppInfo } from "@/bindings";
+import { ServiceView } from "@/components/ecs/ServiceView";
 import { Sidebar } from "@/components/ecs/Sidebar";
 import { ConnectionPanel } from "@/components/profile/ConnectionPanel";
 import { LoginOutput } from "@/components/profile/LoginOutput";
@@ -18,6 +19,7 @@ export default function App() {
   const connected = useProfiles((s) => s.identity.state === "ok");
   const region = useCurrentRegion();
   const showTree = useEcs((s) => s.ctx !== null);
+  const serviceOpen = useEcs((s) => s.selected !== null);
 
   useEffect(() => {
     void commands.appInfo().then(setInfo);
@@ -41,7 +43,7 @@ export default function App() {
       <LoginOutput />
       <div className="flex min-h-0 flex-1">
         {showTree && <Sidebar />}
-        <ConnectionPanel />
+        {serviceOpen ? <ServiceView /> : <ConnectionPanel />}
       </div>
     </div>
   );
