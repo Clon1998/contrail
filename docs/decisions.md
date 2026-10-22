@@ -111,3 +111,12 @@ of date, so Rust and TypeScript demo data can't drift.
   per service comes with M7's settings work.
 - **Task view:** a task's "Logs" button opens a view of that task's stream only; the chip in the toolbar
   returns to all tasks.
+
+## 2026-10-22 — Patrick's answers for M5–M8
+
+- **Release:** when M8 is done, tag `v0.1.0` and publish a GitHub Release (private repo) with unsigned
+  installers for Windows, macOS and Linux.
+- **Live Tail cost:** by default pause live tails when the window is hidden, and background views after
+  10 minutes; resume with a gap backfill. Both adjustable in the settings.
+- **Updater:** none in v0.1 (needs a signing key); installs come from the GitHub Release.
+- **App identifier:** stays `io.github.clon1998.contrail`.
