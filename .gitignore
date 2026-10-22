@@ -9,7 +9,7 @@
 
 # --- Tauri ---
 # Generated at build time (capability JSON schemas)
-/src-tauri/gen/
+/app/src-tauri/gen/
 
 # --- Node / Nuxt ---
 node_modules/
@@ -18,7 +18,7 @@ node_modules/
 .data/
 .nitro/
 .cache/
-/dist
+/app/ui/dist
 coverage/
 test-results/
 playwright-report/

@@ -1,4 +1,5 @@
-# Git hooks (installed automatically by `pnpm install`). Skip once with `git commit --no-verify`.
+# Git hooks (installed automatically by `pnpm install` in app/). Skip once with `git commit --no-verify`.
+# The JS tooling lives in app/ (commitlint, lefthook) and app/ui/ (eslint, prettier).
 
 # Fast checks on every commit, only on what's staged.
 pre-commit:
@@ -8,17 +9,19 @@ pre-commit:
       glob: '*.rs'
       run: cargo fmt --all -- --check
     - name: eslint
+      root: app/ui/
       glob: '*.{ts,mts,mjs,js,vue}'
       run: pnpm exec eslint {staged_files}
     - name: prettier
+      root: app/ui/
       glob: '*.{ts,mts,mjs,js,vue,json,yml,yaml,css}'
       run: pnpm exec prettier --check {staged_files}
 
-# Conventional Commits (see commitlint.config.mjs).
+# Conventional Commits (see app/commitlint.config.mjs).
 commit-msg:
   jobs:
     - name: commitlint
-      run: pnpm exec commitlint --edit {1}
+      run: pnpm --dir app exec commitlint --edit "$(git rev-parse --absolute-git-dir)/COMMIT_EDITMSG"
 
 # The full suite before anything leaves the machine.
 pre-push:
@@ -27,4 +30,4 @@ pre-push:
     - name: rust
       run: cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
     - name: frontend
-      run: pnpm typecheck && pnpm test
+      run: pnpm --dir app typecheck && pnpm --dir app test

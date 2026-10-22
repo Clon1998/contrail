@@ -5,10 +5,10 @@
   "version": "0.1.0",
   "identifier": "io.github.clon1998.contrail",
   "build": {
-    "beforeDevCommand": "pnpm dev:web",
+    "beforeDevCommand": "pnpm --dir ui dev",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "pnpm generate",
-    "frontendDist": "../.output/public"
+    "beforeBuildCommand": "pnpm --dir ui generate",
+    "frontendDist": "../ui/.output/public"
   },
   "app": {
     "windows": [

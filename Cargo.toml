@@ -9,7 +9,7 @@ members = [
     "crates/contrail-core",
     "crates/contrail-aws",
     "crates/contrail-fake",
-    "src-tauri",
+    "app/src-tauri",
 ]
 
 [workspace.package]

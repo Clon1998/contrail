@@ -18,6 +18,7 @@ Prerequisites:
 - Tauri's [system prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
 
 ```bash
+cd app
 pnpm install          # also installs the git hooks (lefthook)
 pnpm dev              # run the app with hot reload (tauri dev)
 pnpm build            # build installers for this OS (tauri build)
@@ -29,7 +30,7 @@ Checks (the same ones CI runs):
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-pnpm lint && pnpm typecheck && pnpm test
+cd app && pnpm lint && pnpm typecheck && pnpm test
 ```
 
 ### Layout
@@ -39,9 +40,9 @@ pnpm lint && pnpm typecheck && pnpm test
 | `crates/contrail-core/` | Domain model, source traits, parsing, buffer, query — no AWS deps  |
 | `crates/contrail-aws/`  | AWS implementations of the core traits                             |
 | `crates/contrail-fake/` | Fake implementations and log generators (demo mode, tests)         |
-| `src-tauri/`            | Tauri app crate: commands, state, wiring                           |
-| `app/`                  | Nuxt (SPA) frontend                                                |
-| `tests/nuxt/`           | Frontend tests (Vitest in a Nuxt environment)                      |
+| `app/`                  | The desktop app: Tauri CLI and repo tooling (pnpm workspace root)  |
+| `app/src-tauri/`        | Tauri app crate: commands, state, wiring                           |
+| `app/ui/`               | Nuxt (SPA) frontend; tests in `app/ui/tests/nuxt/`                 |
 | `docs/`                 | [Rust notes](docs/rust-notes.md), [decisions](docs/decisions.md)   |
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org) (enforced by a commit-msg hook).

@@ -10,8 +10,6 @@ export default defineNuxtConfig({
   typescript: { strict: true, typeCheck: false },
   // Listen on the address Tauri provides when developing on a physical device; localhost otherwise.
   devServer: { host: process.env.TAURI_DEV_HOST || 'localhost', port: 3000 },
-  // Don't let Nuxt watch the Rust sources (Cargo handles those).
-  ignore: ['**/src-tauri/**', '**/crates/**', '**/target/**'],
   vite: {
     // Keep Rust compiler errors visible in the terminal.
     clearScreen: false,

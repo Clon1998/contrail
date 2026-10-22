@@ -9,7 +9,7 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   `[workspace.dependencies]` (like `<dependencyManagement>` in a parent POM). Members write
   `serde = { workspace = true }`. Lints are shared the same way via `[workspace.lints]`.
 - **Why:** one version of each dependency, one lint policy, one `Cargo.lock` for the whole app.
-- **Where:** `Cargo.toml`, `crates/*/Cargo.toml`, `src-tauri/Cargo.toml`.
+- **Where:** `Cargo.toml`, `crates/*/Cargo.toml`, `app/src-tauri/Cargo.toml`.
 
 ## `rust-toolchain.toml` ≈ `.sdkmanrc` / Maven toolchains
 
@@ -31,24 +31,24 @@ One short entry per pattern: what it is, why it's used here, where to find it.
 - **What:** a `tests` module inside the source file, compiled only for `cargo test`. It can see private items
   through `use super::*`. Integration tests (public API only) go into a crate's `tests/` folder instead.
 - **Why:** no separate `src/test/java` tree; tests sit next to what they test.
-- **Where:** bottom of `crates/contrail-core/src/lib.rs` and `src-tauri/src/commands.rs`.
+- **Where:** bottom of `crates/contrail-core/src/lib.rs` and `app/src-tauri/src/commands.rs`.
 
 ## Library + thin binary crate
 
-- **What:** the app crate has a library (`contrail_lib`, `src-tauri/src/lib.rs`) holding all code and a
+- **What:** the app crate has a library (`contrail_lib`, `app/src-tauri/src/lib.rs`) holding all code and a
   `main.rs` that only calls `contrail_lib::run()`.
 - **Why:** code in the library can be unit-tested and reused (Tauri also needs the library for mobile targets).
-- **Where:** `src-tauri/src/lib.rs`, `src-tauri/src/main.rs`.
+- **Where:** `app/src-tauri/src/lib.rs`, `app/src-tauri/src/main.rs`.
 
 ## Attribute macros: `#[tauri::command]`
 
 - **What:** an attribute macro generates code at compile time — here, the glue that deserializes the
   frontend's JSON arguments and serializes the return value. Comparable to what Spring does with
   `@RestController` + Jackson, but at compile time instead of via runtime reflection.
-- **Where:** `src-tauri/src/commands.rs`; registered with `tauri::generate_handler!` in `src-tauri/src/lib.rs`.
+- **Where:** `app/src-tauri/src/commands.rs`; registered with `tauri::generate_handler!` in `app/src-tauri/src/lib.rs`.
 
 ## `build.rs` build scripts
 
 - **What:** a small Rust program Cargo runs before compiling the crate (like a Maven plugin bound to
   `generate-sources`). Tauri's reads `tauri.conf.json` and capability files.
-- **Where:** `src-tauri/build.rs`.
+- **Where:** `app/src-tauri/build.rs`.

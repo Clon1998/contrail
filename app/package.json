@@ -1,0 +1,25 @@
+{
+  "name": "contrail-app",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=24.11"
+  },
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "lint": "pnpm --dir ui lint",
+    "typecheck": "pnpm --dir ui typecheck",
+    "test": "pnpm --dir ui test",
+    "format": "pnpm --dir ui format"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@tauri-apps/cli": "2.12.4",
+    "lefthook": "2.2.2"
+  }
+}
