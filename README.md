@@ -20,6 +20,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile.
   Star a service to pin it to the sidebar. Favorites, recent services, the last profile and region overrides
   are kept in `prefs.json` in Contrail's app data folder (never credentials).
+- **Settings** (gear icon or ⌘, / Ctrl+,): colour mode (dark / light / system), accent colour, timestamps in local
+  time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in
   [docs/iam-policy.json](docs/iam-policy.json).
 

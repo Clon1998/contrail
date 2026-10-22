@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAgo, nameFromArn, serviceHealth, shortTaskId } from "./ecs";
+import { formatAgo, formatDateTime, nameFromArn, serviceHealth, shortTaskId } from "./ecs";
 
 describe("serviceHealth", () => {
   it.each([
@@ -18,6 +18,11 @@ describe("formatting", () => {
     const now = Date.parse("2026-10-22T12:00:00Z");
     expect(formatAgo("2026-10-22T11:55:00Z", now)).toBe("5m ago");
     expect(formatAgo(null, now)).toBe("—");
+  });
+
+  it("formats absolute times in UTC on request", () => {
+    expect(formatDateTime("2026-10-22T11:55:00Z", "utc")).toMatch(/11:55:00.* UTC$/);
+    expect(formatDateTime(null)).toBe("");
   });
 
   it("shortens IDs and ARNs", () => {

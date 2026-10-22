@@ -14,6 +14,9 @@ beforeEach(() => {
   useProfiles.setState(initialProfiles, true);
   useEcs.setState(initialEcs, true);
   usePrefs.setState({ prefs: EMPTY_PREFS });
+  // The settings test changes the page's colour mode and accent.
+  document.documentElement.className = "dark";
+  delete document.documentElement.dataset.accent;
 });
 
 afterEach(() => {
@@ -161,5 +164,27 @@ describe("App", () => {
     const again = await screen.findByRole("dialog", { name: "Go to service" });
     const recent = within(again).getByRole("group", { name: "Recent" });
     expect(within(recent).getByText("event-ingest")).toBeTruthy();
+  });
+
+  it("changes colour mode, accent and time zone in the settings dialog", async () => {
+    installFakeBackend();
+    render(<App />);
+    await screen.findByText("DemoReadOnly/demo.user");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    fireEvent.keyDown(window, { key: ",", metaKey: true });
+    const dialog = await screen.findByRole("dialog", { name: "Settings" });
+
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Light" }));
+    await waitFor(() => expect(document.documentElement.classList.contains("dark")).toBe(false));
+
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Violet" }));
+    await waitFor(() => expect(document.documentElement.dataset.accent).toBe("violet"));
+
+    fireEvent.click(within(dialog).getByRole("radio", { name: "UTC" }));
+    await waitFor(() => expect(usePrefs.getState().prefs.settings.timeZone).toBe("utc"));
+    expect(within(dialog).getByRole("radio", { name: "UTC" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
   });
 });

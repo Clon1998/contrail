@@ -123,9 +123,7 @@ function Facts({ detail }: { detail: ServiceDetail }) {
     <dl className="grid grid-cols-2 gap-2 lg:grid-cols-5">
       <Fact label="Tasks (running / desired)">
         {summary.running} / {summary.desired}
-        {summary.pending > 0 && (
-          <span className="text-amber-400"> · {summary.pending} pending</span>
-        )}
+        {summary.pending > 0 && <span className="text-warning"> · {summary.pending} pending</span>}
       </Fact>
       <Fact label="Task definition">{summary.taskDefinition}</Fact>
       <Fact label="Image">{container ? container.imageTag : "—"}</Fact>
@@ -143,9 +141,9 @@ function Facts({ detail }: { detail: ServiceDetail }) {
 }
 
 const ROLLOUT_TONE: Record<string, string> = {
-  COMPLETED: "text-emerald-400",
-  IN_PROGRESS: "text-amber-400",
-  FAILED: "text-red-400",
+  COMPLETED: "text-success",
+  IN_PROGRESS: "text-warning",
+  FAILED: "text-destructive",
 };
 
 function Section({
@@ -173,8 +171,14 @@ function Section({
 const TH = "px-2 py-1 text-left font-normal text-muted-foreground";
 const TD = "px-2 py-1 align-top";
 
+/** The time zone setting, for absolute times in tooltips. */
+function useTimeZone() {
+  return usePrefs((s) => s.prefs.settings.timeZone);
+}
+
 function Deployments({ deployments }: { deployments: Deployment[] }) {
   const now = useNow();
+  const timeZone = useTimeZone();
   return (
     <Section title="Deployments">
       <table className="w-full text-sm">
@@ -204,8 +208,10 @@ function Deployments({ deployments }: { deployments: Deployment[] }) {
                 {d.running} / {d.desired}
               </td>
               <td className={cn(TD, "font-mono")}>{d.pending}</td>
-              <td className={cn(TD, "font-mono", d.failed > 0 && "text-red-400")}>{d.failed}</td>
-              <td className={TD} title={formatDateTime(d.updatedAt)}>
+              <td className={cn(TD, "font-mono", d.failed > 0 && "text-destructive")}>
+                {d.failed}
+              </td>
+              <td className={TD} title={formatDateTime(d.updatedAt, timeZone)}>
                 {formatAgo(d.updatedAt, now)}
               </td>
             </tr>
@@ -222,7 +228,7 @@ function TaskStatus({ task }: { task: Task }) {
     <span className={cn(task.lastStatus === "STOPPED" && "text-muted-foreground")}>
       {task.lastStatus}
       {task.healthStatus && task.healthStatus !== "UNKNOWN" && (
-        <span className={cn("ml-1 text-xs", unhealthy ? "text-red-400" : "text-emerald-400")}>
+        <span className={cn("ml-1 text-xs", unhealthy ? "text-destructive" : "text-success")}>
           {task.healthStatus.toLowerCase()}
         </span>
       )}
@@ -235,6 +241,7 @@ function Tasks() {
   const includeStopped = useEcs((s) => s.includeStopped);
   const setIncludeStopped = useEcs((s) => s.setIncludeStopped);
   const now = useNow();
+  const timeZone = useTimeZone();
   const list = "data" in tasks ? (tasks.data ?? []) : [];
 
   return (
@@ -286,7 +293,7 @@ function Tasks() {
                   <td className={TD}>
                     <TaskStatus task={task} />
                   </td>
-                  <td className={TD} title={formatDateTime(task.startedAt)}>
+                  <td className={TD} title={formatDateTime(task.startedAt, timeZone)}>
                     {formatAgo(task.startedAt, now)}
                   </td>
                   <td className={cn(TD, "font-mono text-xs")}>{task.availabilityZone ?? "—"}</td>
@@ -294,14 +301,16 @@ function Tasks() {
                   <td className={TD}>
                     {task.lastStatus === "STOPPED" ? (
                       <div className="space-y-0.5">
-                        <div title={formatDateTime(task.stoppedAt)}>
+                        <div title={formatDateTime(task.stoppedAt, timeZone)}>
                           {formatAgo(task.stoppedAt, now)} ·{" "}
                           <span className="font-mono text-xs">{task.stopCode}</span>
                           {container?.exitCode !== null && container?.exitCode !== undefined && (
                             <span
                               className={cn(
                                 "ml-1 font-mono text-xs",
-                                container.exitCode === 0 ? "text-muted-foreground" : "text-red-400",
+                                container.exitCode === 0
+                                  ? "text-muted-foreground"
+                                  : "text-destructive",
                               )}
                             >
                               exit {container.exitCode}
@@ -310,7 +319,7 @@ function Tasks() {
                         </div>
                         <div className="text-xs text-muted-foreground">{task.stoppedReason}</div>
                         {container?.reason && (
-                          <div className="text-xs text-red-400">{container.reason}</div>
+                          <div className="text-xs text-destructive">{container.reason}</div>
                         )}
                       </div>
                     ) : (
@@ -329,6 +338,7 @@ function Tasks() {
 
 function Events({ detail }: { detail: ServiceDetail }) {
   const now = useNow();
+  const timeZone = useTimeZone();
   if (detail.events.length === 0) return null;
   // Events read "(service orders-api) has reached a steady state."; the prefix is noise here.
   const prefix = `(service ${detail.summary.name}) `;
@@ -339,7 +349,7 @@ function Events({ detail }: { detail: ServiceDetail }) {
           <li key={event.id} className="flex gap-3">
             <span
               className="w-20 shrink-0 text-muted-foreground"
-              title={formatDateTime(event.createdAt)}
+              title={formatDateTime(event.createdAt, timeZone)}
             >
               {formatAgo(event.createdAt, now)}
             </span>

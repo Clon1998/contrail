@@ -4,9 +4,9 @@ import { useNow } from "@/hooks/useNow";
 import { describeSession, type SessionView } from "@/lib/session";
 
 const DOT: Record<SessionView["tone"], string> = {
-  ok: "bg-emerald-500",
-  warn: "bg-amber-400",
-  bad: "bg-red-500",
+  ok: "bg-success",
+  warn: "bg-warning",
+  bad: "bg-destructive",
   muted: "bg-muted-foreground/50",
 };
 

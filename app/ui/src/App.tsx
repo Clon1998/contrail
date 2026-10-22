@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/ecs/Sidebar";
 import { ConnectionPanel } from "@/components/profile/ConnectionPanel";
 import { LoginOutput } from "@/components/profile/LoginOutput";
 import { ProfileBar } from "@/components/profile/ProfileBar";
+import { useAppearance } from "@/hooks/useAppearance";
 import { useEcs } from "@/stores/ecs";
 import { useCurrentRegion, useProfiles } from "@/stores/profiles";
 
@@ -14,6 +15,7 @@ const STATUS_REFRESH_MS = 60_000;
 
 export default function App() {
   const [info, setInfo] = useState<AppInfo>();
+  useAppearance();
   const load = useProfiles((s) => s.load);
   const refreshStatuses = useProfiles((s) => s.refreshStatuses);
   const selected = useProfiles((s) => s.selected);
@@ -40,7 +42,7 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <ProfileBar demo={info?.demo ?? false} />
+      <ProfileBar demo={info?.demo ?? false} version={info?.version} />
       <LoginOutput />
       <div className="flex min-h-0 flex-1">
         {showTree && <Sidebar />}

@@ -45,6 +45,50 @@ impl ServiceKey {
     }
 }
 
+/// Light or dark UI; `System` follows the operating system.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ColorMode {
+    System,
+    Light,
+    /// Contrail is dark-first.
+    #[default]
+    Dark,
+}
+
+/// The accent colour (buttons, focus rings, links).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum Accent {
+    #[default]
+    Sky,
+    Blue,
+    Green,
+    Violet,
+    Orange,
+    Rose,
+    /// Black/white, no colour.
+    Neutral,
+}
+
+/// How absolute timestamps are shown.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum TimeZone {
+    #[default]
+    Local,
+    Utc,
+}
+
+/// The app settings (the settings dialog).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct Settings {
+    pub color_mode: ColorMode,
+    pub accent: Accent,
+    pub time_zone: TimeZone,
+}
+
 /// Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -56,6 +100,7 @@ pub struct Prefs {
     pub favorites: Vec<ServiceKey>,
     /// Recently opened services, newest first, at most [`MAX_RECENT`].
     pub recent: Vec<ServiceKey>,
+    pub settings: Settings,
 }
 
 impl Prefs {
@@ -71,6 +116,19 @@ impl Prefs {
             region_overrides: BTreeMap<String, String>,
             favorites: Vec<ServiceKey>,
             recent: Vec<ServiceKey>,
+            #[serde(deserialize_with = "settings_or_default")]
+            settings: Settings,
+        }
+
+        /// Settings a newer or older version wrote (e.g. an accent that no longer exists) fall
+        /// back to the defaults, instead of making the whole file unreadable and losing
+        /// favorites and recent services with it.
+        fn settings_or_default<'de, D>(deserializer: D) -> Result<Settings, D::Error>
+        where
+            D: serde::Deserializer<'de>,
+        {
+            let value = serde_json::Value::deserialize(deserializer)?;
+            Ok(serde_json::from_value(value).unwrap_or_default())
         }
 
         let stored: Stored = serde_json::from_str(json)?;
@@ -79,6 +137,7 @@ impl Prefs {
             region_overrides: stored.region_overrides,
             favorites: stored.favorites,
             recent: stored.recent,
+            settings: stored.settings,
         })
     }
 
@@ -175,6 +234,27 @@ mod tests {
         prefs.set_region_override("dev", Some("us-west-2".into()));
         let json = serde_json::to_string(&prefs).unwrap();
         assert_eq!(Prefs::from_json(&json).unwrap(), prefs);
+    }
+
+    #[test]
+    fn settings_default_to_dark_sky_local() {
+        let settings = Prefs::default().settings;
+        assert_eq!(settings.color_mode, ColorMode::Dark);
+        assert_eq!(settings.accent, Accent::Sky);
+        assert_eq!(settings.time_zone, TimeZone::Local);
+        assert_eq!(
+            serde_json::to_string(&settings).unwrap(),
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local"}"#
+        );
+    }
+
+    #[test]
+    fn unknown_settings_fall_back_without_losing_the_rest() {
+        let json = r#"{"favorites":[{"profile":"dev","region":"eu-west-1","clusterArn":"arn:aws:ecs:eu-west-1:1:cluster/c","serviceName":"s"}],
+                       "settings":{"colorMode":"light","accent":"chartreuse","timeZone":"utc"}}"#;
+        let prefs = Prefs::from_json(json).unwrap();
+        assert_eq!(prefs.favorites.len(), 1);
+        assert_eq!(prefs.settings, Settings::default());
     }
 
     #[test]

@@ -32,6 +32,8 @@ export const commands = {
 	setLastProfile: (profile: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_last_profile", { profile })),
 	/**  Sets (or with `None` clears) the region override of a profile. */
 	setRegionOverride: (profile: string, region: string | null) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_region_override", { profile, region })),
+	/**  Replaces the app settings (the settings dialog sends all of them). */
+	setSettings: (settings: Settings) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_settings", { settings })),
 	/**  Pins or unpins a service of `profile`. */
 	toggleFavorite: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("toggle_favorite", { profile, service })),
 	/**  Records that a service was opened (for "recent" in the palette). */
@@ -39,6 +41,11 @@ export const commands = {
 };
 
 /* Types */
+/**  The accent colour (buttons, focus rings, links). */
+export type Accent = "sky" | "blue" | "green" | "violet" | "orange" | "rose" | 
+/**  Black/white, no colour. */
+"neutral";
+
 /**
  *  A structured, user-actionable error. tauri-specta turns commands returning
  *  `Result<T, ApiError>` into TS functions returning `{ status: "ok", data } | { status: "error", error }`.
@@ -79,6 +86,11 @@ export type ClusterSummary = {
 	runningTasks: number,
 	pendingTasks: number,
 };
+
+/**  Light or dark UI; `System` follows the operating system. */
+export type ColorMode = "system" | "light" | 
+/**  Contrail is dark-first. */
+"dark";
 
 export type ContainerDefinitionInfo = {
 	name: string,
@@ -135,6 +147,7 @@ export type Prefs = {
 	favorites: ServiceKey[],
 	/**  Recently opened services, newest first, at most [`MAX_RECENT`]. */
 	recent: ServiceKey[],
+	settings: Settings,
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
@@ -237,6 +250,13 @@ export type SessionStatus =
 /**  The profile doesn't use SSO; Contrail can't tell whether its credentials are valid. */
 { state: "notSso" };
 
+/**  The app settings (the settings dialog). */
+export type Settings = {
+	colorMode: ColorMode,
+	accent: Accent,
+	timeZone: TimeZone,
+};
+
 export type Task = {
 	arn: string,
 	/**  The last part of the ARN, as shown in the console. */
@@ -268,6 +288,9 @@ export type TaskDefinitionInfo = {
 	memory: string | null,
 	containers: ContainerDefinitionInfo[],
 };
+
+/**  How absolute timestamps are shown. */
+export type TimeZone = "local" | "utc";
 
 /**
  *  An `OffsetDateTime` that serializes as an RFC 3339 string (`2026-10-22T12:00:00Z`).

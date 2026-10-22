@@ -192,3 +192,12 @@ One short entry per pattern: what it is, why it's used here, where to find it.
 - **What:** a test records the demo ECS landscape as JSON for the frontend's fake backend (like the
   `bindings.ts` export). A module behind `#[cfg(test)]` exists only in test builds.
 - **Where:** `app/src-tauri/src/demo_data.rs`.
+
+## Custom deserialization (`deserialize_with`)
+
+- **What:** `#[serde(deserialize_with = "settings_or_default")]` runs a function instead of the derived
+  deserializer for one field. Here it reads the field as generic JSON first and falls back to the defaults if
+  it doesn't fit, so an unknown setting can't make the whole preferences file unreadable. The function is
+  generic over serde's `Deserializer` (`D: serde::Deserializer<'de>`, where `'de` is the lifetime of the
+  input being read).
+- **Where:** `Prefs::from_json` in `crates/contrail-core/src/prefs.rs`.
