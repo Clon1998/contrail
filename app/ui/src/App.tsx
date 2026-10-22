@@ -1,24 +1,30 @@
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { commands, type AppInfo } from "@/bindings";
+import { ConnectionPanel } from "@/components/profile/ConnectionPanel";
+import { LoginOutput } from "@/components/profile/LoginOutput";
+import { ProfileBar } from "@/components/profile/ProfileBar";
+import { useProfiles } from "@/stores/profiles";
+
+/** Session states change as tokens expire; re-read them (local files only) this often. */
+const STATUS_REFRESH_MS = 60_000;
 
 export default function App() {
   const [info, setInfo] = useState<AppInfo>();
+  const load = useProfiles((s) => s.load);
+  const refreshStatuses = useProfiles((s) => s.refreshStatuses);
 
   useEffect(() => {
     void commands.appInfo().then(setInfo);
-  }, []);
+    void load();
+    const timer = setInterval(() => void refreshStatuses(), STATUS_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [load, refreshStatuses]);
 
   return (
-    <main className="flex h-full flex-col items-center justify-center gap-2">
-      <h1 className="text-3xl font-semibold tracking-tight">Contrail</h1>
-      <p className="text-muted-foreground">Live logs for AWS ECS services.</p>
-      {info && (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          v{info.version}
-          {info.demo && <Badge variant="secondary">Demo mode</Badge>}
-        </p>
-      )}
-    </main>
+    <div className="flex h-full flex-col">
+      <ProfileBar demo={info?.demo ?? false} />
+      <LoginOutput />
+      <ConnectionPanel />
+    </div>
   );
 }
