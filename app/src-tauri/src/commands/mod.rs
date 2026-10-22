@@ -6,3 +6,4 @@
 pub mod app;
 pub mod auth;
 pub mod ecs;
+pub mod prefs;

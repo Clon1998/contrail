@@ -8,6 +8,7 @@ pub mod auth;
 pub mod ecs;
 pub mod error;
 mod ini;
+pub mod prefs;
 pub mod profile;
 pub mod sso;
 pub mod timestamp;

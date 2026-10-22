@@ -28,6 +28,14 @@ export const commands = {
 	describeService: (ctx: AwsCtx, service: ServiceRef) => typedError<ServiceDetail, ApiError>(__TAURI_INVOKE("describe_service", { ctx, service })),
 	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
 	listTasks: (ctx: AwsCtx, service: ServiceRef, includeStopped: boolean) => typedError<Task[], ApiError>(__TAURI_INVOKE("list_tasks", { ctx, service, includeStopped })),
+	getPrefs: () => __TAURI_INVOKE<Prefs>("get_prefs"),
+	setLastProfile: (profile: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_last_profile", { profile })),
+	/**  Sets (or with `None` clears) the region override of a profile. */
+	setRegionOverride: (profile: string, region: string | null) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_region_override", { profile, region })),
+	/**  Pins or unpins a service of `profile`. */
+	toggleFavorite: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("toggle_favorite", { profile, service })),
+	/**  Records that a service was opened (for "recent" in the palette). */
+	addRecent: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_recent", { profile, service })),
 };
 
 /* Types */
@@ -106,7 +114,7 @@ export type Deployment = {
 };
 
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
-export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config";
+export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config" | "io";
 
 /**  Progress of a running `aws sso login`, streamed to the UI. */
 export type LoginProgress = 
@@ -115,6 +123,22 @@ export type LoginProgress =
  *  browser doesn't open by itself).
  */
 { kind: "output"; line: string };
+
+/**
+ *  Everything Contrail remembers between starts.
+ * 
+ *  `#[serde(default)]` fills in missing fields when reading an older file, so new fields can be
+ *  added without breaking existing preferences.
+ */
+export type Prefs = {
+	lastProfile?: string | null,
+	/**  Region chosen in the region selector, per profile. */
+	regionOverrides?: { [key in string]: string },
+	/**  Pinned services, in the order they were pinned. */
+	favorites?: ServiceKey[],
+	/**  Recently opened services, newest first, at most [`MAX_RECENT`]. */
+	recent?: ServiceKey[],
+};
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
 export type Profile = {
@@ -165,6 +189,15 @@ export type ServiceEvent = {
 	id: string,
 	createdAt: Timestamp | null,
 	message: string,
+};
+
+/**  A service as remembered across sessions: enough to reopen it with the right profile/region. */
+export type ServiceKey = {
+	profile: string,
+	/**  The region the service lives in (from its cluster ARN). */
+	region: string,
+	clusterArn: string,
+	serviceName: string,
 };
 
 /**  Identifies a service: ECS service names are only unique within a cluster. */

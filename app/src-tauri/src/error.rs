@@ -28,6 +28,7 @@ pub enum ErrorCode {
     Credentials,
     Aws,
     Config,
+    Io,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
@@ -67,6 +68,12 @@ impl From<AuthError> for ApiError {
             AuthError::Config(_) => ApiError::new(ErrorCode::Config, message)
                 .with_hint("Check ~/.aws/config (or AWS_CONFIG_FILE)."),
         }
+    }
+}
+
+impl From<std::io::Error> for ApiError {
+    fn from(error: std::io::Error) -> Self {
+        ApiError::new(ErrorCode::Io, error.to_string())
     }
 }
 
