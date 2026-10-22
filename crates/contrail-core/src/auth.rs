@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+use crate::error::SourceError;
 use crate::profile::Profile;
 use crate::sso::SessionStatus;
 
@@ -54,6 +55,19 @@ pub enum AuthError {
     Aws(String),
     #[error("can't read the AWS configuration: {0}")]
     Config(String),
+}
+
+/// The AWS-call errors of a source are auth errors too (e.g. GetCallerIdentity).
+impl From<SourceError> for AuthError {
+    fn from(error: SourceError) -> Self {
+        match error {
+            SourceError::Credentials { profile, message } => {
+                AuthError::Credentials { profile, message }
+            }
+            SourceError::Aws(message) | SourceError::NotFound(message) => AuthError::Aws(message),
+            SourceError::Config(message) => AuthError::Config(message),
+        }
+    }
 }
 
 /// Where profiles, sessions and identities come from: the real AWS setup or the demo fake.
