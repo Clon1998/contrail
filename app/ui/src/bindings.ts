@@ -378,6 +378,8 @@ export type Settings = {
 	colorMode: ColorMode,
 	accent: Accent,
 	timeZone: TimeZone,
+	/**  How far back a log view starts, in minutes. */
+	backfillMinutes: number,
 };
 
 export type Task = {

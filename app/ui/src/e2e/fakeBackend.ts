@@ -155,7 +155,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     regionOverrides: {},
     favorites: [],
     recent: [],
-    settings: { colorMode: "dark", accent: "sky", timeZone: "local" },
+    settings: { colorMode: "dark", accent: "sky", timeZone: "local", backfillMinutes: 15 },
     ...options.prefs,
   };
 
