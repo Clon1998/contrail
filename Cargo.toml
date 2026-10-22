@@ -30,6 +30,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 thiserror = "2.0.21"
 async-trait = "0.1.92"
+futures = "0.3.34"
 time = { version = "0.3.55", features = ["serde", "parsing", "formatting", "macros"] }
 sha1 = "0.11.0"
 tokio = { version = "1.54.1", features = ["full"] }
@@ -44,6 +45,7 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # AWS SDK (only used inside contrail-aws).
 aws-config = { version = "1.13.0", features = ["behavior-version-latest"] }
+aws-sdk-ecs = "1.154.0"
 aws-sdk-sts = "1.122.0"
 aws-smithy-mocks = "0.3.0"
 aws-smithy-types = "1.4"

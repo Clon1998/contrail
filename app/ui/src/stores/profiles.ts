@@ -9,6 +9,7 @@ import {
   type SessionStatus,
 } from "@/bindings";
 import { initialProfile, needsLogin } from "@/lib/session";
+import { usePrefs } from "./prefs";
 
 /** The result of the "connected as …" check for the selected profile. */
 export type IdentityState =
@@ -31,29 +32,50 @@ interface ProfilesState {
   profiles: Profile[];
   statuses: Record<string, SessionStatus>;
   selected: string | null;
-  /** Region chosen in the region selector, per profile (overrides the profile's region). */
-  regionOverrides: Record<string, string>;
   identity: IdentityState;
   login: LoginState | null;
 
-  /** Reads all profiles and their session states, then selects the initial profile. */
+  /**
+   * Reads all profiles and their session states, then selects the last used profile (from the
+   * preferences) or a sensible first one.
+   */
   load: () => Promise<void>;
   /** Re-reads the session states (local files only, cheap). */
   refreshStatuses: () => Promise<void>;
   select: (name: string) => Promise<void>;
-  setRegion: (region: string | null) => void;
+  /** Saves the region override of the selected profile (`null` = the profile's region). */
+  setRegion: (region: string | null) => Promise<void>;
   checkIdentity: () => Promise<void>;
   /** Runs `aws sso login` for the selected profile, then re-checks the session. */
   startLogin: () => Promise<void>;
   dismissLogin: () => void;
 }
 
-/** The region calls for `name` go to: the override, else the profile's own region. */
+/**
+ * The region calls for profile `name` go to: the override from the region selector (saved in
+ * the preferences), else the profile's own region.
+ */
 export function effectiveRegion(
-  state: Pick<ProfilesState, "profiles" | "regionOverrides">,
+  profiles: Profile[],
+  regionOverrides: Record<string, string>,
   name: string,
 ): string | null {
-  return state.regionOverrides[name] ?? state.profiles.find((p) => p.name === name)?.region ?? null;
+  return regionOverrides[name] ?? profiles.find((p) => p.name === name)?.region ?? null;
+}
+
+/** The region of the selected profile, as a hook (re-renders when it changes). */
+export function useCurrentRegion(): string | null {
+  const profiles = useProfiles((s) => s.profiles);
+  const selected = useProfiles((s) => s.selected);
+  const overrides = usePrefs((s) => s.prefs.regionOverrides);
+  return selected ? effectiveRegion(profiles, overrides, selected) : null;
+}
+
+/** The region of the selected profile, for components and other stores. */
+export function currentRegion(): string | null {
+  const { profiles, selected } = useProfiles.getState();
+  if (!selected) return null;
+  return effectiveRegion(profiles, usePrefs.getState().prefs.regionOverrides, selected);
 }
 
 async function fetchStatuses(profiles: Profile[]): Promise<Record<string, SessionStatus>> {
@@ -72,12 +94,12 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
   profiles: [],
   statuses: {},
   selected: null,
-  regionOverrides: {},
   identity: { state: "idle" },
   login: null,
 
   load: async () => {
     set({ loading: true, loadError: null });
+    await usePrefs.getState().load();
     const result = await commands.listProfiles();
     if (result.status === "error") {
       set({ loading: false, loadError: result.error });
@@ -85,10 +107,11 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
     }
     const profiles = result.data;
     const statuses = await fetchStatuses(profiles);
+    const known = (name: string | null) => name !== null && profiles.some((p) => p.name === name);
     const current = get().selected;
-    const keep = current !== null && profiles.some((p) => p.name === current);
+    const last = usePrefs.getState().prefs.lastProfile;
     set({ loading: false, profiles, statuses });
-    const next = keep ? current : initialProfile(profiles, statuses);
+    const next = known(current) ? current : known(last) ? last : initialProfile(profiles, statuses);
     if (next) await get().select(next);
   },
 
@@ -98,6 +121,9 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
 
   select: async (name) => {
     set({ selected: name, identity: { state: "idle" } });
+    if (usePrefs.getState().prefs.lastProfile !== name) {
+      void usePrefs.getState().setLastProfile(name);
+    }
     const status = get().statuses[name];
     const profile = get().profiles.find((p) => p.name === name);
     // Don't call AWS when it can't work: the UI offers "Log in" instead.
@@ -105,24 +131,16 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
     await get().checkIdentity();
   },
 
-  setRegion: (region) => {
+  setRegion: async (region) => {
     const name = get().selected;
-    if (!name) return;
-    // Build a new object instead of mutating: zustand detects changes by reference.
-    const others = Object.entries(get().regionOverrides).filter(([key]) => key !== name);
-    const regionOverrides: Record<string, string> = Object.fromEntries(others);
-    if (region) regionOverrides[name] = region;
-    set({ regionOverrides });
+    if (name) await usePrefs.getState().setRegionOverride(name, region);
   },
 
   checkIdentity: async () => {
     const name = get().selected;
     if (!name) return;
     set({ identity: { state: "checking" } });
-    const result = await commands.callerIdentity({
-      profile: name,
-      region: effectiveRegion(get(), name),
-    });
+    const result = await commands.callerIdentity({ profile: name, region: currentRegion() });
     // The user may have switched profiles while the call was running.
     if (get().selected !== name) return;
     set({

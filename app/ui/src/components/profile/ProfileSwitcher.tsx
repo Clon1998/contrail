@@ -10,7 +10,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { accountId, matchProfile } from "@/lib/session";
+import { matchWords } from "@/lib/search";
+import { accountId } from "@/lib/session";
 import { useProfiles } from "@/stores/profiles";
 import { SessionBadge, SessionDot } from "./SessionBadge";
 
@@ -65,7 +66,7 @@ export function ProfileSwitcher() {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="start">
-        <Command filter={matchProfile}>
+        <Command filter={matchWords}>
           <CommandInput placeholder="Search profiles or account IDs…" />
           <CommandList>
             <CommandEmpty>No profile found.</CommandEmpty>

@@ -2,7 +2,7 @@
 
 use aws_sdk_sts::error::{ProvideErrorMetadata, SdkError};
 use aws_smithy_types::error::display::DisplayErrorContext;
-use contrail_core::auth::AuthError;
+use contrail_core::error::SourceError;
 
 /// Service error codes that mean "the credentials are no good", not "AWS had a problem".
 const CREDENTIAL_ERROR_CODES: &[&str] = &[
@@ -14,17 +14,17 @@ const CREDENTIAL_ERROR_CODES: &[&str] = &[
     "AccessDenied",
 ];
 
-/// Turns any SDK error into an [`AuthError`], telling credential problems apart from the rest.
+/// Turns any SDK error into a [`SourceError`], telling credential problems apart from the rest.
 ///
 /// Generic over the operation's error type `E`: the same function works for STS, ECS and
 /// CloudWatch Logs calls. The `where` clause lists what the function needs from `E` (like a
 /// bounded type parameter `<E extends …>` in Java).
-pub(crate) fn map_sdk_error<E, R>(profile: &str, err: SdkError<E, R>) -> AuthError
+pub(crate) fn map_sdk_error<E, R>(profile: &str, err: SdkError<E, R>) -> SourceError
 where
     E: ProvideErrorMetadata + std::error::Error + Send + Sync + 'static,
     R: std::fmt::Debug,
 {
-    let credentials = |message: String| AuthError::Credentials {
+    let credentials = |message: String| SourceError::Credentials {
         profile: profile.to_owned(),
         message,
     };
@@ -36,8 +36,8 @@ where
                 Some(code) if CREDENTIAL_ERROR_CODES.contains(&code) => {
                     credentials(format!("{code}: {message}"))
                 }
-                Some(code) => AuthError::Aws(format!("{code}: {message}")),
-                None => AuthError::Aws(message),
+                Some(code) => SourceError::Aws(format!("{code}: {message}")),
+                None => SourceError::Aws(message),
             }
         }
         // Resolving credentials happens before the request is sent; when that fails (expired
@@ -46,6 +46,6 @@ where
         SdkError::DispatchFailure(failure) if !failure.is_io() && !failure.is_timeout() => {
             credentials(DisplayErrorContext(&err).to_string())
         }
-        _ => AuthError::Aws(DisplayErrorContext(&err).to_string()),
+        _ => SourceError::Aws(DisplayErrorContext(&err).to_string()),
     }
 }

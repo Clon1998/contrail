@@ -219,8 +219,9 @@ Exact signatures are the agent's call; the point is: **the app depends on traits
   filter compiled once, evaluated incrementally on new events.
 
 ### 4.5 Persistence (local only)
-`tauri-plugin-store`: favorites, recent services, per-service field mappings and noise lists, settings,
-column layouts. `tauri-plugin-window-state` for window geometry. **No credentials are ever stored by Contrail**
+A typed `Prefs` struct (`contrail-core`), saved by the app as `prefs.json` in the app data folder (see
+`docs/decisions.md`): last profile, region overrides, favorites, recent services; later per-service field
+mappings and noise lists, settings, column layouts. `tauri-plugin-window-state` for window geometry. **No credentials are ever stored by Contrail**
 — the AWS SDK reads the standard SSO token cache.
 
 ---

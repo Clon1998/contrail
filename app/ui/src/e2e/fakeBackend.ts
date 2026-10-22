@@ -4,17 +4,81 @@ import type {
   AppInfo,
   AwsCtx,
   CallerIdentity,
+  ClusterSummary,
   LoginProgress,
+  Prefs,
   Profile,
+  ServiceDetail,
+  ServiceKey,
+  ServiceRef,
+  ServiceSummary,
   SessionStatus,
+  Task,
 } from "@/bindings";
+import recorded from "./demo-ecs.json";
 
 /**
  * An in-memory stand-in for the Rust backend, mirroring demo mode (`contrail-fake`).
  *
  * Used by component tests and by the Playwright UI flows (`VITE_E2E=1`, see main.tsx), so the
- * UI can be exercised in a plain browser without Tauri or AWS.
+ * UI can be exercised in a plain browser without Tauri or AWS. The ECS data is recorded from the
+ * Rust fake (`demo-ecs.json`, written by `cargo test`), so both stay identical.
  */
+
+/** The shape of `demo-ecs.json` (see app/src-tauri/src/demo_data.rs). */
+interface RecordedEcs {
+  recordedAt: string;
+  account: string;
+  region: string;
+  clusters: ClusterSummary[];
+  services: Record<string, ServiceSummary[]>;
+  details: Record<string, ServiceDetail>;
+  tasks: Record<string, Task[]>;
+}
+
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
+/** Moves every timestamp in `value` by `deltaMs`, so "stopped 2m ago" stays true today. */
+function shiftTimes<T>(value: T, deltaMs: number): T {
+  if (typeof value === "string" && ISO_TIME.test(value)) {
+    return new Date(Date.parse(value) + deltaMs).toISOString() as T;
+  }
+  if (Array.isArray(value)) return value.map((v: unknown) => shiftTimes(v, deltaMs)) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, shiftTimes(v, deltaMs)]),
+    ) as T;
+  }
+  return value;
+}
+
+/** The recorded landscape as seen from `account` in `region`, with times relative to now. */
+function ecsData(account: string, region: string): RecordedEcs {
+  const data = recorded as RecordedEcs;
+  const relabeled = JSON.stringify(data)
+    .replaceAll(data.account, account)
+    .replaceAll(data.region, region);
+  return shiftTimes(JSON.parse(relabeled) as RecordedEcs, Date.now() - Date.parse(data.recordedAt));
+}
+
+function apiError(code: string, message: string, hint: string | null = null) {
+  return { code, message, hint };
+}
+
+function serviceKey(profile: string, service: ServiceRef): ServiceKey {
+  return {
+    profile,
+    region: service.clusterArn.split(":")[3] ?? "",
+    clusterArn: service.clusterArn,
+    serviceName: service.serviceName,
+  };
+}
+
+function sameKey(a: ServiceKey, b: ServiceKey): boolean {
+  return (
+    a.profile === b.profile && a.clusterArn === b.clusterArn && a.serviceName === b.serviceName
+  );
+}
 
 const HOUR = 3_600_000;
 const MINUTE = 60_000;
@@ -51,6 +115,8 @@ export interface FakeBackendOptions {
   loginDelayMs?: number;
   /** Make every login fail with the CLI-missing error. */
   cliMissing?: boolean;
+  /** Preferences to start with (default: none). */
+  prefs?: Partial<Prefs>;
 }
 
 /** Creates the IPC handler. Each call starts from the initial demo state. */
@@ -84,6 +150,43 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     internals.runCallback(channel.id, { index, message });
   }
 
+  let prefs: Prefs = {
+    lastProfile: null,
+    regionOverrides: {},
+    favorites: [],
+    recent: [],
+    ...options.prefs,
+  };
+
+  /** What an AWS call would see: the account ID, or the error for unusable credentials. */
+  function checkCredentials(ctx: AwsCtx): string {
+    const profile = DEMO_PROFILES.find((p) => p.name === ctx.profile);
+    if (!profile) throw apiError("config", `profile "${ctx.profile}" not found`);
+    if (profile.auth.kind === "misconfigured") throw apiError("config", profile.auth.problem);
+    const state = status(ctx.profile).state;
+    if (state === "expired" || state === "loggedOut") {
+      throw apiError(
+        "credentials",
+        `no valid credentials for profile "${ctx.profile}"`,
+        `Log in again (aws sso login --profile ${ctx.profile}).`,
+      );
+    }
+    return profile.auth.kind === "sso" ? profile.auth.accountId : "999988887777";
+  }
+
+  function ecs(ctx: AwsCtx): RecordedEcs {
+    return ecsData(checkCredentials(ctx), ctx.region ?? "eu-central-1");
+  }
+
+  function serviceData(ctx: AwsCtx, service: ServiceRef) {
+    const data = ecs(ctx);
+    const cluster = service.clusterArn.split("/").at(-1);
+    const key = `${cluster}/${service.serviceName}`;
+    const detail = data.details[key];
+    if (!detail) throw apiError("notFound", `service ${service.serviceName} not found`);
+    return { detail, tasks: data.tasks[key] ?? [] };
+  }
+
   return async (cmd: string, payload?: InvokeArgs): Promise<unknown> => {
     const args = payload as Record<string, unknown> | undefined;
     switch (cmd) {
@@ -94,17 +197,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       case "session_status":
         return status(args?.profile as string);
       case "caller_identity": {
-        const ctx = args?.ctx as AwsCtx;
-        const profile = DEMO_PROFILES.find((p) => p.name === ctx.profile);
-        const state = status(ctx.profile).state;
-        if (state === "expired" || state === "loggedOut") {
-          throw {
-            code: "credentials",
-            message: `no valid credentials for profile "${ctx.profile}"`,
-            hint: `Log in again (aws sso login --profile ${ctx.profile}).`,
-          };
-        }
-        const account = profile?.auth.kind === "sso" ? profile.auth.accountId : "999988887777";
+        const account = checkCredentials(args?.ctx as AwsCtx);
         return {
           account,
           arn: `arn:aws:sts::${account}:assumed-role/DemoReadOnly/demo.user`,
@@ -132,6 +225,52 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           line: "Successfully logged into Start URL: https://demo-corp.awsapps.com/start",
         });
         return null;
+      }
+      case "list_clusters":
+        return ecs(args?.ctx as AwsCtx).clusters;
+      case "list_services": {
+        const services = ecs(args?.ctx as AwsCtx).services[args?.clusterArn as string];
+        if (!services) throw apiError("notFound", "cluster not found");
+        return services;
+      }
+      case "describe_service":
+        return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;
+      case "list_tasks": {
+        const { tasks } = serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef);
+        return args?.includeStopped ? tasks : tasks.filter((t) => t.lastStatus !== "STOPPED");
+      }
+      case "get_prefs":
+        return prefs;
+      case "set_last_profile":
+        prefs = { ...prefs, lastProfile: args?.profile as string };
+        return prefs;
+      case "set_region_override": {
+        const profile = args?.profile as string;
+        const region = args?.region as string | null;
+        const others = Object.entries(prefs.regionOverrides).filter(([key]) => key !== profile);
+        const regionOverrides: Record<string, string> = Object.fromEntries(others);
+        if (region) regionOverrides[profile] = region;
+        prefs = { ...prefs, regionOverrides };
+        return prefs;
+      }
+      case "toggle_favorite": {
+        const key = serviceKey(args?.profile as string, args?.service as ServiceRef);
+        const pinned = prefs.favorites.some((f) => sameKey(f, key));
+        prefs = {
+          ...prefs,
+          favorites: pinned
+            ? prefs.favorites.filter((f) => !sameKey(f, key))
+            : [...prefs.favorites, key],
+        };
+        return prefs;
+      }
+      case "add_recent": {
+        const key = serviceKey(args?.profile as string, args?.service as ServiceRef);
+        prefs = {
+          ...prefs,
+          recent: [key, ...prefs.recent.filter((r) => !sameKey(r, key))].slice(0, 10),
+        };
+        return prefs;
       }
       default:
         throw new Error(`fake backend: unknown command ${cmd}`);

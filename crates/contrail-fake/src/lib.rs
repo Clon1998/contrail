@@ -4,5 +4,7 @@
 //! All names, account IDs and URLs are invented.
 
 pub mod auth;
+pub mod ecs;
 
 pub use auth::FakeAuth;
+pub use ecs::FakeEcs;

@@ -23,10 +23,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
+      # Cached between runs: downloading WebKit from the runner's Ubuntu mirror can take 30 minutes.
       - name: Install Tauri system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev patchelf
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
+        with:
+          packages: libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev patchelf
+          version: 1
       - name: Install Rust toolchain (from rust-toolchain.toml)
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
@@ -36,9 +38,10 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: cargo test
         run: cargo test --workspace
-      # `cargo test` regenerates app/ui/src/bindings.ts (tauri-specta); it must match the commit.
-      - name: Generated TS bindings are up to date
-        run: git diff --exit-code -- app/ui/src/bindings.ts
+      # `cargo test` regenerates app/ui/src/bindings.ts (tauri-specta) and the recorded demo data
+      # for the UI tests; both must match the commit.
+      - name: Generated files are up to date
+        run: git diff --exit-code -- app/ui/src/bindings.ts app/ui/src/e2e/demo-ecs.json
 
   frontend:
     name: Frontend (lint, typecheck, test)

@@ -2,9 +2,13 @@
 //! forward to the `contrail-*` crates, where the real logic lives.
 
 mod commands;
+#[cfg(test)]
+mod demo_data;
 mod error;
+mod prefs_store;
 mod state;
 
+use tauri::Manager;
 use tauri_specta::{Builder, collect_commands};
 
 use crate::state::AppState;
@@ -21,7 +25,7 @@ const BINDINGS_PATH: &str = "../ui/src/bindings.ts";
 /// functions for them, so the frontend can't call a command with the wrong name or arguments.
 /// It's a separate function so both [`run`] and the `export_bindings` test can use it.
 fn specta_builder() -> Builder<tauri::Wry> {
-    use commands::{app, auth};
+    use commands::{app, auth, ecs, prefs};
 
     Builder::<tauri::Wry>::new().commands(collect_commands![
         app::app_info,
@@ -29,6 +33,15 @@ fn specta_builder() -> Builder<tauri::Wry> {
         auth::session_status,
         auth::caller_identity,
         auth::sso_login,
+        ecs::list_clusters,
+        ecs::list_services,
+        ecs::describe_service,
+        ecs::list_tasks,
+        prefs::get_prefs,
+        prefs::set_last_profile,
+        prefs::set_region_override,
+        prefs::toggle_favorite,
+        prefs::add_recent,
     ])
 }
 
@@ -58,20 +71,24 @@ pub fn run() {
     export_bindings(&builder);
 
     let demo = state::demo_requested(std::env::args(), std::env::var("CONTRAIL_DEMO").ok());
-    let state = if demo {
-        AppState::demo()
-    } else {
-        AppState::aws().expect("can't locate the AWS configuration")
-    };
-    tracing::info!(
-        version = env!("CARGO_PKG_VERSION"),
-        demo,
-        "Contrail started"
-    );
 
     tauri::Builder::default()
-        .manage(state)
         .invoke_handler(builder.invoke_handler())
+        // `setup` runs once the app exists, so the app data folder (for preferences) is known.
+        .setup(move |app| {
+            let state = if demo {
+                AppState::demo()
+            } else {
+                AppState::aws(&app.path().app_data_dir()?)?
+            };
+            app.manage(state);
+            tracing::info!(
+                version = env!("CARGO_PKG_VERSION"),
+                demo,
+                "Contrail started"
+            );
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running the Contrail application");
 }

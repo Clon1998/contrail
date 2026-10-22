@@ -1,6 +1,7 @@
 //! The error type every command returns to the UI: `{ code, message, hint? }` (same as Frida).
 
 use contrail_core::auth::AuthError;
+use contrail_core::error::SourceError;
 use serde::Serialize;
 use specta::Type;
 
@@ -20,12 +21,14 @@ pub struct ApiError {
 #[serde(rename_all = "camelCase")]
 pub enum ErrorCode {
     ProfileNotFound,
+    NotFound,
     NotSso,
     CliMissing,
     LoginFailed,
     Credentials,
     Aws,
     Config,
+    Io,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
@@ -68,6 +71,29 @@ impl From<AuthError> for ApiError {
     }
 }
 
+impl From<std::io::Error> for ApiError {
+    fn from(error: std::io::Error) -> Self {
+        ApiError::new(ErrorCode::Io, error.to_string())
+    }
+}
+
+impl From<SourceError> for ApiError {
+    fn from(error: SourceError) -> Self {
+        let message = error.to_string();
+        match error {
+            SourceError::Credentials { profile, .. } => {
+                ApiError::new(ErrorCode::Credentials, message)
+                    .with_hint(format!("Log in again (aws sso login --profile {profile})."))
+            }
+            SourceError::Aws(_) => ApiError::new(ErrorCode::Aws, message),
+            SourceError::NotFound(_) => ApiError::new(ErrorCode::NotFound, message)
+                .with_hint("It may have been deleted; refresh the list."),
+            SourceError::Config(_) => ApiError::new(ErrorCode::Config, message)
+                .with_hint("Check ~/.aws/config (or AWS_CONFIG_FILE)."),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,6 +108,19 @@ mod tests {
         assert_eq!(
             error.hint.as_deref(),
             Some("Log in again (aws sso login --profile dev).")
+        );
+    }
+
+    #[test]
+    fn source_errors_keep_their_meaning() {
+        let error = ApiError::from(SourceError::Credentials {
+            profile: "dev".into(),
+            message: "ExpiredToken".into(),
+        });
+        assert_eq!(error.code, ErrorCode::Credentials);
+        assert_eq!(
+            ApiError::from(SourceError::NotFound("service x".into())).code,
+            ErrorCode::NotFound
         );
     }
 

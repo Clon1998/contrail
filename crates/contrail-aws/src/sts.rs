@@ -39,7 +39,7 @@ pub(crate) async fn caller_identity(
         .get_caller_identity()
         .send()
         .await
-        .map_err(|err| map_sdk_error(profile, err))?;
+        .map_err(|err| AuthError::from(map_sdk_error(profile, err)))?;
     // The SDK models every field as optional; STS always returns all three.
     let field = |value: Option<&str>| value.unwrap_or_default().to_owned();
     Ok(CallerIdentity {

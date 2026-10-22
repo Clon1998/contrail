@@ -1,13 +1,15 @@
 import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installFakeBackend } from "@/e2e/fakeBackend";
-import { effectiveRegion, useProfiles } from "./profiles";
+import { EMPTY_PREFS, usePrefs } from "./prefs";
+import { currentRegion, useProfiles } from "./profiles";
 
 const initial = useProfiles.getState();
 
 beforeEach(() => {
   // zustand stores are module singletons: reset to the initial state between tests.
   useProfiles.setState(initial, true);
+  usePrefs.setState({ prefs: EMPTY_PREFS });
 });
 
 afterEach(() => clearMocks());
@@ -59,13 +61,23 @@ describe("profiles store", () => {
     });
   });
 
-  it("uses the region override before the profile's region", async () => {
+  it("uses the saved region override before the profile's region", async () => {
     installFakeBackend();
     await useProfiles.getState().load();
-    expect(effectiveRegion(useProfiles.getState(), "demo-dev")).toBe("eu-central-1");
-    useProfiles.getState().setRegion("us-west-2");
-    expect(effectiveRegion(useProfiles.getState(), "demo-dev")).toBe("us-west-2");
-    useProfiles.getState().setRegion(null);
-    expect(effectiveRegion(useProfiles.getState(), "demo-dev")).toBe("eu-central-1");
+    expect(currentRegion()).toBe("eu-central-1");
+    await usePrefs.getState().setRegionOverride("demo-dev", "us-west-2");
+    expect(currentRegion()).toBe("us-west-2");
+    await usePrefs.getState().setRegionOverride("demo-dev", null);
+    expect(currentRegion()).toBe("eu-central-1");
+  });
+
+  it("starts with the last used profile and remembers new selections", async () => {
+    installFakeBackend({ prefs: { lastProfile: "demo-staging" } });
+    await useProfiles.getState().load();
+    expect(useProfiles.getState().selected).toBe("demo-staging");
+
+    await useProfiles.getState().select("demo-keys");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(usePrefs.getState().prefs.lastProfile).toBe("demo-keys");
   });
 });

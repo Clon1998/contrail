@@ -69,3 +69,18 @@ M2 together with favorites and recent services, which need it anyway.
 
 pnpm refuses packages published in the last day (supply-chain protection) and offers to add an exception.
 **Decision:** don't add exceptions; pick the previous release instead (e.g. zustand 5.0.15, Frida's version).
+
+## 2026-10-22 — Preferences as typed JSON instead of tauri-plugin-store
+
+`plan.md` §4.5 suggested `tauri-plugin-store`. **Decision:** a typed `Prefs` struct in `contrail-core`
+(last profile, region overrides, favorites, recent services) saved by the app as `prefs.json` in the app data
+folder, with small commands (`get_prefs`, `toggle_favorite`, …), as Frida does. The rules (dedupe, newest
+first, max 10) are unit-tested in Rust, the TypeScript types are generated, and the UI tests fake five
+commands instead of the plugin's protocol. Demo mode keeps preferences in memory only.
+
+## 2026-10-22 — Demo ECS data recorded from Rust for the UI tests
+
+The frontend's fake backend (Vitest, Playwright) needs the same clusters, services and tasks as demo mode.
+**Decision:** `cargo test` records `FakeEcs` (with a fixed clock) into `app/ui/src/e2e/demo-ecs.json`; the
+fake backend relabels account/region per profile and shifts the times to "now". CI fails if the file is out
+of date, so Rust and TypeScript demo data can't drift.
