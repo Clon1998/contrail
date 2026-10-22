@@ -26,7 +26,8 @@ Work through the milestones in order. Do not start a milestone before the previo
 - Check docs for each dependency before using APIs you're unsure about; do not guess API shapes from memory.
 
 ## Architecture rules
-- Workspace crates: `contrail-core` (no AWS deps: domain, traits, parsing, buffer, query), `contrail-aws`, `contrail-fake`, `src-tauri`.
+- Workspace crates: `contrail-core` (no AWS deps: domain, traits, parsing, buffer, query), `contrail-aws`, `contrail-fake`, `app/src-tauri`;
+  frontend in `app/ui` (same layout as Frida, see plan.md §4.1).
 - The app depends on **traits** (`AuthProvider`, `EcsSource`, `LogSource`), never on `aws-sdk-*` types directly.
   AWS types are mapped to domain types inside `contrail-aws`.
 - Log buffering, parsing and filtering run **in Rust**; the frontend renders windows of rows from a virtual list.

@@ -30,3 +30,11 @@ profile store, so no unused dependency is carried around.
 
 Nuxt 4.6 requires Node `^22.21 || ^24.11 || >=26`; `package.json` `engines` says so. CI uses the latest
 Node 24.
+
+## 2026-10-22 — Same repository layout as Frida
+
+The first scaffold followed the original plan: Nuxt at the repository root, `src-tauri/` beside it. Patrick
+wants Contrail organised like Frida so both projects read the same. **Decision:** Rust crates stay at the
+root; `app/` holds the desktop app as a small pnpm workspace (`app/src-tauri` + the Nuxt frontend as its
+own package in `app/ui`). JS commands run from `app/` (or `app/ui/`), Cargo commands from the root.
+`plan.md` §4.1 is updated.

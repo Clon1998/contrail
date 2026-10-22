@@ -134,7 +134,7 @@ works for deep history, but structured logs make it hard to focus on the actual 
 │   ↑ events via Tauri Channel (batched)   ↓ invoke() commands           │
 └───────────────────────────────┬────────────────────────────────────────┘
                                 │ Tauri IPC
-┌───────────────────────────────┴──────── src-tauri (app crate) ────────┐
+┌───────────────────────────────┴──────── app/src-tauri (app crate) ────┐
 │ commands/  state (AppState: sessions, views)  settings (plugin-store) │
 └──────────────┬───────────────────────────────┬────────────────────────┘
                │                               │
@@ -148,18 +148,26 @@ works for deep history, but structured logs make it hard to focus on the actual 
 ```
 
 ### 4.1 Workspace layout
+Same structure as Frida: Rust crates at the root, everything for the desktop app under `app/`, the
+frontend as its own pnpm package in `app/ui/`.
 ```
 contrail/
-├─ Cargo.toml                 # workspace
+├─ Cargo.toml                 # workspace: crates/* + app/src-tauri
+├─ rust-toolchain.toml · lefthook.yml · LICENSE (MIT) · README.md · CLAUDE.md · plan.md
 ├─ crates/
 │  ├─ contrail-core/          # no AWS deps; domain, traits, parsing, buffer, query
 │  ├─ contrail-aws/           # real AWS implementations
 │  └─ contrail-fake/          # fake implementations + realistic log generators
-├─ src-tauri/                 # Tauri app crate: commands, state, wiring
-├─ app/                       # Nuxt 4+ app dir (components, pages, stores, composables)
-├─ tests/e2e/                 # Playwright (UI with mocked IPC) + WebdriverIO/tauri-driver
-├─ docs/                      # architecture.md, rust-notes.md, iam-policy.json, query-syntax.md
-├─ nuxt.config.ts · package.json · LICENSE (MIT) · README.md · CLAUDE.md
+├─ app/                       # the desktop app; small pnpm workspace (Tauri CLI, hooks tooling)
+│  ├─ package.json · pnpm-workspace.yaml · pnpm-lock.yaml
+│  ├─ src-tauri/              # Tauri app crate: commands, state, wiring
+│  ├─ e2e/                    # WebdriverIO + tauri-driver app smoke tests (demo mode)
+│  └─ ui/                     # Nuxt 4+ SPA (own package.json, nuxt.config.ts, lint/test config)
+│     ├─ app/                 # Nuxt source dir (components, pages, stores, composables)
+│     ├─ tests/nuxt/          # Vitest (Nuxt environment)
+│     └─ e2e/                 # Playwright (UI with mocked IPC)
+├─ assets/                    # source artwork (icon.svg)
+└─ docs/                      # architecture.md, rust-notes.md, decisions.md, iam-policy.json, query-syntax.md
 ```
 
 ### 4.2 Key traits (contrail-core)
@@ -316,7 +324,7 @@ Each milestone ends with: all tests green, lint clean, README/docs updated, merg
 Commits are small and conventional throughout (see CLAUDE.md).
 
 ### M0 — Scaffold & tooling
-- Cargo workspace (core, aws, fake, src-tauri), Tauri 2 app, Nuxt (SPA, `ssr: false`), pnpm.
+- Cargo workspace (core, aws, fake, app/src-tauri), Tauri 2 app, Nuxt (SPA, `ssr: false`) in `app/ui`, pnpm (§4.1).
 - MIT `LICENSE`, `README.md` skeleton, `docs/`.
 - Lint/format: `rustfmt`, `clippy -D warnings`, ESLint (`@nuxt/eslint`), Prettier or ESLint stylistic, `vue-tsc` typecheck.
 - Git hooks (lefthook or husky) for format + commitlint (Conventional Commits).
