@@ -17,8 +17,8 @@ use contrail_core::timestamp::Timestamp;
 use futures::future::try_join_all;
 use time::OffsetDateTime;
 
+use crate::clients::ClientCache;
 use crate::error::map_sdk_error;
-use crate::sts::sdk_config;
 
 /// API limits of the `Describe*` calls (items per request).
 const DESCRIBE_CLUSTERS_MAX: usize = 100;
@@ -30,7 +30,7 @@ const MAX_EVENTS: usize = 10;
 /// ECS via the AWS SDK, with an SDK client per profile + region and a task definition cache.
 #[derive(Default)]
 pub struct AwsEcs {
-    clients: Mutex<HashMap<AwsCtx, Client>>,
+    clients: ClientCache<Client>,
     /// Task definitions never change once registered, so they're cached by ARN.
     task_definitions: Mutex<HashMap<String, TaskDefinitionInfo>>,
 }
@@ -40,21 +40,8 @@ impl AwsEcs {
         Self::default()
     }
 
-    /// The cached client for `ctx`, created on first use.
-    ///
-    /// The lock is released before the `.await` (building a client loads config files), and
-    /// only re-taken to store the result: never hold a `std::sync::Mutex` across an `.await`.
     async fn client(&self, ctx: &AwsCtx) -> Client {
-        if let Some(client) = self.clients.lock().expect("client cache poisoned").get(ctx) {
-            // SDK clients are cheap to clone: they share their internals behind an `Arc`.
-            return client.clone();
-        }
-        let client = Client::new(&sdk_config(ctx).await);
-        self.clients
-            .lock()
-            .expect("client cache poisoned")
-            .insert(ctx.clone(), client.clone());
-        client
+        self.clients.get(ctx, Client::new).await
     }
 }
 

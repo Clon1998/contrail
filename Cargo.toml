@@ -47,6 +47,7 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # AWS SDK (only used inside contrail-aws).
 aws-config = { version = "1.13.0", features = ["behavior-version-latest"] }
+aws-sdk-cloudwatchlogs = "1.160.0"
 aws-sdk-ecs = "1.154.0"
 aws-sdk-sts = "1.122.0"
 aws-smithy-mocks = "0.3.0"
