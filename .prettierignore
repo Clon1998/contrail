@@ -1,0 +1,8 @@
+# Rust code is formatted by rustfmt; generated / vendored output is not ours.
+target/
+src-tauri/gen/
+.nuxt/
+.output/
+pnpm-lock.yaml
+fixtures/
+*.md
