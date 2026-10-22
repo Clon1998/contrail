@@ -80,13 +80,30 @@ pub enum TimeZone {
     Utc,
 }
 
+/// The default backfill window of a log view, in minutes.
+pub const DEFAULT_BACKFILL_MINUTES: u32 = 15;
+
 /// The app settings (the settings dialog).
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub color_mode: ColorMode,
     pub accent: Accent,
     pub time_zone: TimeZone,
+    /// How far back a log view starts, in minutes.
+    pub backfill_minutes: u32,
+}
+
+/// Written by hand (instead of derived) because `backfill_minutes` doesn't default to 0.
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            color_mode: ColorMode::default(),
+            accent: Accent::default(),
+            time_zone: TimeZone::default(),
+            backfill_minutes: DEFAULT_BACKFILL_MINUTES,
+        }
+    }
 }
 
 /// Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`].
@@ -244,7 +261,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local"}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15}"#
         );
     }
 

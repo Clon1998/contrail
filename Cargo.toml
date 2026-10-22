@@ -27,7 +27,9 @@ contrail-fake = { path = "crates/contrail-fake" }
 
 # Shared third-party crates
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.154"
+# `preserve_order` keeps JSON object keys in their original order (log fields are shown that way).
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+regex = "1.13.1"
 thiserror = "2.0.21"
 async-trait = "0.1.92"
 futures = "0.3.34"
@@ -39,19 +41,20 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 
 # Rust <-> TypeScript type generation. The Tauri 2 line of tauri-specta is still a release
 # candidate and requires an *exact* specta version, so both are pinned with `=` (same as Frida).
-specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta = { version = "=2.0.0-rc.25", features = ["derive", "serde_json"] }
 specta-typescript = "0.0.12"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # AWS SDK (only used inside contrail-aws).
 aws-config = { version = "1.13.0", features = ["behavior-version-latest"] }
+aws-sdk-cloudwatchlogs = "1.160.0"
 aws-sdk-ecs = "1.154.0"
 aws-sdk-sts = "1.122.0"
 aws-smithy-mocks = "0.3.0"
 aws-smithy-types = "1.4"
 
 # Testing
-insta = "1.49.0"
+insta = { version = "1.49.0", features = ["json"] }
 tempfile = "3.27.0"
 
 # Lints shared by every crate (each crate opts in with `[lints] workspace = true`).

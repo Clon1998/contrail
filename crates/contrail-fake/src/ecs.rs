@@ -385,6 +385,14 @@ impl EcsSource for FakeEcs {
                     image: image(spec, &account, &region),
                     image_tag: spec.image_tag.to_owned(),
                     log_driver: Some("awslogs".to_owned()),
+                    log_options: [
+                        ("awslogs-group", format!("/ecs/{}", spec.name)),
+                        ("awslogs-region", region.clone()),
+                        ("awslogs-stream-prefix", "ecs".to_owned()),
+                    ]
+                    .into_iter()
+                    .map(|(k, v)| (k.to_owned(), v))
+                    .collect(),
                 }],
             }),
             events,

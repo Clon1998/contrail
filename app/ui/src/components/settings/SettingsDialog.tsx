@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { usePrefs } from "@/stores/prefs";
 
 /** One option of a {@link Choice}. */
@@ -155,6 +156,15 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                 ))}
               </div>
             </div>
+          </Section>
+
+          <Section title="Logs">
+            <Choice
+              label="Load the last"
+              value={String(settings.backfillMinutes)}
+              options={BACKFILL_WINDOWS.map((w) => ({ value: String(w.minutes), label: w.label }))}
+              onChange={(minutes) => void update({ backfillMinutes: Number(minutes) })}
+            />
           </Section>
 
           <Section title="Time">

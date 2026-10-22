@@ -5,11 +5,14 @@
 
 pub mod auth;
 pub mod cli;
+mod clients;
 pub mod ecs;
 mod error;
 pub mod files;
+pub mod logs;
 mod sts;
 
 pub use auth::AwsAuth;
 pub use ecs::AwsEcs;
 pub use files::AwsFiles;
+pub use logs::AwsLogs;

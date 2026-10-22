@@ -4,7 +4,8 @@ A fast, focused desktop log viewer for AWS ECS services.
 Switch AWS SSO profiles, browse clusters → services → tasks, and jump straight into live,
 readable logs — structured (ECS JSON) or plain — with session search.
 
-> **Status:** early development. Profiles, SSO login and ECS browsing work (M1–M2); logs come next.
+> **Status:** early development. Profiles, SSO login and ECS browsing work (M1–M2); logs can be loaded and
+> parsed (M3, simple list). The real log viewer and live tail come next.
 > See [plan.md](plan.md) for scope and milestones.
 
 Contrail is strictly **read-only** towards AWS and never stores credentials.
@@ -20,6 +21,10 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile.
   Star a service to pin it to the sidebar. Favorites, recent services, the last profile and region overrides
   are kept in `prefs.json` in Contrail's app data folder (never credentials).
+- A service's **Logs** tab loads the last minutes of all its tasks' logs (running and recently stopped) from
+  CloudWatch: ECS JSON (nested or dotted), Spring Boot's console pattern and plain text are parsed, and Java
+  stack traces that CloudWatch split into one event per line are joined again. The log group comes from the
+  task definition (`awslogs` driver with a stream prefix).
 - **Settings** (gear icon or ⌘, / Ctrl+,): colour mode (dark / light / system), accent colour, timestamps in local
   time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in

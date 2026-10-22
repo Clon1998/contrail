@@ -3,8 +3,12 @@ import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
   AppInfo,
   AwsCtx,
+  BufferStats,
   CallerIdentity,
   ClusterSummary,
+  LogEvent,
+  LogLocation,
+  LogViewInfo,
   LoginProgress,
   Prefs,
   Profile,
@@ -16,6 +20,7 @@ import type {
   Task,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
+import recordedLogs from "./demo-logs.json";
 
 /**
  * An in-memory stand-in for the Rust backend, mirroring demo mode (`contrail-fake`).
@@ -36,7 +41,8 @@ interface RecordedEcs {
   tasks: Record<string, Task[]>;
 }
 
-const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+/** A whole string that is an ISO timestamp (not a log line that merely starts with one). */
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 /** Moves every timestamp in `value` by `deltaMs`, so "stopped 2m ago" stays true today. */
 function shiftTimes<T>(value: T, deltaMs: number): T {
@@ -52,6 +58,23 @@ function shiftTimes<T>(value: T, deltaMs: number): T {
   return value;
 }
 
+/** The shape of `demo-logs.json` (see app/src-tauri/src/demo_data.rs). */
+interface RecordedLogs {
+  recordedAt: string;
+  account: string;
+  region: string;
+  services: Record<
+    string,
+    {
+      location: LogLocation;
+      streams: number;
+      stats: BufferStats;
+      truncated: boolean;
+      events: LogEvent[];
+    }
+  >;
+}
+
 /** The recorded landscape as seen from `account` in `region`, with times relative to now. */
 function ecsData(account: string, region: string): RecordedEcs {
   const data = recorded as RecordedEcs;
@@ -59,6 +82,18 @@ function ecsData(account: string, region: string): RecordedEcs {
     .replaceAll(data.account, account)
     .replaceAll(data.region, region);
   return shiftTimes(JSON.parse(relabeled) as RecordedEcs, Date.now() - Date.parse(data.recordedAt));
+}
+
+/** The recorded logs as seen from `account` in `region`, with times relative to now. */
+function logsData(account: string, region: string): RecordedLogs {
+  const data = recordedLogs as RecordedLogs;
+  const relabeled = JSON.stringify(data)
+    .replaceAll(data.account, account)
+    .replaceAll(data.region, region);
+  return shiftTimes(
+    JSON.parse(relabeled) as RecordedLogs,
+    Date.now() - Date.parse(data.recordedAt),
+  );
 }
 
 function apiError(code: string, message: string, hint: string | null = null) {
@@ -155,7 +190,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     regionOverrides: {},
     favorites: [],
     recent: [],
-    settings: { colorMode: "dark", accent: "sky", timeZone: "local" },
+    settings: { colorMode: "dark", accent: "sky", timeZone: "local", backfillMinutes: 15 },
     ...options.prefs,
   };
 
@@ -174,6 +209,10 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     }
     return profile.auth.kind === "sso" ? profile.auth.accountId : "999988887777";
   }
+
+  /** Open log views: their events by view ID. */
+  const views = new Map<number, LogEvent[]>();
+  let nextViewId = 1;
 
   function ecs(ctx: AwsCtx): RecordedEcs {
     return ecsData(checkCredentials(ctx), ctx.region ?? "eu-central-1");
@@ -240,6 +279,45 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const { tasks } = serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef);
         return args?.includeStopped ? tasks : tasks.filter((t) => t.lastStatus !== "STOPPED");
       }
+      case "open_service_logs": {
+        const ctx = args?.ctx as AwsCtx;
+        const service = args?.service as ServiceRef;
+        const account = checkCredentials(ctx);
+        serviceData(ctx, service); // not found → error
+        const cluster = service.clusterArn.split("/").at(-1);
+        const recordedService = logsData(account, ctx.region ?? "eu-central-1").services[
+          `${cluster}/${service.serviceName}`
+        ];
+        const events = recordedService?.events ?? [];
+        const viewId = nextViewId++;
+        views.set(viewId, events);
+        const minutes = args?.minutes as number;
+        const info: LogViewInfo = {
+          viewId,
+          location: recordedService?.location ?? {
+            logGroup: `/ecs/${service.serviceName}`,
+            region: null,
+            streamPrefix: "ecs",
+            container: service.serviceName,
+          },
+          streams: recordedService?.streams ?? 0,
+          // The recording keeps a sample of the events; the counts describe all of them.
+          stats: { ...(recordedService?.stats ?? emptyStats()), total: events.length },
+          truncated: recordedService?.truncated ?? false,
+          from: new Date(Date.now() - minutes * 60_000).toISOString(),
+          to: new Date().toISOString(),
+        };
+        return info;
+      }
+      case "get_log_rows": {
+        const events = views.get(args?.viewId as number);
+        if (!events) throw apiError("notFound", "log view is closed");
+        const offset = args?.offset as number;
+        return events.slice(offset, offset + (args?.limit as number));
+      }
+      case "close_log_view":
+        views.delete(args?.viewId as number);
+        return null;
       case "get_prefs":
         return prefs;
       case "set_last_profile":
@@ -285,4 +363,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
 /** Routes all `invoke` calls to a fresh fake backend. */
 export function installFakeBackend(options?: FakeBackendOptions) {
   mockIPC(createFakeBackend(options));
+}
+
+function emptyStats(): BufferStats {
+  return { total: 0, evicted: 0, trace: 0, debug: 0, info: 0, warn: 0, error: 0, unknown: 0 };
 }

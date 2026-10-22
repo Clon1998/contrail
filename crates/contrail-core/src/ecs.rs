@@ -97,8 +97,10 @@ pub struct ContainerDefinitionInfo {
     pub image: String,
     /// The image's tag (or short digest) for display, see [`image_tag`].
     pub image_tag: String,
-    /// `awslogs` when logs go to CloudWatch (needed from M3 on).
+    /// `awslogs` when logs go to CloudWatch.
     pub log_driver: Option<String>,
+    /// The log driver's options (`awslogs-group`, `awslogs-stream-prefix`, `awslogs-region`, …).
+    pub log_options: std::collections::BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]

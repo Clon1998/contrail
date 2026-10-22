@@ -5,6 +5,8 @@
 
 pub mod auth;
 pub mod ecs;
+pub mod logs;
 
 pub use auth::FakeAuth;
 pub use ecs::FakeEcs;
+pub use logs::FakeLogs;

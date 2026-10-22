@@ -13,7 +13,12 @@ interface PrefsState {
   updateSettings: (change: Partial<Settings>) => Promise<void>;
 }
 
-export const DEFAULT_SETTINGS: Settings = { colorMode: "dark", accent: "sky", timeZone: "local" };
+export const DEFAULT_SETTINGS: Settings = {
+  colorMode: "dark",
+  accent: "sky",
+  timeZone: "local",
+  backfillMinutes: 15,
+};
 
 export const EMPTY_PREFS: Prefs = {
   lastProfile: null,

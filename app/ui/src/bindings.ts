@@ -28,6 +28,12 @@ export const commands = {
 	describeService: (ctx: AwsCtx, service: ServiceRef) => typedError<ServiceDetail, ApiError>(__TAURI_INVOKE("describe_service", { ctx, service })),
 	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
 	listTasks: (ctx: AwsCtx, service: ServiceRef, includeStopped: boolean) => typedError<Task[], ApiError>(__TAURI_INVOKE("list_tasks", { ctx, service, includeStopped })),
+	/**  Opens a service's logs: backfills the last `minutes` of all its tasks into a new view. */
+	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, minutes: number) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, minutes })),
+	/**  Up to `limit` events of a view from `offset` (oldest first). */
+	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
+	/**  Frees a view's buffer. */
+	closeLogView: (viewId: number) => __TAURI_INVOKE<void>("close_log_view", { viewId }),
 	getPrefs: () => __TAURI_INVOKE<Prefs>("get_prefs"),
 	setLastProfile: (profile: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_last_profile", { profile })),
 	/**  Sets (or with `None` clears) the region override of a profile. */
@@ -70,6 +76,20 @@ export type AwsCtx = {
 	region: string | null,
 };
 
+/**  Counts the UI shows next to the log list. */
+export type BufferStats = {
+	total: number,
+	/**  Events dropped because the buffer was full (oldest first). */
+	evicted: number,
+	trace: number,
+	debug: number,
+	info: number,
+	warn: number,
+	error: number,
+	/**  Events without a recognisable level. */
+	unknown: number,
+};
+
 /**  Who the credentials of a profile belong to (`sts:GetCallerIdentity`). */
 export type CallerIdentity = {
 	account: string,
@@ -97,8 +117,10 @@ export type ContainerDefinitionInfo = {
 	image: string,
 	/**  The image's tag (or short digest) for display, see [`image_tag`]. */
 	imageTag: string,
-	/**  `awslogs` when logs go to CloudWatch (needed from M3 on). */
+	/**  `awslogs` when logs go to CloudWatch. */
 	logDriver: string | null,
+	/**  The log driver's options (`awslogs-group`, `awslogs-stream-prefix`, `awslogs-region`, …). */
+	logOptions: { [key in string]: string },
 };
 
 export type ContainerState = {
@@ -128,7 +150,87 @@ export type Deployment = {
 };
 
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
-export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config" | "io";
+export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config" | "io" | 
+/**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
+"logsUnavailable";
+
+/**  One field of a structured event, with its dotted name (`log.logger`, `pipeline.offset`). */
+export type Field = {
+	key: string,
+	value: FieldValue,
+};
+
+/**
+ *  A field's value: strings stay strings, numbers stay numbers.
+ * 
+ *  `#[serde(untagged)]` serializes just the inner value (`"x"`, `42`, `true`), so TypeScript
+ *  sees `string | number | boolean`. Fields whose value is `null` are left out by the parser.
+ */
+export type FieldValue = string | 
+/**  Kept as JSON's number (exact digits); a plain `number` in TypeScript. */
+number | null | boolean;
+
+/**
+ *  Log levels, from least to most severe (the derived `Ord` follows declaration order, so
+ *  `Level::Warn > Level::Info` works for "WARN and above" filters).
+ */
+export type Level = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR";
+
+/**  An exception attached to an event (ECS `error.*`, or a joined plain-text stack trace). */
+export type LogError = {
+	errorType: string | null,
+	message: string | null,
+	stackTrace: string | null,
+};
+
+/**  A parsed log event in a view. */
+export type LogEvent = {
+	/**  Unique and stable within a view (assigned by the buffer), for the UI's row keys. */
+	seq: number,
+	/**  The time shown and sorted by: the event's own timestamp, else CloudWatch's. */
+	timestamp: Timestamp,
+	/**  CloudWatch's timestamp, for ordering ties and deduplication. */
+	cwTimestamp: Timestamp,
+	stream: string,
+	/**  The ECS task the stream belongs to (its last path segment). */
+	taskId: string,
+	line: ParsedLine,
+	/**  The original text (several lines when a stack trace was joined). */
+	raw: string,
+};
+
+/**  How a line was understood. */
+export type LogKind = 
+/**  Elastic Common Schema JSON (Spring Boot's `ecs` structured logging), nested or dotted. */
+"ecs" | 
+/**  Some other JSON object. */
+"json" | 
+/**  Spring Boot's default console pattern. */
+"spring" | 
+/**  Anything else, shown as it is. */
+"plain";
+
+/**  The CloudWatch location of a container's logs. */
+export type LogLocation = {
+	logGroup: string,
+	/**  `awslogs-region`; `None` means the region of the service. */
+	region: string | null,
+	streamPrefix: string,
+	container: string,
+};
+
+/**  What the UI needs to know about an opened log view. */
+export type LogViewInfo = {
+	viewId: number,
+	location: LogLocation,
+	/**  How many task streams were read (running and recently stopped tasks). */
+	streams: number,
+	stats: BufferStats,
+	/**  The backfill hit the buffer size before reaching the newest events. */
+	truncated: boolean,
+	from: Timestamp,
+	to: Timestamp,
+};
 
 /**  Progress of a running `aws sso login`, streamed to the UI. */
 export type LoginProgress = 
@@ -137,6 +239,27 @@ export type LoginProgress =
  *  browser doesn't open by itself).
  */
 { kind: "output"; line: string };
+
+/**  What the parser gets out of one raw log line. */
+export type ParsedLine = {
+	kind: LogKind,
+	/**
+	 *  The event's own time (`@timestamp`, or the time at the start of a Spring line), when it
+	 *  has one with a time zone.
+	 */
+	timestamp: Timestamp | null,
+	level: Level | null,
+	/**
+	 *  The human-readable part: `message` for JSON, the text after `:` for Spring, the whole line
+	 *  for plain text (ANSI colour codes kept).
+	 */
+	message: string,
+	/**  All other structured fields, flattened to dotted names, in their original order. */
+	fields: Field[],
+	error: LogError | null,
+	/**  Byte range `[start, end)` of the first JSON object embedded in `message`, if any. */
+	jsonSpan: [number, number] | null,
+};
 
 /**  Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`]. */
 export type Prefs = {
@@ -255,6 +378,8 @@ export type Settings = {
 	colorMode: ColorMode,
 	accent: Accent,
 	timeZone: TimeZone,
+	/**  How far back a log view starts, in minutes. */
+	backfillMinutes: number,
 };
 
 export type Task = {
