@@ -1,7 +1,7 @@
 //! Local preferences (last profile, region overrides, favorites, recent services).
 
 use contrail_core::ecs::ServiceRef;
-use contrail_core::prefs::{Prefs, ServiceKey};
+use contrail_core::prefs::{Prefs, ServiceKey, Settings};
 use tauri::State;
 
 use crate::error::ApiResult;
@@ -30,6 +30,13 @@ pub fn set_region_override(
     Ok(state
         .prefs
         .update(|p| p.set_region_override(&profile, region))?)
+}
+
+/// Replaces the app settings (the settings dialog sends all of them).
+#[tauri::command]
+#[specta::specta]
+pub fn set_settings(state: State<'_, AppState>, settings: Settings) -> ApiResult<Prefs> {
+    Ok(state.prefs.update(|p| p.settings = settings)?)
 }
 
 /// Pins or unpins a service of `profile`.

@@ -155,6 +155,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     regionOverrides: {},
     favorites: [],
     recent: [],
+    settings: { colorMode: "dark", accent: "sky", timeZone: "local" },
     ...options.prefs,
   };
 
@@ -253,6 +254,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         prefs = { ...prefs, regionOverrides };
         return prefs;
       }
+      case "set_settings":
+        prefs = { ...prefs, settings: args?.settings as Prefs["settings"] };
+        return prefs;
       case "toggle_favorite": {
         const key = serviceKey(args?.profile as string, args?.service as ServiceRef);
         const pinned = prefs.favorites.some((f) => sameKey(f, key));

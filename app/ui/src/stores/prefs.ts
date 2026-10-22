@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { commands, type Prefs, type ServiceKey, type ServiceRef } from "@/bindings";
+import { commands, type Prefs, type ServiceKey, type ServiceRef, type Settings } from "@/bindings";
 
 /** Local preferences, kept by the Rust side (saved as JSON) and mirrored here. */
 interface PrefsState {
@@ -9,13 +9,18 @@ interface PrefsState {
   setRegionOverride: (profile: string, region: string | null) => Promise<void>;
   toggleFavorite: (profile: string, service: ServiceRef) => Promise<void>;
   addRecent: (profile: string, service: ServiceRef) => Promise<void>;
+  /** Changes some settings; the rest stay as they are. */
+  updateSettings: (change: Partial<Settings>) => Promise<void>;
 }
+
+export const DEFAULT_SETTINGS: Settings = { colorMode: "dark", accent: "sky", timeZone: "local" };
 
 export const EMPTY_PREFS: Prefs = {
   lastProfile: null,
   regionOverrides: {},
   favorites: [],
   recent: [],
+  settings: DEFAULT_SETTINGS,
 };
 
 /** Whether `key` refers to `service` of `profile`. */
@@ -27,7 +32,7 @@ export function isSameService(key: ServiceKey, profile: string, service: Service
   );
 }
 
-export const usePrefs = create<PrefsState>((set) => {
+export const usePrefs = create<PrefsState>((set, get) => {
   /** Every change returns the saved preferences; on error the old ones stay. */
   async function apply(result: Promise<{ status: "ok"; data: Prefs } | { status: "error" }>) {
     const outcome = await result;
@@ -41,5 +46,6 @@ export const usePrefs = create<PrefsState>((set) => {
     setRegionOverride: (profile, region) => apply(commands.setRegionOverride(profile, region)),
     toggleFavorite: (profile, service) => apply(commands.toggleFavorite(profile, service)),
     addRecent: (profile, service) => apply(commands.addRecent(profile, service)),
+    updateSettings: (change) => apply(commands.setSettings({ ...get().prefs.settings, ...change })),
   };
 });

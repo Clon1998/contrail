@@ -40,6 +40,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         prefs::get_prefs,
         prefs::set_last_profile,
         prefs::set_region_override,
+        prefs::set_settings,
         prefs::toggle_favorite,
         prefs::add_recent,
     ])
