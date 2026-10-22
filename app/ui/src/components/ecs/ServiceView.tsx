@@ -173,8 +173,14 @@ function Section({
 const TH = "px-2 py-1 text-left font-normal text-muted-foreground";
 const TD = "px-2 py-1 align-top";
 
+/** The time zone setting, for absolute times in tooltips. */
+function useTimeZone() {
+  return usePrefs((s) => s.prefs.settings.timeZone);
+}
+
 function Deployments({ deployments }: { deployments: Deployment[] }) {
   const now = useNow();
+  const timeZone = useTimeZone();
   return (
     <Section title="Deployments">
       <table className="w-full text-sm">
@@ -205,7 +211,7 @@ function Deployments({ deployments }: { deployments: Deployment[] }) {
               </td>
               <td className={cn(TD, "font-mono")}>{d.pending}</td>
               <td className={cn(TD, "font-mono", d.failed > 0 && "text-red-400")}>{d.failed}</td>
-              <td className={TD} title={formatDateTime(d.updatedAt)}>
+              <td className={TD} title={formatDateTime(d.updatedAt, timeZone)}>
                 {formatAgo(d.updatedAt, now)}
               </td>
             </tr>
@@ -235,6 +241,7 @@ function Tasks() {
   const includeStopped = useEcs((s) => s.includeStopped);
   const setIncludeStopped = useEcs((s) => s.setIncludeStopped);
   const now = useNow();
+  const timeZone = useTimeZone();
   const list = "data" in tasks ? (tasks.data ?? []) : [];
 
   return (
@@ -286,7 +293,7 @@ function Tasks() {
                   <td className={TD}>
                     <TaskStatus task={task} />
                   </td>
-                  <td className={TD} title={formatDateTime(task.startedAt)}>
+                  <td className={TD} title={formatDateTime(task.startedAt, timeZone)}>
                     {formatAgo(task.startedAt, now)}
                   </td>
                   <td className={cn(TD, "font-mono text-xs")}>{task.availabilityZone ?? "—"}</td>
@@ -294,7 +301,7 @@ function Tasks() {
                   <td className={TD}>
                     {task.lastStatus === "STOPPED" ? (
                       <div className="space-y-0.5">
-                        <div title={formatDateTime(task.stoppedAt)}>
+                        <div title={formatDateTime(task.stoppedAt, timeZone)}>
                           {formatAgo(task.stoppedAt, now)} ·{" "}
                           <span className="font-mono text-xs">{task.stopCode}</span>
                           {container?.exitCode !== null && container?.exitCode !== undefined && (
@@ -329,6 +336,7 @@ function Tasks() {
 
 function Events({ detail }: { detail: ServiceDetail }) {
   const now = useNow();
+  const timeZone = useTimeZone();
   if (detail.events.length === 0) return null;
   // Events read "(service orders-api) has reached a steady state."; the prefix is noise here.
   const prefix = `(service ${detail.summary.name}) `;
@@ -339,7 +347,7 @@ function Events({ detail }: { detail: ServiceDetail }) {
           <li key={event.id} className="flex gap-3">
             <span
               className="w-20 shrink-0 text-muted-foreground"
-              title={formatDateTime(event.createdAt)}
+              title={formatDateTime(event.createdAt, timeZone)}
             >
               {formatAgo(event.createdAt, now)}
             </span>

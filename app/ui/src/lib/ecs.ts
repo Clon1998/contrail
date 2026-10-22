@@ -1,4 +1,4 @@
-import type { ServiceSummary } from "@/bindings";
+import type { ServiceSummary, TimeZone } from "@/bindings";
 import { formatDuration } from "./session";
 
 /** How a service is doing, from its task counts. */
@@ -18,9 +18,16 @@ export function formatAgo(timestamp: string | null | undefined, now: number): st
   return `${formatDuration(now - Date.parse(timestamp))} ago`;
 }
 
-/** A local date-time for tooltips. */
-export function formatDateTime(timestamp: string | null | undefined): string {
-  return timestamp ? new Date(timestamp).toLocaleString() : "";
+/** An absolute date-time for tooltips, in local time or UTC (the time zone setting). */
+export function formatDateTime(
+  timestamp: string | null | undefined,
+  timeZone: TimeZone = "local",
+): string {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  return timeZone === "utc"
+    ? `${date.toLocaleString(undefined, { timeZone: "UTC" })} UTC`
+    : date.toLocaleString();
 }
 
 /** The first characters of a task ID, enough to tell tasks apart (like the console's badges). */

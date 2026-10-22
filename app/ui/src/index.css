@@ -1,8 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Dark mode is driven by a `.dark` class on <html>. Contrail is dark-first (set in index.html);
-   a light theme comes with the settings page. */
+/* Dark mode is driven by a `.dark` class on <html> (src/lib/appearance.ts). Contrail is
+   dark-first: index.html starts dark, the settings can switch to light or follow the system. */
 @custom-variant dark (&:is(.dark *));
 
 /* shadcn/ui "neutral" theme tokens (same base as Frida), with a sky accent as Contrail's primary. */
@@ -47,6 +47,64 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.588 0.158 241.966);
+}
+
+/* Accent colours (Settings → Appearance), set as `data-accent` on <html>. Sky is the default
+   above. Tailwind's 600 shade on light, 500 on dark (same palette as Frida). */
+[data-accent="blue"] {
+  --primary: oklch(0.546 0.245 262.881);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.623 0.214 259.815);
+}
+.dark[data-accent="blue"] {
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(0.985 0 0);
+}
+[data-accent="green"] {
+  --primary: oklch(0.627 0.194 149.214);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.723 0.219 149.579);
+}
+.dark[data-accent="green"] {
+  --primary: oklch(0.627 0.194 149.214);
+  --primary-foreground: oklch(0.985 0 0);
+}
+[data-accent="violet"] {
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.606 0.25 292.717);
+}
+.dark[data-accent="violet"] {
+  --primary: oklch(0.606 0.25 292.717);
+  --primary-foreground: oklch(0.985 0 0);
+}
+[data-accent="orange"] {
+  --primary: oklch(0.646 0.222 41.116);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.705 0.213 47.604);
+}
+.dark[data-accent="orange"] {
+  --primary: oklch(0.646 0.222 41.116);
+  --primary-foreground: oklch(0.985 0 0);
+}
+[data-accent="rose"] {
+  --primary: oklch(0.586 0.253 17.585);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.645 0.246 16.439);
+}
+.dark[data-accent="rose"] {
+  --primary: oklch(0.645 0.246 16.439);
+  --primary-foreground: oklch(0.985 0 0);
+}
+[data-accent="neutral"] {
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.708 0 0);
+}
+.dark[data-accent="neutral"] {
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --ring: oklch(0.556 0 0);
 }
 
 @theme inline {
