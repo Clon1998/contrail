@@ -81,7 +81,7 @@ pnpm build --debug --no-bundle # quick full build check (what CI runs on macOS/W
 pnpm lint && pnpm typecheck && pnpm test   # frontend (delegates to app/ui; *.test.ts(x) beside the code)
 pnpm format                    # auto-fix ESLint + Prettier
 pnpm --dir ui dev              # frontend only, in a browser (no Tauri IPC)
-pnpm test:e2e                  # Playwright (added in a later milestone)
+pnpm test:e2e                  # Playwright UI flows (fake backend, WebKit + Chromium)
 ```
 
 ## Working style
