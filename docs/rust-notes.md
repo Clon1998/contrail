@@ -201,3 +201,52 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   generic over serde's `Deserializer` (`D: serde::Deserializer<'de>`, where `'de` is the lifetime of the
   input being read).
 - **Where:** `Prefs::from_json` in `crates/contrail-core/src/prefs.rs`.
+
+## `LazyLock` for compiled regexes
+
+- **What:** `static PATTERN: LazyLock<Regex> = LazyLock::new(|| Regex::new(…).unwrap())` compiles a regex once,
+  on first use, thread-safely — like a lazily initialized `static final` in Java. Compiling per call would be
+  slow for 100k log lines.
+- **Where:** `crates/contrail-core/src/logs/spring.rs`, `parse.rs`, `multiline.rs`.
+
+## `Cow<str>`: borrow when possible, own when needed
+
+- **What:** `strip_ansi` returns `Cow<'_, str>` ("clone on write"): the original `&str` when there was nothing to
+  remove (no allocation), an owned `String` when something was. Most log lines have no colour codes.
+- **Where:** `strip_ansi` in `crates/contrail-core/src/logs/parse.rs`.
+
+## `let … else` and `if let … && let …`
+
+- **What:** `let Ok(Value::Object(map)) = serde_json::from_str(line) else { return None; };` destructures or
+  leaves the function — no nesting. Edition 2024 also allows chaining conditions with `let`:
+  `if x.starts_with('{') && let Some(parsed) = parse_json(x) { … }`.
+- **Where:** `parse_json` in `crates/contrail-core/src/logs/json.rs`, `parse_line` in `parse.rs`.
+
+## The borrow checker and split borrows
+
+- **What:** `self.pending.get_mut(…)` mutably borrows `self.pending`; while that reference is alive, calling a
+  method on `&self` (which borrows *all* of `self`) is rejected. The fix: copy what's needed (`let window =
+  self.window;`) and call a free function. Borrowing distinct fields separately is fine; borrowing the whole
+  struct while part of it is mutably borrowed is not. Java has no such rule — and no protection against
+  modifying a map while iterating it either.
+- **Where:** `MultilineJoiner::push` in `crates/contrail-core/src/logs/multiline.rs`.
+
+## `VecDeque` + `partition_point`
+
+- **What:** `VecDeque` is a ring buffer (like `ArrayDeque`) with O(1) removal at the front, so evicting the
+  oldest event is cheap. Late events are inserted at `partition_point(|e| key(e) <= key)` — a binary search for
+  the first position where the condition stops holding.
+- **Where:** `LogBuffer::insert` in `crates/contrail-core/src/logs/buffer.rs`.
+
+## Untagged enums and specta type overrides
+
+- **What:** `#[serde(untagged)] enum FieldValue { Text(String), Number(…), Bool(bool) }` serializes only the
+  inner value, so JSON and TypeScript see `"x" | 42 | true`. `#[specta(type = f64)]` tells the bindings
+  generator to describe a field as a different type (here `serde_json::Number` as a TypeScript `number`).
+- **Where:** `FieldValue` in `crates/contrail-core/src/logs/mod.rs`; `Timestamp` uses the same idea.
+
+## Atomics for counters
+
+- **What:** `AtomicU32::fetch_add(1, Ordering::Relaxed)` hands out unique view IDs without a lock (like Java's
+  `AtomicInteger.getAndIncrement()`). `Relaxed` is enough: only uniqueness matters, not ordering with other memory.
+- **Where:** `next_view_id` in `app/src-tauri/src/state.rs`, used in `commands/logs.rs`.

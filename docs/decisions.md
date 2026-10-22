@@ -84,3 +84,18 @@ The frontend's fake backend (Vitest, Playwright) needs the same clusters, servic
 **Decision:** `cargo test` records `FakeEcs` (with a fixed clock) into `app/ui/src/e2e/demo-ecs.json`; the
 fake backend relabels account/region per profile and shifts the times to "now". CI fails if the file is out
 of date, so Rust and TypeScript demo data can't drift.
+
+## 2026-10-22 — Log pipeline: what M3 does and doesn't do yet
+
+- **Stream selection:** all tasks of a service (running and those ECS still lists as stopped) use the log
+  location of the service's *primary* task definition. If a deployment changed the log group or stream prefix,
+  tasks of the old revision are read from the wrong place. Rare; revisit when it shows up.
+- **Backfill limit:** at most 100,000 events (the buffer size) per view, read oldest first; if the window holds
+  more, the newest are missing and the view says "truncated". M5 (live tail) and smaller windows mitigate it.
+- **Field values** are typed (`string | number | boolean`) instead of raw JSON: specta can't export
+  `serde_json::Value` (64-bit integers); fields with `null` are dropped.
+- **Multi-line joining** only applies to plain-text and Spring-pattern events (JSON carries its own stack
+  trace), within 2 seconds per stream.
+- **UI:** a simple debug list of the newest 1,000 events; the virtualized viewer is M4.
+- **Fixtures:** synthetic ones are committed (`crates/contrail-core/tests/fixtures/`); the real samples were only
+  used locally to check that every line parses (it does).
