@@ -27,7 +27,7 @@ export function RegionSelect() {
       value={override ?? PROFILE_DEFAULT}
       onValueChange={(value) => setRegion(value === PROFILE_DEFAULT ? null : value)}
     >
-      <SelectTrigger size="sm" aria-label="Region" className="w-44 font-mono text-xs">
+      <SelectTrigger size="sm" aria-label="Region" className="w-52 font-mono text-xs">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

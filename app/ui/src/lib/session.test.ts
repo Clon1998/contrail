@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Profile, SessionStatus } from "@/bindings";
-import { describeSession, formatDuration, initialProfile, needsLogin } from "./session";
+import {
+  describeSession,
+  formatDuration,
+  initialProfile,
+  matchProfile,
+  needsLogin,
+} from "./session";
 
 const NOW = Date.parse("2026-10-22T12:00:00Z");
 
@@ -66,5 +72,23 @@ describe("initialProfile", () => {
     ).toBe("b");
     expect(initialProfile(profiles, { a: { state: "loggedOut" } })).toBe("a");
     expect(initialProfile([], {})).toBeNull();
+  });
+});
+
+describe("matchProfile", () => {
+  const keywords = ["222233334444", "eu-central-1"];
+
+  it("matches substrings of name, account ID and region, case-insensitively", () => {
+    expect(matchProfile("demo-staging", "STAG", keywords)).toBe(1);
+    expect(matchProfile("demo-staging", "33334", keywords)).toBe(1);
+    expect(matchProfile("demo-staging", "central", keywords)).toBe(1);
+    expect(matchProfile("demo-staging", "", keywords)).toBe(1);
+  });
+
+  it("requires every word and doesn't match scattered characters", () => {
+    expect(matchProfile("demo-staging", "staging central", keywords)).toBe(1);
+    expect(matchProfile("demo-staging", "staging west", keywords)).toBe(0);
+    // Fuzzy matching would accept this (2…3…4 appear in order in the account ID).
+    expect(matchProfile("demo-staging", "234", keywords)).toBe(0);
   });
 });

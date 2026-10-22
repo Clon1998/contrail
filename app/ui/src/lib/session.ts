@@ -70,3 +70,14 @@ export function initialProfile(
   });
   return (usable ?? profiles[0])?.name ?? null;
 }
+
+/**
+ * Profile search for the switcher (a cmdk `filter`): every whitespace-separated word must occur
+ * in the name, account ID or region. Substring matching instead of cmdk's default fuzzy
+ * matching, which would match account IDs whose digits merely appear in order.
+ */
+export function matchProfile(value: string, search: string, keywords: string[] = []): number {
+  const haystack = [value, ...keywords].join(" ").toLowerCase();
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.every((word) => haystack.includes(word)) ? 1 : 0;
+}
