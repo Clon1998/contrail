@@ -3,11 +3,18 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
 import { installFakeBackend } from "@/e2e/fakeBackend";
+import { useEcs } from "@/stores/ecs";
+import { EMPTY_PREFS, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 
-const initial = useProfiles.getState();
+const initialProfiles = useProfiles.getState();
+const initialEcs = useEcs.getState();
 
-beforeEach(() => useProfiles.setState(initial, true));
+beforeEach(() => {
+  useProfiles.setState(initialProfiles, true);
+  useEcs.setState(initialEcs, true);
+  usePrefs.setState({ prefs: EMPTY_PREFS });
+});
 
 afterEach(() => {
   cleanup();
@@ -82,5 +89,28 @@ describe("App", () => {
 
     expect(await screen.findByText("Profile demo-broken is misconfigured")).toBeTruthy();
     expect(screen.getByText(/has no \[sso-session gone\] section/)).toBeTruthy();
+  });
+
+  it("shows the clusters once connected and expands one into its services", async () => {
+    installFakeBackend();
+    render(<App />);
+
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    const core = await within(tree).findByRole("treeitem", { name: "demo-core" });
+    expect(core.textContent).toContain("3 svc");
+    fireEvent.click(within(core).getByRole("button"));
+
+    const payments = await within(core).findByRole("treeitem", { name: "payments-worker" });
+    expect(payments.textContent).toContain("1/2");
+    expect(
+      within(payments).getByRole("img", { name: "fewer tasks running than desired" }),
+    ).toBeTruthy();
+  });
+
+  it("has no tree for a profile that needs a login", async () => {
+    installFakeBackend({ prefs: { lastProfile: "demo-prod" } });
+    render(<App />);
+    expect(await screen.findByText("Log in to demo-prod")).toBeTruthy();
+    expect(screen.queryByRole("tree")).toBeNull();
   });
 });

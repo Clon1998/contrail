@@ -1,0 +1,29 @@
+import { describe, expect, it } from "vitest";
+import { formatAgo, nameFromArn, serviceHealth, shortTaskId } from "./ecs";
+
+describe("serviceHealth", () => {
+  it.each([
+    [{ desired: 3, running: 3, pending: 0 }, "ok"],
+    [{ desired: 3, running: 2, pending: 0 }, "warn"],
+    [{ desired: 2, running: 2, pending: 1 }, "warn"],
+    [{ desired: 2, running: 0, pending: 1 }, "bad"],
+    [{ desired: 0, running: 0, pending: 0 }, "idle"],
+  ])("%j → %s", (counts, health) => {
+    expect(serviceHealth(counts)).toBe(health);
+  });
+});
+
+describe("formatting", () => {
+  it("formats relative times", () => {
+    const now = Date.parse("2026-10-22T12:00:00Z");
+    expect(formatAgo("2026-10-22T11:55:00Z", now)).toBe("5m ago");
+    expect(formatAgo(null, now)).toBe("—");
+  });
+
+  it("shortens IDs and ARNs", () => {
+    expect(shortTaskId("0123456789abcdef0123456789abcdef")).toBe("01234567");
+    expect(nameFromArn("arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core")).toBe(
+      "demo-core",
+    );
+  });
+});

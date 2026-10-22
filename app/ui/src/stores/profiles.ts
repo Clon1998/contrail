@@ -43,7 +43,8 @@ interface ProfilesState {
   /** Re-reads the session states (local files only, cheap). */
   refreshStatuses: () => Promise<void>;
   select: (name: string) => Promise<void>;
-  setRegion: (region: string | null) => void;
+  /** Saves the region override of the selected profile (`null` = the profile's region). */
+  setRegion: (region: string | null) => Promise<void>;
   checkIdentity: () => Promise<void>;
   /** Runs `aws sso login` for the selected profile, then re-checks the session. */
   startLogin: () => Promise<void>;
@@ -60,6 +61,14 @@ export function effectiveRegion(
   name: string,
 ): string | null {
   return regionOverrides[name] ?? profiles.find((p) => p.name === name)?.region ?? null;
+}
+
+/** The region of the selected profile, as a hook (re-renders when it changes). */
+export function useCurrentRegion(): string | null {
+  const profiles = useProfiles((s) => s.profiles);
+  const selected = useProfiles((s) => s.selected);
+  const overrides = usePrefs((s) => s.prefs.regionOverrides);
+  return selected ? effectiveRegion(profiles, overrides, selected) : null;
 }
 
 /** The region of the selected profile, for components and other stores. */
@@ -122,9 +131,9 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
     await get().checkIdentity();
   },
 
-  setRegion: (region) => {
+  setRegion: async (region) => {
     const name = get().selected;
-    if (name) void usePrefs.getState().setRegionOverride(name, region);
+    if (name) await usePrefs.getState().setRegionOverride(name, region);
   },
 
   checkIdentity: async () => {
