@@ -82,6 +82,10 @@ pub enum TimeZone {
 
 /// The default backfill window of a log view, in minutes.
 pub const DEFAULT_BACKFILL_MINUTES: u32 = 15;
+/// The default UI size, in percent.
+pub const DEFAULT_UI_SCALE: u32 = 100;
+/// The default font size of log lines, in pixels.
+pub const DEFAULT_LOG_FONT_SIZE: u32 = 12;
 
 /// The app settings (the settings dialog).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -92,9 +96,13 @@ pub struct Settings {
     pub time_zone: TimeZone,
     /// How far back a log view starts, in minutes.
     pub backfill_minutes: u32,
+    /// The size of the whole UI, in percent.
+    pub ui_scale: u32,
+    /// The font size of log lines, in pixels.
+    pub log_font_size: u32,
 }
 
-/// Written by hand (instead of derived) because `backfill_minutes` doesn't default to 0.
+/// Written by hand (instead of derived) because the numbers don't default to 0.
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -102,7 +110,36 @@ impl Default for Settings {
             accent: Accent::default(),
             time_zone: TimeZone::default(),
             backfill_minutes: DEFAULT_BACKFILL_MINUTES,
+            ui_scale: DEFAULT_UI_SCALE,
+            log_font_size: DEFAULT_LOG_FONT_SIZE,
         }
+    }
+}
+
+impl Settings {
+    /// Reads saved settings field by field: a missing or unreadable value (a field added in a
+    /// later version, an accent that no longer exists, …) gets its default, the others are kept.
+    fn from_saved(value: &serde_json::Value) -> Self {
+        /// Overwrites `target` with `value[key]` if it is present and has the right type.
+        /// Generic over the field type: `T: DeserializeOwned` means "can be read from JSON".
+        fn read<T: serde::de::DeserializeOwned>(
+            value: &serde_json::Value,
+            key: &str,
+            target: &mut T,
+        ) {
+            if let Some(Ok(parsed)) = value.get(key).map(|v| serde_json::from_value(v.clone())) {
+                *target = parsed;
+            }
+        }
+
+        let mut settings = Settings::default();
+        read(value, "colorMode", &mut settings.color_mode);
+        read(value, "accent", &mut settings.accent);
+        read(value, "timeZone", &mut settings.time_zone);
+        read(value, "backfillMinutes", &mut settings.backfill_minutes);
+        read(value, "uiScale", &mut settings.ui_scale);
+        read(value, "logFontSize", &mut settings.log_font_size);
+        settings
     }
 }
 
@@ -137,15 +174,14 @@ impl Prefs {
             settings: Settings,
         }
 
-        /// Settings a newer or older version wrote (e.g. an accent that no longer exists) fall
-        /// back to the defaults, instead of making the whole file unreadable and losing
-        /// favorites and recent services with it.
+        /// Settings are read leniently (see [`Settings::from_saved`]), so an unknown value never
+        /// makes the whole file unreadable and loses favorites and recent services with it.
         fn settings_or_default<'de, D>(deserializer: D) -> Result<Settings, D::Error>
         where
             D: serde::Deserializer<'de>,
         {
             let value = serde_json::Value::deserialize(deserializer)?;
-            Ok(serde_json::from_value(value).unwrap_or_default())
+            Ok(Settings::from_saved(&value))
         }
 
         let stored: Stored = serde_json::from_str(json)?;
@@ -261,17 +297,25 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12}"#
         );
     }
 
     #[test]
-    fn unknown_settings_fall_back_without_losing_the_rest() {
+    fn unknown_settings_fall_back_one_field_at_a_time() {
         let json = r#"{"favorites":[{"profile":"dev","region":"eu-west-1","clusterArn":"arn:aws:ecs:eu-west-1:1:cluster/c","serviceName":"s"}],
                        "settings":{"colorMode":"light","accent":"chartreuse","timeZone":"utc"}}"#;
         let prefs = Prefs::from_json(json).unwrap();
         assert_eq!(prefs.favorites.len(), 1);
-        assert_eq!(prefs.settings, Settings::default());
+        // Known values are kept; the unknown accent and the missing fields get their defaults.
+        assert_eq!(
+            prefs.settings,
+            Settings {
+                color_mode: ColorMode::Light,
+                time_zone: TimeZone::Utc,
+                ..Settings::default()
+            }
+        );
     }
 
     #[test]

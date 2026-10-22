@@ -190,7 +190,14 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     regionOverrides: {},
     favorites: [],
     recent: [],
-    settings: { colorMode: "dark", accent: "sky", timeZone: "local", backfillMinutes: 15 },
+    settings: {
+      colorMode: "dark",
+      accent: "sky",
+      timeZone: "local",
+      backfillMinutes: 15,
+      uiScale: 100,
+      logFontSize: 12,
+    },
     ...options.prefs,
   };
 
