@@ -10,11 +10,11 @@ pre-commit:
       run: cargo fmt --all -- --check
     - name: eslint
       root: app/ui/
-      glob: '*.{ts,mts,mjs,js,vue}'
+      glob: '*.{ts,tsx,js}'
       run: pnpm exec eslint {staged_files}
     - name: prettier
       root: app/ui/
-      glob: '*.{ts,mts,mjs,js,vue,json,yml,yaml,css}'
+      glob: '*.{ts,tsx,js,json,css,html}'
       run: pnpm exec prettier --check {staged_files}
 
 # Conventional Commits (see app/commitlint.config.mjs).

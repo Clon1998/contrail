@@ -1,11 +1,8 @@
 # `app/` is a small pnpm workspace: this folder holds the Tauri CLI and repo tooling (git hooks,
-# commitlint), `ui/` holds the Nuxt frontend.
+# commitlint), `ui/` holds the React frontend.
 packages:
   - ui
 
 # Packages allowed to run install scripts (pnpm blocks them by default).
 allowBuilds:
-  esbuild: true
   lefthook: true
-  unrs-resolver: true
-  vue-demi: true

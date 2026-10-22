@@ -1,5 +1,2 @@
-# Generated output is not ours to format.
-.nuxt/
-.output/
 dist
-*.md
+pnpm-lock.yaml

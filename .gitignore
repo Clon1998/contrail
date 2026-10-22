@@ -11,14 +11,9 @@
 # Generated at build time (capability JSON schemas)
 /app/src-tauri/gen/
 
-# --- Node / Nuxt ---
+# --- Node / frontend ---
 node_modules/
-.nuxt/
-.output/
-.data/
-.nitro/
-.cache/
-/app/ui/dist
+dist/
 coverage/
 test-results/
 playwright-report/
