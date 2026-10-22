@@ -95,6 +95,8 @@ pub struct TaskDefinitionInfo {
 pub struct ContainerDefinitionInfo {
     pub name: String,
     pub image: String,
+    /// The image's tag (or short digest) for display, see [`image_tag`].
+    pub image_tag: String,
     /// `awslogs` when logs go to CloudWatch (needed from M3 on).
     pub log_driver: Option<String>,
 }

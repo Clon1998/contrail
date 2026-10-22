@@ -142,6 +142,7 @@
           {
             "name": "billing-sync",
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/billing-sync:0.9.0",
+            "imageTag": "0.9.0",
             "logDriver": "awslogs"
           }
         ]
@@ -197,6 +198,7 @@
           {
             "name": "orders-api",
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders-api:1.14.2",
+            "imageTag": "1.14.2",
             "logDriver": "awslogs"
           }
         ]
@@ -247,6 +249,7 @@
           {
             "name": "payments-worker",
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0",
+            "imageTag": "2.3.0",
             "logDriver": "awslogs"
           }
         ]
@@ -307,6 +310,7 @@
           {
             "name": "event-ingest",
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1",
+            "imageTag": "3.0.1",
             "logDriver": "awslogs"
           }
         ]
@@ -357,6 +361,7 @@
           {
             "name": "legacy-gateway",
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/legacy-gateway:2021.11",
+            "imageTag": "2021.11",
             "logDriver": "awslogs"
           }
         ]

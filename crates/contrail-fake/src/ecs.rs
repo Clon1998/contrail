@@ -383,6 +383,7 @@ impl EcsSource for FakeEcs {
                 containers: vec![ContainerDefinitionInfo {
                     name: spec.name.to_owned(),
                     image: image(spec, &account, &region),
+                    image_tag: spec.image_tag.to_owned(),
                     log_driver: Some("awslogs".to_owned()),
                 }],
             }),

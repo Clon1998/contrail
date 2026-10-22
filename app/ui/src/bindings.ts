@@ -83,6 +83,8 @@ export type ClusterSummary = {
 export type ContainerDefinitionInfo = {
 	name: string,
 	image: string,
+	/**  The image's tag (or short digest) for display, see [`image_tag`]. */
+	imageTag: string,
 	/**  `awslogs` when logs go to CloudWatch (needed from M3 on). */
 	logDriver: string | null,
 };

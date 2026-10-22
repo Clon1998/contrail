@@ -9,8 +9,8 @@ use aws_sdk_ecs::types::DesiredStatus;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{
     ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, ServiceDetail,
-    ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo, name_from_arn, sort_tasks,
-    task_definition_label,
+    ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo, image_tag, name_from_arn,
+    sort_tasks, task_definition_label,
 };
 use contrail_core::error::SourceError;
 use contrail_core::timestamp::Timestamp;
@@ -324,6 +324,7 @@ async fn describe_task_definition(
             .map(|c| ContainerDefinitionInfo {
                 name: text(c.name()),
                 image: text(c.image()),
+                image_tag: image_tag(c.image().unwrap_or_default()),
                 log_driver: c
                     .log_configuration()
                     .map(|l| l.log_driver().as_str().to_owned()),
@@ -620,6 +621,7 @@ mod tests {
         assert_eq!(task_def.num_calls(), 1, "task definitions are cached");
         assert_eq!(info.revision, 4);
         assert_eq!(info.containers[0].log_driver.as_deref(), Some("awslogs"));
+        assert_eq!(info.containers[0].image_tag, "1.2.3");
     }
 
     #[tokio::test]
