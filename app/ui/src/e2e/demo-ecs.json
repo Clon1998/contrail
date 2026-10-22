@@ -1,0 +1,910 @@
+{
+  "recordedAt": "2026-01-01T12:00:00Z",
+  "account": "111122223333",
+  "region": "eu-central-1",
+  "clusters": [
+    {
+      "arn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-batch",
+      "name": "demo-batch",
+      "status": "ACTIVE",
+      "activeServices": 0,
+      "runningTasks": 0,
+      "pendingTasks": 0
+    },
+    {
+      "arn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+      "name": "demo-core",
+      "status": "ACTIVE",
+      "activeServices": 3,
+      "runningTasks": 7,
+      "pendingTasks": 2
+    },
+    {
+      "arn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+      "name": "demo-edge",
+      "status": "ACTIVE",
+      "activeServices": 2,
+      "runningTasks": 8,
+      "pendingTasks": 0
+    }
+  ],
+  "services": {
+    "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-batch": [],
+    "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/billing-sync",
+        "name": "billing-sync",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+        "status": "ACTIVE",
+        "desired": 2,
+        "running": 3,
+        "pending": 1,
+        "launchType": "FARGATE",
+        "taskDefinition": "billing-sync:8"
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/orders-api",
+        "name": "orders-api",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+        "status": "ACTIVE",
+        "desired": 3,
+        "running": 3,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "orders-api:42"
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/payments-worker",
+        "name": "payments-worker",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+        "status": "ACTIVE",
+        "desired": 2,
+        "running": 1,
+        "pending": 1,
+        "launchType": "FARGATE",
+        "taskDefinition": "payments-worker:17"
+      }
+    ],
+    "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/event-ingest",
+        "name": "event-ingest",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 6,
+        "running": 6,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "event-ingest:5"
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/legacy-gateway",
+        "name": "legacy-gateway",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 2,
+        "running": 2,
+        "pending": 0,
+        "launchType": "EC2",
+        "taskDefinition": "legacy-gateway:113"
+      }
+    ]
+  },
+  "details": {
+    "demo-core/billing-sync": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/billing-sync",
+        "name": "billing-sync",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+        "status": "ACTIVE",
+        "desired": 2,
+        "running": 3,
+        "pending": 1,
+        "launchType": "FARGATE",
+        "taskDefinition": "billing-sync:8"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": "1.4.0",
+      "deployments": [
+        {
+          "id": "ecs-svc/847aa45694cb1b2283a",
+          "status": "PRIMARY",
+          "rolloutState": "IN_PROGRESS",
+          "rolloutReason": "ECS deployment ecs-svc in progress.",
+          "taskDefinition": "billing-sync:8",
+          "desired": 2,
+          "running": 1,
+          "pending": 1,
+          "failed": 0,
+          "createdAt": "2026-01-01T11:54:00Z",
+          "updatedAt": "2026-01-01T11:59:00Z"
+        },
+        {
+          "id": "ecs-svc/84a0065694eadde5415",
+          "status": "ACTIVE",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": null,
+          "taskDefinition": "billing-sync:7",
+          "desired": 2,
+          "running": 2,
+          "pending": 0,
+          "failed": 0,
+          "createdAt": "2025-12-23T12:00:00Z",
+          "updatedAt": "2026-01-01T11:54:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "billing-sync",
+        "revision": 8,
+        "cpu": "256",
+        "memory": "512",
+        "containers": [
+          {
+            "name": "billing-sync",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/billing-sync:0.9.0",
+            "logDriver": "awslogs"
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "9cb12848183a01fc14f2bb40a94c42d4",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service billing-sync) has started 1 tasks: (task 5e6f)."
+        },
+        {
+          "id": "9cb48e48183ce52551bdfa5b32bb6972",
+          "createdAt": "2026-01-01T11:52:00Z",
+          "message": "(service billing-sync) updated computedDesiredCount for taskSet ecs-svc/2222222222222222222 to 2."
+        }
+      ]
+    },
+    "demo-core/orders-api": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/orders-api",
+        "name": "orders-api",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+        "status": "ACTIVE",
+        "desired": 3,
+        "running": 3,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "orders-api:42"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": "1.4.0",
+      "deployments": [
+        {
+          "id": "ecs-svc/c276227191b5cfe557e",
+          "status": "PRIMARY",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": "ECS deployment ecs-svc completed.",
+          "taskDefinition": "orders-api:42",
+          "desired": 3,
+          "running": 3,
+          "pending": 0,
+          "failed": 0,
+          "createdAt": "2025-12-29T12:00:00Z",
+          "updatedAt": "2025-12-29T12:05:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "orders-api",
+        "revision": 42,
+        "cpu": "512",
+        "memory": "1024",
+        "containers": [
+          {
+            "name": "orders-api",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders-api:1.14.2",
+            "logDriver": "awslogs"
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "f5f21b3a67be60ebc3016df68ea4635a",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service orders-api) has reached a steady state."
+        }
+      ]
+    },
+    "demo-core/payments-worker": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/payments-worker",
+        "name": "payments-worker",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+        "status": "ACTIVE",
+        "desired": 2,
+        "running": 1,
+        "pending": 1,
+        "launchType": "FARGATE",
+        "taskDefinition": "payments-worker:17"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": "1.4.0",
+      "deployments": [
+        {
+          "id": "ecs-svc/8d0f2e9d4cb383d9f54",
+          "status": "PRIMARY",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": "ECS deployment ecs-svc completed.",
+          "taskDefinition": "payments-worker:17",
+          "desired": 2,
+          "running": 1,
+          "pending": 1,
+          "failed": 3,
+          "createdAt": "2025-12-29T12:00:00Z",
+          "updatedAt": "2025-12-29T12:05:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "payments-worker",
+        "revision": 17,
+        "cpu": "1024",
+        "memory": "2048",
+        "containers": [
+          {
+            "name": "payments-worker",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0",
+            "logDriver": "awslogs"
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "2f0afaa988fd12a116f29ca3af03bd02",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service payments-worker) has started 1 tasks: (task 0f3a)."
+        },
+        {
+          "id": "2f0794a988fa2f7802d4791149508796",
+          "createdAt": "2026-01-01T11:52:00Z",
+          "message": "(service payments-worker) has stopped 1 running tasks: (task 9c1d)."
+        },
+        {
+          "id": "2f11c6a98902d8f35511ec88e0b735ce",
+          "createdAt": "2026-01-01T11:45:00Z",
+          "message": "(service payments-worker) has started 1 tasks: (task 7b2e)."
+        }
+      ]
+    },
+    "demo-edge/event-ingest": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/event-ingest",
+        "name": "event-ingest",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 6,
+        "running": 6,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "event-ingest:5"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": "1.4.0",
+      "deployments": [
+        {
+          "id": "ecs-svc/1fb8fe897dffc40dbd6",
+          "status": "PRIMARY",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": "ECS deployment ecs-svc completed.",
+          "taskDefinition": "event-ingest:5",
+          "desired": 6,
+          "running": 6,
+          "pending": 0,
+          "failed": 0,
+          "createdAt": "2025-12-29T12:00:00Z",
+          "updatedAt": "2025-12-29T12:05:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "event-ingest",
+        "revision": 5,
+        "cpu": "2048",
+        "memory": "4096",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1",
+            "logDriver": "awslogs"
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "c77a31b6de458f362b019443f04a6e2c",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service event-ingest) has reached a steady state."
+        }
+      ]
+    },
+    "demo-edge/legacy-gateway": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/legacy-gateway",
+        "name": "legacy-gateway",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 2,
+        "running": 2,
+        "pending": 0,
+        "launchType": "EC2",
+        "taskDefinition": "legacy-gateway:113"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": null,
+      "deployments": [
+        {
+          "id": "ecs-svc/402abfc8746fdb7cc55",
+          "status": "PRIMARY",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": "ECS deployment ecs-svc completed.",
+          "taskDefinition": "legacy-gateway:113",
+          "desired": 2,
+          "running": 2,
+          "pending": 0,
+          "failed": 0,
+          "createdAt": "2025-12-29T12:00:00Z",
+          "updatedAt": "2025-12-29T12:05:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "legacy-gateway",
+        "revision": 113,
+        "cpu": "256",
+        "memory": "768",
+        "containers": [
+          {
+            "name": "legacy-gateway",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/legacy-gateway:2021.11",
+            "logDriver": "awslogs"
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "da630f5fa395eecfc43e7315c3686a9a",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service legacy-gateway) has reached a steady state."
+        }
+      ]
+    }
+  },
+  "tasks": {
+    "demo-core/billing-sync": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/84f5b6f87313e32d470a5f64d15c4dc2",
+        "id": "84f5b6f87313e32d470a5f64d15c4dc2",
+        "lastStatus": "PENDING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": null,
+        "createdAt": "2026-01-01T11:59:00Z",
+        "startedAt": null,
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "billing-sync:8",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "billing-sync",
+            "lastStatus": "PENDING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/billing-sync:0.9.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/4b25b7aaedfe458b55957af051e224ca",
+        "id": "4b25b7aaedfe458b55957af051e224ca",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "billing-sync:8",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "billing-sync",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/billing-sync:0.9.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/cb25df2206659bc9177cd810f7854f4a",
+        "id": "cb25df2206659bc9177cd810f7854f4a",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2025-12-23T11:59:00Z",
+        "startedAt": "2025-12-23T12:00:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "billing-sync:7",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "billing-sync",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/billing-sync:0.9.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/cb2279220662b8a012f2968f75a6f37a",
+        "id": "cb2279220662b8a012f2968f75a6f37a",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2025-12-23T11:58:00Z",
+        "startedAt": "2025-12-23T11:59:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "billing-sync:7",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "billing-sync",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/billing-sync:0.9.0"
+          }
+        ]
+      }
+    ],
+    "demo-core/orders-api": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/a856b75e06d86e9493e9524bb9d11bac",
+        "id": "a856b75e06d86e9493e9524bb9d11bac",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "orders-api:42",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "orders-api",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders-api:1.14.2"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/a85a1d5e06db51bdd7ccd6b593f4aa12",
+        "id": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T10:44:00Z",
+        "startedAt": "2026-01-01T10:45:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1b",
+        "taskDefinition": "orders-api:42",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "orders-api",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders-api:1.14.2"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/a85d835e06de34e69d3c49c4943bf12c",
+        "id": "a85d835e06de34e69d3c49c4943bf12c",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T09:59:00Z",
+        "startedAt": "2026-01-01T10:00:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "orders-api:42",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "orders-api",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders-api:1.14.2"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/0ace24c03b7d9f28db08937dec8a294c",
+        "id": "0ace24c03b7d9f28db08937dec8a294c",
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "healthStatus": null,
+        "createdAt": "2026-01-01T11:06:00Z",
+        "startedAt": "2026-01-01T11:07:00Z",
+        "stoppedAt": "2026-01-01T11:10:00Z",
+        "stopCode": "ServiceSchedulerInitiated",
+        "stoppedReason": "Scaling activity initiated by (deployment ecs-svc/1111111111111111111)",
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "orders-api:42",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "orders-api",
+            "lastStatus": "STOPPED",
+            "exitCode": 143,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders-api:1.14.2"
+          }
+        ]
+      }
+    ],
+    "demo-core/payments-worker": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/9bfd40a374d68a68cee5708aeff9053e",
+        "id": "9bfd40a374d68a68cee5708aeff9053e",
+        "lastStatus": "PENDING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": null,
+        "createdAt": "2026-01-01T11:59:00Z",
+        "startedAt": null,
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "payments-worker:17",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "payments-worker",
+            "lastStatus": "PENDING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/5f2adcb1f5162fea45a80e88bd917942",
+        "id": "5f2adcb1f5162fea45a80e88bd917942",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "UNKNOWN",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "payments-worker:17",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "payments-worker",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "UNKNOWN",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/cc996ddd2646ddd685fdf680fc38a5b2",
+        "id": "cc996ddd2646ddd685fdf680fc38a5b2",
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "healthStatus": null,
+        "createdAt": "2026-01-01T11:54:00Z",
+        "startedAt": "2026-01-01T11:55:00Z",
+        "stoppedAt": "2026-01-01T11:58:00Z",
+        "stopCode": "EssentialContainerExited",
+        "stoppedReason": "Essential container in task exited",
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "payments-worker:17",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "payments-worker",
+            "lastStatus": "STOPPED",
+            "exitCode": 1,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/cc9cd3dd2649c0ffe5ed200c2dd9a542",
+        "id": "cc9cd3dd2649c0ffe5ed200c2dd9a542",
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "healthStatus": null,
+        "createdAt": "2026-01-01T11:47:00Z",
+        "startedAt": "2026-01-01T11:48:00Z",
+        "stoppedAt": "2026-01-01T11:51:00Z",
+        "stopCode": "EssentialContainerExited",
+        "stoppedReason": "Essential container in task exited",
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "payments-worker:17",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "payments-worker",
+            "lastStatus": "STOPPED",
+            "exitCode": 1,
+            "reason": null,
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-core/cc92a1dd26411784e93d2832d2fda8f2",
+        "id": "cc92a1dd26411784e93d2832d2fda8f2",
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "healthStatus": null,
+        "createdAt": "2026-01-01T11:39:00Z",
+        "startedAt": null,
+        "stoppedAt": "2026-01-01T11:43:00Z",
+        "stopCode": "TaskFailedToStart",
+        "stoppedReason": "CannotPullContainerError: pull image manifest has been retried 5 time(s)",
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "payments-worker:17",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "payments-worker",
+            "lastStatus": "STOPPED",
+            "exitCode": null,
+            "reason": "CannotPullContainerError: ref not found",
+            "healthStatus": null,
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0"
+          }
+        ]
+      }
+    ],
+    "demo-edge/event-ingest": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/54fafdccb716347d919f0d433f022062",
+        "id": "54fafdccb716347d919f0d433f022062",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "event-ingest:5",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/54f797ccb71351543ccb692808cedd24",
+        "id": "54f797ccb71351543ccb692808cedd24",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T10:44:00Z",
+        "startedAt": "2026-01-01T10:45:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1b",
+        "taskDefinition": "event-ingest:5",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/5501c9ccb71bfacfa5f81025354ce4b2",
+        "id": "5501c9ccb71bfacfa5f81025354ce4b2",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T09:59:00Z",
+        "startedAt": "2026-01-01T10:00:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "event-ingest:5",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/54fe63ccb71917a6b2d730a6ee5b4ea8",
+        "id": "54fe63ccb71917a6b2d730a6ee5b4ea8",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T09:14:00Z",
+        "startedAt": "2026-01-01T09:15:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "event-ingest:5",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/54ed65ccb70aa7d95b2179edf22cffaa",
+        "id": "54ed65ccb70aa7d95b2179edf22cffaa",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T08:29:00Z",
+        "startedAt": "2026-01-01T08:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1b",
+        "taskDefinition": "event-ingest:5",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/54e9ffccb707c4b07498b5a17be0fbbc",
+        "id": "54e9ffccb707c4b07498b5a17be0fbbc",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T07:44:00Z",
+        "startedAt": "2026-01-01T07:45:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1c",
+        "taskDefinition": "event-ingest:5",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "event-ingest",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/event-ingest:3.0.1"
+          }
+        ]
+      }
+    ],
+    "demo-edge/legacy-gateway": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/51a70bd575f344a0502dccd2497186d4",
+        "id": "51a70bd575f344a0502dccd2497186d4",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "UNKNOWN",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "legacy-gateway:113",
+        "launchType": "EC2",
+        "containers": [
+          {
+            "name": "legacy-gateway",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "UNKNOWN",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/legacy-gateway:2021.11"
+          }
+        ]
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/51aa71d575f627c9fbf69f48b421c9d2",
+        "id": "51aa71d575f627c9fbf69f48b421c9d2",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "UNKNOWN",
+        "createdAt": "2026-01-01T10:44:00Z",
+        "startedAt": "2026-01-01T10:45:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1b",
+        "taskDefinition": "legacy-gateway:113",
+        "launchType": "EC2",
+        "containers": [
+          {
+            "name": "legacy-gateway",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "UNKNOWN",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/legacy-gateway:2021.11"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -172,11 +172,29 @@ const CLUSTERS: &[&str] = &["demo-batch", "demo-core", "demo-edge"];
 /// anything until it has "logged in", just like with real AWS.
 pub struct FakeEcs {
     auth: Arc<FakeAuth>,
+    /// A fixed "now" for reproducible output (the recorded UI test data); `None` = the clock.
+    fixed_now: Option<OffsetDateTime>,
 }
 
 impl FakeEcs {
     pub fn new(auth: Arc<FakeAuth>) -> Self {
-        Self { auth }
+        Self {
+            auth,
+            fixed_now: None,
+        }
+    }
+
+    /// Like [`FakeEcs::new`], but all times are relative to `now` instead of the clock.
+    pub fn with_fixed_now(auth: Arc<FakeAuth>, now: OffsetDateTime) -> Self {
+        Self {
+            auth,
+            fixed_now: Some(now),
+        }
+    }
+
+    fn ago(&self, minutes: i64) -> Option<Timestamp> {
+        let now = self.fixed_now.unwrap_or_else(OffsetDateTime::now_utc);
+        Some(Timestamp(now - Duration::minutes(minutes)))
     }
 
     /// Account ID and region for ARNs; fails like AWS does for unusable credentials.
@@ -214,12 +232,6 @@ fn hex_id(seed: &str) -> String {
         out.push_str(&format!("{hash:016x}"));
     }
     out
-}
-
-fn ago(minutes: i64) -> Option<Timestamp> {
-    Some(Timestamp(
-        OffsetDateTime::now_utc() - Duration::minutes(minutes),
-    ))
 }
 
 fn summary(spec: &ServiceSpec, region: &str, account: &str) -> ServiceSummary {
@@ -327,8 +339,8 @@ impl EcsSource for FakeEcs {
                 .iter()
                 .filter(|s| s.stop_code != "ServiceSchedulerInitiated")
                 .count() as u32,
-            created_at: ago(if in_progress { 6 } else { 3 * 24 * 60 }),
-            updated_at: ago(if in_progress { 1 } else { 3 * 24 * 60 - 5 }),
+            created_at: self.ago(if in_progress { 6 } else { 3 * 24 * 60 }),
+            updated_at: self.ago(if in_progress { 1 } else { 3 * 24 * 60 - 5 }),
         }];
         if let Some((revision, running)) = spec.previous {
             let previous = format!("{}:{revision}", spec.name);
@@ -342,8 +354,8 @@ impl EcsSource for FakeEcs {
                 running,
                 pending: 0,
                 failed: 0,
-                created_at: ago(9 * 24 * 60),
-                updated_at: ago(6),
+                created_at: self.ago(9 * 24 * 60),
+                updated_at: self.ago(6),
             });
         }
 
@@ -353,14 +365,14 @@ impl EcsSource for FakeEcs {
             .enumerate()
             .map(|(i, message)| ServiceEvent {
                 id: hex_id(&format!("{}-event-{i}", spec.name)),
-                created_at: ago(i as i64 * 7 + 1),
+                created_at: self.ago(i as i64 * 7 + 1),
                 message: format!("(service {}) {message}", spec.name),
             })
             .collect();
 
         Ok(ServiceDetail {
             summary: summary(spec, &region, &account),
-            created_at: ago(120 * 24 * 60),
+            created_at: self.ago(120 * 24 * 60),
             platform_version: (spec.launch_type == "FARGATE").then(|| "1.4.0".to_owned()),
             deployments,
             task_definition: Some(TaskDefinitionInfo {
@@ -396,8 +408,8 @@ impl EcsSource for FakeEcs {
                 last_status: "RUNNING".to_owned(),
                 desired_status: "RUNNING".to_owned(),
                 health_status: None,
-                created_at: ago(minutes_ago + 1),
-                started_at: ago(minutes_ago),
+                created_at: self.ago(minutes_ago + 1),
+                started_at: self.ago(minutes_ago),
                 stopped_at: None,
                 stop_code: None,
                 stopped_reason: None,
@@ -446,7 +458,7 @@ impl EcsSource for FakeEcs {
                 );
                 t.last_status = "STOPPED".to_owned();
                 t.desired_status = "STOPPED".to_owned();
-                t.stopped_at = ago(stopped.minutes_ago);
+                t.stopped_at = self.ago(stopped.minutes_ago);
                 t.stop_code = Some(stopped.stop_code.to_owned());
                 t.stopped_reason = Some(stopped.reason.to_owned());
                 let container = &mut t.containers[0];

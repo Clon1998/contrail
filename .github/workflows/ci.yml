@@ -36,9 +36,10 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: cargo test
         run: cargo test --workspace
-      # `cargo test` regenerates app/ui/src/bindings.ts (tauri-specta); it must match the commit.
-      - name: Generated TS bindings are up to date
-        run: git diff --exit-code -- app/ui/src/bindings.ts
+      # `cargo test` regenerates app/ui/src/bindings.ts (tauri-specta) and the recorded demo data
+      # for the UI tests; both must match the commit.
+      - name: Generated files are up to date
+        run: git diff --exit-code -- app/ui/src/bindings.ts app/ui/src/e2e/demo-ecs.json
 
   frontend:
     name: Frontend (lint, typecheck, test)

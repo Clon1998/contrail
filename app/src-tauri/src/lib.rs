@@ -2,6 +2,8 @@
 //! forward to the `contrail-*` crates, where the real logic lives.
 
 mod commands;
+#[cfg(test)]
+mod demo_data;
 mod error;
 mod prefs_store;
 mod state;

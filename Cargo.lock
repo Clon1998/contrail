@@ -974,6 +974,8 @@ dependencies = [
  "tauri-build",
  "tauri-specta",
  "tempfile",
+ "time",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]

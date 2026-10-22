@@ -30,6 +30,8 @@ tauri-specta = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true }
 
 [lints]
 workspace = true
