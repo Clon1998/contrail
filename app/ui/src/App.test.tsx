@@ -4,15 +4,18 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
 import { installFakeBackend } from "@/e2e/fakeBackend";
 import { useEcs } from "@/stores/ecs";
+import { useLogs } from "@/stores/logs";
 import { EMPTY_PREFS, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 
 const initialProfiles = useProfiles.getState();
 const initialEcs = useEcs.getState();
+const initialLogs = useLogs.getState();
 
 beforeEach(() => {
   useProfiles.setState(initialProfiles, true);
   useEcs.setState(initialEcs, true);
+  useLogs.setState(initialLogs, true);
   usePrefs.setState({ prefs: EMPTY_PREFS });
   // The settings test changes the page's colour mode and accent.
   document.documentElement.className = "dark";
@@ -186,5 +189,33 @@ describe("App", () => {
     expect(within(dialog).getByRole("radio", { name: "UTC" }).getAttribute("aria-checked")).toBe(
       "true",
     );
+  });
+
+  it("shows a service's backfilled logs with joined stack traces", async () => {
+    installFakeBackend();
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "payments-worker" })).getByRole(
+        "button",
+      ),
+    );
+    const view = await screen.findByRole("main", { name: "Service payments-worker" });
+
+    // Radix tabs switch on mouse down.
+    fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
+    const list = await within(view).findByRole("list", { name: "Log events" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(25);
+    expect(within(view).getByText("/ecs/payments-worker · 5 streams")).toBeTruthy();
+
+    const [errorMessage] = within(list).getAllByText("Error while settling batch");
+    const errorRow = errorMessage?.closest("button");
+    if (!errorRow) throw new Error("no error row");
+    fireEvent.click(errorRow);
+    expect(await within(list).findByLabelText("Stack trace")).toBeTruthy();
+    expect(within(list).getByText("log.logger")).toBeTruthy();
   });
 });

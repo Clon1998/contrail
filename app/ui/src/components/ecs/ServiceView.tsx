@@ -2,8 +2,10 @@ import { useEffect } from "react";
 import { CircleAlertIcon, Loader2Icon, RefreshCwIcon, StarIcon } from "lucide-react";
 import { cn } from "cn";
 import type { Deployment, ServiceDetail, Task } from "@/bindings";
+import { LogsPanel } from "@/components/logs/LogsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNow } from "@/hooks/useNow";
 import { formatAgo, formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { useEcs } from "@/stores/ecs";
@@ -28,32 +30,46 @@ export function ServiceView() {
   const data = "data" in detail ? detail.data : undefined;
 
   return (
-    <main aria-label={`Service ${selected.serviceName}`} className="min-w-0 flex-1 overflow-y-auto">
+    <main
+      aria-label={`Service ${selected.serviceName}`}
+      className="flex min-w-0 flex-1 flex-col overflow-hidden"
+    >
       <Header />
-      {detail.state === "error" && (
-        <p className="mx-4 mt-3 flex items-start gap-2 rounded-md border border-destructive/40 p-2 text-sm text-destructive">
-          <CircleAlertIcon className="mt-0.5 size-4 shrink-0" />
-          <span>
-            {detail.error.message}
-            {detail.error.hint && (
-              <span className="block text-muted-foreground">{detail.error.hint}</span>
-            )}
-          </span>
-        </p>
-      )}
-      {!data && detail.state === "loading" && (
-        <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-          <Loader2Icon className="size-4 animate-spin" /> Loading service…
-        </p>
-      )}
-      {data && (
-        <div className="space-y-5 p-4">
-          <Facts detail={data} />
-          <Deployments deployments={data.deployments} />
-          <Tasks />
-          <Events detail={data} />
-        </div>
-      )}
+      <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col gap-0">
+        <TabsList className="mx-4 mt-2">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="logs">Logs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="min-h-0 overflow-y-auto">
+          {detail.state === "error" && (
+            <p className="mx-4 mt-3 flex items-start gap-2 rounded-md border border-destructive/40 p-2 text-sm text-destructive">
+              <CircleAlertIcon className="mt-0.5 size-4 shrink-0" />
+              <span>
+                {detail.error.message}
+                {detail.error.hint && (
+                  <span className="block text-muted-foreground">{detail.error.hint}</span>
+                )}
+              </span>
+            </p>
+          )}
+          {!data && detail.state === "loading" && (
+            <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+              <Loader2Icon className="size-4 animate-spin" /> Loading service…
+            </p>
+          )}
+          {data && (
+            <div className="space-y-5 p-4">
+              <Facts detail={data} />
+              <Deployments deployments={data.deployments} />
+              <Tasks />
+              <Events detail={data} />
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="logs" className="flex min-h-0 flex-col">
+          <LogsPanel />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }

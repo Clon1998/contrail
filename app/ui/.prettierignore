@@ -4,3 +4,4 @@ pnpm-lock.yaml
 test-results
 playwright-report
 src/e2e/demo-ecs.json
+src/e2e/demo-logs.json

@@ -44,7 +44,7 @@ jobs:
       # `cargo test` regenerates app/ui/src/bindings.ts (tauri-specta) and the recorded demo data
       # for the UI tests; both must match the commit.
       - name: Generated files are up to date
-        run: git diff --exit-code -- app/ui/src/bindings.ts app/ui/src/e2e/demo-ecs.json
+        run: git diff --exit-code -- app/ui/src/bindings.ts app/ui/src/e2e/demo-ecs.json app/ui/src/e2e/demo-logs.json
 
   frontend:
     name: Frontend (lint, typecheck, test)

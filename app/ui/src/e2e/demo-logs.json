@@ -1,0 +1,4038 @@
+{
+  "recordedAt": "2026-01-01T12:00:00Z",
+  "account": "111122223333",
+  "region": "eu-central-1",
+  "services": {
+    "demo-core/orders-api": {
+      "location": {
+        "logGroup": "/ecs/orders-api",
+        "region": "eu-central-1",
+        "streamPrefix": "ecs",
+        "container": "orders-api"
+      },
+      "streams": 4,
+      "stats": {
+        "total": 900,
+        "evicted": 0,
+        "trace": 0,
+        "debug": 122,
+        "info": 706,
+        "warn": 45,
+        "error": 27,
+        "unknown": 0
+      },
+      "truncated": false,
+      "events": [
+        {
+          "seq": 1,
+          "timestamp": "2026-01-01T11:45:01.993666893Z",
+          "cwTimestamp": "2026-01-01T11:45:01.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01.993666893Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1212 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01.993666893Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.993666893Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1212 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 2,
+          "timestamp": "2026-01-01T11:45:02.341803064Z",
+          "cwTimestamp": "2026-01-01T11:45:02.341Z",
+          "stream": "ecs/orders-api/0ace24c03b7d9f28db08937dec8a294c",
+          "taskId": "0ace24c03b7d9f28db08937dec8a294c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:02.341803064Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1114 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:02.341803064Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02.341803064Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1114 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 3,
+          "timestamp": "2026-01-01T11:45:03.117044285Z",
+          "cwTimestamp": "2026-01-01T11:45:03.117Z",
+          "stream": "ecs/orders-api/a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "taskId": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:03.117044285Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1010 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:03.117044285Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.117044285Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1010 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 4,
+          "timestamp": "2026-01-01T11:45:03.141953704Z",
+          "cwTimestamp": "2026-01-01T11:45:03.141Z",
+          "stream": "ecs/orders-api/a85d835e06de34e69d3c49c4943bf12c",
+          "taskId": "a85d835e06de34e69d3c49c4943bf12c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:03.141953704Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:03.141953704Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 234039
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "00000000000012dd33136fc586028ab9"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.141953704Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":234039,\"correlationId\":\"00000000000012dd33136fc586028ab9\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 5,
+          "timestamp": "2026-01-01T11:45:05.993395761Z",
+          "cwTimestamp": "2026-01-01T11:45:05.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:05.993395761Z",
+            "level": "WARN",
+            "message": "Retrying after 503, body: {\"title\":\"Service Unavailable\",\"status\":503}",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:05.993395761Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.client.DownstreamClient"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              26,
+              70
+            ]
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:05.993395761Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 6,
+          "timestamp": "2026-01-01T11:45:06.34188929Z",
+          "cwTimestamp": "2026-01-01T11:45:06.341Z",
+          "stream": "ecs/orders-api/0ace24c03b7d9f28db08937dec8a294c",
+          "taskId": "0ace24c03b7d9f28db08937dec8a294c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:06.34188929Z",
+            "level": "ERROR",
+            "message": "Document status change: [order] CONSUMING -> FAILED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:06.34188929Z"
+              },
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "FAILED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 231706
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "0000000000000b4e03653f790c33efe6"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.34188929Z\",\"log\":{\"level\":\"ERROR\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> FAILED\",\"pipeline\":{\"state\":\"FAILED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231706,\"correlationId\":\"0000000000000b4e03653f790c33efe6\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 7,
+          "timestamp": "2026-01-01T11:45:07.117871506Z",
+          "cwTimestamp": "2026-01-01T11:45:07.117Z",
+          "stream": "ecs/orders-api/a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "taskId": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:07.117871506Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:07.117871506Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 232894
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "0000000000000990feb8a7391c13d0e2"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.117871506Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":232894,\"correlationId\":\"0000000000000990feb8a7391c13d0e2\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 8,
+          "timestamp": "2026-01-01T11:45:07.141081869Z",
+          "cwTimestamp": "2026-01-01T11:45:07.141Z",
+          "stream": "ecs/orders-api/a85d835e06de34e69d3c49c4943bf12c",
+          "taskId": "a85d835e06de34e69d3c49c4943bf12c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:07.141081869Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1215 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:07.141081869Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.141081869Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1215 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 9,
+          "timestamp": "2026-01-01T11:45:09.99366019Z",
+          "cwTimestamp": "2026-01-01T11:45:09.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:09.99366019Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:09.99366019Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 4
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 230460
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "0000000000001a67a52758be8c6cb5b4"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.99366019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":230460,\"correlationId\":\"0000000000001a67a52758be8c6cb5b4\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 10,
+          "timestamp": "2026-01-01T11:45:10.341435578Z",
+          "cwTimestamp": "2026-01-01T11:45:10.341Z",
+          "stream": "ecs/orders-api/0ace24c03b7d9f28db08937dec8a294c",
+          "taskId": "0ace24c03b7d9f28db08937dec8a294c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:10.341435578Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1413 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:10.341435578Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.341435578Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1413 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 11,
+          "timestamp": "2026-01-01T11:45:11.117904912Z",
+          "cwTimestamp": "2026-01-01T11:45:11.117Z",
+          "stream": "ecs/orders-api/a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "taskId": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:11.117904912Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:11.117904912Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 239549
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "00000000000007749acf43b14eb9bb03"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.117904912Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":239549,\"correlationId\":\"00000000000007749acf43b14eb9bb03\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 12,
+          "timestamp": "2026-01-01T11:45:11.141139293Z",
+          "cwTimestamp": "2026-01-01T11:45:11.141Z",
+          "stream": "ecs/orders-api/a85d835e06de34e69d3c49c4943bf12c",
+          "taskId": "a85d835e06de34e69d3c49c4943bf12c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:11.141139293Z",
+            "level": "WARN",
+            "message": "Retrying after 503, body: {\"title\":\"Service Unavailable\",\"status\":503}",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:11.141139293Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.client.DownstreamClient"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              26,
+              70
+            ]
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.141139293Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 13,
+          "timestamp": "2026-01-01T11:45:13.993720853Z",
+          "cwTimestamp": "2026-01-01T11:45:13.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:13.993720853Z",
+            "level": "INFO",
+            "message": "POST /api/v1/requests -> 202 Accepted",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:13.993720853Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:13.993720853Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 14,
+          "timestamp": "2026-01-01T11:45:14.341511025Z",
+          "cwTimestamp": "2026-01-01T11:45:14.341Z",
+          "stream": "ecs/orders-api/0ace24c03b7d9f28db08937dec8a294c",
+          "taskId": "0ace24c03b7d9f28db08937dec8a294c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:14.341511025Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:14.341511025Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.341511025Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 15,
+          "timestamp": "2026-01-01T11:45:15.117107043Z",
+          "cwTimestamp": "2026-01-01T11:45:15.117Z",
+          "stream": "ecs/orders-api/a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "taskId": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:15.117107043Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:15.117107043Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 3
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 234345
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "000000000000145f4791aa4afc9baab7"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.117107043Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":234345,\"correlationId\":\"000000000000145f4791aa4afc9baab7\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 16,
+          "timestamp": "2026-01-01T11:45:15.141824269Z",
+          "cwTimestamp": "2026-01-01T11:45:15.141Z",
+          "stream": "ecs/orders-api/a85d835e06de34e69d3c49c4943bf12c",
+          "taskId": "a85d835e06de34e69d3c49c4943bf12c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:15.141824269Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:15.141824269Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.141824269Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 17,
+          "timestamp": "2026-01-01T11:45:17.993272661Z",
+          "cwTimestamp": "2026-01-01T11:45:17.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:17.993272661Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:17.993272661Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:17.993272661Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 18,
+          "timestamp": "2026-01-01T11:45:18.341772997Z",
+          "cwTimestamp": "2026-01-01T11:45:18.341Z",
+          "stream": "ecs/orders-api/0ace24c03b7d9f28db08937dec8a294c",
+          "taskId": "0ace24c03b7d9f28db08937dec8a294c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:18.341772997Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:18.341772997Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 5
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 232681
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "000000000000053807f3bd71f9d4cc97"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.341772997Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":232681,\"correlationId\":\"000000000000053807f3bd71f9d4cc97\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 19,
+          "timestamp": "2026-01-01T11:45:19.117685468Z",
+          "cwTimestamp": "2026-01-01T11:45:19.117Z",
+          "stream": "ecs/orders-api/a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "taskId": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:19.117685468Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:19.117685468Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.117685468Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 20,
+          "timestamp": "2026-01-01T11:45:19.141001436Z",
+          "cwTimestamp": "2026-01-01T11:45:19.141Z",
+          "stream": "ecs/orders-api/a85d835e06de34e69d3c49c4943bf12c",
+          "taskId": "a85d835e06de34e69d3c49c4943bf12c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:19.141001436Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:19.141001436Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 2
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 231760
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "000000000000108cedb181b16e5bf670"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.141001436Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":231760,\"correlationId\":\"000000000000108cedb181b16e5bf670\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 21,
+          "timestamp": "2026-01-01T11:45:21.993536603Z",
+          "cwTimestamp": "2026-01-01T11:45:21.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:21.993536603Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1210 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:21.993536603Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:21.993536603Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1210 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 22,
+          "timestamp": "2026-01-01T11:45:22.341966497Z",
+          "cwTimestamp": "2026-01-01T11:45:22.341Z",
+          "stream": "ecs/orders-api/0ace24c03b7d9f28db08937dec8a294c",
+          "taskId": "0ace24c03b7d9f28db08937dec8a294c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:22.341966497Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1008 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:22.341966497Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:22.341966497Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1008 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 23,
+          "timestamp": "2026-01-01T11:45:23.117965314Z",
+          "cwTimestamp": "2026-01-01T11:45:23.117Z",
+          "stream": "ecs/orders-api/a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "taskId": "a85a1d5e06db51bdd7ccd6b593f4aa12",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:23.117965314Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:23.117965314Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 4
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 235888
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "0000000000001a1933a15c52cc0541b0"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.117965314Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":235888,\"correlationId\":\"0000000000001a1933a15c52cc0541b0\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 24,
+          "timestamp": "2026-01-01T11:45:23.141840019Z",
+          "cwTimestamp": "2026-01-01T11:45:23.141Z",
+          "stream": "ecs/orders-api/a85d835e06de34e69d3c49c4943bf12c",
+          "taskId": "a85d835e06de34e69d3c49c4943bf12c",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:23.141840019Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:23.141840019Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 237793
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "000000000000190616d89ec79f31b0cf"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.141840019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":237793,\"correlationId\":\"000000000000190616d89ec79f31b0cf\"},\"ecs\":{\"version\":\"8.11\"}}"
+        },
+        {
+          "seq": 25,
+          "timestamp": "2026-01-01T11:45:25.993219124Z",
+          "cwTimestamp": "2026-01-01T11:45:25.993Z",
+          "stream": "ecs/orders-api/a856b75e06d86e9493e9524bb9d11bac",
+          "taskId": "a856b75e06d86e9493e9524bb9d11bac",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:25.993219124Z",
+            "level": "INFO",
+            "message": "POST /api/v1/requests -> 202 Accepted",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:25.993219124Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "orders-api"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.993219124Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}"
+        }
+      ]
+    },
+    "demo-core/payments-worker": {
+      "location": {
+        "logGroup": "/ecs/payments-worker",
+        "region": "eu-central-1",
+        "streamPrefix": "ecs",
+        "container": "payments-worker"
+      },
+      "streams": 5,
+      "stats": {
+        "total": 750,
+        "evicted": 0,
+        "trace": 0,
+        "debug": 0,
+        "info": 600,
+        "warn": 64,
+        "error": 86,
+        "unknown": 0
+      },
+      "truncated": false,
+      "events": [
+        {
+          "seq": 1,
+          "timestamp": "2026-01-01T11:45:00.532701546Z",
+          "cwTimestamp": "2026-01-01T11:45:00.532Z",
+          "stream": "ecs/payments-worker/9bfd40a374d68a68cee5708aeff9053e",
+          "taskId": "9bfd40a374d68a68cee5708aeff9053e",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:00.532701546Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/3525",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:00.532701546Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.532701546Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/3525\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 2,
+          "timestamp": "2026-01-01T11:45:01.333955143Z",
+          "cwTimestamp": "2026-01-01T11:45:01.333Z",
+          "stream": "ecs/payments-worker/cc996ddd2646ddd685fdf680fc38a5b2",
+          "taskId": "cc996ddd2646ddd685fdf680fc38a5b2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01.333955143Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/7972",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01.333955143Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.333955143Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/7972\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 3,
+          "timestamp": "2026-01-01T11:45:02.001327121Z",
+          "cwTimestamp": "2026-01-01T11:45:02.001Z",
+          "stream": "ecs/payments-worker/5f2adcb1f5162fea45a80e88bd917942",
+          "taskId": "5f2adcb1f5162fea45a80e88bd917942",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:02.001327121Z",
+            "level": "ERROR",
+            "message": "Error while settling batch",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:02.001327121Z"
+              },
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "error.type",
+                "value": "java.lang.IllegalStateException"
+              },
+              {
+                "key": "error.message",
+                "value": "Ledger batch is closed"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Ledger batch is closed",
+              "stackTrace": "java.lang.IllegalStateException: Ledger batch is closed\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\n\tat java.util.concurrent.ThreadPoolExecutor.step6(ThreadPoolExecutor.java:58)\n\tat com.example.payments.client.LedgerClient.step7(LedgerClient.java:61)\n\tat com.example.payments.service.SettlementService.step8(SettlementService.java:64)\n\tat org.springframework.web.client.RestTemplate.step9(RestTemplate.java:67)\n\tat java.util.concurrent.ThreadPoolExecutor.step10(ThreadPoolExecutor.java:70)\n\tat com.example.payments.client.LedgerClient.step11(LedgerClient.java:73)\n\tat com.example.payments.service.SettlementService.step12(SettlementService.java:76)\n\tat org.springframework.web.client.RestTemplate.step13(RestTemplate.java:79)\n\tat java.util.concurrent.ThreadPoolExecutor.step14(ThreadPoolExecutor.java:82)\n\tat com.example.payments.client.LedgerClient.step15(LedgerClient.java:85)\n\tat com.example.payments.service.SettlementService.step16(SettlementService.java:88)\n\tat org.springframework.web.client.RestTemplate.step17(RestTemplate.java:91)\n\tat java.util.concurrent.ThreadPoolExecutor.step18(ThreadPoolExecutor.java:94)\n\tat com.example.payments.client.LedgerClient.step19(LedgerClient.java:97)\n\tat com.example.payments.service.SettlementService.step20(SettlementService.java:100)\n\tat org.springframework.web.client.RestTemplate.step21(RestTemplate.java:103)\n\tat java.util.concurrent.ThreadPoolExecutor.step22(ThreadPoolExecutor.java:106)\n\tat com.example.payments.client.LedgerClient.step23(LedgerClient.java:109)\n\tat com.example.payments.service.SettlementService.step24(SettlementService.java:112)\n\tat org.springframework.web.client.RestTemplate.step25(RestTemplate.java:115)\n\tat java.util.concurrent.ThreadPoolExecutor.step26(ThreadPoolExecutor.java:118)\n\tat com.example.payments.client.LedgerClient.step27(LedgerClient.java:121)\n\tat com.example.payments.service.SettlementService.step28(SettlementService.java:124)\n\tat org.springframework.web.client.RestTemplate.step29(RestTemplate.java:127)\n\tat java.util.concurrent.ThreadPoolExecutor.step30(ThreadPoolExecutor.java:130)\n\tat com.example.payments.client.LedgerClient.step31(LedgerClient.java:133)\n\tat com.example.payments.service.SettlementService.step32(SettlementService.java:136)\n\tat org.springframework.web.client.RestTemplate.step33(RestTemplate.java:139)\n\tat java.util.concurrent.ThreadPoolExecutor.step34(ThreadPoolExecutor.java:142)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 33 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02.001327121Z\",\"log.level\":\"ERROR\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\\n\\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\\n\\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\\n\\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\\n\\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step6(ThreadPoolExecutor.java:58)\\n\\tat com.example.payments.client.LedgerClient.step7(LedgerClient.java:61)\\n\\tat com.example.payments.service.SettlementService.step8(SettlementService.java:64)\\n\\tat org.springframework.web.client.RestTemplate.step9(RestTemplate.java:67)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step10(ThreadPoolExecutor.java:70)\\n\\tat com.example.payments.client.LedgerClient.step11(LedgerClient.java:73)\\n\\tat com.example.payments.service.SettlementService.step12(SettlementService.java:76)\\n\\tat org.springframework.web.client.RestTemplate.step13(RestTemplate.java:79)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step14(ThreadPoolExecutor.java:82)\\n\\tat com.example.payments.client.LedgerClient.step15(LedgerClient.java:85)\\n\\tat com.example.payments.service.SettlementService.step16(SettlementService.java:88)\\n\\tat org.springframework.web.client.RestTemplate.step17(RestTemplate.java:91)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step18(ThreadPoolExecutor.java:94)\\n\\tat com.example.payments.client.LedgerClient.step19(LedgerClient.java:97)\\n\\tat com.example.payments.service.SettlementService.step20(SettlementService.java:100)\\n\\tat org.springframework.web.client.RestTemplate.step21(RestTemplate.java:103)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step22(ThreadPoolExecutor.java:106)\\n\\tat com.example.payments.client.LedgerClient.step23(LedgerClient.java:109)\\n\\tat com.example.payments.service.SettlementService.step24(SettlementService.java:112)\\n\\tat org.springframework.web.client.RestTemplate.step25(RestTemplate.java:115)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step26(ThreadPoolExecutor.java:118)\\n\\tat com.example.payments.client.LedgerClient.step27(LedgerClient.java:121)\\n\\tat com.example.payments.service.SettlementService.step28(SettlementService.java:124)\\n\\tat org.springframework.web.client.RestTemplate.step29(RestTemplate.java:127)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step30(ThreadPoolExecutor.java:130)\\n\\tat com.example.payments.client.LedgerClient.step31(LedgerClient.java:133)\\n\\tat com.example.payments.service.SettlementService.step32(SettlementService.java:136)\\n\\tat org.springframework.web.client.RestTemplate.step33(RestTemplate.java:139)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step34(ThreadPoolExecutor.java:142)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 33 common frames omitted\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 4,
+          "timestamp": "2026-01-01T11:45:03.224110988Z",
+          "cwTimestamp": "2026-01-01T11:45:03.224Z",
+          "stream": "ecs/payments-worker/cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "taskId": "cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:03.224110988Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/6790",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:03.224110988Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.224110988Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6790\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 5,
+          "timestamp": "2026-01-01T11:45:04.023979769Z",
+          "cwTimestamp": "2026-01-01T11:45:04.023Z",
+          "stream": "ecs/payments-worker/cc92a1dd26411784e93d2832d2fda8f2",
+          "taskId": "cc92a1dd26411784e93d2832d2fda8f2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:04.023979769Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/8121",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:04.023979769Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:04.023979769Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/8121\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 6,
+          "timestamp": "2026-01-01T11:45:06.532946294Z",
+          "cwTimestamp": "2026-01-01T11:45:06.532Z",
+          "stream": "ecs/payments-worker/9bfd40a374d68a68cee5708aeff9053e",
+          "taskId": "9bfd40a374d68a68cee5708aeff9053e",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:06.532946294Z",
+            "level": "WARN",
+            "message": "Error while settling batch",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:06.532946294Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "error.type",
+                "value": "java.lang.IllegalStateException"
+              },
+              {
+                "key": "error.message",
+                "value": "Ledger batch is closed"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Ledger batch is closed",
+              "stackTrace": "java.lang.IllegalStateException: Ledger batch is closed\n\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\n\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\n\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\n\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\n\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\n\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\n\tat com.example.payments.service.SettlementService.step6(SettlementService.java:58)\n\tat org.springframework.web.client.RestTemplate.step7(RestTemplate.java:61)\n\tat java.util.concurrent.ThreadPoolExecutor.step8(ThreadPoolExecutor.java:64)\n\tat com.example.payments.client.LedgerClient.step9(LedgerClient.java:67)\n\tat com.example.payments.service.SettlementService.step10(SettlementService.java:70)\n\tat org.springframework.web.client.RestTemplate.step11(RestTemplate.java:73)\n\tat java.util.concurrent.ThreadPoolExecutor.step12(ThreadPoolExecutor.java:76)\n\tat com.example.payments.client.LedgerClient.step13(LedgerClient.java:79)\n\tat com.example.payments.service.SettlementService.step14(SettlementService.java:82)\n\tat org.springframework.web.client.RestTemplate.step15(RestTemplate.java:85)\n\tat java.util.concurrent.ThreadPoolExecutor.step16(ThreadPoolExecutor.java:88)\n\tat com.example.payments.client.LedgerClient.step17(LedgerClient.java:91)\n\tat com.example.payments.service.SettlementService.step18(SettlementService.java:94)\n\tat org.springframework.web.client.RestTemplate.step19(RestTemplate.java:97)\n\tat java.util.concurrent.ThreadPoolExecutor.step20(ThreadPoolExecutor.java:100)\n\tat com.example.payments.client.LedgerClient.step21(LedgerClient.java:103)\n\tat com.example.payments.service.SettlementService.step22(SettlementService.java:106)\n\tat org.springframework.web.client.RestTemplate.step23(RestTemplate.java:109)\n\tat java.util.concurrent.ThreadPoolExecutor.step24(ThreadPoolExecutor.java:112)\n\tat com.example.payments.client.LedgerClient.step25(LedgerClient.java:115)\n\tat com.example.payments.service.SettlementService.step26(SettlementService.java:118)\n\tat org.springframework.web.client.RestTemplate.step27(RestTemplate.java:121)\n\tat java.util.concurrent.ThreadPoolExecutor.step28(ThreadPoolExecutor.java:124)\n\tat com.example.payments.client.LedgerClient.step29(LedgerClient.java:127)\n\tat com.example.payments.service.SettlementService.step30(SettlementService.java:130)\n\tat org.springframework.web.client.RestTemplate.step31(RestTemplate.java:133)\n\tat java.util.concurrent.ThreadPoolExecutor.step32(ThreadPoolExecutor.java:136)\n\tat com.example.payments.client.LedgerClient.step33(LedgerClient.java:139)\n\tat com.example.payments.service.SettlementService.step34(SettlementService.java:142)\n\tat org.springframework.web.client.RestTemplate.step35(RestTemplate.java:145)\n\tat java.util.concurrent.ThreadPoolExecutor.step36(ThreadPoolExecutor.java:148)\n\tat com.example.payments.client.LedgerClient.step37(LedgerClient.java:151)\n\tat com.example.payments.service.SettlementService.step38(SettlementService.java:154)\n\tat org.springframework.web.client.RestTemplate.step39(RestTemplate.java:157)\n\tat java.util.concurrent.ThreadPoolExecutor.step40(ThreadPoolExecutor.java:160)\n\tat com.example.payments.client.LedgerClient.step41(LedgerClient.java:163)\n\tat com.example.payments.service.SettlementService.step42(SettlementService.java:166)\n\tat org.springframework.web.client.RestTemplate.step43(RestTemplate.java:169)\n\tat java.util.concurrent.ThreadPoolExecutor.step44(ThreadPoolExecutor.java:172)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 43 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.532946294Z\",\"log.level\":\"WARN\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\\n\\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\\n\\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\\n\\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\\n\\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\\n\\tat com.example.payments.service.SettlementService.step6(SettlementService.java:58)\\n\\tat org.springframework.web.client.RestTemplate.step7(RestTemplate.java:61)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step8(ThreadPoolExecutor.java:64)\\n\\tat com.example.payments.client.LedgerClient.step9(LedgerClient.java:67)\\n\\tat com.example.payments.service.SettlementService.step10(SettlementService.java:70)\\n\\tat org.springframework.web.client.RestTemplate.step11(RestTemplate.java:73)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step12(ThreadPoolExecutor.java:76)\\n\\tat com.example.payments.client.LedgerClient.step13(LedgerClient.java:79)\\n\\tat com.example.payments.service.SettlementService.step14(SettlementService.java:82)\\n\\tat org.springframework.web.client.RestTemplate.step15(RestTemplate.java:85)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step16(ThreadPoolExecutor.java:88)\\n\\tat com.example.payments.client.LedgerClient.step17(LedgerClient.java:91)\\n\\tat com.example.payments.service.SettlementService.step18(SettlementService.java:94)\\n\\tat org.springframework.web.client.RestTemplate.step19(RestTemplate.java:97)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step20(ThreadPoolExecutor.java:100)\\n\\tat com.example.payments.client.LedgerClient.step21(LedgerClient.java:103)\\n\\tat com.example.payments.service.SettlementService.step22(SettlementService.java:106)\\n\\tat org.springframework.web.client.RestTemplate.step23(RestTemplate.java:109)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step24(ThreadPoolExecutor.java:112)\\n\\tat com.example.payments.client.LedgerClient.step25(LedgerClient.java:115)\\n\\tat com.example.payments.service.SettlementService.step26(SettlementService.java:118)\\n\\tat org.springframework.web.client.RestTemplate.step27(RestTemplate.java:121)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step28(ThreadPoolExecutor.java:124)\\n\\tat com.example.payments.client.LedgerClient.step29(LedgerClient.java:127)\\n\\tat com.example.payments.service.SettlementService.step30(SettlementService.java:130)\\n\\tat org.springframework.web.client.RestTemplate.step31(RestTemplate.java:133)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step32(ThreadPoolExecutor.java:136)\\n\\tat com.example.payments.client.LedgerClient.step33(LedgerClient.java:139)\\n\\tat com.example.payments.service.SettlementService.step34(SettlementService.java:142)\\n\\tat org.springframework.web.client.RestTemplate.step35(RestTemplate.java:145)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step36(ThreadPoolExecutor.java:148)\\n\\tat com.example.payments.client.LedgerClient.step37(LedgerClient.java:151)\\n\\tat com.example.payments.service.SettlementService.step38(SettlementService.java:154)\\n\\tat org.springframework.web.client.RestTemplate.step39(RestTemplate.java:157)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step40(ThreadPoolExecutor.java:160)\\n\\tat com.example.payments.client.LedgerClient.step41(LedgerClient.java:163)\\n\\tat com.example.payments.service.SettlementService.step42(SettlementService.java:166)\\n\\tat org.springframework.web.client.RestTemplate.step43(RestTemplate.java:169)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step44(ThreadPoolExecutor.java:172)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 43 common frames omitted\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 7,
+          "timestamp": "2026-01-01T11:45:07.333354797Z",
+          "cwTimestamp": "2026-01-01T11:45:07.333Z",
+          "stream": "ecs/payments-worker/cc996ddd2646ddd685fdf680fc38a5b2",
+          "taskId": "cc996ddd2646ddd685fdf680fc38a5b2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:07.333354797Z",
+            "level": "WARN",
+            "message": "Error while settling batch",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:07.333354797Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "error.type",
+                "value": "java.lang.IllegalStateException"
+              },
+              {
+                "key": "error.message",
+                "value": "Ledger batch is closed"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Ledger batch is closed",
+              "stackTrace": "java.lang.IllegalStateException: Ledger batch is closed\n\tat org.springframework.web.client.RestTemplate.step0(RestTemplate.java:40)\n\tat java.util.concurrent.ThreadPoolExecutor.step1(ThreadPoolExecutor.java:43)\n\tat com.example.payments.client.LedgerClient.step2(LedgerClient.java:46)\n\tat com.example.payments.service.SettlementService.step3(SettlementService.java:49)\n\tat org.springframework.web.client.RestTemplate.step4(RestTemplate.java:52)\n\tat java.util.concurrent.ThreadPoolExecutor.step5(ThreadPoolExecutor.java:55)\n\tat com.example.payments.client.LedgerClient.step6(LedgerClient.java:58)\n\tat com.example.payments.service.SettlementService.step7(SettlementService.java:61)\n\tat org.springframework.web.client.RestTemplate.step8(RestTemplate.java:64)\n\tat java.util.concurrent.ThreadPoolExecutor.step9(ThreadPoolExecutor.java:67)\n\tat com.example.payments.client.LedgerClient.step10(LedgerClient.java:70)\n\tat com.example.payments.service.SettlementService.step11(SettlementService.java:73)\n\tat org.springframework.web.client.RestTemplate.step12(RestTemplate.java:76)\n\tat java.util.concurrent.ThreadPoolExecutor.step13(ThreadPoolExecutor.java:79)\n\tat com.example.payments.client.LedgerClient.step14(LedgerClient.java:82)\n\tat com.example.payments.service.SettlementService.step15(SettlementService.java:85)\n\tat org.springframework.web.client.RestTemplate.step16(RestTemplate.java:88)\n\tat java.util.concurrent.ThreadPoolExecutor.step17(ThreadPoolExecutor.java:91)\n\tat com.example.payments.client.LedgerClient.step18(LedgerClient.java:94)\n\tat com.example.payments.service.SettlementService.step19(SettlementService.java:97)\n\tat org.springframework.web.client.RestTemplate.step20(RestTemplate.java:100)\n\tat java.util.concurrent.ThreadPoolExecutor.step21(ThreadPoolExecutor.java:103)\n\tat com.example.payments.client.LedgerClient.step22(LedgerClient.java:106)\n\tat com.example.payments.service.SettlementService.step23(SettlementService.java:109)\n\tat org.springframework.web.client.RestTemplate.step24(RestTemplate.java:112)\n\tat java.util.concurrent.ThreadPoolExecutor.step25(ThreadPoolExecutor.java:115)\n\tat com.example.payments.client.LedgerClient.step26(LedgerClient.java:118)\n\tat com.example.payments.service.SettlementService.step27(SettlementService.java:121)\n\tat org.springframework.web.client.RestTemplate.step28(RestTemplate.java:124)\n\tat java.util.concurrent.ThreadPoolExecutor.step29(ThreadPoolExecutor.java:127)\n\tat com.example.payments.client.LedgerClient.step30(LedgerClient.java:130)\n\tat com.example.payments.service.SettlementService.step31(SettlementService.java:133)\n\tat org.springframework.web.client.RestTemplate.step32(RestTemplate.java:136)\n\tat java.util.concurrent.ThreadPoolExecutor.step33(ThreadPoolExecutor.java:139)\n\tat com.example.payments.client.LedgerClient.step34(LedgerClient.java:142)\n\tat com.example.payments.service.SettlementService.step35(SettlementService.java:145)\n\tat org.springframework.web.client.RestTemplate.step36(RestTemplate.java:148)\n\tat java.util.concurrent.ThreadPoolExecutor.step37(ThreadPoolExecutor.java:151)\n\tat com.example.payments.client.LedgerClient.step38(LedgerClient.java:154)\n\tat com.example.payments.service.SettlementService.step39(SettlementService.java:157)\n\tat org.springframework.web.client.RestTemplate.step40(RestTemplate.java:160)\n\tat java.util.concurrent.ThreadPoolExecutor.step41(ThreadPoolExecutor.java:163)\n\tat com.example.payments.client.LedgerClient.step42(LedgerClient.java:166)\n\tat com.example.payments.service.SettlementService.step43(SettlementService.java:169)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 42 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.333354797Z\",\"log.level\":\"WARN\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat org.springframework.web.client.RestTemplate.step0(RestTemplate.java:40)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step1(ThreadPoolExecutor.java:43)\\n\\tat com.example.payments.client.LedgerClient.step2(LedgerClient.java:46)\\n\\tat com.example.payments.service.SettlementService.step3(SettlementService.java:49)\\n\\tat org.springframework.web.client.RestTemplate.step4(RestTemplate.java:52)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step5(ThreadPoolExecutor.java:55)\\n\\tat com.example.payments.client.LedgerClient.step6(LedgerClient.java:58)\\n\\tat com.example.payments.service.SettlementService.step7(SettlementService.java:61)\\n\\tat org.springframework.web.client.RestTemplate.step8(RestTemplate.java:64)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step9(ThreadPoolExecutor.java:67)\\n\\tat com.example.payments.client.LedgerClient.step10(LedgerClient.java:70)\\n\\tat com.example.payments.service.SettlementService.step11(SettlementService.java:73)\\n\\tat org.springframework.web.client.RestTemplate.step12(RestTemplate.java:76)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step13(ThreadPoolExecutor.java:79)\\n\\tat com.example.payments.client.LedgerClient.step14(LedgerClient.java:82)\\n\\tat com.example.payments.service.SettlementService.step15(SettlementService.java:85)\\n\\tat org.springframework.web.client.RestTemplate.step16(RestTemplate.java:88)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step17(ThreadPoolExecutor.java:91)\\n\\tat com.example.payments.client.LedgerClient.step18(LedgerClient.java:94)\\n\\tat com.example.payments.service.SettlementService.step19(SettlementService.java:97)\\n\\tat org.springframework.web.client.RestTemplate.step20(RestTemplate.java:100)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step21(ThreadPoolExecutor.java:103)\\n\\tat com.example.payments.client.LedgerClient.step22(LedgerClient.java:106)\\n\\tat com.example.payments.service.SettlementService.step23(SettlementService.java:109)\\n\\tat org.springframework.web.client.RestTemplate.step24(RestTemplate.java:112)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step25(ThreadPoolExecutor.java:115)\\n\\tat com.example.payments.client.LedgerClient.step26(LedgerClient.java:118)\\n\\tat com.example.payments.service.SettlementService.step27(SettlementService.java:121)\\n\\tat org.springframework.web.client.RestTemplate.step28(RestTemplate.java:124)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step29(ThreadPoolExecutor.java:127)\\n\\tat com.example.payments.client.LedgerClient.step30(LedgerClient.java:130)\\n\\tat com.example.payments.service.SettlementService.step31(SettlementService.java:133)\\n\\tat org.springframework.web.client.RestTemplate.step32(RestTemplate.java:136)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step33(ThreadPoolExecutor.java:139)\\n\\tat com.example.payments.client.LedgerClient.step34(LedgerClient.java:142)\\n\\tat com.example.payments.service.SettlementService.step35(SettlementService.java:145)\\n\\tat org.springframework.web.client.RestTemplate.step36(RestTemplate.java:148)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step37(ThreadPoolExecutor.java:151)\\n\\tat com.example.payments.client.LedgerClient.step38(LedgerClient.java:154)\\n\\tat com.example.payments.service.SettlementService.step39(SettlementService.java:157)\\n\\tat org.springframework.web.client.RestTemplate.step40(RestTemplate.java:160)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step41(ThreadPoolExecutor.java:163)\\n\\tat com.example.payments.client.LedgerClient.step42(LedgerClient.java:166)\\n\\tat com.example.payments.service.SettlementService.step43(SettlementService.java:169)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 42 common frames omitted\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 8,
+          "timestamp": "2026-01-01T11:45:08.001210579Z",
+          "cwTimestamp": "2026-01-01T11:45:08.001Z",
+          "stream": "ecs/payments-worker/5f2adcb1f5162fea45a80e88bd917942",
+          "taskId": "5f2adcb1f5162fea45a80e88bd917942",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:08.001210579Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/9827",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:08.001210579Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:08.001210579Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9827\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 9,
+          "timestamp": "2026-01-01T11:45:09.224337711Z",
+          "cwTimestamp": "2026-01-01T11:45:09.224Z",
+          "stream": "ecs/payments-worker/cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "taskId": "cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:09.224337711Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/5880",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:09.224337711Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.224337711Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5880\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 10,
+          "timestamp": "2026-01-01T11:45:10.023995185Z",
+          "cwTimestamp": "2026-01-01T11:45:10.023Z",
+          "stream": "ecs/payments-worker/cc92a1dd26411784e93d2832d2fda8f2",
+          "taskId": "cc92a1dd26411784e93d2832d2fda8f2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:10.023995185Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/5168",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:10.023995185Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.023995185Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5168\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 11,
+          "timestamp": "2026-01-01T11:45:12.532025871Z",
+          "cwTimestamp": "2026-01-01T11:45:12.532Z",
+          "stream": "ecs/payments-worker/9bfd40a374d68a68cee5708aeff9053e",
+          "taskId": "9bfd40a374d68a68cee5708aeff9053e",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:12.532025871Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/9366",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:12.532025871Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:12.532025871Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9366\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 12,
+          "timestamp": "2026-01-01T11:45:13.33313885Z",
+          "cwTimestamp": "2026-01-01T11:45:13.333Z",
+          "stream": "ecs/payments-worker/cc996ddd2646ddd685fdf680fc38a5b2",
+          "taskId": "cc996ddd2646ddd685fdf680fc38a5b2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:13.33313885Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/9667",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:13.33313885Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:13.33313885Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9667\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 13,
+          "timestamp": "2026-01-01T11:45:14.001062516Z",
+          "cwTimestamp": "2026-01-01T11:45:14.001Z",
+          "stream": "ecs/payments-worker/5f2adcb1f5162fea45a80e88bd917942",
+          "taskId": "5f2adcb1f5162fea45a80e88bd917942",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:14.001062516Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/2198",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:14.001062516Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.001062516Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2198\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 14,
+          "timestamp": "2026-01-01T11:45:15.224203778Z",
+          "cwTimestamp": "2026-01-01T11:45:15.224Z",
+          "stream": "ecs/payments-worker/cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "taskId": "cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:15.224203778Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/2797",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:15.224203778Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.224203778Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2797\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 15,
+          "timestamp": "2026-01-01T11:45:16.023970401Z",
+          "cwTimestamp": "2026-01-01T11:45:16.023Z",
+          "stream": "ecs/payments-worker/cc92a1dd26411784e93d2832d2fda8f2",
+          "taskId": "cc92a1dd26411784e93d2832d2fda8f2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:16.023970401Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/2070",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:16.023970401Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:16.023970401Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2070\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 16,
+          "timestamp": "2026-01-01T11:45:18.532970036Z",
+          "cwTimestamp": "2026-01-01T11:45:18.532Z",
+          "stream": "ecs/payments-worker/9bfd40a374d68a68cee5708aeff9053e",
+          "taskId": "9bfd40a374d68a68cee5708aeff9053e",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:18.532970036Z",
+            "level": "ERROR",
+            "message": "Error while settling batch",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:18.532970036Z"
+              },
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "error.type",
+                "value": "java.lang.IllegalStateException"
+              },
+              {
+                "key": "error.message",
+                "value": "Ledger batch is closed"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Ledger batch is closed",
+              "stackTrace": "java.lang.IllegalStateException: Ledger batch is closed\n\tat com.example.payments.client.LedgerClient.step0(LedgerClient.java:40)\n\tat com.example.payments.service.SettlementService.step1(SettlementService.java:43)\n\tat org.springframework.web.client.RestTemplate.step2(RestTemplate.java:46)\n\tat java.util.concurrent.ThreadPoolExecutor.step3(ThreadPoolExecutor.java:49)\n\tat com.example.payments.client.LedgerClient.step4(LedgerClient.java:52)\n\tat com.example.payments.service.SettlementService.step5(SettlementService.java:55)\n\tat org.springframework.web.client.RestTemplate.step6(RestTemplate.java:58)\n\tat java.util.concurrent.ThreadPoolExecutor.step7(ThreadPoolExecutor.java:61)\n\tat com.example.payments.client.LedgerClient.step8(LedgerClient.java:64)\n\tat com.example.payments.service.SettlementService.step9(SettlementService.java:67)\n\tat org.springframework.web.client.RestTemplate.step10(RestTemplate.java:70)\n\tat java.util.concurrent.ThreadPoolExecutor.step11(ThreadPoolExecutor.java:73)\n\tat com.example.payments.client.LedgerClient.step12(LedgerClient.java:76)\n\tat com.example.payments.service.SettlementService.step13(SettlementService.java:79)\n\tat org.springframework.web.client.RestTemplate.step14(RestTemplate.java:82)\n\tat java.util.concurrent.ThreadPoolExecutor.step15(ThreadPoolExecutor.java:85)\n\tat com.example.payments.client.LedgerClient.step16(LedgerClient.java:88)\n\tat com.example.payments.service.SettlementService.step17(SettlementService.java:91)\n\tat org.springframework.web.client.RestTemplate.step18(RestTemplate.java:94)\n\tat java.util.concurrent.ThreadPoolExecutor.step19(ThreadPoolExecutor.java:97)\n\tat com.example.payments.client.LedgerClient.step20(LedgerClient.java:100)\n\tat com.example.payments.service.SettlementService.step21(SettlementService.java:103)\n\tat org.springframework.web.client.RestTemplate.step22(RestTemplate.java:106)\n\tat java.util.concurrent.ThreadPoolExecutor.step23(ThreadPoolExecutor.java:109)\n\tat com.example.payments.client.LedgerClient.step24(LedgerClient.java:112)\n\tat com.example.payments.service.SettlementService.step25(SettlementService.java:115)\n\tat org.springframework.web.client.RestTemplate.step26(RestTemplate.java:118)\n\tat java.util.concurrent.ThreadPoolExecutor.step27(ThreadPoolExecutor.java:121)\n\tat com.example.payments.client.LedgerClient.step28(LedgerClient.java:124)\n\tat com.example.payments.service.SettlementService.step29(SettlementService.java:127)\n\tat org.springframework.web.client.RestTemplate.step30(RestTemplate.java:130)\n\tat java.util.concurrent.ThreadPoolExecutor.step31(ThreadPoolExecutor.java:133)\n\tat com.example.payments.client.LedgerClient.step32(LedgerClient.java:136)\n\tat com.example.payments.service.SettlementService.step33(SettlementService.java:139)\n\tat org.springframework.web.client.RestTemplate.step34(RestTemplate.java:142)\n\tat java.util.concurrent.ThreadPoolExecutor.step35(ThreadPoolExecutor.java:145)\n\tat com.example.payments.client.LedgerClient.step36(LedgerClient.java:148)\n\tat com.example.payments.service.SettlementService.step37(SettlementService.java:151)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 36 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.532970036Z\",\"log.level\":\"ERROR\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat com.example.payments.client.LedgerClient.step0(LedgerClient.java:40)\\n\\tat com.example.payments.service.SettlementService.step1(SettlementService.java:43)\\n\\tat org.springframework.web.client.RestTemplate.step2(RestTemplate.java:46)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step3(ThreadPoolExecutor.java:49)\\n\\tat com.example.payments.client.LedgerClient.step4(LedgerClient.java:52)\\n\\tat com.example.payments.service.SettlementService.step5(SettlementService.java:55)\\n\\tat org.springframework.web.client.RestTemplate.step6(RestTemplate.java:58)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step7(ThreadPoolExecutor.java:61)\\n\\tat com.example.payments.client.LedgerClient.step8(LedgerClient.java:64)\\n\\tat com.example.payments.service.SettlementService.step9(SettlementService.java:67)\\n\\tat org.springframework.web.client.RestTemplate.step10(RestTemplate.java:70)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step11(ThreadPoolExecutor.java:73)\\n\\tat com.example.payments.client.LedgerClient.step12(LedgerClient.java:76)\\n\\tat com.example.payments.service.SettlementService.step13(SettlementService.java:79)\\n\\tat org.springframework.web.client.RestTemplate.step14(RestTemplate.java:82)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step15(ThreadPoolExecutor.java:85)\\n\\tat com.example.payments.client.LedgerClient.step16(LedgerClient.java:88)\\n\\tat com.example.payments.service.SettlementService.step17(SettlementService.java:91)\\n\\tat org.springframework.web.client.RestTemplate.step18(RestTemplate.java:94)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step19(ThreadPoolExecutor.java:97)\\n\\tat com.example.payments.client.LedgerClient.step20(LedgerClient.java:100)\\n\\tat com.example.payments.service.SettlementService.step21(SettlementService.java:103)\\n\\tat org.springframework.web.client.RestTemplate.step22(RestTemplate.java:106)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step23(ThreadPoolExecutor.java:109)\\n\\tat com.example.payments.client.LedgerClient.step24(LedgerClient.java:112)\\n\\tat com.example.payments.service.SettlementService.step25(SettlementService.java:115)\\n\\tat org.springframework.web.client.RestTemplate.step26(RestTemplate.java:118)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step27(ThreadPoolExecutor.java:121)\\n\\tat com.example.payments.client.LedgerClient.step28(LedgerClient.java:124)\\n\\tat com.example.payments.service.SettlementService.step29(SettlementService.java:127)\\n\\tat org.springframework.web.client.RestTemplate.step30(RestTemplate.java:130)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step31(ThreadPoolExecutor.java:133)\\n\\tat com.example.payments.client.LedgerClient.step32(LedgerClient.java:136)\\n\\tat com.example.payments.service.SettlementService.step33(SettlementService.java:139)\\n\\tat org.springframework.web.client.RestTemplate.step34(RestTemplate.java:142)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step35(ThreadPoolExecutor.java:145)\\n\\tat com.example.payments.client.LedgerClient.step36(LedgerClient.java:148)\\n\\tat com.example.payments.service.SettlementService.step37(SettlementService.java:151)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 36 common frames omitted\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 17,
+          "timestamp": "2026-01-01T11:45:19.333937793Z",
+          "cwTimestamp": "2026-01-01T11:45:19.333Z",
+          "stream": "ecs/payments-worker/cc996ddd2646ddd685fdf680fc38a5b2",
+          "taskId": "cc996ddd2646ddd685fdf680fc38a5b2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:19.333937793Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/6961",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:19.333937793Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.333937793Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6961\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 18,
+          "timestamp": "2026-01-01T11:45:20.001044484Z",
+          "cwTimestamp": "2026-01-01T11:45:20.001Z",
+          "stream": "ecs/payments-worker/5f2adcb1f5162fea45a80e88bd917942",
+          "taskId": "5f2adcb1f5162fea45a80e88bd917942",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:20.001044484Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/5577",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:20.001044484Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:20.001044484Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5577\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 19,
+          "timestamp": "2026-01-01T11:45:21.224194327Z",
+          "cwTimestamp": "2026-01-01T11:45:21.224Z",
+          "stream": "ecs/payments-worker/cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "taskId": "cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:21.224194327Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/1134",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:21.224194327Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:21.224194327Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/1134\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 20,
+          "timestamp": "2026-01-01T11:45:22.023585345Z",
+          "cwTimestamp": "2026-01-01T11:45:22.023Z",
+          "stream": "ecs/payments-worker/cc92a1dd26411784e93d2832d2fda8f2",
+          "taskId": "cc92a1dd26411784e93d2832d2fda8f2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:22.023585345Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/8937",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:22.023585345Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:22.023585345Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/8937\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 21,
+          "timestamp": "2026-01-01T11:45:24.532110408Z",
+          "cwTimestamp": "2026-01-01T11:45:24.532Z",
+          "stream": "ecs/payments-worker/9bfd40a374d68a68cee5708aeff9053e",
+          "taskId": "9bfd40a374d68a68cee5708aeff9053e",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:24.532110408Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/2127",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:24.532110408Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:24.532110408Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2127\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 22,
+          "timestamp": "2026-01-01T11:45:25.333394176Z",
+          "cwTimestamp": "2026-01-01T11:45:25.333Z",
+          "stream": "ecs/payments-worker/cc996ddd2646ddd685fdf680fc38a5b2",
+          "taskId": "cc996ddd2646ddd685fdf680fc38a5b2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:25.333394176Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/7538",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:25.333394176Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.333394176Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/7538\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 23,
+          "timestamp": "2026-01-01T11:45:26.001215189Z",
+          "cwTimestamp": "2026-01-01T11:45:26.001Z",
+          "stream": "ecs/payments-worker/5f2adcb1f5162fea45a80e88bd917942",
+          "taskId": "5f2adcb1f5162fea45a80e88bd917942",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:26.001215189Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/6491",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:26.001215189Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:26.001215189Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6491\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 24,
+          "timestamp": "2026-01-01T11:45:27.224557061Z",
+          "cwTimestamp": "2026-01-01T11:45:27.224Z",
+          "stream": "ecs/payments-worker/cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "taskId": "cc9cd3dd2649c0ffe5ed200c2dd9a542",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:27.224557061Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/1244",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:27.224557061Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:27.224557061Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/1244\",\"ecs.version\":\"8.11\"}"
+        },
+        {
+          "seq": 25,
+          "timestamp": "2026-01-01T11:45:28.023255836Z",
+          "cwTimestamp": "2026-01-01T11:45:28.023Z",
+          "stream": "ecs/payments-worker/cc92a1dd26411784e93d2832d2fda8f2",
+          "taskId": "cc92a1dd26411784e93d2832d2fda8f2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:28.023255836Z",
+            "level": "INFO",
+            "message": "Settled batch 2026/6671",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:28.023255836Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "payments-worker"
+              },
+              {
+                "key": "service.version",
+                "value": "2.3.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.payments.service.SettlementService"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:28.023255836Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6671\",\"ecs.version\":\"8.11\"}"
+        }
+      ]
+    },
+    "demo-edge/legacy-gateway": {
+      "location": {
+        "logGroup": "/ecs/legacy-gateway",
+        "region": "eu-central-1",
+        "streamPrefix": "ecs",
+        "container": "legacy-gateway"
+      },
+      "streams": 2,
+      "stats": {
+        "total": 360,
+        "evicted": 0,
+        "trace": 0,
+        "debug": 61,
+        "info": 213,
+        "warn": 27,
+        "error": 59,
+        "unknown": 0
+      },
+      "truncated": false,
+      "events": [
+        {
+          "seq": 1,
+          "timestamp": "2026-01-01T11:45:01.465Z",
+          "cwTimestamp": "2026-01-01T11:45:01.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:01.465Z",
+            "level": "INFO",
+            "message": "Polled 28 shipments, 1 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:01.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 28 shipments, 1 changed"
+        },
+        {
+          "seq": 2,
+          "timestamp": "2026-01-01T11:45:01.89Z",
+          "cwTimestamp": "2026-01-01T11:45:01.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:01.89Z",
+            "level": "ERROR",
+            "message": "Polling failed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Partner API unavailable",
+              "stackTrace": "java.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:01.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+        },
+        {
+          "seq": 3,
+          "timestamp": "2026-01-01T11:45:06.465Z",
+          "cwTimestamp": "2026-01-01T11:45:06.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:06.465Z",
+            "level": "INFO",
+            "message": "Polled 17 shipments, 0 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:06.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 0 changed"
+        },
+        {
+          "seq": 4,
+          "timestamp": "2026-01-01T11:45:06.89Z",
+          "cwTimestamp": "2026-01-01T11:45:06.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:06.89Z",
+            "level": "INFO",
+            "message": "Polled 22 shipments, 2 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:06.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 2 changed"
+        },
+        {
+          "seq": 5,
+          "timestamp": "2026-01-01T11:45:11.465Z",
+          "cwTimestamp": "2026-01-01T11:45:11.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:11.465Z",
+            "level": "ERROR",
+            "message": "Polling failed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Partner API unavailable",
+              "stackTrace": "java.lang.IllegalStateException: Partner API unavailable\n\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\n\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\n\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\n\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\n\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\n\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:11.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\n\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\n\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\n\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\n\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\n\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+        },
+        {
+          "seq": 6,
+          "timestamp": "2026-01-01T11:45:11.89Z",
+          "cwTimestamp": "2026-01-01T11:45:11.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:11.89Z",
+            "level": "DEBUG",
+            "message": "GET /actuator/health 200 2ms",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RequestLogger"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:11.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+        },
+        {
+          "seq": 7,
+          "timestamp": "2026-01-01T11:45:16.465Z",
+          "cwTimestamp": "2026-01-01T11:45:16.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:16.465Z",
+            "level": "ERROR",
+            "message": "Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              51,
+              94
+            ]
+          },
+          "raw": "2026-01-01T11:45:16.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\""
+        },
+        {
+          "seq": 8,
+          "timestamp": "2026-01-01T11:45:16.89Z",
+          "cwTimestamp": "2026-01-01T11:45:16.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:16.89Z",
+            "level": "INFO",
+            "message": "Polled 19 shipments, 2 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:16.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 19 shipments, 2 changed"
+        },
+        {
+          "seq": 9,
+          "timestamp": "2026-01-01T11:45:21.465Z",
+          "cwTimestamp": "2026-01-01T11:45:21.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:21.465Z",
+            "level": "INFO",
+            "message": "Polled 22 shipments, 2 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:21.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 2 changed"
+        },
+        {
+          "seq": 10,
+          "timestamp": "2026-01-01T11:45:21.89Z",
+          "cwTimestamp": "2026-01-01T11:45:21.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:21.89Z",
+            "level": "INFO",
+            "message": "Polled 29 shipments, 0 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:21.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 29 shipments, 0 changed"
+        },
+        {
+          "seq": 11,
+          "timestamp": "2026-01-01T11:45:26.465Z",
+          "cwTimestamp": "2026-01-01T11:45:26.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:26.465Z",
+            "level": "INFO",
+            "message": "Polled 27 shipments, 0 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:26.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 27 shipments, 0 changed"
+        },
+        {
+          "seq": 12,
+          "timestamp": "2026-01-01T11:45:26.89Z",
+          "cwTimestamp": "2026-01-01T11:45:26.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:26.89Z",
+            "level": "WARN",
+            "message": "Rate limit reached for client demo-partner (120 req/min)",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RateLimitFilter"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:26.890Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+        },
+        {
+          "seq": 13,
+          "timestamp": "2026-01-01T11:45:31.465Z",
+          "cwTimestamp": "2026-01-01T11:45:31.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:31.465Z",
+            "level": "ERROR",
+            "message": "Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              51,
+              94
+            ]
+          },
+          "raw": "2026-01-01T11:45:31.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\""
+        },
+        {
+          "seq": 14,
+          "timestamp": "2026-01-01T11:45:31.89Z",
+          "cwTimestamp": "2026-01-01T11:45:31.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:31.89Z",
+            "level": "INFO",
+            "message": "Polled 20 shipments, 2 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:31.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 20 shipments, 2 changed"
+        },
+        {
+          "seq": 15,
+          "timestamp": "2026-01-01T11:45:36.465Z",
+          "cwTimestamp": "2026-01-01T11:45:36.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:36.465Z",
+            "level": "INFO",
+            "message": "Polled 22 shipments, 0 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:36.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 0 changed"
+        },
+        {
+          "seq": 16,
+          "timestamp": "2026-01-01T11:45:36.89Z",
+          "cwTimestamp": "2026-01-01T11:45:36.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:36.89Z",
+            "level": "DEBUG",
+            "message": "GET /actuator/health 200 2ms",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RequestLogger"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:36.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+        },
+        {
+          "seq": 17,
+          "timestamp": "2026-01-01T11:45:41.465Z",
+          "cwTimestamp": "2026-01-01T11:45:41.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:41.465Z",
+            "level": "WARN",
+            "message": "Rate limit reached for client demo-partner (120 req/min)",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RateLimitFilter"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:41.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+        },
+        {
+          "seq": 18,
+          "timestamp": "2026-01-01T11:45:41.89Z",
+          "cwTimestamp": "2026-01-01T11:45:41.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:41.89Z",
+            "level": "ERROR",
+            "message": "Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              51,
+              94
+            ]
+          },
+          "raw": "2026-01-01T11:45:41.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\""
+        },
+        {
+          "seq": 19,
+          "timestamp": "2026-01-01T11:45:46.465Z",
+          "cwTimestamp": "2026-01-01T11:45:46.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:46.465Z",
+            "level": "DEBUG",
+            "message": "GET /actuator/health 200 2ms",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RequestLogger"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:46.465Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+        },
+        {
+          "seq": 20,
+          "timestamp": "2026-01-01T11:45:46.89Z",
+          "cwTimestamp": "2026-01-01T11:45:46.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:46.89Z",
+            "level": "INFO",
+            "message": "Polled 14 shipments, 2 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:46.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 14 shipments, 2 changed"
+        },
+        {
+          "seq": 21,
+          "timestamp": "2026-01-01T11:45:51.465Z",
+          "cwTimestamp": "2026-01-01T11:45:51.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:51.465Z",
+            "level": "INFO",
+            "message": "Polled 17 shipments, 1 changed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:51.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 1 changed"
+        },
+        {
+          "seq": 22,
+          "timestamp": "2026-01-01T11:45:51.89Z",
+          "cwTimestamp": "2026-01-01T11:45:51.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:51.89Z",
+            "level": "DEBUG",
+            "message": "GET /actuator/health 200 2ms",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RequestLogger"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:51.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+        },
+        {
+          "seq": 23,
+          "timestamp": "2026-01-01T11:45:56.465Z",
+          "cwTimestamp": "2026-01-01T11:45:56.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:56.465Z",
+            "level": "WARN",
+            "message": "Rate limit reached for client demo-partner (120 req/min)",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RateLimitFilter"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:56.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+        },
+        {
+          "seq": 24,
+          "timestamp": "2026-01-01T11:45:56.89Z",
+          "cwTimestamp": "2026-01-01T11:45:56.89Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:56.89Z",
+            "level": "ERROR",
+            "message": "Polling failed",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.p.ShipmentPollingService"
+              }
+            ],
+            "error": {
+              "errorType": "java.lang.IllegalStateException",
+              "message": "Partner API unavailable",
+              "stackTrace": "java.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+            },
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:56.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+        },
+        {
+          "seq": 25,
+          "timestamp": "2026-01-01T11:46:01.465Z",
+          "cwTimestamp": "2026-01-01T11:46:01.465Z",
+          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
+          "taskId": "51a70bd575f344a0502dccd2497186d4",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:46:01.465Z",
+            "level": "WARN",
+            "message": "Rate limit reached for client demo-partner (120 req/min)",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.g.web.RateLimitFilter"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:46:01.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+        }
+      ]
+    }
+  }
+}
