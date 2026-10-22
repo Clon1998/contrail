@@ -97,8 +97,10 @@ export type ContainerDefinitionInfo = {
 	image: string,
 	/**  The image's tag (or short digest) for display, see [`image_tag`]. */
 	imageTag: string,
-	/**  `awslogs` when logs go to CloudWatch (needed from M3 on). */
+	/**  `awslogs` when logs go to CloudWatch. */
 	logDriver: string | null,
+	/**  The log driver's options (`awslogs-group`, `awslogs-stream-prefix`, `awslogs-region`, …). */
+	logOptions: { [key in string]: string },
 };
 
 export type ContainerState = {

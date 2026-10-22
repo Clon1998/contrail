@@ -328,6 +328,11 @@ async fn describe_task_definition(
                 log_driver: c
                     .log_configuration()
                     .map(|l| l.log_driver().as_str().to_owned()),
+                log_options: c
+                    .log_configuration()
+                    .and_then(|l| l.options())
+                    .map(|o| o.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
+                    .unwrap_or_default(),
             })
             .collect(),
     })
@@ -589,6 +594,8 @@ mod tests {
                                 .log_configuration(
                                     LogConfiguration::builder()
                                         .log_driver(LogDriver::Awslogs)
+                                        .options("awslogs-group", "/ecs/orders")
+                                        .options("awslogs-stream-prefix", "ecs")
                                         .build()
                                         .unwrap(),
                                 )
@@ -622,6 +629,10 @@ mod tests {
         assert_eq!(info.revision, 4);
         assert_eq!(info.containers[0].log_driver.as_deref(), Some("awslogs"));
         assert_eq!(info.containers[0].image_tag, "1.2.3");
+        assert_eq!(
+            info.containers[0].log_options["awslogs-group"],
+            "/ecs/orders"
+        );
     }
 
     #[tokio::test]

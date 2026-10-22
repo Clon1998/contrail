@@ -3,8 +3,10 @@
 
 pub mod buffer;
 mod json;
+pub mod location;
 pub mod multiline;
 pub mod parse;
+pub mod source;
 mod spring;
 
 use serde::Serialize;
@@ -13,8 +15,10 @@ use specta::Type;
 use crate::timestamp::Timestamp;
 
 pub use buffer::{BufferStats, LogBuffer};
+pub use location::{LocationError, LogLocation, resolve_log_location};
 pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
+pub use source::{Backfill, LogSource, StreamSelection, TimeRange};
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
 /// `Level::Warn > Level::Info` works for "WARN and above" filters).
@@ -142,4 +146,10 @@ impl LogEvent {
             raw: raw.message.trim_end_matches(['\n', '\r']).to_owned(),
         }
     }
+}
+
+/// Turns a backfill into view-ready events: parses every line and joins split stack traces.
+pub fn process(raw: Vec<RawEvent>) -> Vec<LogEvent> {
+    let events = raw.into_iter().map(LogEvent::from_raw).collect();
+    multiline::join_all(events, multiline::DEFAULT_WINDOW)
 }
