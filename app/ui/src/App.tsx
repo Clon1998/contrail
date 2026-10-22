@@ -1,31 +1,30 @@
-import { useState, type FormEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { greet } from "@/lib/ipc";
+import { useEffect, useState } from "react";
+import { commands, type AppInfo } from "@/bindings";
+import { ConnectionPanel } from "@/components/profile/ConnectionPanel";
+import { LoginOutput } from "@/components/profile/LoginOutput";
+import { ProfileBar } from "@/components/profile/ProfileBar";
+import { useProfiles } from "@/stores/profiles";
+
+/** Session states change as tokens expire; re-read them (local files only) this often. */
+const STATUS_REFRESH_MS = 60_000;
 
 export default function App() {
-  const [name, setName] = useState("");
-  const [greeting, setGreeting] = useState<string>();
+  const [info, setInfo] = useState<AppInfo>();
+  const load = useProfiles((s) => s.load);
+  const refreshStatuses = useProfiles((s) => s.refreshStatuses);
 
-  async function sayHello(event: FormEvent) {
-    event.preventDefault();
-    setGreeting(await greet(name));
-  }
+  useEffect(() => {
+    void commands.appInfo().then(setInfo);
+    void load();
+    const timer = setInterval(() => void refreshStatuses(), STATUS_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [load, refreshStatuses]);
 
   return (
-    <main className="flex h-full flex-col items-center justify-center gap-4">
-      <h1 className="text-3xl font-semibold tracking-tight">Contrail</h1>
-      <p className="text-muted-foreground">Live logs for AWS ECS services.</p>
-      <form className="flex gap-2" onSubmit={sayHello}>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          aria-label="Name"
-        />
-        <Button type="submit">Say hello</Button>
-      </form>
-      {greeting && <p data-testid="greeting">{greeting}</p>}
-    </main>
+    <div className="flex h-full flex-col">
+      <ProfileBar demo={info?.demo ?? false} />
+      <LoginOutput />
+      <ConnectionPanel />
+    </div>
   );
 }

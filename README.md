@@ -4,10 +4,22 @@ A fast, focused desktop log viewer for AWS ECS services.
 Switch AWS SSO profiles, browse clusters → services → tasks, and jump straight into live,
 readable logs — structured (ECS JSON) or plain — with session search.
 
-> **Status:** early development (milestone M0: scaffold). Nothing useful to run yet.
+> **Status:** early development. Profiles and SSO login work (M1); ECS browsing and logs come next.
 > See [plan.md](plan.md) for scope and milestones.
 
 Contrail is strictly **read-only** towards AWS and never stores credentials.
+
+## Using it
+
+- Contrail lists the profiles from `~/.aws/config` (or `AWS_CONFIG_FILE`) with their SSO session state.
+- **Log in** runs `aws sso login --profile <name>` for you, so [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+  must be installed. Contrail only reads the expiry of the SSO token cache; the AWS SDK handles credentials.
+- Switch profiles with ⌘⇧P / Ctrl+Shift+P (search by name, account ID or region).
+
+### Demo mode
+
+`pnpm dev:demo` (in `app/`) or `CONTRAIL_DEMO=1` starts Contrail with invented profiles and sessions and no
+AWS access at all. It powers the UI tests and screenshots.
 
 ## Development
 
@@ -31,6 +43,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cd app && pnpm lint && pnpm typecheck && pnpm test
+pnpm test:e2e         # Playwright UI flows (in app/; uses a fake backend, no Tauri)
 ```
 
 ### Layout
