@@ -8,6 +8,7 @@ pub mod auth;
 mod ini;
 pub mod profile;
 pub mod sso;
+pub mod timestamp;
 
 /// Builds the greeting returned by the hello-world IPC command.
 ///

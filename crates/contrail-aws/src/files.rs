@@ -94,6 +94,7 @@ fn read_optional(path: &Path) -> Result<Option<String>, AuthError> {
 mod tests {
     use super::*;
     use contrail_core::sso::SessionStatus;
+    use contrail_core::timestamp::Timestamp;
     use time::macros::datetime;
 
     const NOW: OffsetDateTime = datetime!(2026-10-22 12:00 UTC);
@@ -148,7 +149,7 @@ mod tests {
         assert_eq!(
             sso::session_status(token.as_ref(), NOW),
             SessionStatus::Valid {
-                expires_at: datetime!(2026-10-22 13:00 UTC)
+                expires_at: Timestamp(datetime!(2026-10-22 13:00 UTC))
             }
         );
     }

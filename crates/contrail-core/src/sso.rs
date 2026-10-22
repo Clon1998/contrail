@@ -10,6 +10,7 @@ use specta::Type;
 use time::{Duration, OffsetDateTime};
 
 use crate::profile::SsoSessionRef;
+use crate::timestamp::Timestamp;
 
 /// Below this remaining lifetime a session that can't refresh itself counts as "expiring soon".
 pub const EXPIRING_SOON: Duration = Duration::minutes(15);
@@ -23,27 +24,15 @@ pub const EXPIRING_SOON: Duration = Duration::minutes(15);
 )]
 pub enum SessionStatus {
     /// The access token is valid until `expires_at`.
-    Valid {
-        #[serde(with = "time::serde::rfc3339")]
-        #[specta(type = String)]
-        expires_at: OffsetDateTime,
-    },
+    Valid { expires_at: Timestamp },
     /// Valid, but ends within [`EXPIRING_SOON`] and can't be refreshed automatically.
-    ExpiringSoon {
-        #[serde(with = "time::serde::rfc3339")]
-        #[specta(type = String)]
-        expires_at: OffsetDateTime,
-    },
+    ExpiringSoon { expires_at: Timestamp },
     /// The access token has expired, but the cache holds a refresh token, so the SDK will most
     /// likely get a new one without a login. (Only a real call, e.g. GetCallerIdentity, can tell
     /// for sure: the session itself may have ended.)
     Refreshable,
     /// The token has expired and can't be refreshed: `aws sso login` is needed.
-    Expired {
-        #[serde(with = "time::serde::rfc3339")]
-        #[specta(type = String)]
-        expired_at: OffsetDateTime,
-    },
+    Expired { expired_at: Timestamp },
     /// There is no cached token for this session (never logged in, or logged out).
     LoggedOut,
     /// The profile doesn't use SSO; Contrail can't tell whether its credentials are valid.
@@ -109,10 +98,11 @@ pub fn session_status(token: Option<&CachedToken>, now: OffsetDateTime) -> Sessi
     let Some(token) = token else {
         return SessionStatus::LoggedOut;
     };
-    let expires_at = token.expires_at;
-    match (expires_at > now, token.can_refresh) {
+    let expires = token.expires_at;
+    let expires_at = Timestamp(expires);
+    match (expires > now, token.can_refresh) {
         (true, true) => SessionStatus::Valid { expires_at },
-        (true, false) if expires_at - now <= EXPIRING_SOON => {
+        (true, false) if expires - now <= EXPIRING_SOON => {
             SessionStatus::ExpiringSoon { expires_at }
         }
         (true, false) => SessionStatus::Valid { expires_at },
@@ -225,16 +215,22 @@ mod tests {
 
         assert_eq!(
             session_status(Some(&token(in_1h, false)), NOW),
-            SessionStatus::Valid { expires_at: in_1h }
+            SessionStatus::Valid {
+                expires_at: Timestamp(in_1h)
+            }
         );
         assert_eq!(
             session_status(Some(&token(in_10m, false)), NOW),
-            SessionStatus::ExpiringSoon { expires_at: in_10m }
+            SessionStatus::ExpiringSoon {
+                expires_at: Timestamp(in_10m)
+            }
         );
         // A refreshable session is never "expiring soon": the SDK renews it.
         assert_eq!(
             session_status(Some(&token(in_10m, true)), NOW),
-            SessionStatus::Valid { expires_at: in_10m }
+            SessionStatus::Valid {
+                expires_at: Timestamp(in_10m)
+            }
         );
         assert_eq!(
             session_status(Some(&token(ago_1h, true)), NOW),
@@ -242,14 +238,16 @@ mod tests {
         );
         assert_eq!(
             session_status(Some(&token(ago_1h, false)), NOW),
-            SessionStatus::Expired { expired_at: ago_1h }
+            SessionStatus::Expired {
+                expired_at: Timestamp(ago_1h)
+            }
         );
     }
 
     #[test]
     fn serializes_for_the_frontend() {
         let json = serde_json::to_string(&SessionStatus::Expired {
-            expired_at: datetime!(2026-10-22 11:00 UTC),
+            expired_at: Timestamp(datetime!(2026-10-22 11:00 UTC)),
         })
         .unwrap();
         assert_eq!(
