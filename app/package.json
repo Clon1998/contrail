@@ -10,6 +10,7 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
+    "dev:demo": "tauri dev -- -- --demo",
     "build": "tauri build",
     "lint": "pnpm --dir ui lint",
     "typecheck": "pnpm --dir ui typecheck",

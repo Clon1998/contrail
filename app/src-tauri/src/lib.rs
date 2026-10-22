@@ -2,8 +2,12 @@
 //! forward to the `contrail-*` crates, where the real logic lives.
 
 mod commands;
+mod error;
+mod state;
 
 use tauri_specta::{Builder, collect_commands};
+
+use crate::state::AppState;
 
 /// Where the generated TypeScript bindings are written, relative to this crate's directory.
 ///
@@ -17,7 +21,15 @@ const BINDINGS_PATH: &str = "../ui/src/bindings.ts";
 /// functions for them, so the frontend can't call a command with the wrong name or arguments.
 /// It's a separate function so both [`run`] and the `export_bindings` test can use it.
 fn specta_builder() -> Builder<tauri::Wry> {
-    Builder::<tauri::Wry>::new().commands(collect_commands![commands::greet])
+    use commands::{app, auth};
+
+    Builder::<tauri::Wry>::new().commands(collect_commands![
+        app::app_info,
+        auth::list_profiles,
+        auth::session_status,
+        auth::caller_identity,
+        auth::sso_login,
+    ])
 }
 
 /// Writes `app/ui/src/bindings.ts` from the registered commands and their types.
@@ -32,13 +44,33 @@ fn export_bindings(builder: &Builder<tauri::Wry>) {
 
 /// Builds and runs the Tauri application. Blocks until the last window is closed.
 pub fn run() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info,contrail=debug".into()),
+        )
+        .init();
+
     let builder = specta_builder();
 
     // Regenerate bindings on every debug start so the UI types never drift from Rust.
     #[cfg(debug_assertions)]
     export_bindings(&builder);
 
+    let demo = state::demo_requested(std::env::args(), std::env::var("CONTRAIL_DEMO").ok());
+    let state = if demo {
+        AppState::demo()
+    } else {
+        AppState::aws().expect("can't locate the AWS configuration")
+    };
+    tracing::info!(
+        version = env!("CARGO_PKG_VERSION"),
+        demo,
+        "Contrail started"
+    );
+
     tauri::Builder::default()
+        .manage(state)
         .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running the Contrail application");

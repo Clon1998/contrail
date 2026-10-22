@@ -1,5 +1,5 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "./App";
 
@@ -9,26 +9,19 @@ describe("App", () => {
     clearMocks();
   });
 
-  it("shows the app name", () => {
+  it("shows the version and the demo badge from app_info", async () => {
+    // Pretend to be the Rust side of the `app_info` command.
+    mockIPC((cmd) => (cmd === "app_info" ? { version: "0.1.0", demo: true } : undefined));
     render(<App />);
     expect(screen.getByRole("heading").textContent).toBe("Contrail");
+    expect(await screen.findByText("Demo mode")).toBeTruthy();
+    expect(screen.getByText("v0.1.0")).toBeTruthy();
   });
 
-  it("greets via the Rust greet command", async () => {
-    // Pretend to be the Rust side of the `greet` command.
-    const calls: { cmd: string; args: unknown }[] = [];
-    mockIPC((cmd, args) => {
-      calls.push({ cmd, args });
-      return "Hello, Patrick! Greetings from Contrail.";
-    });
-
+  it("has no demo badge against real AWS", async () => {
+    mockIPC((cmd) => (cmd === "app_info" ? { version: "0.1.0", demo: false } : undefined));
     render(<App />);
-    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Patrick" } });
-    fireEvent.click(screen.getByRole("button", { name: "Say hello" }));
-
-    expect((await screen.findByTestId("greeting")).textContent).toBe(
-      "Hello, Patrick! Greetings from Contrail.",
-    );
-    expect(calls).toEqual([{ cmd: "greet", args: { name: "Patrick" } }]);
+    expect(await screen.findByText("v0.1.0")).toBeTruthy();
+    expect(screen.queryByText("Demo mode")).toBeNull();
   });
 });

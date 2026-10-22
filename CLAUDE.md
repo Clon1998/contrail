@@ -75,7 +75,7 @@ cargo fmt --all
 # App: from app/ (pnpm workspace root; app/ui is the React frontend package)
 pnpm install                   # also installs git hooks (lefthook: fmt/lint on commit, commitlint, full suite on push)
 pnpm dev                       # run the app (tauri dev: Vite dev server on :1420 + Tauri window)
-pnpm dev -- -- --demo          # run in demo mode (adjust once the flag exists)
+pnpm dev:demo                  # run in demo mode (fake profiles, no AWS; also CONTRAIL_DEMO=1)
 pnpm build                     # build installers for this OS (tauri build)
 pnpm build --debug --no-bundle # quick full build check (what CI runs on macOS/Windows)
 pnpm lint && pnpm typecheck && pnpm test   # frontend (delegates to app/ui; *.test.ts(x) beside the code)

@@ -38,9 +38,9 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 
 # Rust <-> TypeScript type generation. The Tauri 2 line of tauri-specta is still a release
 # candidate and requires an *exact* specta version, so both are pinned with `=` (same as Frida).
-specta = { version = "=2.0.0-rc.26", features = ["derive"] }
-specta-typescript = "0.0.13"
-tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
+specta = { version = "=2.0.0-rc.25", features = ["derive"] }
+specta-typescript = "0.0.12"
+tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 
 # AWS SDK (only used inside contrail-aws).
 aws-config = { version = "1.13.0", features = ["behavior-version-latest"] }
