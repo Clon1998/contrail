@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { applyAppearance, applyWindowTheme, isDark } from "@/lib/appearance";
+import { applyAppearance, applySizes, applyWindowTheme, isDark } from "@/lib/appearance";
 import { usePrefs } from "@/stores/prefs";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
@@ -17,9 +17,9 @@ function useSystemPrefersDark(): boolean {
   return dark;
 }
 
-/** Keeps `<html>` and the native window in sync with the colour mode and accent settings. */
+/** Keeps `<html>` and the native window in sync with the appearance settings. */
 export function useAppearance() {
-  const { colorMode, accent } = usePrefs((s) => s.prefs.settings);
+  const { colorMode, accent, uiScale, logFontSize } = usePrefs((s) => s.prefs.settings);
   const systemPrefersDark = useSystemPrefersDark();
 
   useEffect(() => {
@@ -29,4 +29,8 @@ export function useAppearance() {
   useEffect(() => {
     void applyWindowTheme(colorMode);
   }, [colorMode]);
+
+  useEffect(() => {
+    applySizes(uiScale, logFontSize);
+  }, [uiScale, logFontSize]);
 }

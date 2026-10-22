@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: "sky",
   timeZone: "local",
   backfillMinutes: 15,
+  uiScale: 100,
+  logFontSize: 12,
 };
 
 export const EMPTY_PREFS: Prefs = {

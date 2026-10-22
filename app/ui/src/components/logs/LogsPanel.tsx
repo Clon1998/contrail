@@ -115,7 +115,7 @@ export function LogsPanel() {
               {view.stats.total.toLocaleString()} events.
             </p>
           )}
-          <ol aria-label="Log events" className="font-mono text-xs">
+          <ol aria-label="Log events" className="font-mono text-(length:--log-font-size)">
             {rows.map((event) => (
               <LogRow key={event.seq} event={event} />
             ))}

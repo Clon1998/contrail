@@ -380,6 +380,10 @@ export type Settings = {
 	timeZone: TimeZone,
 	/**  How far back a log view starts, in minutes. */
 	backfillMinutes: number,
+	/**  The size of the whole UI, in percent. */
+	uiScale: number,
+	/**  The font size of log lines, in pixels. */
+	logFontSize: number,
 };
 
 export type Task = {
