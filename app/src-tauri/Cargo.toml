@@ -24,13 +24,13 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+time = { workspace = true }
 specta = { workspace = true }
 specta-typescript = { workspace = true }
 tauri-specta = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-time = { workspace = true }
 tokio = { workspace = true }
 
 [lints]

@@ -2,6 +2,7 @@
 
 use contrail_core::auth::AuthError;
 use contrail_core::error::SourceError;
+use contrail_core::logs::LocationError;
 use serde::Serialize;
 use specta::Type;
 
@@ -29,6 +30,8 @@ pub enum ErrorCode {
     Aws,
     Config,
     Io,
+    /// The service's logs can't be found in CloudWatch (other log driver, missing settings).
+    LogsUnavailable,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
@@ -68,6 +71,14 @@ impl From<AuthError> for ApiError {
             AuthError::Config(_) => ApiError::new(ErrorCode::Config, message)
                 .with_hint("Check ~/.aws/config (or AWS_CONFIG_FILE)."),
         }
+    }
+}
+
+impl From<LocationError> for ApiError {
+    fn from(error: LocationError) -> Self {
+        ApiError::new(ErrorCode::LogsUnavailable, error.to_string()).with_hint(
+            "Contrail reads logs that ECS sends to CloudWatch with the awslogs driver and a stream prefix.",
+        )
     }
 }
 
