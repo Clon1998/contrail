@@ -1,0 +1,293 @@
+---
+source: crates/contrail-core/tests/parse_fixtures.rs
+expression: "parse_fixture(\"plain-spring-default.log\")"
+---
+[
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:40.012Z",
+    "level": "INFO",
+    "message": "Starting IngestGatewayApplication v1.8.0 using Java 21.0.5 with PID 1",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.IngestGatewayApplication"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:44.307Z",
+    "level": "INFO",
+    "message": "Tomcat started on port 8080 (http) with context path '/'",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.s.b.w.e.tomcat.TomcatWebServer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:46.629Z",
+    "level": "ERROR",
+    "message": "Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404,\"instance\":\"/api/shipments/9F2K\"}\"",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "ERROR"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "scheduling-1"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.p.s.ShipmentPollingService"
+      }
+    ],
+    "error": null,
+    "jsonSpan": [
+      51,
+      127
+    ]
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:47.001Z",
+    "level": "WARN",
+    "message": "Rate limit reached for client demo-partner (120 req/min)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "WARN"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "http-nio-8080-exec-3"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.web.RateLimitFilter"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:47.25Z",
+    "level": "DEBUG",
+    "message": "GET /actuator/health 200 2ms",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "DEBUG"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "http-nio-8080-exec-3"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.web.RequestLogger"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:48+01:00",
+    "level": "INFO",
+    "message": "Polled 12 shipments, 0 changed",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "scheduling-1"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.p.s.ShipmentPollingService"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:49.1Z",
+    "level": "TRACE",
+    "message": "Next poll in 30000 ms",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "TRACE"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "scheduling-1"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.p.s.ShipmentPollingService"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:50Z",
+    "level": "INFO",
+    "message": "Older Spring Boot versions log without the application name block",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.LegacyStartup"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T11:31:51Z",
+    "level": "INFO",
+    "message": "Coloured console output (ANSI) is kept",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "ingest-gateway"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.i.ColourConsole"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "Plain line from a shell script without any level",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": "WARN",
+    "message": "[entrypoint] WARNING: JAVA_OPTS not set, using defaults",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  }
+]

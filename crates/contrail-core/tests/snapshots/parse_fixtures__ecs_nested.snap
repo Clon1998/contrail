@@ -1,0 +1,731 @@
+---
+source: crates/contrail-core/tests/parse_fixtures.rs
+expression: "parse_fixture(\"ecs-nested.jsonl\")"
+---
+[
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:01.768108328Z",
+    "level": "INFO",
+    "message": "Received 3 records from example.orders.events.v1",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:01.768108328Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.consumer.OrderEventListener"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:01.768333493Z",
+    "level": "INFO",
+    "message": "Document status change: [order-created] PUBLISHED -> CONSUMING (offset 230328)",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:01.768333493Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.status.StatusManagerService"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "pipeline.state",
+        "value": "CONSUMING"
+      },
+      {
+        "key": "pipeline.previousState",
+        "value": "PUBLISHED"
+      },
+      {
+        "key": "pipeline.message",
+        "value": "Status changed"
+      },
+      {
+        "key": "pipeline.source",
+        "value": "com.example.pipeline.consumer.OrderEventListener"
+      },
+      {
+        "key": "pipeline.consumerGroup",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "pipeline.timestamp",
+        "value": "2026-01-15T09:12:20.970"
+      },
+      {
+        "key": "pipeline.topicName",
+        "value": "example.orders.events.v1"
+      },
+      {
+        "key": "pipeline.partition",
+        "value": 0
+      },
+      {
+        "key": "pipeline.offset",
+        "value": 230328
+      },
+      {
+        "key": "pipeline.routeId",
+        "value": "route-orders-events-to-fulfilment-v1"
+      },
+      {
+        "key": "pipeline.correlationId",
+        "value": "4c123b1612dd272d1371c17149d43953"
+      },
+      {
+        "key": "pipeline.originalName",
+        "value": "order-created-2026-01-15.json"
+      },
+      {
+        "key": "pipeline.objectName",
+        "value": "inbound/2026/01/15/order-created-6b3216fdaeeb.json"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:01.801535919Z",
+    "level": "INFO",
+    "message": "Transformed order 7f3c into fulfilment request with 4 lines and 2 shipments; payload size 2.1 KB, schema v3, validation passed in 12 ms, enrichment from catalog cache (hit ratio 0.97)",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:01.801535919Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.transform.OrderTransformer"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:01.864398802Z",
+    "level": "INFO",
+    "message": "POST /api/v1/fulfilment-requests -> 202 Accepted in 63 ms",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:01.864398802Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.http.FulfilmentClient"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:01.864671999Z",
+    "level": "INFO",
+    "message": "Document status change: [order-created] CONSUMING -> COMPLETED",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:01.864671999Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.status.StatusManagerService"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "pipeline.state",
+        "value": "COMPLETED"
+      },
+      {
+        "key": "pipeline.previousState",
+        "value": "CONSUMING"
+      },
+      {
+        "key": "pipeline.message",
+        "value": "Status changed"
+      },
+      {
+        "key": "pipeline.source",
+        "value": "com.example.pipeline.consumer.OrderEventListener"
+      },
+      {
+        "key": "pipeline.consumerGroup",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "pipeline.timestamp",
+        "value": "2026-01-15T09:12:19.254"
+      },
+      {
+        "key": "pipeline.topicName",
+        "value": "example.orders.events.v1"
+      },
+      {
+        "key": "pipeline.partition",
+        "value": 0
+      },
+      {
+        "key": "pipeline.offset",
+        "value": 230328
+      },
+      {
+        "key": "pipeline.routeId",
+        "value": "route-orders-events-to-fulfilment-v1"
+      },
+      {
+        "key": "pipeline.correlationId",
+        "value": "5729fae923d5a4fd12aabfe228f219e9"
+      },
+      {
+        "key": "pipeline.originalName",
+        "value": "order-created-2026-01-15.json"
+      },
+      {
+        "key": "pipeline.objectName",
+        "value": "inbound/2026/01/15/order-created-cb0eb53f1694.json"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:02.01Z",
+    "level": "DEBUG",
+    "message": "Refreshed 1204 catalog entries",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:02.010000000Z"
+      },
+      {
+        "key": "log.level",
+        "value": "DEBUG"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.cache.CatalogCache"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "scheduling-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:02.120456789Z",
+    "level": "WARN",
+    "message": "Retrying after 503 from fulfilment service, body: {\"title\":\"Service Unavailable\",\"status\":503,\"detail\":\"upstream timeout\"}",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:02.120456789Z"
+      },
+      {
+        "key": "log.level",
+        "value": "WARN"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.http.FulfilmentClient"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": [
+      50,
+      122
+    ]
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:03.10031255Z",
+    "level": "INFO",
+    "message": "Document status change: [order-cancelled] PUBLISHED -> CONSUMING (offset 230329)",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:03.100312550Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.status.StatusManagerService"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "pipeline.state",
+        "value": "CONSUMING"
+      },
+      {
+        "key": "pipeline.previousState",
+        "value": "PUBLISHED"
+      },
+      {
+        "key": "pipeline.message",
+        "value": "Status changed"
+      },
+      {
+        "key": "pipeline.source",
+        "value": "com.example.pipeline.consumer.OrderEventListener"
+      },
+      {
+        "key": "pipeline.consumerGroup",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "pipeline.timestamp",
+        "value": "2026-01-15T09:12:47.253"
+      },
+      {
+        "key": "pipeline.topicName",
+        "value": "example.orders.events.v1"
+      },
+      {
+        "key": "pipeline.partition",
+        "value": 2
+      },
+      {
+        "key": "pipeline.offset",
+        "value": 230329
+      },
+      {
+        "key": "pipeline.routeId",
+        "value": "route-orders-events-to-fulfilment-v1"
+      },
+      {
+        "key": "pipeline.correlationId",
+        "value": "ccf25ec84d8dbc74254770f58904dba4"
+      },
+      {
+        "key": "pipeline.originalName",
+        "value": "order-created-2026-01-15.json"
+      },
+      {
+        "key": "pipeline.objectName",
+        "value": "inbound/2026/01/15/order-created-1ecccc3fc162.json"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:03.200000001Z",
+    "level": "ERROR",
+    "message": "Document status change: [order-cancelled] CONSUMING -> FAILED",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:03.200000001Z"
+      },
+      {
+        "key": "log.level",
+        "value": "ERROR"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.status.StatusManagerService"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "pipeline.state",
+        "value": "FAILED"
+      },
+      {
+        "key": "pipeline.previousState",
+        "value": "CONSUMING"
+      },
+      {
+        "key": "pipeline.message",
+        "value": "Order not found"
+      },
+      {
+        "key": "pipeline.source",
+        "value": "com.example.pipeline.consumer.OrderEventListener"
+      },
+      {
+        "key": "pipeline.consumerGroup",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "pipeline.timestamp",
+        "value": "2026-01-15T09:12:13.451"
+      },
+      {
+        "key": "pipeline.topicName",
+        "value": "example.orders.events.v1"
+      },
+      {
+        "key": "pipeline.partition",
+        "value": 2
+      },
+      {
+        "key": "pipeline.offset",
+        "value": 230329
+      },
+      {
+        "key": "pipeline.routeId",
+        "value": "route-orders-events-to-fulfilment-v1"
+      },
+      {
+        "key": "pipeline.correlationId",
+        "value": "53a13043b026c48bbf33feff9243a8f5"
+      },
+      {
+        "key": "pipeline.originalName",
+        "value": "order-created-2026-01-15.json"
+      },
+      {
+        "key": "pipeline.objectName",
+        "value": "inbound/2026/01/15/order-created-06b40928b5b7.json"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:04Z",
+    "level": "TRACE",
+    "message": "Committed offsets {example.orders.events.v1-0=230330}",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:04.000000000Z"
+      },
+      {
+        "key": "log.level",
+        "value": "TRACE"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.consumer.OrderEventListener"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "orders-events-0-C-1"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "ecs",
+    "timestamp": "2026-01-15T09:12:05.000000005Z",
+    "level": "INFO",
+    "message": "Started Application in 7.412 seconds (process running for 8.1)",
+    "fields": [
+      {
+        "key": "@timestamp",
+        "value": "2026-01-15T09:12:05.000000005Z"
+      },
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "log.logger",
+        "value": "com.example.pipeline.Application"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "service.name",
+        "value": "orders-pipeline"
+      },
+      {
+        "key": "service.version",
+        "value": "4.2.0-SNAPSHOT"
+      },
+      {
+        "key": "service.environment",
+        "value": "PROD"
+      },
+      {
+        "key": "trace.id",
+        "value": "a767c76fb008f86bebb2737f6a6f0fb2"
+      },
+      {
+        "key": "span.id",
+        "value": "3c6f5da2cec25540"
+      },
+      {
+        "key": "ecs.version",
+        "value": "8.11"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  }
+]
