@@ -35,6 +35,18 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 `pnpm dev:demo` (in `app/`) or `CONTRAIL_DEMO=1` starts Contrail with invented profiles and sessions and no
 AWS access at all. It powers the UI tests and screenshots.
 
+## Test builds
+
+Every CI run on `main` builds installers and attaches them to the run (Actions → the run → *Artifacts*, kept
+14 days, or `gh run download <run id> -n contrail-windows`):
+
+- **Windows:** `contrail-windows` contains an NSIS `.exe` that installs per user (no admin rights needed).
+- **macOS (Apple Silicon):** `contrail-macos-arm64` contains a `.dmg`.
+
+The builds are unsigned: Windows SmartScreen asks once ("More info" → "Run anyway"); on macOS, right-click the
+app → Open the first time. Contrail needs the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+for SSO logins and reads `%USERPROFILE%\.aws\config` (Windows) or `~/.aws/config`.
+
 ## Development
 
 Prerequisites:
