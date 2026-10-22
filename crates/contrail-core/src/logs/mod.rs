@@ -1,7 +1,9 @@
 //! Log events: the model, parsing of the three production formats, multi-line joining and the
 //! in-memory buffer the log views read from.
 
+pub mod buffer;
 mod json;
+pub mod multiline;
 pub mod parse;
 mod spring;
 
@@ -10,6 +12,8 @@ use specta::Type;
 
 use crate::timestamp::Timestamp;
 
+pub use buffer::{BufferStats, LogBuffer};
+pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
@@ -93,5 +97,49 @@ impl ParsedLine {
     /// The value of a field by its dotted name.
     pub fn field(&self, key: &str) -> Option<&serde_json::Value> {
         self.fields.iter().find(|f| f.key == key).map(|f| &f.value)
+    }
+}
+
+/// A log event as CloudWatch delivers it, before parsing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RawEvent {
+    /// The log stream, e.g. `ecs/orders-api/0123abcd…` (`<prefix>/<container>/<task id>`).
+    pub stream: String,
+    /// CloudWatch's timestamp of the event (milliseconds precision).
+    pub timestamp: Timestamp,
+    pub message: String,
+}
+
+/// A parsed log event in a view.
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct LogEvent {
+    /// Unique and stable within a view (assigned by the buffer), for the UI's row keys.
+    pub seq: u32,
+    /// The time shown and sorted by: the event's own timestamp, else CloudWatch's.
+    pub timestamp: Timestamp,
+    /// CloudWatch's timestamp, for ordering ties and deduplication.
+    pub cw_timestamp: Timestamp,
+    pub stream: String,
+    /// The ECS task the stream belongs to (its last path segment).
+    pub task_id: String,
+    pub line: ParsedLine,
+    /// The original text (several lines when a stack trace was joined).
+    pub raw: String,
+}
+
+impl LogEvent {
+    /// Parses a raw CloudWatch event. `seq` is assigned when the event enters a buffer.
+    pub fn from_raw(raw: RawEvent) -> Self {
+        let line = parse_line(&raw.message);
+        Self {
+            seq: 0,
+            timestamp: line.timestamp.unwrap_or(raw.timestamp),
+            cw_timestamp: raw.timestamp,
+            task_id: raw.stream.rsplit('/').next().unwrap_or_default().to_owned(),
+            stream: raw.stream,
+            line,
+            raw: raw.message.trim_end_matches(['\n', '\r']).to_owned(),
+        }
     }
 }
