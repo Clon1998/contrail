@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { greet } from "@/lib/ipc";
+import { commands } from "@/bindings";
 
 export default function App() {
   const [name, setName] = useState("");
@@ -9,7 +9,7 @@ export default function App() {
 
   async function sayHello(event: FormEvent) {
     event.preventDefault();
-    setGreeting(await greet(name));
+    setGreeting(await commands.greet(name));
   }
 
   return (

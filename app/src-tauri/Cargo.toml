@@ -18,6 +18,9 @@ tauri-build = { version = "2.7.4", features = [] }
 [dependencies]
 contrail-core = { workspace = true }
 tauri = { version = "2.12.5", features = [] }
+specta = { workspace = true }
+specta-typescript = { workspace = true }
+tauri-specta = { workspace = true }
 
 [lints]
 workspace = true

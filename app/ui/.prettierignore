@@ -1,2 +1,3 @@
 dist
+src/bindings.ts
 pnpm-lock.yaml

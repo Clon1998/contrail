@@ -33,6 +33,12 @@ tokio = { version = "1.54.1", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 
+# Rust <-> TypeScript type generation. The Tauri 2 line of tauri-specta is still a release
+# candidate and requires an *exact* specta version, so both are pinned with `=` (same as Frida).
+specta = { version = "=2.0.0-rc.26", features = ["derive"] }
+specta-typescript = "0.0.13"
+tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
+
 # Lints shared by every crate (each crate opts in with `[lints] workspace = true`).
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -8,6 +8,7 @@
 /// `#[tauri::command]` generates the glue that deserializes `{ name: "…" }` from the frontend
 /// and serializes the returned `String` back as JSON.
 #[tauri::command]
+#[specta::specta]
 pub fn greet(name: &str) -> String {
     contrail_core::greeting(name)
 }
