@@ -15,7 +15,8 @@
     "lint": "pnpm --dir ui lint",
     "typecheck": "pnpm --dir ui typecheck",
     "test": "pnpm --dir ui test",
-    "format": "pnpm --dir ui format"
+    "format": "pnpm --dir ui format",
+    "test:e2e": "pnpm --dir ui e2e"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
