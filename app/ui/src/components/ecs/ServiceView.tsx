@@ -123,9 +123,7 @@ function Facts({ detail }: { detail: ServiceDetail }) {
     <dl className="grid grid-cols-2 gap-2 lg:grid-cols-5">
       <Fact label="Tasks (running / desired)">
         {summary.running} / {summary.desired}
-        {summary.pending > 0 && (
-          <span className="text-amber-400"> · {summary.pending} pending</span>
-        )}
+        {summary.pending > 0 && <span className="text-warning"> · {summary.pending} pending</span>}
       </Fact>
       <Fact label="Task definition">{summary.taskDefinition}</Fact>
       <Fact label="Image">{container ? container.imageTag : "—"}</Fact>
@@ -143,9 +141,9 @@ function Facts({ detail }: { detail: ServiceDetail }) {
 }
 
 const ROLLOUT_TONE: Record<string, string> = {
-  COMPLETED: "text-emerald-400",
-  IN_PROGRESS: "text-amber-400",
-  FAILED: "text-red-400",
+  COMPLETED: "text-success",
+  IN_PROGRESS: "text-warning",
+  FAILED: "text-destructive",
 };
 
 function Section({
@@ -210,7 +208,9 @@ function Deployments({ deployments }: { deployments: Deployment[] }) {
                 {d.running} / {d.desired}
               </td>
               <td className={cn(TD, "font-mono")}>{d.pending}</td>
-              <td className={cn(TD, "font-mono", d.failed > 0 && "text-red-400")}>{d.failed}</td>
+              <td className={cn(TD, "font-mono", d.failed > 0 && "text-destructive")}>
+                {d.failed}
+              </td>
               <td className={TD} title={formatDateTime(d.updatedAt, timeZone)}>
                 {formatAgo(d.updatedAt, now)}
               </td>
@@ -228,7 +228,7 @@ function TaskStatus({ task }: { task: Task }) {
     <span className={cn(task.lastStatus === "STOPPED" && "text-muted-foreground")}>
       {task.lastStatus}
       {task.healthStatus && task.healthStatus !== "UNKNOWN" && (
-        <span className={cn("ml-1 text-xs", unhealthy ? "text-red-400" : "text-emerald-400")}>
+        <span className={cn("ml-1 text-xs", unhealthy ? "text-destructive" : "text-success")}>
           {task.healthStatus.toLowerCase()}
         </span>
       )}
@@ -308,7 +308,9 @@ function Tasks() {
                             <span
                               className={cn(
                                 "ml-1 font-mono text-xs",
-                                container.exitCode === 0 ? "text-muted-foreground" : "text-red-400",
+                                container.exitCode === 0
+                                  ? "text-muted-foreground"
+                                  : "text-destructive",
                               )}
                             >
                               exit {container.exitCode}
@@ -317,7 +319,7 @@ function Tasks() {
                         </div>
                         <div className="text-xs text-muted-foreground">{task.stoppedReason}</div>
                         {container?.reason && (
-                          <div className="text-xs text-red-400">{container.reason}</div>
+                          <div className="text-xs text-destructive">{container.reason}</div>
                         )}
                       </div>
                     ) : (

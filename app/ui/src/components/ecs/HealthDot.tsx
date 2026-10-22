@@ -3,9 +3,9 @@ import { serviceHealth, type ServiceHealth } from "@/lib/ecs";
 import type { ServiceSummary } from "@/bindings";
 
 const COLOR: Record<ServiceHealth, string> = {
-  ok: "bg-emerald-500",
-  warn: "bg-amber-400",
-  bad: "bg-red-500",
+  ok: "bg-success",
+  warn: "bg-warning",
+  bad: "bg-destructive",
   idle: "bg-muted-foreground/40",
 };
 
