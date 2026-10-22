@@ -342,6 +342,7 @@ dependencies = [
 name = "contrail"
 version = "0.1.0"
 dependencies = [
+ "contrail-core",
  "tauri",
  "tauri-build",
 ]
