@@ -1,6 +1,6 @@
 # CLAUDE.md — Contrail
 
-Contrail is a desktop log viewer for AWS ECS services (Tauri 2 + Rust backend, Nuxt SPA frontend).
+Contrail is a desktop log viewer for AWS ECS services (Tauri 2 + Rust backend, React SPA frontend).
 **Read `plan.md` first** — it is the source of truth for scope, architecture and milestones.
 Work through the milestones in order. Do not start a milestone before the previous one meets its "Done when".
 
@@ -17,11 +17,11 @@ Work through the milestones in order. Do not start a milestone before the previo
 - **Tauri 2** (latest 2.x) + official plugins as needed (`store`, `window-state`, `shell`/process spawning, `dialog`, `clipboard-manager`).
 - **AWS SDK for Rust**: `aws-config` (SSO support), `aws-sdk-ecs`, `aws-sdk-cloudwatchlogs` (incl. `start_live_tail`), `aws-sdk-sts`.
 - **Async/runtime**: `tokio`; errors: `thiserror` in libraries, a serializable error type at the Tauri command boundary; logging: `tracing`.
-- **Frontend**: **Nuxt latest stable major** (Nuxt 4.x at time of writing; if Nuxt 5 is stable, use it) in SPA mode
-  (`ssr: false`), TypeScript strict, Vue 3, Pinia, Nuxt UI + Tailwind CSS (latest), a virtual-list library for the log view.
-  If Frida's UI stack differs and Patrick prefers consistency, match Frida.
+- **Frontend**: **the same stack as Frida** — React (latest) + Vite SPA, TypeScript strict, shadcn/ui (Radix) +
+  Tailwind CSS 4, zustand for state, lucide icons, a virtual-list library for the log view (e.g. TanStack Virtual).
+  When in doubt about a frontend pattern, look at how Frida (`../frida-api-tool/app/ui`) does it.
 - **Package manager**: pnpm.
-- **Tests**: `cargo test`, `insta`, `proptest` (where useful), HTTP/SDK mocking for AWS adapters, Vitest + `@nuxt/test-utils`,
+- **Tests**: `cargo test`, `insta`, `proptest` (where useful), HTTP/SDK mocking for AWS adapters, Vitest + Testing Library,
   Playwright (UI with mocked Tauri IPC), WebdriverIO + `tauri-driver` (app smoke tests on Linux CI).
 - Check docs for each dependency before using APIs you're unsure about; do not guess API shapes from memory.
 
