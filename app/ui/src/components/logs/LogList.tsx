@@ -7,6 +7,7 @@ import { PAGE_SIZE, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
 import { LogRow } from "./LogRow";
+import { OLDER_MARKER_HEIGHT, OlderMarker } from "./OlderMarker";
 
 /** Rows fetched beyond the visible ones in each direction, so scrolling finds them loaded. */
 const PREFETCH_ROWS = 400;
@@ -65,6 +66,8 @@ export function LogList({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
     overscan: 40,
+    // Oldest first, the marker of older events sits above the rows.
+    scrollMargin: newestFirst ? 0 : OLDER_MARKER_HEIGHT,
     // Keyed by the event (its sequence number) once loaded, so a row keeps its measured height
     // (e.g. expanded) when rows are added in front of it.
     getItemKey: (index) => row(toData(index))?.seq ?? `row-${toData(index)}`,
@@ -152,6 +155,7 @@ export function LogList({
         }}
         className="absolute inset-0 overflow-auto font-mono text-(length:--log-font-size) leading-[1.6]"
       >
+        {!newestFirst && <OlderMarker position="top" />}
         <div
           role="list"
           aria-label="Log events"
@@ -174,7 +178,7 @@ export function LogList({
                   top: 0,
                   left: 0,
                   right: 0,
-                  transform: `translateY(${item.start}px)`,
+                  transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
                 }}
               >
                 {event ? (
@@ -192,6 +196,7 @@ export function LogList({
             );
           })}
         </div>
+        {newestFirst && <OlderMarker position="bottom" />}
       </div>
       {!atNewest && total > 0 && (
         <Button

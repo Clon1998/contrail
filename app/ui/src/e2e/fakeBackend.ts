@@ -168,6 +168,8 @@ export interface FakeBackendOptions {
   rejectedSessions?: string[];
   /** Delay of row fetches, like the real IPC round trip (default: none). */
   rowsDelayMs?: number;
+  /** Delay of `load_older` (default: none). */
+  olderDelayMs?: number;
 }
 
 /**
@@ -494,12 +496,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           streams: taskId !== null ? 1 : big ? 6 : (recordedService?.streams ?? 0),
           // The recording keeps a sample of the events; the counts describe all of them.
           stats: big
-            ? {
-                ...emptyStats(),
-                total: BIG_VIEW,
-                info: BIG_VIEW - BIG_VIEW / 50,
-                warn: BIG_VIEW / 50,
-              }
+            ? bigStats(BIG_VIEW - half)
             : half > 0 && !big
               ? statsOf(events.slice(half))
               : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
@@ -512,6 +509,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         return info;
       }
       case "load_older": {
+        if (options.olderDelayMs) await new Promise((r) => setTimeout(r, options.olderDelayMs));
         const viewId = args?.viewId as number;
         const events = views.get(viewId);
         if (!events) throw apiError("notFound", "log view is closed");
@@ -537,7 +535,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           added,
           visible,
           matches: filters.get(viewId)?.matched.length ?? null,
-          stats: Array.isArray(now) ? statsOf(now) : emptyStats(),
+          stats: Array.isArray(now) ? statsOf(now) : bigStats(bigVisible(viewId)),
           loadedFrom: Array.isArray(now) ? (now[0]?.cwTimestamp ?? "") : "",
           complete: true,
           full: false,
@@ -724,6 +722,12 @@ export function uninstallFakeBackend() {
   stopInstalled?.();
   stopInstalled = null;
   clearMocks();
+}
+
+/** Counts of a generated view with `total` events (every 50th is a WARN). */
+function bigStats(total: number): BufferStats {
+  const warn = Math.ceil(total / 50);
+  return { ...emptyStats(), total, info: total - warn, warn };
 }
 
 function emptyStats(): BufferStats {

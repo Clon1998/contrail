@@ -35,6 +35,7 @@ import { OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { ExportMenu } from "./ExportMenu";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
+import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
 import { TimeWindowPicker } from "./TimeWindowPicker";
 import { Hint } from "@/components/ui/tooltip";
@@ -117,7 +118,6 @@ function LiveControls() {
 function OlderControls() {
   const view = useLogs((s) => s.view);
   const older = useLogs((s) => s.older);
-  const loadOlder = useLogs((s) => s.loadOlder);
   const loadAll = useLogs((s) => s.loadAll);
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   if (!view || view.complete) return null;
@@ -135,19 +135,14 @@ function OlderControls() {
           <Badge variant="outline">buffer full</Badge>
         </Hint>
       ) : (
-        <>
-          <Button variant="ghost" size="xs" onClick={() => void loadOlder()}>
-            Load older
-          </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            tooltip="Load the whole time window (needed to search or export all of it)"
-            onClick={() => void loadAll()}
-          >
-            Load all
-          </Button>
-        </>
+        <Button
+          variant="ghost"
+          size="xs"
+          tooltip="Load the whole time window (needed to search or export all of it)"
+          onClick={() => void loadAll()}
+        >
+          Load all
+        </Button>
       )}
       {older.error && (
         <Hint content={older.error.hint ?? older.error.message}>
@@ -327,7 +322,10 @@ export function LogViewer() {
         <p className="p-4 text-sm text-muted-foreground">No log events in this time window.</p>
       )}
       {!loading && view && view.stats.total > 0 && visible === 0 && (
-        <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
+        <div>
+          <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
+          {!view.complete && <OlderMarker position="top" />}
+        </div>
       )}
       {!loading && view && visible > 0 && (
         <LogList viewId={view.viewId} total={visible} showTask={taskId === null} />
