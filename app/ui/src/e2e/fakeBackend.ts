@@ -284,7 +284,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const update: LiveUpdate = {
       state,
       sampled: false,
-      stats: { ...emptyStats(), total, info: total },
+      stats: Array.isArray(events) ? statsOf(events) : { ...emptyStats(), total, info: total },
       visible,
       matches: filter ? filter.matched.length : null,
       firstChanged,
@@ -681,4 +681,15 @@ function compileQuery(
     tests.push(negation ? (e, raw) => !test(e, raw) : test);
   }
   return { test: (e, raw) => tests.every((t) => t(e, raw)), terms };
+}
+
+/** Level counts of a list of events, as the Rust buffer reports them. */
+function statsOf(events: LogEvent[]): BufferStats {
+  const stats = { ...emptyStats(), total: events.length };
+  for (const e of events) {
+    const level = e.line.level;
+    if (level === null) stats.unknown++;
+    else stats[level.toLowerCase() as Lowercase<Level>]++;
+  }
+  return stats;
 }
