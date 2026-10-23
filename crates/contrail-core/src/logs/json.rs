@@ -26,16 +26,16 @@ fn flatten(prefix: &str, map: Map<String, Value>, out: &mut Vec<Field>) {
 }
 
 /// Removes the first field named any of `keys` and returns its value.
-fn take(fields: &mut Vec<Field>, keys: &[&str]) -> Option<FieldValue> {
+pub(super) fn take(fields: &mut Vec<Field>, keys: &[&str]) -> Option<FieldValue> {
     let index = fields.iter().position(|f| keys.contains(&f.key.as_str()))?;
     Some(fields.remove(index).value)
 }
 
-fn get<'a>(fields: &'a [Field], key: &str) -> Option<&'a FieldValue> {
+pub(super) fn get<'a>(fields: &'a [Field], key: &str) -> Option<&'a FieldValue> {
     fields.iter().find(|f| f.key == key).map(|f| &f.value)
 }
 
-fn as_text(value: &FieldValue) -> Option<String> {
+pub(super) fn as_text(value: &FieldValue) -> Option<String> {
     Some(match value {
         FieldValue::Text(s) => s.clone(),
         FieldValue::Number(n) => n.to_string(),
@@ -105,7 +105,7 @@ pub(super) fn parse_json(line: &str) -> Option<ParsedLine> {
 }
 
 /// Epoch seconds or milliseconds (whichever the magnitude suggests).
-fn epoch_timestamp(value: i64) -> Option<crate::timestamp::Timestamp> {
+pub(super) fn epoch_timestamp(value: i64) -> Option<crate::timestamp::Timestamp> {
     let nanos = if value > 100_000_000_000 {
         i128::from(value) * 1_000_000
     } else {

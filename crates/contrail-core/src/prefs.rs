@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::ecs::{ServiceRef, name_from_arn};
+use crate::logs::FieldMapping;
 
 /// How many recently opened services are remembered (across profiles).
 pub const MAX_RECENT: usize = 10;
@@ -205,6 +206,8 @@ pub struct Prefs {
     /// "Hide noise" texts per service (by [`ServiceKey::storage_key`]): log lines whose message
     /// contains one of them are hidden while hiding noise is on.
     pub noise: BTreeMap<String, Vec<String>>,
+    /// Field mappings per service (by [`ServiceKey::storage_key`]).
+    pub field_mappings: BTreeMap<String, FieldMapping>,
 }
 
 impl Prefs {
@@ -223,6 +226,7 @@ impl Prefs {
             #[serde(deserialize_with = "settings_or_default")]
             settings: Settings,
             noise: BTreeMap<String, Vec<String>>,
+            field_mappings: BTreeMap<String, FieldMapping>,
         }
 
         /// Settings are read leniently (see [`Settings::from_saved`]), so an unknown value never
@@ -243,6 +247,7 @@ impl Prefs {
             recent: stored.recent,
             settings: stored.settings,
             noise: stored.noise,
+            field_mappings: stored.field_mappings,
         })
     }
 
@@ -274,6 +279,23 @@ impl Prefs {
         if !list.iter().any(|n| n == text) {
             list.push(text.to_owned());
         }
+    }
+
+    /// Sets (or, when empty, removes) the field mapping of a service.
+    pub fn set_field_mapping(&mut self, key: &ServiceKey, mapping: FieldMapping) {
+        if mapping.is_empty() {
+            self.field_mappings.remove(&key.storage_key());
+        } else {
+            self.field_mappings.insert(key.storage_key(), mapping);
+        }
+    }
+
+    /// The field mapping of a service (empty if none is set).
+    pub fn field_mapping(&self, key: &ServiceKey) -> FieldMapping {
+        self.field_mappings
+            .get(&key.storage_key())
+            .cloned()
+            .unwrap_or_default()
     }
 
     pub fn remove_noise(&mut self, key: &ServiceKey, text: &str) {
@@ -357,6 +379,25 @@ mod tests {
         let settings = Prefs::from_json(json).unwrap().settings;
         assert!(settings.log_columns.is_empty());
         assert_eq!(settings.buffer_capacity(), 200_000);
+    }
+
+    #[test]
+    fn field_mappings_per_service() {
+        let mut prefs = Prefs::default();
+        let orders = key("dev", "orders");
+        let mapping = FieldMapping {
+            message: Some("text".into()),
+            ..FieldMapping::default()
+        };
+        prefs.set_field_mapping(&orders, mapping.clone());
+        assert_eq!(prefs.field_mapping(&orders), mapping);
+        assert!(prefs.field_mapping(&key("dev", "billing")).is_empty());
+
+        let json = serde_json::to_string(&prefs).unwrap();
+        assert_eq!(Prefs::from_json(&json).unwrap(), prefs);
+
+        prefs.set_field_mapping(&orders, FieldMapping::default());
+        assert!(prefs.field_mappings.is_empty());
     }
 
     #[test]

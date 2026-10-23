@@ -1,6 +1,7 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
+  FieldMapping,
   FilterResult,
   FilterSpec,
   Level,
@@ -207,6 +208,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       logColumns: [],
     },
     noise: {},
+    fieldMappings: {},
     ...options.prefs,
   };
 
@@ -403,9 +405,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           `${cluster}/${service.serviceName}`
         ];
         const taskId = args?.taskId as string | null;
-        const events = (recordedService?.events ?? []).filter(
-          (e) => taskId === null || e.taskId === taskId,
-        );
+        const mapping =
+          prefs.fieldMappings[`${ctx.profile}|${service.clusterArn}|${service.serviceName}`];
+        const events = (recordedService?.events ?? [])
+          .filter((e) => taskId === null || e.taskId === taskId)
+          .map((e) => (mapping ? applyMapping(e, mapping) : e));
         const viewId = nextViewId++;
         // The high-volume demo service gets 100,000 generated events, for scrolling tests.
         const big = service.serviceName === "event-ingest";
@@ -561,6 +565,16 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             ? prefs.favorites.filter((f) => !sameKey(f, key))
             : [...prefs.favorites, key],
         };
+        return prefs;
+      }
+      case "set_field_mapping": {
+        const service = args?.service as ServiceRef;
+        const key = `${args?.profile as string}|${service.clusterArn}|${service.serviceName}`;
+        const mapping = args?.mapping as FieldMapping;
+        const others = Object.entries(prefs.fieldMappings).filter(([k]) => k !== key);
+        const fieldMappings: Record<string, FieldMapping> = Object.fromEntries(others);
+        if (mapping.message || mapping.level || mapping.timestamp) fieldMappings[key] = mapping;
+        prefs = { ...prefs, fieldMappings };
         return prefs;
       }
       case "add_noise":
@@ -725,4 +739,28 @@ function statsOf(events: LogEvent[]): BufferStats {
     else stats[level.toLowerCase() as Lowercase<Level>]++;
   }
   return stats;
+}
+
+/** The message and level parts of the Rust field mapping (crates/contrail-core/src/logs/mapping.rs). */
+function applyMapping(event: LogEvent, mapping: FieldMapping): LogEvent {
+  const value = (key: string | null) =>
+    key ? event.line.fields.find((f) => f.key === key)?.value : undefined;
+  const message = value(mapping.message);
+  const level = value(mapping.level);
+  const parsedLevel = LEVELS.find((l) => l === String(level).toUpperCase());
+  return {
+    ...event,
+    line: {
+      ...event.line,
+      message: message === undefined ? event.line.message : String(message),
+      fields:
+        message === undefined
+          ? event.line.fields
+          : [
+              { key: "message", value: event.line.message },
+              ...event.line.fields.filter((f) => f.key !== mapping.message),
+            ],
+      level: parsedLevel ?? event.line.level,
+    },
+  };
 }

@@ -1,5 +1,12 @@
 import { create } from "zustand";
-import { commands, type Prefs, type ServiceKey, type ServiceRef, type Settings } from "@/bindings";
+import {
+  type FieldMapping,
+  commands,
+  type Prefs,
+  type ServiceKey,
+  type ServiceRef,
+  type Settings,
+} from "@/bindings";
 
 /** Local preferences, kept by the Rust side (saved as JSON) and mirrored here. */
 interface PrefsState {
@@ -11,6 +18,7 @@ interface PrefsState {
   addRecent: (profile: string, service: ServiceRef) => Promise<void>;
   addNoise: (profile: string, service: ServiceRef, text: string) => Promise<void>;
   removeNoise: (profile: string, service: ServiceRef, text: string) => Promise<void>;
+  setFieldMapping: (profile: string, service: ServiceRef, mapping: FieldMapping) => Promise<void>;
   /** Changes some settings; the rest stay as they are. */
   updateSettings: (change: Partial<Settings>) => Promise<void>;
 }
@@ -35,6 +43,7 @@ export const EMPTY_PREFS: Prefs = {
   recent: [],
   settings: DEFAULT_SETTINGS,
   noise: {},
+  fieldMappings: {},
 };
 
 /** The key of a service's noise list (same as `ServiceKey::storage_key` in Rust). */
@@ -67,6 +76,8 @@ export const usePrefs = create<PrefsState>((set, get) => {
     addRecent: (profile, service) => apply(commands.addRecent(profile, service)),
     addNoise: (profile, service, text) => apply(commands.addNoise(profile, service, text)),
     removeNoise: (profile, service, text) => apply(commands.removeNoise(profile, service, text)),
+    setFieldMapping: (profile, service, mapping) =>
+      apply(commands.setFieldMapping(profile, service, mapping)),
     updateSettings: (change) => apply(commands.setSettings({ ...get().prefs.settings, ...change })),
   };
 });

@@ -26,6 +26,7 @@ import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { ExportMenu } from "./ExportMenu";
+import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
 
@@ -209,6 +210,7 @@ export function LogViewer() {
             truncated
           </Badge>
         )}
+        <FieldMappingDialog />
         <ExportMenu />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

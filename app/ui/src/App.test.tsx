@@ -360,7 +360,8 @@ describe("App", () => {
       "settling",
     );
 
-    fireEvent.click(within(tabs).getByRole("button", { name: "Close payments-worker" }));
+    // Middle click closes a tab.
+    fireEvent.mouseDown(within(tabs).getByRole("tab", { name: "payments-worker" }), { button: 1 });
     await screen.findByRole("main", { name: "Service orders-api" });
     fireEvent.click(screen.getByRole("button", { name: "Close orders-api" }));
     await waitFor(() =>
@@ -410,5 +411,23 @@ describe("App", () => {
     fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
     expect(await within(view).findByRole("status", { name: "Live tail: Live" })).toBeTruthy();
     expect(within(view).queryByRole("alert")).toBeNull();
+  });
+
+  it("saves a field mapping per service", async () => {
+    const { view } = await openPaymentsLogs();
+    fireEvent.click(within(view).getByRole("button", { name: "Field mapping" }));
+    const dialog = await screen.findByRole("dialog", { name: "Field mapping" });
+    fireEvent.change(within(dialog).getByRole("combobox", { name: "Message field" }), {
+      target: { value: "process.thread.name" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save and reload" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // Saved per service (the rows themselves are checked in e2e/workflow.e2e.ts: jsdom has no layout).
+    expect(Object.values(usePrefs.getState().prefs.fieldMappings)).toEqual([
+      { message: "process.thread.name", level: null, timestamp: null },
+    ]);
+    expect(within(view).getByRole("button", { name: "Field mapping" }).className).toContain(
+      "text-primary",
+    );
   });
 });

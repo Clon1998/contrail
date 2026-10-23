@@ -71,6 +71,8 @@ export const commands = {
 	addNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_noise", { profile, service, text })),
 	/**  Removes a "hide noise" text of a service. */
 	removeNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("remove_noise", { profile, service, text })),
+	/**  Sets a service's field mapping (an empty one removes it). Open views keep theirs until reopened. */
+	setFieldMapping: (profile: string, service: ServiceRef, mapping: FieldMapping) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_field_mapping", { profile, service, mapping })),
 };
 
 /* Types */
@@ -193,6 +195,13 @@ export type ExportFormat =
 export type Field = {
 	key: string,
 	value: FieldValue,
+};
+
+/**  Dotted field names to read the message, level and timestamp from; `None` keeps the default. */
+export type FieldMapping = {
+	message: string | null,
+	level: string | null,
+	timestamp: string | null,
 };
 
 /**
@@ -371,6 +380,8 @@ export type Prefs = {
 	 *  contains one of them are hidden while hiding noise is on.
 	 */
 	noise: { [key in string]: string[] },
+	/**  Field mappings per service (by [`ServiceKey::storage_key`]). */
+	fieldMappings: { [key in string]: FieldMapping },
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
