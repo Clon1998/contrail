@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("DemoReadOnly/demo.user")).toBeVisible();
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
 });
 
 test("theme and accent apply immediately and stay selected", async ({ page }) => {

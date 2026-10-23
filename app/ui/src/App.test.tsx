@@ -38,7 +38,11 @@ describe("App", () => {
     installFakeBackend();
     render(<App />);
 
-    expect(await screen.findByText("DemoReadOnly/demo.user")).toBeTruthy();
+    // Only the role is shown; the full ARN and the account are in the tooltip.
+    const role = await screen.findByText("DemoReadOnly");
+    expect(role.closest("[title]")?.getAttribute("title")).toContain(
+      "arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user",
+    );
     const switcher = screen.getByRole("combobox", { name: "AWS profile" });
     expect(switcher.textContent).toContain("demo-dev");
     expect(switcher.textContent).toContain("111122223333");
@@ -48,7 +52,7 @@ describe("App", () => {
   it("lists every profile with its session state", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     fireEvent.click(screen.getByRole("combobox", { name: "AWS profile" }));
     const list = await screen.findByRole("listbox");
@@ -62,7 +66,7 @@ describe("App", () => {
   it("logs in to an expired profile and connects", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     await openSwitcherAndPick("demo-prod");
     expect(await screen.findByText("Log in to demo-prod")).toBeTruthy();
@@ -109,7 +113,7 @@ describe("App", () => {
   it("explains a missing AWS CLI", async () => {
     installFakeBackend({ cliMissing: true });
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     await openSwitcherAndPick("demo-sandbox");
     fireEvent.click(
@@ -124,7 +128,7 @@ describe("App", () => {
   it("shows why a misconfigured profile can't be used", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     await openSwitcherAndPick("demo-broken");
 
@@ -207,7 +211,7 @@ describe("App", () => {
   it("changes theme, accent, sizes and time zone in the settings dialog", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
 
     fireEvent.keyDown(window, { key: ",", metaKey: true });
@@ -420,7 +424,7 @@ describe("App", () => {
   it("opens the keyboard shortcuts with ?", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
     fireEvent.keyDown(document.body, { key: "?" });
     const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     expect(within(dialog).getByText("Go to a service")).toBeTruthy();

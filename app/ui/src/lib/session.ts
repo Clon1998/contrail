@@ -87,3 +87,17 @@ export function initialProfile(
   });
   return (usable ?? profiles[0])?.name ?? null;
 }
+
+/**
+ * A short name for who the credentials belong to: the role (for SSO the permission set, without
+ * the `AWSReservedSSO_` prefix and the hash suffix) or the IAM user.
+ */
+export function roleName(arn: string): string {
+  const resource = arn.split(":").slice(5).join(":");
+  const [kind, name = kind] = resource.split("/");
+  if (kind === "assumed-role" || kind === "user") {
+    const sso = /^AWSReservedSSO_(.+)_[0-9a-f]+$/.exec(name ?? "");
+    return sso?.[1] ?? name ?? resource;
+  }
+  return resource;
+}

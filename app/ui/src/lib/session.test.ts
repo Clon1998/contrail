@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Profile, SessionStatus } from "@/bindings";
-import { describeSession, formatDuration, initialProfile, isRejected, needsLogin } from "./session";
+import {
+  describeSession,
+  formatDuration,
+  initialProfile,
+  isRejected,
+  needsLogin,
+  roleName,
+} from "./session";
 
 const NOW = Date.parse("2026-10-22T12:00:00Z");
 
@@ -86,5 +93,26 @@ describe("initialProfile", () => {
     ).toBe("b");
     expect(initialProfile(profiles, { a: { state: "loggedOut" } })).toBe("a");
     expect(initialProfile([], {})).toBeNull();
+  });
+});
+
+describe("roleName", () => {
+  it("shortens SSO role ARNs to the permission set", () => {
+    expect(
+      roleName(
+        "arn:aws:sts::111122223333:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/someone@example.com",
+      ),
+    ).toBe("AdministratorAccess");
+    expect(
+      roleName("arn:aws:sts::111122223333:assumed-role/AWSReservedSSO_Read_Only_0a1b2c3d/x"),
+    ).toBe("Read_Only");
+  });
+
+  it("keeps other roles and users readable", () => {
+    expect(roleName("arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user")).toBe(
+      "DemoReadOnly",
+    );
+    expect(roleName("arn:aws:iam::111122223333:user/ci-bot")).toBe("ci-bot");
+    expect(roleName("arn:aws:iam::111122223333:root")).toBe("root");
   });
 });
