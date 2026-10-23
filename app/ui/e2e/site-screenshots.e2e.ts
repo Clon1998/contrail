@@ -51,16 +51,16 @@ async function shoot(page: Page, name: string) {
   }
 }
 
-/** The orders API's logs, a screenful of them. */
-async function ordersLogs(page: Page) {
-  const view = await openLogs(page, "demo-core", "orders-api");
+/** The payments service's logs, a screenful of them (plain ECS JSON with stack traces). */
+async function paymentsLogs(page: Page) {
+  const view = await openLogs(page, "demo-core", "payments-worker");
   await expect(
     view.getByRole("list", { name: "Log events" }).getByRole("listitem"),
   ).not.toHaveCount(0);
 }
 
 test("log view", async ({ page }) => {
-  await ordersLogs(page);
+  await paymentsLogs(page);
   await shoot(page, "logs");
 });
 
@@ -77,11 +77,15 @@ test("search", async ({ page }) => {
   await shoot(page, "search");
 });
 
-/** One shot per step of the tracing guide (site/src/content/docs/guides/tracing.mdx). */
+/**
+ * One shot per step of the tracing guide (site/src/content/docs/guides/tracing.mdx): an API
+ * request followed by its trace ID (payments-worker calls orders-api; billing-sync logs the same
+ * demo trace IDs).
+ */
 test("trace across services", async ({ page }) => {
-  const view = await openLogs(page, "demo-core", "orders-api");
+  const view = await openLogs(page, "demo-core", "payments-worker");
   const list = view.getByRole("list", { name: "Log events" });
-  await view.getByRole("textbox", { name: "Search logs" }).fill("FAILED");
+  await view.getByRole("textbox", { name: "Search logs" }).fill("POST");
   await expect(view.getByLabel("Match count")).toContainText(/^\d+ of \d+$/);
   await list.getByRole("listitem").first().getByRole("button").first().click();
   const start = page.getByRole("button", { name: "Trace across services" });
@@ -90,18 +94,17 @@ test("trace across services", async ({ page }) => {
 
   await start.click();
   const trace = page.getByRole("main", { name: /^Trace / });
-  // billing-sync logs the same demo documents, so the way leads through two services.
+  await trace.getByRole("checkbox", { name: "orders-api" }).click();
   await trace.getByRole("checkbox", { name: "billing-sync" }).click();
   await shoot(page, "trace-services");
 
-  await trace.getByRole("button", { name: "Search 2 services" }).click();
-  await expect(trace.getByRole("status", { name: "Trace outcome" })).toBeVisible();
+  await trace.getByRole("button", { name: "Search 3 services" }).click();
   await expect(
     trace.getByRole("list", { name: "Services on the way" }).getByRole("listitem"),
-  ).toHaveCount(2);
-  // A failed event expanded, so the picture shows the error next to the way the document took.
+  ).toHaveCount(3);
+  // The first event expanded, so the picture shows an event next to the way the request took.
   const events = trace.getByRole("list", { name: "Trace events" }).getByRole("listitem");
-  await events.filter({ hasText: "FAILED" }).last().getByRole("button").first().click();
+  await events.first().getByRole("button").first().click();
   await shoot(page, "trace");
 });
 
@@ -110,7 +113,7 @@ test("trace across services", async ({ page }) => {
  * of the app in dark mode.
  */
 test("social preview card", async ({ page }) => {
-  await ordersLogs(page);
+  await paymentsLogs(page);
   await page.mouse.move(0, 0);
   await page.waitForTimeout(300);
   const shot = (await page.screenshot()).toString("base64");

@@ -66,12 +66,12 @@ import Showcase from "../../components/Showcase.astro";
 <Showcase eyebrow="Tracing" title="Follow one request through your services">
   <p>
     Expand a line with a correlation or trace ID and search the other services of the cluster for
-    it. Contrail shows the way it took: the services in order with their last state, every event on
-    a timeline, and whether it completed or failed.
+    it. Contrail shows the way it took: the services in the order the ID reached them, and every
+    event on one timeline.
   </p>
   <p>Each entry opens that service's logs, filtered to the same ID.</p>
   <div slot="media">
-    <Screenshot name="trace" title="orders-api · trace" alt="A trace across two services in Contrail, with the events on a timeline." />
+    <Screenshot name="trace" title="payments-worker · trace" alt="A trace across three services in Contrail, with the events on a timeline." />
   </div>
 </Showcase>
 

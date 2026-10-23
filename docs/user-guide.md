@@ -63,8 +63,7 @@ page has the details.
 **Trace across services** on an expanded line with a correlation or trace ID opens a **trace tab**. Choose the
 services of the cluster the request may have passed through (the one you came from is chosen) and the time around
 the event, then search: Contrail searches each service's log group for the ID (`FilterLogEvents`) and shows the
-way it took (services in order with their last state, and whether the document completed or failed) and every
-event with the ID in one timeline.
+way it took (the services in the order the ID reached them) and every event with the ID in one timeline.
 
 - Events expand in place like log lines (fields, stack trace, raw JSON, copy buttons).
 - A service on the way shows only its events; pressed again, all of them.

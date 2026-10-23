@@ -12,26 +12,15 @@ to CloudWatch. All terms must match.
 | `level>=WARN` | WARN or ERROR (also `>`, `<`, `<=`; order: TRACE < DEBUG < INFO < WARN < ERROR) |
 | `trace.id:abc123` | the field equals the value (any case) |
 | `log.logger:*Camel*` | the field matches the pattern (`*` any text, `?` one character) |
-| `pipeline.offset>=230000` | a numeric field compared |
+| `http.response.status_code>=500` | a numeric field compared |
 | `task:5f2a` | the task ID starts with "5f2a" |
 | `message:x` | the message contains "x" (same as plain `x`) |
 | `stream:*orders*` | the log stream matches |
 | `-healthcheck` | excludes: any term can be negated |
 
 Field names are the dotted names shown when a line is expanded (`log.logger`, `process.thread.name`,
-`service.version`, custom objects like `pipeline.state`). Values with spaces go in quotes:
+`service.version`, your own objects like `order.id`). Values with spaces go in quotes:
 `log.logger:"com.example.Some Thing"`. Clicking a field value in an expanded line adds it to the search.
-
-**Pipeline status events** (services of a framework that logs one status event per document step, with
-`<prefix>.state` and `<prefix>.correlationId` fields, nested or dotted, or a JSON status line):
-
-| Query | Meaning |
-|---|---|
-| `state:FAILED` | status events in this state (also a plain `state` field) |
-| `correlation:DE40C0DE00000003-0000000000005CC5` | every event of that document (its correlation ID, or any `…correlationId` field) |
-
-Status events get a state badge; the state chips next to the level chips filter by state; an expanded status
-event offers "Show this document".
 
 **Options**
 
