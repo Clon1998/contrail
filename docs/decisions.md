@@ -199,3 +199,11 @@ per secret reads it on that click (`secretsmanager:GetSecretValue` with the JSON
 memory while shown, are cleared on Hide or when the view closes, and are never stored or logged (errors carry
 AWS's message only). The permissions are an optional statement in `docs/iam-policy.json`; without them the
 row says "missing permission". Each read is visible in CloudTrail, which the button's tooltip mentions.
+
+## 2026-10-23 — Playwright CI job runs in Microsoft's Playwright container
+
+`playwright install --with-deps` installs WebKit's system libraries with apt, and the Ubuntu runner's apt
+mirror stalled the job for 20+ minutes (normally ~1 minute). **Decision:** the UI-flow job runs in
+`mcr.microsoft.com/playwright:v<version>-noble`, which has the browsers and libraries preinstalled (no apt, no
+browser download), with a 30-minute timeout. The image tag must equal `@playwright/test`'s version; a CI step
+fails when they drift, so a Playwright upgrade also updates the tag.
