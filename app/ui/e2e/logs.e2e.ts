@@ -211,22 +211,26 @@ test("newest first: the newest event on top, new events arrive there", async ({ 
 });
 
 test("rows near the viewport are loaded before they scroll into view", async ({ page }) => {
-  // Row fetches take 300 ms here, like a slow IPC round trip.
-  await page.goto("/?rowsDelay=300");
+  // Row fetches take a second here: a row that wasn't prefetched shows "…" after the jump.
+  await page.goto("/?rowsDelay=1000");
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
   await page.getByRole("button", { name: "Pause live tail" }).click();
-  await page.waitForTimeout(800); // the prefetch around the newest rows arrives
+  await page.waitForTimeout(2_500); // the prefetch around the newest rows arrives
 
-  const rowHeight = await list
-    .locator('[role="listitem"]')
-    .first()
-    .evaluate((el) => el.clientHeight);
-  await list.locator("..").evaluate((el, by) => {
-    el.scrollTop -= by;
-  }, 300 * rowHeight);
-  // Right after the jump (well within the 300 ms fetch delay), no placeholder is on screen.
-  await expect(list.getByText("Ingested event #99700 ")).toBeVisible({ timeout: 100 });
+  // Jump 300 rows up and look at the first frames drawn afterwards (well within the delay).
+  const placeholders = await list.locator("..").evaluate(async (scroller) => {
+    const row = scroller.querySelector('[role="listitem"]');
+    scroller.scrollTop -= 300 * (row?.clientHeight ?? 19);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const box = scroller.getBoundingClientRect();
+    return [...scroller.querySelectorAll('[role="listitem"]')].filter((r) => {
+      const rect = r.getBoundingClientRect();
+      return rect.bottom > box.top && rect.top < box.bottom && r.textContent === "…";
+    }).length;
+  });
+  expect(placeholders).toBe(0);
+  await expect(list.getByText("Ingested event #99700 ")).toBeVisible();
 });
 
 test("live: new rows appear without a placeholder flash", async ({ page }) => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LogEvent } from "@/bindings";
-import { applyLiveRows, isPageComplete, PAGE_SIZE, placeOlderRows } from "./logs";
+import { applyLiveRows, isPageComplete, mergeFetchedRows, PAGE_SIZE, placeOlderRows } from "./logs";
 
 const pages = () =>
   new Map<number, LogEvent[]>([
@@ -71,6 +71,26 @@ describe("placeOlderRows", () => {
     // The rest of the cache moved by 250 (row 1000 + 299 was at 299, now at 549).
     expect(next.get(5)?.[49]?.seq).toBe(1299);
     expect(loaded.get(0)?.[0]?.seq).toBe(1000); // the previous state is not changed
+  });
+});
+
+describe("mergeFetchedRows", () => {
+  const row = (seq: number) => ({ seq }) as LogEvent;
+  const page = (first: number) => Array.from({ length: PAGE_SIZE }, (_, i) => row(first + i));
+
+  it("keeps a fetched page whose rows didn't change while it was in flight", () => {
+    const next = mergeFetchedRows(new Map(), 1, page(100), { shift: 0, valid: Infinity });
+    expect(next.get(1)).toHaveLength(PAGE_SIZE);
+  });
+
+  it("moves the rows by what was evicted meanwhile and drops the changed ones", () => {
+    const before = new Map([[0, page(0)]]);
+    // Page 1 was fetched; meanwhile 30 rows were evicted and rows from 150 on changed.
+    const next = mergeFetchedRows(before, 1, page(100), { shift: 30, valid: 150 });
+    expect(next.get(0)?.[70]?.seq).toBe(100); // row 100 is now at 70
+    expect(next.get(1)?.at(-1)?.seq).toBe(179); // row 179 at 149; 150+ changed
+    expect(next.get(1)).toHaveLength(50);
+    expect(before.get(0)?.[70]?.seq).toBe(70); // the previous state is not changed
   });
 });
 

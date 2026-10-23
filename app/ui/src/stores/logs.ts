@@ -171,6 +171,39 @@ export function placeOlderRows(
   return next;
 }
 
+/**
+ * How listed rows moved while a row fetch was in flight: `shift` rows were dropped in front
+ * (negative: added in front), and rows from `valid` on (current indices) changed.
+ */
+export interface FetchDrift {
+  shift: number;
+  valid: number;
+}
+
+/**
+ * The cache with the rows of a fetched page added: each row moves by `drift.shift`, and rows that
+ * changed while the fetch was in flight are left out (they are fetched again).
+ */
+export function mergeFetchedRows(
+  pages: Map<number, LogEvent[]>,
+  page: number,
+  rows: LogEvent[],
+  drift: FetchDrift,
+): Map<number, LogEvent[]> {
+  const next = new Map(pages);
+  const copied = new Set<number>();
+  rows.forEach((event, i) => {
+    const index = page * PAGE_SIZE + i - drift.shift;
+    if (index < 0 || index >= drift.valid) return;
+    const target = Math.floor(index / PAGE_SIZE);
+    const existing = next.get(target);
+    if (existing && !copied.has(target)) next.set(target, existing.slice());
+    copied.add(target);
+    putRow(next, index, event);
+  });
+  return next;
+}
+
 /** Like `appendRow`, but also replaces a row already cached at `index`. */
 function putRow(pages: Map<number, LogEvent[]>, index: number, event: LogEvent) {
   const rows = pages.get(Math.floor(index / PAGE_SIZE));
@@ -224,10 +257,20 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
   let generation = 0;
   /** What the view was last opened with (see `ensureOpen`). */
   let openedWith = "";
-  /** Pages being fetched right now, as "view:page". */
-  const inFlight = new Set<string>();
-  /** Bumped whenever cached rows become invalid; a fetch that started before is stale. */
-  let epoch = 0;
+  /**
+   * Pages being fetched right now, as "view:page", with how the rows moved since (live updates,
+   * older rows put in front, a new search). A slow fetch keeps the rows that are still valid
+   * instead of being thrown away whenever anything changed (with live updates every second and a
+   * slower round trip, nothing would ever load).
+   */
+  const inFlight = new Map<string, FetchDrift>();
+  /** Records a change for the fetches in flight: `shift` rows dropped in front, rows from `from` changed. */
+  function rowsMoved(shift: number, from: number | null) {
+    for (const drift of inFlight.values()) {
+      drift.shift += shift;
+      drift.valid = Math.min(drift.valid - shift, from ?? Infinity);
+    }
+  }
   let matchRefresh: ReturnType<typeof setTimeout> | undefined;
 
   const store = createStore<LogsState>((set, get) => ({
@@ -305,7 +348,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
           matches: update.matches,
           pages: applyLiveRows(get().pages, update),
         });
-        if (update.firstChanged !== null || update.evicted > 0) epoch++;
+        rowsMoved(update.evicted, update.firstChanged);
         if (get().search.mode === "highlight" && update.firstChanged !== null) {
           scheduleMatchRefresh();
         }
@@ -350,17 +393,13 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         const key = `${view.viewId}:${page}`;
         if (isPageComplete(get().pages.get(page), page, get().visible) || inFlight.has(key))
           continue;
-        inFlight.add(key);
-        const started = epoch;
+        const drift: FetchDrift = { shift: 0, valid: Infinity };
+        inFlight.set(key, drift);
         void commands.getLogRows(view.viewId, page * PAGE_SIZE, PAGE_SIZE).then((result) => {
           inFlight.delete(key);
           if (result.status !== "ok" || get().view?.viewId !== view.viewId) return;
-          if (started !== epoch) {
-            // Rows changed meanwhile: drop the answer; a new map makes the list fetch again.
-            set({ pages: new Map(get().pages) });
-            return;
-          }
-          set({ pages: new Map(get().pages).set(page, result.data) });
+          // Always a new map: rows left out make the list fetch again.
+          set({ pages: mergeFetchedRows(get().pages, page, result.data, drift) });
         });
       }
     },
@@ -406,7 +445,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         set({ queryError: outcome.error });
         return;
       }
-      epoch++;
+      rowsMoved(0, 0); // a new search lists other rows: nothing fetched before is valid
       set({
         queryError: null,
         visible: outcome.visible,
@@ -460,7 +499,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         return;
       }
       const loaded = result.data;
-      epoch++; // row fetches that started before are stale (indices moved)
+      rowsMoved(-loaded.added, null); // the rows in flight moved back by what came in front
       set({
         view: {
           ...current,
