@@ -176,9 +176,14 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await expect(
     gatewayGraph.getByRole("button", { name: "system Example Partner API (disabled)" }),
   ).toBeVisible();
-  await expect(gatewayGraph.getByRole("button", { name: "topic demo.events" })).toContainText(
-    "group legacy-gateway",
+  // Its own consumer group once, not on every topic.
+  await expect(gatewayRoutes).toContainText("Reads its topics as consumer group legacy-gateway");
+  // The other reader of the same topic, its group and where it sends the data.
+  await gatewayRoutes.getByRole("button", { name: "Find connected services" }).click();
+  await expect(gatewayGraph.getByRole("button", { name: "service audit-archiver" })).toContainText(
+    "group audit-archiver",
   );
+  await expect(gatewayGraph.getByRole("button", { name: "system Search Index" })).toBeVisible();
 
   // Three routes write to one system: one node, its shared connection once, the queues per route.
   await expect(gatewayGraph.getByRole("button", { name: "system Billing" })).toHaveCount(1);

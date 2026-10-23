@@ -785,6 +785,15 @@ export type TopicLink = {
 	service: string,
 	/**  The service brings data in to the topic (input route) or takes it out (output route). */
 	direction: TopicDirection,
+	/**  The consumer group of an output route. */
+	group: string | null,
+	/**  The route is switched on. */
+	enabled: boolean,
+	/**
+	 *  Where that service's route gets its data from (input) or sends it to (outputs): type,
+	 *  system and whether it is on. Their properties are left out; the graph doesn't show them.
+	 */
+	endpoints: Endpoint[],
 };
 
 export type Trace = {

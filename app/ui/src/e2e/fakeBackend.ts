@@ -487,11 +487,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
                   topic: route.topic,
                   service: summary.name,
                   direction: route.input ? "in" : "out",
+                  group: route.group,
+                  enabled: route.enabled,
+                  endpoints: (route.input ? [route.input] : route.outputs).map((e) => ({
+                    ...e,
+                    properties: [],
+                  })),
                 });
               }
             }
           }
         }
+        links.sort((a, b) => `${a.topic}|${a.service}`.localeCompare(`${b.topic}|${b.service}`));
         return links;
       }
       case "check_for_update": {

@@ -23,8 +23,8 @@
       "arn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
       "name": "demo-edge",
       "status": "ACTIVE",
-      "activeServices": 2,
-      "runningTasks": 8,
+      "activeServices": 3,
+      "runningTasks": 9,
       "pendingTasks": 0
     }
   ],
@@ -66,6 +66,17 @@
       }
     ],
     "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/audit-archiver",
+        "name": "audit-archiver",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 1,
+        "running": 1,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "audit-archiver:12"
+      },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/event-ingest",
         "name": "event-ingest",
@@ -374,6 +385,164 @@
           "id": "2f11c6a98902d8f35511ec88e0b735ce",
           "createdAt": "2026-01-01T11:45:00Z",
           "message": "(service payments-worker) has started 1 tasks: (task 7b2e)."
+        }
+      ]
+    },
+    "demo-edge/audit-archiver": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/audit-archiver",
+        "name": "audit-archiver",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 1,
+        "running": 1,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "audit-archiver:12"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": "1.4.0",
+      "deployments": [
+        {
+          "id": "ecs-svc/02181dd327fd1bb0b65",
+          "status": "PRIMARY",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": "ECS deployment ecs-svc completed.",
+          "taskDefinition": "audit-archiver:12",
+          "desired": 1,
+          "running": 1,
+          "pending": 0,
+          "failed": 0,
+          "createdAt": "2025-12-29T12:00:00Z",
+          "updatedAt": "2025-12-29T12:05:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "audit-archiver",
+        "revision": 12,
+        "cpu": "256",
+        "memory": "512",
+        "containers": [
+          {
+            "name": "audit-archiver",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/audit-archiver:1.4.0",
+            "imageTag": "1.4.0",
+            "logDriver": "awslogs",
+            "logOptions": {
+              "awslogs-group": "/ecs/audit-archiver",
+              "awslogs-region": "eu-central-1",
+              "awslogs-stream-prefix": "ecs"
+            },
+            "environment": [
+              {
+                "name": "ACME_ROUTES_0_GROUP",
+                "value": "audit-archiver"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN",
+                "value": "demo-audit"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_0_SYSTEM",
+                "value": "Audit Archive"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_0_TYPE",
+                "value": "s3"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
+                "value": "https://search.example.com/ingest"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_SYSTEM",
+                "value": "Search Index"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_TYPE",
+                "value": "http"
+              },
+              {
+                "name": "ACME_ROUTES_0_TOPIC",
+                "value": "demo.events"
+              },
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "audit-archiver"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/audit-archiver/api-token"
+              }
+            ],
+            "environmentFiles": [],
+            "routes": {
+              "prefix": "ACME_",
+              "routes": [
+                {
+                  "index": 0,
+                  "topic": "demo.events",
+                  "enabled": true,
+                  "group": "audit-archiver",
+                  "input": null,
+                  "outputs": [
+                    {
+                      "kind": "s3",
+                      "system": "Audit Archive",
+                      "enabled": true,
+                      "properties": [
+                        {
+                          "key": "bucketnameorarn",
+                          "value": "demo-audit",
+                          "variable": "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN",
+                          "valueFrom": null
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "http",
+                      "system": "Search Index",
+                      "enabled": true,
+                      "properties": [
+                        {
+                          "key": "url",
+                          "value": "https://search.example.com/ingest",
+                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
+                          "valueFrom": null
+                        }
+                      ]
+                    }
+                  ],
+                  "settings": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "e72ea075689ec29d2005df783477ac62",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service audit-archiver) has reached a steady state."
         }
       ]
     },
@@ -1293,6 +1462,35 @@
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/payments-worker:2.3.0",
             "imageTag": "2.3.0",
             "imageDigest": "sha256:aca9a23b16699b16d510b95baf383356"
+          }
+        ]
+      }
+    ],
+    "demo-edge/audit-archiver": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/9b1e860a6cc442eea9dd29a6b15adebc",
+        "id": "9b1e860a6cc442eea9dd29a6b15adebc",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "audit-archiver:12",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "audit-archiver",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/audit-archiver:1.4.0",
+            "imageTag": "1.4.0",
+            "imageDigest": "sha256:c85e86515136d33a748197fa181c384c"
           }
         ]
       }

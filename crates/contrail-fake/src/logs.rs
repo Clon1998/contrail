@@ -40,6 +40,7 @@ fn profile_of(log_group: &str) -> Option<(Format, Duration, &'static str)> {
         "billing-sync" => (Format::Nested, Duration::seconds(10), "billing-sync"),
         "legacy-gateway" => (Format::Spring, Duration::seconds(5), "legacy-gateway"),
         "event-ingest" => (Format::Nested, Duration::milliseconds(200), "event-ingest"),
+        "audit-archiver" => (Format::Dotted, Duration::seconds(8), "audit-archiver"),
         _ => return None,
     })
 }

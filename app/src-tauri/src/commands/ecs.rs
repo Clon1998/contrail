@@ -2,6 +2,7 @@
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{ClusterSummary, ServiceDetail, ServiceRef, ServiceSummary, Task};
+use contrail_core::routes::Endpoint;
 use tauri::State;
 
 use crate::error::ApiResult;
@@ -74,6 +75,13 @@ pub struct TopicLink {
     pub service: String,
     /// The service brings data in to the topic (input route) or takes it out (output route).
     pub direction: TopicDirection,
+    /// The consumer group of an output route.
+    pub group: Option<String>,
+    /// The route is switched on.
+    pub enabled: bool,
+    /// Where that service's route gets its data from (input) or sends it to (outputs): type,
+    /// system and whether it is on. Their properties are left out; the graph doesn't show them.
+    pub endpoints: Vec<Endpoint>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
@@ -137,15 +145,23 @@ async fn find_topic_links(
                 let Some(topic) = route.topic.filter(|t| topics.contains(t)) else {
                     continue;
                 };
-                let direction = if route.input.is_some() {
-                    TopicDirection::In
-                } else {
-                    TopicDirection::Out
+                let (direction, endpoints) = match route.input {
+                    Some(input) => (TopicDirection::In, vec![input]),
+                    None => (TopicDirection::Out, route.outputs),
                 };
                 links.push(TopicLink {
                     topic,
                     service: service.clone(),
                     direction,
+                    group: route.group,
+                    enabled: route.enabled,
+                    endpoints: endpoints
+                        .into_iter()
+                        .map(|e| Endpoint {
+                            properties: Vec::new(),
+                            ..e
+                        })
+                        .collect(),
                 });
             }
         }
@@ -175,8 +191,32 @@ mod tests {
         )
         .await
         .unwrap();
-        assert_eq!(links.len(), 1);
-        assert_eq!(links[0].service, "legacy-gateway");
-        assert_eq!(links[0].direction, TopicDirection::Out);
+        let readers: Vec<_> = links
+            .iter()
+            .map(|l| (l.service.as_str(), l.direction, l.group.as_deref()))
+            .collect();
+        assert_eq!(
+            readers,
+            [
+                (
+                    "audit-archiver",
+                    TopicDirection::Out,
+                    Some("audit-archiver")
+                ),
+                (
+                    "legacy-gateway",
+                    TopicDirection::Out,
+                    Some("legacy-gateway")
+                ),
+            ]
+        );
+        // Their targets come along (for the graph's next column), without their settings.
+        let systems: Vec<_> = links[0]
+            .endpoints
+            .iter()
+            .map(|e| e.system.as_deref())
+            .collect();
+        assert_eq!(systems, [Some("Audit Archive"), Some("Search Index")]);
+        assert!(links[0].endpoints.iter().all(|e| e.properties.is_empty()));
     }
 }
