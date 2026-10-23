@@ -413,3 +413,4 @@ Ship as `docs/iam-policy.json` so teammates without admin can request exactly th
 - Cross-service trace view: follow one `trace.id` across several services.
 - Saved filters / query history; split view; Lambda log groups; CloudWatch Logs Insights quick queries.
 - Built-in SSO device flow; CLI companion (`contrail tail <service>`); open-source release.
+- Rebindable keyboard shortcuts in the settings (v0.1 lists them in Settings → Shortcuts; decided 2026-10-23).

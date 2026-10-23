@@ -41,7 +41,47 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [["Esc"], "Clear the search"],
     ],
   },
+  {
+    title: "Logs",
+    keys: [
+      [["Click"], "Hide or show a level (level chips)"],
+      [["Middle click"], "Only this level (level chips)"],
+      [["Right click"], "More level options (level chips)"],
+    ],
+  },
 ];
+
+/** All shortcuts by group (the "?" dialog and the settings show the same list). */
+export function ShortcutList() {
+  return (
+    <div className="space-y-4 text-sm">
+      {GROUPS.map((group) => (
+        <section key={group.title} aria-label={group.title}>
+          <h3 className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            {group.title}
+          </h3>
+          <dl className="grid grid-cols-[1fr_auto] gap-y-1">
+            {group.keys.map(([keys, action]) => (
+              <div key={action + keys.join()} className="contents">
+                <dt>{action}</dt>
+                <dd className="flex gap-1">
+                  {keys.map((key) => (
+                    <kbd
+                      key={key}
+                      className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs"
+                    >
+                      {key}
+                    </kbd>
+                  ))}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
+  );
+}
 
 /** Whether a key press happens while typing (where "?" is just a character). */
 function typing(target: EventTarget | null): boolean {
@@ -85,32 +125,7 @@ export function ShortcutsDialog() {
             The search syntax is behind the ? next to the search box.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 text-sm">
-          {GROUPS.map((group) => (
-            <section key={group.title} aria-label={group.title}>
-              <h3 className="mb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                {group.title}
-              </h3>
-              <dl className="grid grid-cols-[1fr_auto] gap-y-1">
-                {group.keys.map(([keys, action]) => (
-                  <div key={action + keys.join()} className="contents">
-                    <dt>{action}</dt>
-                    <dd className="flex gap-1">
-                      {keys.map((key) => (
-                        <kbd
-                          key={key}
-                          className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs"
-                        >
-                          {key}
-                        </kbd>
-                      ))}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          ))}
-        </div>
+        <ShortcutList />
       </DialogContent>
     </Dialog>
   );

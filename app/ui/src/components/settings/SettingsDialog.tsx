@@ -20,13 +20,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
+import { ShortcutList } from "./ShortcutsDialog";
 import { usePrefs } from "@/stores/prefs";
 
-type Section = "appearance" | "logs" | "about";
+type Section = "appearance" | "logs" | "shortcuts" | "about";
 
 const SECTIONS: { value: Section; label: string }[] = [
   { value: "appearance", label: "Appearance" },
   { value: "logs", label: "Logs" },
+  { value: "shortcuts", label: "Shortcuts" },
   { value: "about", label: "About" },
 ];
 
@@ -251,6 +253,15 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                   </div>
                 </Row>
               </Rows>
+            )}
+
+            {section === "shortcuts" && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Also shown with <kbd className="font-mono">?</kbd>. Changing them comes later.
+                </p>
+                <ShortcutList />
+              </div>
             )}
 
             {section === "about" && (

@@ -40,7 +40,7 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   this" builds a per-service noise list. See [docs/query-syntax.md](docs/query-syntax.md).
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
-- **Keyboard shortcuts:** press `?`.
+- **Keyboard shortcuts:** press `?`, or see Settings → Shortcuts.
 - **Permissions:** read-only; [docs/iam-policy.json](docs/iam-policy.json) lists exactly what Contrail calls.
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
   default log time window, newest-first order and timestamps in local time or UTC.

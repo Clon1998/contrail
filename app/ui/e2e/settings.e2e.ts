@@ -59,3 +59,12 @@ test("the default log window is a log setting", async ({ page }) => {
   await window.getByRole("button", { name: "1 h" }).click();
   await expect(window.getByRole("button", { name: "1 h" })).toHaveAttribute("aria-pressed", "true");
 });
+
+test("the settings list the keyboard shortcuts", async ({ page }) => {
+  await page.keyboard.press("ControlOrMeta+,");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("button", { name: "Shortcuts" }).click();
+  const general = dialog.getByRole("region", { name: "General" });
+  await expect(general).toContainText("Go to a service");
+  await expect(dialog.getByRole("region", { name: "Logs" })).toContainText("Only this level");
+});
