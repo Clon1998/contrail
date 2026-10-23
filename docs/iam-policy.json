@@ -20,6 +20,16 @@
         "logs:StartLiveTail"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "ContrailOptionalRevealSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "ssm:GetParameter",
+        "kms:Decrypt"
+      ],
+      "Resource": "*"
     }
   ]
 }

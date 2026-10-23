@@ -367,3 +367,10 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   object; the same loop runs against CloudWatch, the demo fake and a test double. Core has no tokio: its tests
   drive the future with `futures::executor::block_on` (a tiny executor, like calling `.join()` on a future).
 - **Where:** `crates/contrail-core/src/logs/slices.rs`.
+
+## Matching on a reference, then moving the value (`match &location`)
+
+- **What:** `match &location { SecretsManager { region, .. } => { …; read_secret(location) } }` borrows
+  `location` for the pattern; after the last use of `region` the borrow ends (non-lexical lifetimes), so
+  `location` can be moved into a function inside the same arm.
+- **Where:** `AwsSecrets::reveal` in `crates/contrail-aws/src/secrets.rs`.

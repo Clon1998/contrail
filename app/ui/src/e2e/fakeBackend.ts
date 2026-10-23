@@ -441,6 +441,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!services) throw apiError("notFound", "cluster not found");
         return services;
       }
+      case "reveal_secret": {
+        checkCredentials(args?.ctx as AwsCtx);
+        const name = (args?.valueFrom as string).split("/").at(-1);
+        return `demo-${name}-not-a-real-secret`;
+      }
       case "describe_service":
         return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;
       case "list_tasks": {

@@ -82,6 +82,13 @@ test("the overview lists environment variables, masking secret-looking values", 
     "parameter/demo/orders-api",
   );
 
+  // A secret's value is read on request, and can be hidden again.
+  const token = env.getByRole("row", { name: /API_TOKEN/ });
+  await token.getByRole("button", { name: "Reveal" }).click();
+  await expect(token).toContainText("demo-api-token-not-a-real-secret");
+  await token.getByRole("button", { name: "Hide value" }).click();
+  await expect(token).not.toContainText("demo-api-token-not-a-real-secret");
+
   await env.getByRole("searchbox", { name: "Filter variables" }).fill("server");
   await expect(env.getByRole("row", { name: /SERVER_PORT/ })).toBeVisible();
   await expect(env.getByRole("row", { name: /SPRING_PROFILES_ACTIVE/ })).toHaveCount(0);

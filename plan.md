@@ -394,6 +394,8 @@ ecs:ListClusters, ecs:DescribeClusters, ecs:ListServices, ecs:DescribeServices,
 ecs:ListTasks, ecs:DescribeTasks, ecs:DescribeTaskDefinition
 logs:FilterLogEvents, logs:GetLogEvents, logs:DescribeLogStreams, logs:DescribeLogGroups,
 logs:StartLiveTail
+# optional, only to reveal secret values on request:
+secretsmanager:GetSecretValue, ssm:GetParameter, kms:Decrypt
 ```
 Ship as `docs/iam-policy.json` so teammates without admin can request exactly this.
 

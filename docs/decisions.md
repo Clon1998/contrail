@@ -190,3 +190,12 @@ all") reads the next ~5,000. Loading stops when the buffer is full (inserting ol
 again). Search and export cover the loaded events; the toolbar says how far back that is. CloudWatch can't
 read across streams newest first, hence the time slices. Live updates now also carry up to 500 changed rows,
 and evictions shift the UI's row cache instead of clearing it, so new rows don't flash.
+
+## 2026-10-23 — Revealing secret values on request
+
+Patrick asked to see the values of secret-backed variables in the overview. **Decision:** a **Reveal** button
+per secret reads it on that click (`secretsmanager:GetSecretValue` with the JSON key / version from
+`valueFrom`, or `ssm:GetParameter` with decryption). Still read-only towards AWS; values live in the UI's
+memory while shown, are cleared on Hide or when the view closes, and are never stored or logged (errors carry
+AWS's message only). The permissions are an optional statement in `docs/iam-policy.json`; without them the
+row says "missing permission". Each read is visible in CloudTrail, which the button's tooltip mentions.

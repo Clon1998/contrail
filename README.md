@@ -46,6 +46,11 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
 - **Keyboard shortcuts:** press `?`, or see Settings → Shortcuts.
 - **Permissions:** read-only; [docs/iam-policy.json](docs/iam-policy.json) lists exactly what Contrail calls.
+  The `ContrailOptionalRevealSecrets` statement is only needed to reveal secret values (see below); narrow
+  its `Resource` to the secrets your team may read.
+- **Secrets:** variables filled from Secrets Manager or SSM show their reference; **Reveal** reads the value
+  on that click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored
+  or logged.
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
   default log time window, newest-first order and timestamps in local time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in

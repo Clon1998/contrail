@@ -10,6 +10,7 @@ use contrail_core::ecs::EcsSource;
 use contrail_core::logs::{
     FieldMapping, LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter, VisibleChange,
 };
+use contrail_core::secrets::SecretSource;
 use contrail_core::timestamp::Timestamp;
 
 use crate::live::{LiveHandle, Views};
@@ -23,6 +24,8 @@ pub struct AppState {
     pub auth: Arc<dyn AuthProvider>,
     pub ecs: Arc<dyn EcsSource>,
     pub logs: Arc<dyn LogSource>,
+    /// Secret values, read only when the user asks for one.
+    pub secrets: Arc<dyn SecretSource>,
     pub prefs: PrefsStore,
     /// Open log views by ID, shared with their live tasks (see [`Views`]). The lock is only held
     /// for quick reads and inserts, never across an `.await`.
@@ -41,6 +44,7 @@ impl AppState {
         Self {
             ecs: Arc::new(contrail_fake::FakeEcs::new(auth.clone())),
             logs: Arc::new(contrail_fake::FakeLogs::new(auth.clone())),
+            secrets: Arc::new(contrail_fake::FakeSecrets::new(auth.clone())),
             auth,
             views: Views::default(),
             next_view_id: AtomicU32::new(1),
@@ -56,6 +60,7 @@ impl AppState {
             auth: Arc::new(contrail_aws::AwsAuth::new(files)),
             ecs: Arc::new(contrail_aws::AwsEcs::new()),
             logs: Arc::new(contrail_aws::AwsLogs::new()),
+            secrets: Arc::new(contrail_aws::AwsSecrets::new()),
             views: Views::default(),
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::load(data_dir.join("prefs.json")),
