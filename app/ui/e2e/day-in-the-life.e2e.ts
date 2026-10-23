@@ -54,7 +54,7 @@ test("a day in the life", async ({ page }) => {
   await orders.getByRole("textbox", { name: "Search logs" }).press("Enter");
   await expect(orders.getByLabel("Match count")).toContainText(/^1 \/ \d+ matches$/);
 
-  const tabs = page.getByRole("tablist", { name: "Open services" });
+  const tabs = page.getByRole("tablist", { name: "Open tabs" });
   await tabs.getByRole("tab", { name: "payments-worker" }).click();
   await expect(search).toHaveValue("level:ERROR");
 

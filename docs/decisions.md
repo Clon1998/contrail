@@ -246,3 +246,13 @@ docs or the website), pull requests also build all platforms, and a manual run (
 ci.yml`) builds the ticked platforms (Windows and macOS Apple silicon by default; macOS Intel and Linux on request),
 optionally without lint and tests. A newer push cancels the running push build. Contrail keeps its own fixes on
 top (pinned toolchain, apt retries, the Playwright container, the generated-files check).
+
+## 2026-10-24 — Traces open in a tab; compact route rows
+
+Patrick's feedback after testing: the trace dialog lost its result as soon as he opened a service, and was too
+small to read the events. **Decision (his choices):** a trace opens in a tab of its own next to the service
+tabs, with one merged timeline of all services' events that expand in place, a filter per service, and "Open
+in …" that leaves the tab open. Trace tabs last for the session (like service tabs) and aren't live. `Tab` is
+now a union of service and trace tabs; each trace tab has its own store. The route view shows one row per route
+(systems, topic, an output route's group, disabled routes and targets); everything else opens on click.
+Settings filled from Secrets Manager or SSM (a route's password) are now part of the route, with Reveal.

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { CircleAlertIcon, Loader2Icon, RefreshCwIcon, StarIcon } from "lucide-react";
 import { LogViewer } from "@/components/logs/LogViewer";
+import { TraceView } from "@/components/logs/TraceView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,12 +18,12 @@ import { ServiceTabs } from "./ServiceTabs";
 /** The open service is refreshed this often (only while it is shown). */
 const REFRESH_MS = 30_000;
 
-/** The selected service, inside the logs store of its tab. */
+/** The active tab: the selected service inside the logs store of its tab, or a trace. */
 export function ServiceView() {
   const selected = useEcs((s) => s.selected);
   const tab = useTabs((s) => s.tabs.find((t) => t.key === s.activeKey));
   // Right after selecting another service its tab is activated (an effect in App): wait for it.
-  const ready = selected && tab && tab.key === tabKey(selected);
+  const ready = tab?.kind === "service" && selected && tab.key === tabKey(selected);
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <ServiceTabs />
@@ -31,6 +32,7 @@ export function ServiceView() {
           <ServicePane key={tab.key} />
         </LogsContext.Provider>
       )}
+      {tab?.kind === "trace" && <TraceView key={tab.key} tab={tab} />}
     </div>
   );
 }

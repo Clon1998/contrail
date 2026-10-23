@@ -34,7 +34,7 @@ test("tabs keep services open and switch with the keyboard", async ({ page }) =>
   await openService(page, "demo-core", "orders-api");
   await openService(page, "demo-core", "payments-worker");
   await openService(page, "demo-edge", "legacy-gateway");
-  const tabs = page.getByRole("tablist", { name: "Open services" });
+  const tabs = page.getByRole("tablist", { name: "Open tabs" });
   await expect(tabs.getByRole("tab")).toHaveCount(3);
 
   const mod = process.platform === "darwin" ? "Meta" : "Control";

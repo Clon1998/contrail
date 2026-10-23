@@ -66,11 +66,19 @@ page has the details.
 
 ## Tracing across services
 
-An expanded line with a correlation or trace ID searches the chosen services of the cluster for it
-(`FilterLogEvents`, a time span around the line) and shows the way it took: services in order with their last
-state, every event on a timeline, and whether the document completed or failed. With many services, "Use Logs
-Insights" searches up to 50 in one query (billed per GB scanned; needs the optional `ContrailOptionalInsightsTrace`
-statement of the [IAM policy](iam-policy.json)).
+**Trace across services** on an expanded line with a correlation or trace ID opens a **trace tab**. Choose the
+services of the cluster the request may have passed through (the one you came from is chosen) and the time around
+the event, then search: Contrail searches each service's log group for the ID (`FilterLogEvents`) and shows the
+way it took (services in order with their last state, and whether the document completed or failed) and every
+event with the ID in one timeline.
+
+- Events expand in place like log lines (fields, stack trace, raw JSON, copy buttons).
+- A service on the way shows only its events; pressed again, all of them.
+- **Open in …** opens that service's logs filtered to the ID; the trace tab stays open, with its result, until
+  you close it (it isn't live: **Search again** repeats the search, **Services** changes the choice).
+- Tracing the same ID again shows its tab. Trace tabs count towards the 10 open tabs and last for the session.
+- With many services, "Use Logs Insights" searches up to 50 in one query (billed per GB scanned; needs the
+  optional `ContrailOptionalInsightsTrace` statement of the [IAM policy](iam-policy.json)).
 
 ## Settings and updates
 
