@@ -2,16 +2,22 @@
 
 use async_trait::async_trait;
 use aws_sdk_cloudwatchlogs::Client;
+use aws_sdk_cloudwatchlogs::operation::start_live_tail::StartLiveTailError;
+use aws_sdk_cloudwatchlogs::types::StartLiveTailResponseStream;
+use aws_sdk_cloudwatchlogs::types::error::StartLiveTailResponseStreamError;
 use contrail_core::auth::AwsCtx;
 use contrail_core::error::SourceError;
-use contrail_core::logs::{Backfill, LogSource, RawEvent, StreamSelection, TimeRange};
+use contrail_core::logs::{
+    Backfill, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection, TimeRange,
+};
 use contrail_core::timestamp::Timestamp;
+use futures::StreamExt;
 use time::OffsetDateTime;
 
 use crate::clients::ClientCache;
 use crate::error::map_sdk_error;
 
-/// `FilterLogEvents` accepts at most this many stream names per request.
+/// `FilterLogEvents` and `StartLiveTail` accept at most this many stream names per request.
 const MAX_STREAMS_PER_REQUEST: usize = 100;
 
 /// CloudWatch Logs via the AWS SDK.
@@ -42,6 +48,120 @@ impl LogSource for AwsLogs {
         };
         let client = self.clients.get(&log_ctx, Client::new).await;
         backfill(&client, &ctx.profile, selection, range, limit).await
+    }
+
+    async fn live(
+        &self,
+        ctx: &AwsCtx,
+        selection: &StreamSelection,
+    ) -> Result<LiveStream, LiveError> {
+        let log_ctx = AwsCtx {
+            profile: ctx.profile.clone(),
+            region: selection.region.clone().or_else(|| ctx.region.clone()),
+        };
+        let client = self.clients.get(&log_ctx, Client::new).await;
+        let region = client
+            .config()
+            .region()
+            .map(|r| r.to_string())
+            .ok_or_else(|| LiveError::Unavailable("no region configured".into()))?;
+        let account = selection
+            .account_id
+            .as_deref()
+            .ok_or_else(|| LiveError::Unavailable("the log group's account is unknown".into()))?;
+        // Live Tail wants log group ARNs, not names.
+        let arn = format!(
+            "arn:aws:logs:{region}:{account}:log-group:{}",
+            selection.log_group
+        );
+
+        let request = client.start_live_tail().log_group_identifiers(arn);
+        let request = match &selection.stream_prefix {
+            Some(prefix) => request.log_stream_name_prefixes(prefix),
+            None => request.set_log_stream_names(Some(
+                selection
+                    .streams
+                    .iter()
+                    .take(MAX_STREAMS_PER_REQUEST)
+                    .cloned()
+                    .collect(),
+            )),
+        };
+        let output = request
+            .send()
+            .await
+            .map_err(|err| start_error(&ctx.profile, err))?;
+
+        // Turn the SDK's event receiver into a stream. The state is `Option<receiver>`: after an
+        // error the stream yields that error once and then ends.
+        let profile = ctx.profile.clone();
+        let stream = futures::stream::unfold(Some(output.response_stream), move |receiver| {
+            let profile = profile.clone();
+            async move {
+                let mut receiver = receiver?;
+                match receiver.recv().await {
+                    Ok(Some(message)) => Some((Ok(live_item(message)), Some(receiver))),
+                    Ok(None) => None,
+                    Err(err) => Some((Err(stream_error(&profile, err)), None)),
+                }
+            }
+        });
+        Ok(stream.boxed())
+    }
+}
+
+/// Maps one message of the Live Tail stream.
+fn live_item(message: StartLiveTailResponseStream) -> LiveItem {
+    match message {
+        StartLiveTailResponseStream::SessionStart(_) => LiveItem::Started,
+        StartLiveTailResponseStream::SessionUpdate(update) => LiveItem::Events {
+            sampled: update.session_metadata().is_some_and(|m| m.sampled()),
+            events: update
+                .session_results()
+                .iter()
+                .filter_map(|event| {
+                    Some(RawEvent {
+                        stream: event.log_stream_name()?.to_owned(),
+                        timestamp: event.timestamp().and_then(from_millis)?,
+                        message: event.message()?.to_owned(),
+                    })
+                })
+                .collect(),
+        },
+        // A message type newer than this SDK: nothing to show.
+        _ => LiveItem::Events {
+            events: Vec::new(),
+            sampled: false,
+        },
+    }
+}
+
+/// Errors starting a session: some mean "Live Tail isn't possible here, poll instead".
+fn start_error<R: std::fmt::Debug>(
+    profile: &str,
+    err: aws_sdk_cloudwatchlogs::error::SdkError<StartLiveTailError, R>,
+) -> LiveError {
+    match err.as_service_error() {
+        Some(
+            e @ (StartLiveTailError::AccessDeniedException(_)
+            | StartLiveTailError::LimitExceededException(_)
+            | StartLiveTailError::InvalidOperationException(_)),
+        ) => LiveError::Unavailable(e.to_string()),
+        _ => LiveError::Source(map_sdk_error(profile, err)),
+    }
+}
+
+/// Errors on a running session: timeouts (3 hours) and streaming problems mean "reconnect".
+fn stream_error<R: std::fmt::Debug>(
+    profile: &str,
+    err: aws_sdk_cloudwatchlogs::error::SdkError<StartLiveTailResponseStreamError, R>,
+) -> LiveError {
+    match err.as_service_error() {
+        Some(
+            e @ (StartLiveTailResponseStreamError::SessionTimeoutException(_)
+            | StartLiveTailResponseStreamError::SessionStreamingException(_)),
+        ) => LiveError::SessionEnded(e.to_string()),
+        _ => LiveError::Source(map_sdk_error(profile, err)),
     }
 }
 
@@ -230,5 +350,64 @@ mod tests {
         assert_eq!(result.events.len(), 15);
         assert!(result.truncated);
         assert_eq!(rule.num_calls(), 2, "no further pages after the limit");
+    }
+
+    #[test]
+    fn maps_live_tail_updates() {
+        use aws_sdk_cloudwatchlogs::types::{
+            LiveTailSessionLogEvent, LiveTailSessionMetadata, LiveTailSessionStart,
+            LiveTailSessionUpdate,
+        };
+        assert_eq!(
+            live_item(StartLiveTailResponseStream::SessionStart(
+                LiveTailSessionStart::builder().build()
+            )),
+            LiveItem::Started
+        );
+        let update = LiveTailSessionUpdate::builder()
+            .session_metadata(LiveTailSessionMetadata::builder().sampled(true).build())
+            .session_results(
+                LiveTailSessionLogEvent::builder()
+                    .log_stream_name("ecs/orders-api/task1")
+                    .timestamp(1_768_478_400_000)
+                    .message("hello")
+                    .build(),
+            )
+            // Incomplete events are skipped.
+            .session_results(
+                LiveTailSessionLogEvent::builder()
+                    .message("no stream")
+                    .build(),
+            )
+            .build();
+        let LiveItem::Events { events, sampled } =
+            live_item(StartLiveTailResponseStream::SessionUpdate(update))
+        else {
+            panic!("expected events");
+        };
+        assert!(sampled);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].stream, "ecs/orders-api/task1");
+        assert_eq!(events[0].message, "hello");
+    }
+
+    #[tokio::test]
+    async fn access_denied_means_live_tail_is_unavailable() {
+        use aws_sdk_cloudwatchlogs::types::error::AccessDeniedException;
+        let rule = mock!(Client::start_live_tail).then_error(|| {
+            StartLiveTailError::AccessDeniedException(
+                AccessDeniedException::builder()
+                    .message("not allowed: logs:StartLiveTail")
+                    .build(),
+            )
+        });
+        let client = mock_client!(aws_sdk_cloudwatchlogs, [&rule]);
+        let err = client
+            .start_live_tail()
+            .log_group_identifiers("arn:aws:logs:eu-central-1:111122223333:log-group:/ecs/x")
+            .send()
+            .await
+            .unwrap_err();
+        assert!(matches!(start_error("dev", err), LiveError::Unavailable(_)));
     }
 }
