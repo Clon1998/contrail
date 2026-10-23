@@ -44,7 +44,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1Rjk1OEQ1NDE5RDk2NzQKUldSMGxwMUIxVmo1SlErU0lSUElRMHp0bkxyY1F6WUJtRURuOTlxalMzaFk4dG5KbTlMeE5uVHIK",
       "endpoints": [
         "https://github.com/Clon1998/contrail/releases/latest/download/latest.json"
       ],
