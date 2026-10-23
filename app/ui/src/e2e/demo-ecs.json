@@ -177,7 +177,8 @@
                 "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/billing-sync/api-token"
               }
             ],
-            "environmentFiles": []
+            "environmentFiles": [],
+            "routes": null
           }
         ]
       },
@@ -267,7 +268,8 @@
                 "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/orders-api/api-token"
               }
             ],
-            "environmentFiles": []
+            "environmentFiles": [],
+            "routes": null
           }
         ]
       },
@@ -352,7 +354,8 @@
                 "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/payments-worker/api-token"
               }
             ],
-            "environmentFiles": []
+            "environmentFiles": [],
+            "routes": null
           }
         ]
       },
@@ -467,7 +470,37 @@
                 "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/event-ingest/api-token"
               }
             ],
-            "environmentFiles": []
+            "environmentFiles": [],
+            "routes": {
+              "prefix": "ACME_",
+              "routes": [
+                {
+                  "index": 0,
+                  "topic": "demo.events",
+                  "enabled": true,
+                  "group": null,
+                  "input": {
+                    "kind": "sftp",
+                    "system": "Example Partner",
+                    "enabled": true,
+                    "properties": [
+                      {
+                        "key": "host",
+                        "value": "sftp.example.com",
+                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_HOST"
+                      },
+                      {
+                        "key": "path",
+                        "value": "outbox",
+                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_PATH"
+                      }
+                    ]
+                  },
+                  "outputs": [],
+                  "settings": []
+                }
+              ]
+            }
           }
         ]
       },
@@ -526,6 +559,46 @@
             },
             "environment": [
               {
+                "name": "ACME_ROUTES_0_GROUP",
+                "value": "legacy-gateway"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN",
+                "value": "demo-archive"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_0_SYSTEM",
+                "value": "Archive"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_0_TYPE",
+                "value": "s3"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_ENABLED",
+                "value": "false"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
+                "value": "https://api.example.com/in"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_SYSTEM",
+                "value": "Example Partner API"
+              },
+              {
+                "name": "ACME_ROUTES_0_OUTPUTS_1_TYPE",
+                "value": "http"
+              },
+              {
+                "name": "ACME_ROUTES_0_TOPIC",
+                "value": "demo.events"
+              },
+              {
                 "name": "DB_PASSWORD",
                 "value": "demo-not-a-secret"
               },
@@ -552,7 +625,51 @@
                 "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/legacy-gateway/api-token"
               }
             ],
-            "environmentFiles": []
+            "environmentFiles": [],
+            "routes": {
+              "prefix": "ACME_",
+              "routes": [
+                {
+                  "index": 0,
+                  "topic": "demo.events",
+                  "enabled": true,
+                  "group": "legacy-gateway",
+                  "input": null,
+                  "outputs": [
+                    {
+                      "kind": "s3",
+                      "system": "Archive",
+                      "enabled": true,
+                      "properties": [
+                        {
+                          "key": "bucketnameorarn",
+                          "value": "demo-archive",
+                          "variable": "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN"
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "http",
+                      "system": "Example Partner API",
+                      "enabled": false,
+                      "properties": [
+                        {
+                          "key": "password",
+                          "value": "demo-not-a-secret",
+                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_PASSWORD"
+                        },
+                        {
+                          "key": "url",
+                          "value": "https://api.example.com/in",
+                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL"
+                        }
+                      ]
+                    }
+                  ],
+                  "settings": []
+                }
+              ]
+            }
           }
         ]
       },

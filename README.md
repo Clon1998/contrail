@@ -19,6 +19,9 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - Browse **Cluster → Service** in the sidebar (the filter box narrows it by name); a service shows its tasks (running and recently stopped, with
   stop reasons and exit codes), deployments, task definition, recent events and the environment variables
   (secret-looking values masked; secrets only by reference). It refreshes every 30 s.
+- **Routes** of routing-framework services (configured as `<PREFIX>_ROUTES_<n>_…` environment variables) are
+  shown as source → topic → targets; "Find connected services" lists the services on the other side of each
+  topic.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile.
   Star a service to pin it to the sidebar. Favorites, recent services, the last profile and region overrides
   are kept in `prefs.json` in Contrail's app data folder (never credentials).

@@ -63,6 +63,8 @@ export const commands = {
 	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
 	 */
 	revealSecret: (ctx: AwsCtx, valueFrom: string) => typedError<string, ApiError>(__TAURI_INVOKE("reveal_secret", { ctx, valueFrom })),
+	/**  The services of `cluster_arn` whose routes use one of `topics` (except `exclude`). */
+	servicesOnTopics: (ctx: AwsCtx, clusterArn: string, topics: string[], exclude: string) => typedError<TopicLink[], ApiError>(__TAURI_INVOKE("services_on_topics", { ctx, clusterArn, topics, exclude })),
 	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
@@ -176,6 +178,8 @@ export type ContainerDefinitionInfo = {
 	secrets: SecretRef[],
 	/**  `.env` files loaded from S3 (their ARNs). */
 	environmentFiles: string[],
+	/**  Routes of a routing-framework service, rebuilt from `environment` (see [`crate::routes`]). */
+	routes: RouteConfig | null,
 };
 
 export type ContainerState = {
@@ -210,6 +214,17 @@ export type Deployment = {
 	failed: number,
 	createdAt: Timestamp | null,
 	updatedAt: Timestamp | null,
+};
+
+/**  One end of a route: where data comes from (input) or goes to (output). */
+export type Endpoint = {
+	/**  `sftp`, `s3`, `http`, `kafka`, … (the framework's `type`). */
+	kind: string | null,
+	/**  A label for the other system. */
+	system: string | null,
+	enabled: boolean,
+	/**  Endpoint settings (`host`, `path`, …), keys lower-cased as relaxed binding loses their case. */
+	properties: RouteProperty[],
 };
 
 /**  An environment variable of a container definition. */
@@ -506,6 +521,31 @@ export type QueryError = {
 	hint: string | null,
 };
 
+export type Route = {
+	index: number,
+	topic: string | null,
+	enabled: boolean,
+	/**  The consumer group (output routes). */
+	group: string | null,
+	input: Endpoint | null,
+	outputs: Endpoint[],
+	/**  Other settings of the route (`keyexpression`, `concurrency`, …). */
+	settings: RouteProperty[],
+};
+
+export type RouteConfig = {
+	/**  The variable prefix before `ROUTES_` (e.g. `ACME_`), for display. */
+	prefix: string,
+	routes: Route[],
+};
+
+export type RouteProperty = {
+	key: string,
+	value: string,
+	/**  The original variable name (to mask credentials the same way as in the environment list). */
+	variable: string,
+};
+
 /**  Listed rows from `offset` on. */
 export type RowBlock = {
 	offset: number,
@@ -695,6 +735,16 @@ export type TimeZone = "local" | "utc";
  *  `#[specta(transparent)]` + `type = String` tell the bindings generator it is a plain string.
  */
 export type Timestamp = string;
+
+export type TopicDirection = "in" | "out";
+
+/**  A service of the cluster that reads from or writes to one of the topics asked about. */
+export type TopicLink = {
+	topic: string,
+	service: string,
+	/**  The service brings data in to the topic (input route) or takes it out (output route). */
+	direction: TopicDirection,
+};
 
 export type Trace = {
 	/**  Oldest first. */

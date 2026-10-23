@@ -17,6 +17,7 @@ use contrail_core::ecs::{
     sort_tasks,
 };
 use contrail_core::error::SourceError;
+use contrail_core::routes::parse_routes;
 use contrail_core::timestamp::Timestamp;
 use time::{Duration, OffsetDateTime};
 
@@ -198,6 +199,32 @@ fn environment(spec: &ServiceSpec) -> Vec<EnvVar> {
         ("LOGGING_STRUCTURED_FORMAT_CONSOLE", "ecs".to_owned()),
         ("DB_PASSWORD", "demo-not-a-secret".to_owned()),
     ];
+    if spec.name == "legacy-gateway" {
+        vars.extend([
+            ("ACME_ROUTES_0_TOPIC", "demo.events".to_owned()),
+            ("ACME_ROUTES_0_GROUP", "legacy-gateway".to_owned()),
+            ("ACME_ROUTES_0_OUTPUTS_0_TYPE", "s3".to_owned()),
+            ("ACME_ROUTES_0_OUTPUTS_0_SYSTEM", "Archive".to_owned()),
+            (
+                "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN",
+                "demo-archive".to_owned(),
+            ),
+            ("ACME_ROUTES_0_OUTPUTS_1_TYPE", "http".to_owned()),
+            (
+                "ACME_ROUTES_0_OUTPUTS_1_SYSTEM",
+                "Example Partner API".to_owned(),
+            ),
+            ("ACME_ROUTES_0_OUTPUTS_1_ENABLED", "false".to_owned()),
+            (
+                "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
+                "https://api.example.com/in".to_owned(),
+            ),
+            (
+                "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_PASSWORD",
+                "demo-not-a-secret".to_owned(),
+            ),
+        ]);
+    }
     if spec.name == "event-ingest" {
         vars.extend([
             ("ACME_ROUTES_0_TOPIC", "demo.events".to_owned()),
@@ -446,6 +473,7 @@ impl EcsSource for FakeEcs {
                     .into_iter()
                     .map(|(k, v)| (k.to_owned(), v))
                     .collect(),
+                    routes: parse_routes(&environment(spec)),
                     environment: environment(spec),
                     secrets: vec![SecretRef {
                         name: "API_TOKEN".to_owned(),

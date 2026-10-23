@@ -65,3 +65,118 @@ pub async fn list_tasks(
         .list_tasks(&ctx, &service, include_stopped)
         .await?)
 }
+
+/// A service of the cluster that reads from or writes to one of the topics asked about.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TopicLink {
+    pub topic: String,
+    pub service: String,
+    /// The service brings data in to the topic (input route) or takes it out (output route).
+    pub direction: TopicDirection,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum TopicDirection {
+    In,
+    Out,
+}
+
+/// How many services are described at the same time when looking for topic links.
+const TOPIC_SCAN_PARALLEL: usize = 5;
+
+/// The services of `cluster_arn` whose routes use one of `topics` (except `exclude`).
+#[tauri::command]
+#[specta::specta]
+pub async fn services_on_topics(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    cluster_arn: String,
+    topics: Vec<String>,
+    exclude: String,
+) -> ApiResult<Vec<TopicLink>> {
+    find_topic_links(&state, &ctx, &cluster_arn, &topics, &exclude).await
+}
+
+async fn find_topic_links(
+    state: &AppState,
+    ctx: &AwsCtx,
+    cluster_arn: &str,
+    topics: &[String],
+    exclude: &str,
+) -> ApiResult<Vec<TopicLink>> {
+    use futures::StreamExt;
+
+    let services = state.ecs.list_services(ctx, cluster_arn).await?;
+    let details: Vec<_> = futures::stream::iter(services.into_iter().filter(|s| s.name != exclude))
+        .map(|service| async move {
+            let reference = ServiceRef {
+                cluster_arn: cluster_arn.to_owned(),
+                service_name: service.name.clone(),
+            };
+            (
+                service.name,
+                state.ecs.describe_service(ctx, &reference).await,
+            )
+        })
+        .buffer_unordered(TOPIC_SCAN_PARALLEL)
+        .collect()
+        .await;
+
+    let mut links = Vec::new();
+    // A service that can't be described is skipped: the others still count.
+    for (service, detail) in details {
+        let Ok(detail) = detail else { continue };
+        let containers = detail
+            .task_definition
+            .map(|t| t.containers)
+            .unwrap_or_default();
+        for routes in containers.into_iter().filter_map(|c| c.routes) {
+            for route in routes.routes {
+                let Some(topic) = route.topic.filter(|t| topics.contains(t)) else {
+                    continue;
+                };
+                let direction = if route.input.is_some() {
+                    TopicDirection::In
+                } else {
+                    TopicDirection::Out
+                };
+                links.push(TopicLink {
+                    topic,
+                    service: service.clone(),
+                    direction,
+                });
+            }
+        }
+    }
+    links.sort_by(|a, b| (&a.topic, &a.service).cmp(&(&b.topic, &b.service)));
+    Ok(links)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn finds_the_other_side_of_a_topic() {
+        let state = AppState::demo();
+        let ctx = AwsCtx {
+            profile: "demo-dev".into(),
+            region: None,
+        };
+        let cluster = "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge";
+        let links = find_topic_links(
+            &state,
+            &ctx,
+            cluster,
+            &["demo.events".into()],
+            "event-ingest",
+        )
+        .await
+        .unwrap();
+        assert_eq!(links.len(), 1);
+        assert_eq!(links[0].service, "legacy-gateway");
+        assert_eq!(links[0].direction, TopicDirection::Out);
+    }
+}

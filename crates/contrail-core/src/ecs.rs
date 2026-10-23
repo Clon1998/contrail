@@ -108,6 +108,8 @@ pub struct ContainerDefinitionInfo {
     pub secrets: Vec<SecretRef>,
     /// `.env` files loaded from S3 (their ARNs).
     pub environment_files: Vec<String>,
+    /// Routes of a routing-framework service, rebuilt from `environment` (see [`crate::routes`]).
+    pub routes: Option<crate::routes::RouteConfig>,
 }
 
 /// An environment variable of a container definition.

@@ -30,6 +30,7 @@ import type {
   RowWindow,
   ServiceTrace,
   Trace,
+  TopicLink,
   TraceHit,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
@@ -462,6 +463,31 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const services = ecs(args?.ctx as AwsCtx).services[args?.clusterArn as string];
         if (!services) throw apiError("notFound", "cluster not found");
         return services;
+      }
+      case "services_on_topics": {
+        // Like the Rust side: other services of the cluster whose routes use these topics.
+        const ctx = args?.ctx as AwsCtx;
+        const clusterArn = args?.clusterArn as string;
+        const topics = args?.topics as string[];
+        const exclude = args?.exclude as string;
+        const data = ecs(ctx);
+        const links: TopicLink[] = [];
+        for (const summary of data.services[clusterArn] ?? []) {
+          if (summary.name === exclude) continue;
+          const { detail } = serviceData(ctx, { clusterArn, serviceName: summary.name });
+          for (const container of detail.taskDefinition?.containers ?? []) {
+            for (const route of container.routes?.routes ?? []) {
+              if (route.topic && topics.includes(route.topic)) {
+                links.push({
+                  topic: route.topic,
+                  service: summary.name,
+                  direction: route.input ? "in" : "out",
+                });
+              }
+            }
+          }
+        }
+        return links;
       }
       case "reveal_secret": {
         checkCredentials(args?.ctx as AwsCtx);

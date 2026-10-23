@@ -154,7 +154,7 @@ function SecretValue({ valueFrom }: { valueFrom: string }) {
 }
 
 /** A value, masked when the name looks like a credential (shown after a click). */
-function Value({ name, value }: { name: string; value: string }) {
+export function Value({ name, value }: { name: string; value: string }) {
   const [shown, setShown] = useState(false);
   if (shown || !looksSecret(name) || value === "") return <>{value}</>;
   return (
