@@ -58,7 +58,8 @@ function SyntaxHelp() {
           ))}
         </dl>
         <p className="mt-2 text-muted-foreground">
-          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous.
+          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous. With
+          <span className="font-mono"> .*</span> on, the whole search is one regular expression.
         </p>
       </PopoverContent>
     </Popover>
@@ -253,7 +254,13 @@ export function SearchBar() {
             ref={input}
             aria-label="Search logs"
             aria-invalid={queryError !== null}
-            placeholder={selected ? "Search: timeout level>=WARN trace.id:abc -health …" : "Search"}
+            placeholder={
+              !selected
+                ? "Search"
+                : search.regex
+                  ? "Regular expression: order \\d+ (failed|timed out)"
+                  : "Search: timeout level>=WARN trace.id:abc -health …"
+            }
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -273,6 +280,21 @@ export function SearchBar() {
             </button>
           )}
         </div>
+        <button
+          type="button"
+          aria-label="Regular expression"
+          aria-pressed={search.regex}
+          title="Regular expression: the whole search is one regex (Rust syntax, any case)"
+          onClick={() => void setSearch({ regex: !search.regex })}
+          className={cn(
+            "rounded border px-1.5 py-0.5 font-mono",
+            search.regex
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground hover:text-foreground",
+          )}
+        >
+          .*
+        </button>
         <SyntaxHelp />
         <div
           role="radiogroup"

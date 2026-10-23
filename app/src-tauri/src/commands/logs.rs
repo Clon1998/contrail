@@ -10,7 +10,7 @@ use contrail_core::logs::{
     ViewFilter, process, resolve_log_location, write_events,
 };
 use contrail_core::prefs::ServiceKey;
-use contrail_core::query::{MatchOptions, QueryError, parse_query};
+use contrail_core::query::{MatchOptions, QueryError, parse_query, parse_regex_query};
 use contrail_core::timestamp::Timestamp;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -141,6 +141,8 @@ pub struct FilterSpec {
     pub hidden_levels: Vec<Level>,
     /// Search the whole raw line, not just the message.
     pub search_raw: bool,
+    /// The query is one regular expression (the search box's regex mode), not query syntax.
+    pub regex: bool,
     /// The service's "hide noise" texts, when hiding noise is on.
     pub noise: Vec<String>,
 }
@@ -177,7 +179,12 @@ pub fn set_log_filter(
 }
 
 fn apply_filter(state: &AppState, view_id: u32, spec: FilterSpec) -> ApiResult<FilterResult> {
-    let query = match parse_query(&spec.query) {
+    let parsed = if spec.regex {
+        parse_regex_query(&spec.query)
+    } else {
+        parse_query(&spec.query)
+    };
+    let query = match parsed {
         Ok(query) => query,
         Err(error) => return Ok(FilterResult::Invalid { error }),
     };
@@ -378,6 +385,7 @@ mod tests {
             mode: FilterMode::Filter,
             hidden_levels: vec![],
             search_raw: false,
+            regex: false,
             noise: vec![],
         };
         apply_filter(&state, info.view_id, spec).unwrap();
@@ -482,8 +490,34 @@ mod tests {
             mode: FilterMode::Filter,
             hidden_levels: Vec::new(),
             search_raw: false,
+            regex: false,
             noise: Vec::new(),
         }
+    }
+
+    #[tokio::test]
+    async fn regex_mode_reads_the_query_as_one_expression() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "payments-worker");
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
+        let regex = |query: &str| FilterSpec {
+            regex: true,
+            ..spec(query)
+        };
+
+        // `level:ERROR` is query syntax; as a regex it is just text no message contains.
+        let FilterResult::Applied { visible, .. } =
+            apply_filter(&state, info.view_id, regex("level:ERROR")).unwrap()
+        else {
+            panic!("regex should compile");
+        };
+        assert_eq!(visible, 0);
+        assert!(matches!(
+            apply_filter(&state, info.view_id, regex("time(out")).unwrap(),
+            FilterResult::Invalid { .. }
+        ));
     }
 
     #[tokio::test]

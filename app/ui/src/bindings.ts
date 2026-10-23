@@ -242,6 +242,8 @@ export type FilterSpec = {
 	hiddenLevels: Level[],
 	/**  Search the whole raw line, not just the message. */
 	searchRaw: boolean,
+	/**  The query is one regular expression (the search box's regex mode), not query syntax. */
+	regex: boolean,
 	/**  The service's "hide noise" texts, when hiding noise is on. */
 	noise: string[],
 };

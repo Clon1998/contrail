@@ -479,7 +479,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       case "set_log_filter": {
         const viewId = args?.viewId as number;
         const spec = args?.spec as FilterSpec;
-        const compiled = compileQuery(spec.query);
+        const compiled = spec.regex ? compileRegex(spec.query) : compileQuery(spec.query);
         if ("error" in compiled) {
           return { kind: "invalid", error: compiled.error } satisfies FilterResult;
         }
@@ -702,6 +702,18 @@ type FakeTest = (e: LogEvent, raw: boolean) => boolean;
  * A simplified version of the Rust query language (crates/contrail-core/src/query.rs) for the
  * UI tests: text, "phrases", level:X / level>=X, field:value (* globs), -negation.
  */
+/** Regex mode: the whole query is one case-insensitive JavaScript regex (close enough here). */
+function compileRegex(query: string): ReturnType<typeof compileQuery> {
+  try {
+    const regex = new RegExp(query, "i");
+    return { test: (e, raw) => regex.test(raw ? e.raw : e.line.message), terms: [] };
+  } catch {
+    return {
+      error: { message: "invalid regular expression", start: 0, end: query.length, hint: null },
+    };
+  }
+}
+
 function compileQuery(
   query: string,
 ):

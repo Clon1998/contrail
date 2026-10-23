@@ -30,6 +30,8 @@ export interface Search {
   mode: FilterMode;
   /** Search the whole raw line, not just the message. */
   raw: boolean;
+  /** The query is one regular expression, not query syntax. */
+  regex: boolean;
   hiddenLevels: Level[];
   /** Hide lines matching the service's noise list. */
   hideNoise: boolean;
@@ -39,6 +41,7 @@ export const EMPTY_SEARCH: Search = {
   query: "",
   mode: "filter",
   raw: false,
+  regex: false,
   hiddenLevels: [],
   hideNoise: true,
 };
@@ -328,6 +331,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         mode: search.mode,
         hiddenLevels: search.hiddenLevels,
         searchRaw: search.raw,
+        regex: search.regex,
         noise,
       });
       if (get().view?.viewId !== view.viewId || result.status !== "ok") return;

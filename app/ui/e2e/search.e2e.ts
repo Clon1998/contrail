@@ -132,3 +132,17 @@ test("hide noise from a line and show it again", async ({ page }) => {
   await page.getByRole("button", { name: /Show lines like GET \/actuator\/health/ }).click();
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
 });
+
+test("regex mode reads the whole search as one expression", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = await rowCount(page);
+  await page.getByRole("button", { name: "Regular expression" }).click();
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  await search.fill("(");
+  await expect(search).toHaveAttribute("aria-invalid", "true");
+  // Spaces are part of the expression, not separate terms.
+  await search.fill("GET /\\S+ ");
+  await expect(search).toHaveAttribute("aria-invalid", "false");
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+  await expect.poll(() => rowCount(page)).toBeGreaterThan(0);
+});
