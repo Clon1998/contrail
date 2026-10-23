@@ -12,13 +12,10 @@ side (signed updater files and `latest.json`) is on the branch `feat/m8-release`
 
 Everything ever committed becomes public. Audit of all 193 commits on 2026-10-23:
 
-| Finding | Where | Status |
-|---|---|---|
-| Your employer and team named in "Audience (v1)" | `plan.md` line 8, since the first commit | **still in the file**: your sentence, your call |
-| A real service name and a log excerpt structured like the original samples | `plan.md` §5.3, first commit | replaced in the current file (`9735695`), still in history |
-| The hash of a real SSO role in a test | `app/ui/src/lib/session.test.ts`, added 2026-10-23 | replaced (`9735695`), still in history |
-| A correlation ID from a real log example in a test | `app/ui/src/components/logs/columns.test.ts`, `44a98fc` | replaced, still in history |
-| Commit author e-mail `dev@mobileraker.com` | every commit | your own address |
+In short: a few real service names, a real SSO role hash and a real document ID were committed earlier
+(all replaced in the current files since), and `plan.md` line 8 still names your employer and team (your own
+sentence). The exact strings and a step-by-step brief for cleaning the history are in the **gitignored**
+`fixtures/docs/history-cleanup.md`: they are deliberately not repeated in a tracked file.
 
 Not found anywhere in the history: files from `fixtures/`, account IDs, IP addresses, internal host names,
 company e-mail addresses, credentials.
