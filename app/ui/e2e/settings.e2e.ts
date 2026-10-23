@@ -73,10 +73,14 @@ test("controls explain themselves in tooltips", async ({ page }) => {
   await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
   // Icon buttons show their label.
   await page.getByRole("button", { name: "Reload profiles" }).hover();
-  await expect(page.getByRole("tooltip")).toHaveText("Reload profiles and sessions");
-  // The identity shows the full ARN.
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "Reload profiles and sessions" }),
+  ).toHaveCount(1);
+  // The identity shows the full ARN (the previous tooltip may still be closing: filter by text).
   await page.getByText("DemoReadOnly", { exact: true }).hover();
-  await expect(page.getByRole("tooltip")).toContainText(
-    "arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user",
-  );
+  await expect(
+    page.getByRole("tooltip").filter({
+      hasText: "arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user",
+    }),
+  ).toHaveCount(1);
 });
