@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Profile, SessionStatus } from "@/bindings";
-import { describeSession, formatDuration, initialProfile, needsLogin } from "./session";
+import { describeSession, formatDuration, initialProfile, isRejected, needsLogin } from "./session";
 
 const NOW = Date.parse("2026-10-22T12:00:00Z");
 
@@ -52,6 +52,25 @@ describe("needsLogin", () => {
     expect(needsLogin({ state: "refreshable" })).toBe(false);
     expect(needsLogin({ state: "notSso" })).toBe(false);
     expect(needsLogin(undefined)).toBe(false);
+  });
+});
+
+describe("rejected sessions", () => {
+  const valid: SessionStatus = { state: "valid", expiresAt: "2026-10-23T12:00:00Z" };
+
+  it("override a session that looks valid locally", () => {
+    expect(describeSession(valid, 0, true)).toEqual({ label: "session rejected", tone: "bad" });
+    expect(needsLogin(valid, true)).toBe(true);
+  });
+
+  it("are credentials errors only", () => {
+    const error = (code: "credentials" | "accessDenied") => ({
+      state: "error",
+      error: { code, message: "x", hint: null },
+    });
+    expect(isRejected(error("credentials"))).toBe(true);
+    expect(isRejected(error("accessDenied"))).toBe(false);
+    expect(isRejected({ state: "checking" })).toBe(false);
   });
 });
 

@@ -68,10 +68,24 @@ describe("App", () => {
     await openSwitcherAndPick("demo-prod");
     expect(await screen.findByText("Log in to demo-prod")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(within(screen.getByRole("banner")).getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByText("Connected to demo-prod")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Log in" })).toBeNull();
+  });
+
+  it("offers a login when AWS rejects a session that looks valid", async () => {
+    installFakeBackend({ rejectedSessions: ["demo-dev"] });
+    render(<App />);
+
+    expect(await screen.findByText("Log in to demo-dev")).toBeTruthy();
+    // The reason is shown once (in the main panel), not repeated in the header.
+    expect(screen.getAllByText(/Session token not found or invalid/)).toHaveLength(1);
+    const switcher = screen.getByRole("combobox", { name: "AWS profile" });
+    expect(within(switcher).getByLabelText("session rejected")).toBeTruthy();
+
+    fireEvent.click(within(screen.getByRole("banner")).getByRole("button", { name: "Log in" }));
+    expect(await screen.findByText("Connected to demo-dev")).toBeTruthy();
   });
 
   it("explains a missing AWS CLI", async () => {
@@ -80,7 +94,9 @@ describe("App", () => {
     await screen.findByText("DemoReadOnly/demo.user");
 
     await openSwitcherAndPick("demo-sandbox");
-    fireEvent.click(await screen.findByRole("button", { name: "Log in" }));
+    fireEvent.click(
+      await within(screen.getByRole("banner")).findByRole("button", { name: "Log in" }),
+    );
 
     const output = await screen.findByRole("region", { name: "Login output" });
     expect(within(output).getByText(/AWS CLI \(`aws`\) was not found/)).toBeTruthy();

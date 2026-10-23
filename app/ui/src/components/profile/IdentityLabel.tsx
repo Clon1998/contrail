@@ -1,4 +1,5 @@
 import { CircleAlertIcon, Loader2Icon } from "lucide-react";
+import { isRejected } from "@/lib/session";
 import { useProfiles } from "@/stores/profiles";
 
 /** "connected as ReadOnly/someone · 111122223333", or what went wrong. */
@@ -29,6 +30,8 @@ export function IdentityLabel() {
       );
     }
     case "error":
+      // A rejected session is shown by the session dot, the Log in button and the main panel.
+      if (isRejected(identity)) return null;
       return (
         <span
           className="flex min-w-0 items-center gap-1.5 text-xs text-destructive"

@@ -162,6 +162,8 @@ export interface FakeBackendOptions {
   liveIntervalMs?: number;
   /** The first this many live tail starts fail with an expired session. */
   liveFailures?: number;
+  /** Profiles whose session looks valid locally but is rejected by AWS until the next login. */
+  rejectedSessions?: string[];
 }
 
 /** Creates the IPC handler. Each call starts from the initial demo state. */
@@ -212,16 +214,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     ...options.prefs,
   };
 
+  const rejected = new Set(options.rejectedSessions);
+
   /** What an AWS call would see: the account ID, or the error for unusable credentials. */
   function checkCredentials(ctx: AwsCtx): string {
     const profile = DEMO_PROFILES.find((p) => p.name === ctx.profile);
     if (!profile) throw apiError("config", `profile "${ctx.profile}" not found`);
     if (profile.auth.kind === "misconfigured") throw apiError("config", profile.auth.problem);
     const state = status(ctx.profile).state;
-    if (state === "expired" || state === "loggedOut") {
+    if (state === "expired" || state === "loggedOut" || rejected.has(ctx.profile)) {
       throw apiError(
         "credentials",
-        `no valid credentials for profile "${ctx.profile}"`,
+        `no valid credentials for profile "${ctx.profile}": Session token not found or invalid`,
         `Log in again (aws sso login --profile ${ctx.profile}).`,
       );
     }
@@ -382,6 +386,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         });
         await new Promise((resolve) => setTimeout(resolve, options.loginDelayMs ?? 0));
         expiry[name] = Date.now() + 8 * HOUR;
+        rejected.delete(name);
         sendProgress(channel, 1, {
           kind: "output",
           line: "Successfully logged into Start URL: https://demo-corp.awsapps.com/start",

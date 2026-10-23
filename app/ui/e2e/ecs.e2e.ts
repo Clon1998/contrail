@@ -91,7 +91,7 @@ test("an expired profile gets its tree after logging in", async ({ page }) => {
   await page.getByRole("option", { name: /demo-prod/ }).click();
   await expect(page.getByRole("tree", { name: "Clusters" })).toBeHidden();
 
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("tree", { name: "Clusters" })).toBeVisible();
   await expect(page.getByRole("treeitem", { name: "demo-core" })).toBeVisible();
 });

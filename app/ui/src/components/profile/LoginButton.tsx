@@ -1,6 +1,6 @@
 import { Loader2Icon, LogInIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { canLogin, needsLogin } from "@/lib/session";
+import { canLogin, isRejected, needsLogin } from "@/lib/session";
 import { useProfiles } from "@/stores/profiles";
 
 /** "Log in" for SSO profiles whose session is gone, expiring, or rejected by AWS. */
@@ -11,9 +11,9 @@ export function LoginButton() {
   const running = useProfiles((s) => s.login?.running ?? false);
   const startLogin = useProfiles((s) => s.startLogin);
 
-  const rejected = identity.state === "error" && identity.error.code === "credentials";
   const show =
-    canLogin(profile) && (needsLogin(status) || status?.state === "expiringSoon" || rejected);
+    canLogin(profile) &&
+    (needsLogin(status, isRejected(identity)) || status?.state === "expiringSoon");
   if (!show && !running) return null;
 
   return (
