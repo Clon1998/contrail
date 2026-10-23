@@ -1,7 +1,9 @@
-import { ChevronRightIcon, Loader2Icon, RefreshCwIcon, StarIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronRightIcon, Loader2Icon, RefreshCwIcon, SearchIcon, StarIcon } from "lucide-react";
 import { cn } from "cn";
 import type { ServiceRef } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { nameFromArn } from "@/lib/ecs";
 import { openServiceKey } from "@/lib/navigation";
 import { sameService, useEcs } from "@/stores/ecs";
@@ -20,6 +22,15 @@ export function Sidebar() {
   const ctx = useEcs((s) => s.ctx);
   const activate = useEcs((s) => s.activate);
   const reset = useEcs((s) => s.reset);
+  const loadAllServices = useEcs((s) => s.loadAllServices);
+  const [filter, setFilter] = useState("");
+  const query = filter.trim().toLowerCase();
+
+  // Filtering needs every cluster's services, not just the expanded ones.
+  const clustersLoaded = clusters.state === "ok";
+  useEffect(() => {
+    if (query && clustersLoaded) void loadAllServices();
+  }, [query, clustersLoaded, loadAllServices]);
 
   return (
     <aside
@@ -47,6 +58,23 @@ export function Sidebar() {
           ))}
         </section>
       )}
+
+      <div className="sticky top-0 z-10 bg-background px-2 pt-2">
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            aria-label="Filter services"
+            placeholder="Filter services…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setFilter("");
+            }}
+            className="h-7 pl-7 text-xs"
+          />
+        </div>
+      </div>
 
       <div className="flex items-center justify-between px-3 pt-2 pb-1">
         <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -80,20 +108,35 @@ export function Sidebar() {
       )}
       <ul role="tree" aria-label="Clusters" className="pb-2">
         {"data" in clusters &&
-          clusters.data?.map((cluster) => <ClusterNode key={cluster.arn} arn={cluster.arn} />)}
+          clusters.data?.map((cluster) => (
+            <ClusterNode key={cluster.arn} arn={cluster.arn} query={query} />
+          ))}
       </ul>
     </aside>
   );
 }
 
-function ClusterNode({ arn }: { arn: string }) {
+/**
+ * One cluster and, when expanded, its services. With a filter `query` (lower case), only matching
+ * services are listed (all of them if the cluster's name matches), the cluster is shown expanded,
+ * and it is hidden when nothing matches.
+ */
+function ClusterNode({ arn, query }: { arn: string; query: string }) {
   const cluster = useEcs((s) =>
     "data" in s.clusters ? s.clusters.data?.find((c) => c.arn === arn) : undefined,
   );
-  const expanded = useEcs((s) => s.expanded[arn] ?? false);
+  const userExpanded = useEcs((s) => s.expanded[arn] ?? false);
   const services = useEcs((s) => s.services[arn]);
   const toggle = useEcs((s) => s.toggleCluster);
   if (!cluster) return null;
+
+  const all = services && "data" in services ? (services.data ?? null) : null;
+  const shown =
+    query && !cluster.name.toLowerCase().includes(query)
+      ? all?.filter((service) => service.name.toLowerCase().includes(query))
+      : all;
+  if (query && shown?.length === 0) return null;
+  const expanded = userExpanded || query !== "";
 
   return (
     <li role="treeitem" aria-expanded={expanded} aria-label={cluster.name}>
@@ -123,18 +166,16 @@ function ClusterNode({ arn }: { arn: string }) {
           {services?.state === "error" && (
             <li className="py-1 pr-2 pl-8 text-xs text-destructive">{services.error.message}</li>
           )}
-          {services && "data" in services && services.data?.length === 0 && (
+          {all?.length === 0 && (
             <li className="py-1 pl-8 text-xs text-muted-foreground">No services</li>
           )}
-          {services &&
-            "data" in services &&
-            services.data?.map((service) => (
-              <ServiceNode
-                key={service.arn}
-                service={{ clusterArn: arn, serviceName: service.name }}
-                counts={service}
-              />
-            ))}
+          {shown?.map((service) => (
+            <ServiceNode
+              key={service.arn}
+              service={{ clusterArn: arn, serviceName: service.name }}
+              counts={service}
+            />
+          ))}
         </ul>
       )}
     </li>

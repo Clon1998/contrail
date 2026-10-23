@@ -88,6 +88,25 @@ describe("App", () => {
     expect(await screen.findByText("Connected to demo-dev")).toBeTruthy();
   });
 
+  it("filters the service tree by name across clusters", async () => {
+    installFakeBackend();
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    await within(tree).findByRole("treeitem", { name: "demo-edge" });
+
+    const filter = screen.getByRole("searchbox", { name: "Filter services" });
+    fireEvent.change(filter, { target: { value: "GATE" } });
+
+    // Collapsed clusters open to show matches; clusters without a match are hidden.
+    expect(await within(tree).findByRole("treeitem", { name: "legacy-gateway" })).toBeTruthy();
+    expect(within(tree).queryByRole("treeitem", { name: "orders-api" })).toBeNull();
+    expect(within(tree).queryByRole("treeitem", { name: "demo-core" })).toBeNull();
+
+    fireEvent.keyDown(filter, { key: "Escape" });
+    expect((filter as HTMLInputElement).value).toBe("");
+    expect(await within(tree).findByRole("treeitem", { name: "demo-core" })).toBeTruthy();
+  });
+
   it("explains a missing AWS CLI", async () => {
     installFakeBackend({ cliMissing: true });
     render(<App />);
