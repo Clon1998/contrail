@@ -169,7 +169,15 @@ export type ContainerState = {
 	exitCode: number | null,
 	reason: string | null,
 	healthStatus: string | null,
+	/**  The image reference the container was started with (`repo:tag` or `repo@sha256:…`). */
 	image: string | null,
+	/**  [`image_tag`] of `image`, for display. */
+	imageTag: string | null,
+	/**
+	 *  The digest of the image actually running (`sha256:…`), which tells tasks of the same tag
+	 *  apart when the tag was pushed again.
+	 */
+	imageDigest: string | null,
 };
 
 export type Deployment = {

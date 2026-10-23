@@ -494,6 +494,11 @@ impl EcsSource for FakeEcs {
                     reason: None,
                     health_status: None,
                     image: Some(image(spec, &account, &region)),
+                    image_tag: Some(spec.image_tag.to_owned()),
+                    image_digest: Some(format!(
+                        "sha256:{}",
+                        hex_id(&format!("{}:{}", spec.name, spec.image_tag))
+                    )),
                 }],
             }
         };

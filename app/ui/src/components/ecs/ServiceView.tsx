@@ -19,6 +19,7 @@ import { LogsContext, useLogs } from "@/stores/logs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 import { tabKey, useTabs } from "@/stores/tabs";
+import { Hint } from "@/components/ui/tooltip";
 import { Environment } from "./Environment";
 import { HealthDot } from "./HealthDot";
 import { ServiceTabs } from "./ServiceTabs";
@@ -347,6 +348,7 @@ function Tasks() {
               <th className={TH}>Status</th>
               <th className={TH}>Started</th>
               <th className={TH}>Zone</th>
+              <th className={TH}>Image</th>
               <th className={TH}>Revision</th>
               <th className={TH}>Stopped</th>
               <th className={TH}>
@@ -373,6 +375,16 @@ function Tasks() {
                     {formatAgo(task.startedAt, now)}
                   </td>
                   <td className={cn(TD, "font-mono text-xs")}>{task.availabilityZone ?? "—"}</td>
+                  <td className={cn(TD, "font-mono text-xs")}>
+                    <Hint
+                      content={
+                        container?.image &&
+                        [container.image, container.imageDigest].filter(Boolean).join("\n")
+                      }
+                    >
+                      <span>{container?.imageTag ?? "—"}</span>
+                    </Hint>
+                  </td>
                   <td className={cn(TD, "font-mono")}>{task.taskDefinition.split(":").at(-1)}</td>
                   {/* Stop reasons can be long: this column wraps and takes the remaining width. */}
                   <td className={cn(TD, "w-full whitespace-normal")}>

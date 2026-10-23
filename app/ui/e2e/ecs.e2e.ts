@@ -31,6 +31,15 @@ test("tree → crash-looping service shows why its tasks stopped", async ({ page
   await expect(tasks.getByText("exit 1")).toHaveCount(0);
 });
 
+test("each task shows the image it runs", async ({ page }) => {
+  const view = await openTreeService(page, "demo-core", "orders-api");
+  const tasks = view.getByRole("region", { name: "Tasks" });
+  const image = tasks.getByRole("row").nth(1).getByRole("cell", { name: "1.14.2" });
+  await expect(image).toBeVisible();
+  await image.hover();
+  await expect(page.getByRole("tooltip").filter({ hasText: "sha256:" })).toHaveCount(1);
+});
+
 test("a rollout in progress shows both deployments", async ({ page }) => {
   const view = await openTreeService(page, "demo-core", "billing-sync");
   const deployments = view.getByRole("region", { name: "Deployments" });
