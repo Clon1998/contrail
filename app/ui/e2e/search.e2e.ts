@@ -188,3 +188,23 @@ test("changing the search swaps the rows without a placeholder flash", async ({ 
   expect(await watch).toBe(0);
   await expect(page.getByLabel("Match count")).toBeVisible();
 });
+
+test("pipeline status events: state badges, state chips and one document", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  const states = page.getByRole("group", { name: "Pipeline states" });
+  await expect(states.getByRole("button", { name: /^COMPLETED \d+/ })).toBeVisible();
+
+  // A state chip filters by that state.
+  await states.getByRole("button", { name: /^FAILED / }).click();
+  await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue("state:FAILED");
+  await expect.poll(() => rowCount(page)).toBe(1);
+  const row = list.getByRole("listitem").first();
+  await expect(row.getByText("FAILED", { exact: true })).toBeVisible();
+
+  // "Show this document" lists every event of its correlation ID.
+  await row.getByRole("button").first().click();
+  await page.getByRole("button", { name: "Show this document" }).click();
+  await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue(/^correlation:\S+$/);
+  await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(1);
+});

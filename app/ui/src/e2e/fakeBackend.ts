@@ -892,6 +892,9 @@ function compileQuery(
       const escaped = value.replace(/[.+^${}()|[\]\\]/g, "\\$&");
       const pattern = new RegExp(`^${escaped.replaceAll("*", ".*").replaceAll("?", ".")}$`, "i");
       test = (e) => {
+        // Like the Rust side: `state:` and `correlation:` look at the pipeline status change.
+        if (key === "state" && e.status) return pattern.test(e.status.state);
+        if (key === "correlation") return pattern.test(e.status?.correlationId ?? "");
         const found = e.line.fields.find((f) => f.key === key)?.value;
         return found !== undefined && found !== null && pattern.test(String(found));
       };

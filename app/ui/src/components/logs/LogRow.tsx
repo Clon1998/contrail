@@ -9,6 +9,7 @@ import { usePrefs } from "@/stores/prefs";
 import { Ansi } from "./Ansi";
 import { columnValue, OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { LEVEL_TONE } from "./levels";
+import { StateBadge } from "./StateBadge";
 import { LogDetails } from "./LogDetails";
 
 /** One log line: time, level, task, optional columns and the message; expands on click. */
@@ -82,6 +83,7 @@ export function LogRow({
           </span>
         ))}
         <span className="truncate">
+          {event.status && <StateBadge state={event.status.state} className="mr-1.5 align-[1px]" />}
           {terms.length > 0 ? (
             <Highlighted text={stripAnsi(firstLine)} terms={terms} />
           ) : (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRightIcon, EyeOffIcon } from "lucide-react";
+import { ArrowRightIcon, ChevronRightIcon, EyeOffIcon, FileSearchIcon } from "lucide-react";
 import { cn } from "cn";
 import type { LogEvent } from "@/bindings";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { CopyButton } from "@/components/CopyButton";
 import { Ansi } from "./Ansi";
+import { StateBadge } from "./StateBadge";
 
 /** Stack traces longer than this start collapsed. */
 const COLLAPSED_TRACE_LINES = 12;
@@ -77,6 +78,47 @@ function StackTrace({ trace }: { trace: string }) {
 }
 
 /** The expanded view of one event: message, error, fields, raw JSON and copy actions. */
+/** A pipeline status change: the transition, the document's correlation ID and its topic. */
+function StatusSummary({ event }: { event: LogEvent }) {
+  const setSearch = useLogs((s) => s.setSearch);
+  const status = event.status;
+  if (!status) return null;
+  const id = status.correlationId;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 font-sans text-xs">
+      <span className="flex items-center gap-1.5">
+        {status.previousState ? (
+          <StateBadge state={status.previousState} />
+        ) : (
+          <span className="text-muted-foreground">new</span>
+        )}
+        <ArrowRightIcon className="size-3 text-muted-foreground" />
+        <StateBadge state={status.state} />
+      </span>
+      {status.topic && (
+        <span className="text-muted-foreground">
+          topic <span className="font-mono text-foreground">{status.topic}</span>
+        </span>
+      )}
+      {id && (
+        <>
+          <span className="text-muted-foreground">
+            document <span className="font-mono text-foreground">{id}</span>
+          </span>
+          <Button
+            variant="outline"
+            size="xs"
+            tooltip="List every event of this document (its correlation ID) in this service"
+            onClick={() => void setSearch({ query: `correlation:${id}`, mode: "filter" })}
+          >
+            <FileSearchIcon /> Show this document
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function LogDetails({ event }: { event: LogEvent }) {
   const { line } = event;
   const query = useLogs((s) => s.search.query);
@@ -109,6 +151,8 @@ export function LogDetails({ event }: { event: LogEvent }) {
           </Button>
         )}
       </div>
+
+      {event.status && <StatusSummary event={event} />}
 
       <div className="whitespace-pre-wrap break-words">
         {embedded && embeddedPretty ? (
