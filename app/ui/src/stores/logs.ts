@@ -107,7 +107,11 @@ export interface LogsState {
 
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
 
-/** The pages still valid after a live update: rows from `firstChanged` on moved or are new. */
+/**
+ * The cached rows still valid after a live update: rows from `firstChanged` on moved or are new.
+ * The page holding `firstChanged` keeps its rows before it, so rows on screen stay rendered (and
+ * an expanded row stays open) until the page is fetched again.
+ */
 export function keepValidPages(
   pages: Map<number, LogEvent[]>,
   update: Pick<LiveUpdate, "firstChanged" | "evicted">,
@@ -115,7 +119,22 @@ export function keepValidPages(
   if (update.evicted > 0) return new Map();
   const first = update.firstChanged;
   if (first === null) return pages;
-  return new Map([...pages].filter(([page]) => (page + 1) * PAGE_SIZE <= first));
+  const kept = new Map<number, LogEvent[]>();
+  for (const [page, rows] of pages) {
+    const start = page * PAGE_SIZE;
+    if (start + rows.length <= first) kept.set(page, rows);
+    else if (start < first) kept.set(page, rows.slice(0, first - start));
+  }
+  return kept;
+}
+
+/** Whether a cached page holds all of its rows (the last page only has the rest). */
+export function isPageComplete(
+  rows: LogEvent[] | undefined,
+  page: number,
+  visible: number,
+): boolean {
+  return rows !== undefined && rows.length >= Math.min(PAGE_SIZE, visible - page * PAGE_SIZE);
 }
 
 /**
@@ -130,6 +149,8 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
   let openedWith = "";
   /** Pages being fetched right now, as "view:page". */
   const inFlight = new Set<string>();
+  /** Bumped whenever cached rows become invalid; a fetch that started before is stale. */
+  let epoch = 0;
   let matchRefresh: ReturnType<typeof setTimeout> | undefined;
 
   const store = createStore<LogsState>((set, get) => ({
@@ -197,6 +218,7 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
           matches: update.matches,
           pages: keepValidPages(get().pages, update),
         });
+        if (update.firstChanged !== null || update.evicted > 0) epoch++;
         if (get().search.mode === "highlight" && update.firstChanged !== null) {
           scheduleMatchRefresh();
         }
@@ -237,11 +259,18 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
       if (!view) return;
       for (let page = Math.floor(from / PAGE_SIZE); page <= Math.floor(to / PAGE_SIZE); page++) {
         const key = `${view.viewId}:${page}`;
-        if (get().pages.has(page) || inFlight.has(key)) continue;
+        if (isPageComplete(get().pages.get(page), page, get().visible) || inFlight.has(key))
+          continue;
         inFlight.add(key);
+        const started = epoch;
         void commands.getLogRows(view.viewId, page * PAGE_SIZE, PAGE_SIZE).then((result) => {
           inFlight.delete(key);
           if (result.status !== "ok" || get().view?.viewId !== view.viewId) return;
+          if (started !== epoch) {
+            // Rows changed meanwhile: drop the answer; a new map makes the list fetch again.
+            set({ pages: new Map(get().pages) });
+            return;
+          }
           set({ pages: new Map(get().pages).set(page, result.data) });
         });
       }
@@ -288,6 +317,7 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
         set({ queryError: outcome.error });
         return;
       }
+      epoch++;
       set({
         queryError: null,
         visible: outcome.visible,
