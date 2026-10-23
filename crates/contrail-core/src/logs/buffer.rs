@@ -54,11 +54,15 @@ pub struct LogBuffer {
     stats: BufferStats,
 }
 
-/// What [`LogBuffer::insert`] did.
+/// What [`LogBuffer::insert`] did, so the UI knows which of its cached rows are stale.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct InsertReport {
     pub added: usize,
     pub duplicates: usize,
+    /// The lowest index (after the insert) at which an event was added: rows from here on moved.
+    pub first_index: Option<usize>,
+    /// Events dropped at the front because the buffer was full: all indices shifted by this.
+    pub evicted: usize,
 }
 
 /// Identifies an event across deliveries: same stream, CloudWatch time and text.
@@ -107,12 +111,15 @@ impl LogBuffer {
 
             // Usually newer than everything (append); late events are inserted in place.
             let key = order_key(&event);
-            if self.events.back().is_none_or(|last| order_key(last) <= key) {
+            let index = if self.events.back().is_none_or(|last| order_key(last) <= key) {
                 self.events.push_back(event);
+                self.events.len() - 1
             } else {
                 let index = self.events.partition_point(|e| order_key(e) <= key);
                 self.events.insert(index, event);
-            }
+                index
+            };
+            report.first_index = Some(report.first_index.map_or(index, |first| first.min(index)));
             report.added += 1;
         }
         while self.events.len() > self.capacity {
@@ -121,8 +128,13 @@ impl LogBuffer {
                 *self.stats.count(oldest.line.level) -= 1;
                 self.stats.total -= 1;
                 self.stats.evicted += 1;
+                report.evicted += 1;
             }
         }
+        // Indices after eviction: everything moved down by the number of evicted events.
+        report.first_index = report
+            .first_index
+            .map(|first| first.saturating_sub(report.evicted));
         report
     }
 
@@ -186,13 +198,7 @@ mod tests {
         let mut buffer = LogBuffer::new(10);
         buffer.insert([event("a", 1, "one"), event("a", 2, "two")]);
         let report = buffer.insert([event("a", 2, "two"), event("a", 3, "three")]);
-        assert_eq!(
-            report,
-            InsertReport {
-                added: 1,
-                duplicates: 1
-            }
-        );
+        assert_eq!((report.added, report.duplicates), (1, 1));
         assert_eq!(buffer.len(), 3);
         // Same text at the same time on another stream is a different event.
         assert_eq!(buffer.insert([event("b", 2, "two")]).added, 1);
@@ -224,6 +230,24 @@ mod tests {
         assert_eq!((stats.error, stats.warn, stats.unknown), (1, 1, 1));
         let seqs: Vec<u32> = buffer.window(0, 10).iter().map(|e| e.seq).collect();
         assert_eq!(seqs, [1, 2, 3]);
+    }
+
+    #[test]
+    fn reports_where_inserts_landed_and_evictions() {
+        let mut buffer = LogBuffer::new(4);
+        buffer.insert([
+            event("a", 1, "one"),
+            event("a", 3, "three"),
+            event("a", 4, "four"),
+        ]);
+        // A late event lands at index 1; appends would land at the end.
+        let report = buffer.insert([event("b", 2, "two")]);
+        assert_eq!(report.first_index, Some(1));
+        assert_eq!(report.evicted, 0);
+
+        let report = buffer.insert([event("a", 5, "five")]);
+        assert_eq!(report.evicted, 1);
+        assert_eq!(report.first_index, Some(3));
     }
 
     #[test]

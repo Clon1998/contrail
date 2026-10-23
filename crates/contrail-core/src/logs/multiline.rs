@@ -33,7 +33,8 @@ static EXCEPTION_HEADER: LazyLock<Regex> = LazyLock::new(|| {
 /// Joins continuation lines into the preceding event of the same stream.
 ///
 /// Streaming: [`push`](Self::push) events in CloudWatch order; completed events come back once
-/// it's clear nothing more belongs to them, and [`flush`](Self::flush) returns the rest.
+/// it's clear nothing more belongs to them. [`flush_before`](Self::flush_before) releases events
+/// whose window has passed (live tail), [`flush`](Self::flush) returns the rest (backfill).
 pub struct MultilineJoiner {
     window: Duration,
     /// The last event per stream, which later lines may still be joined into.
@@ -54,18 +55,43 @@ impl MultilineJoiner {
         }
     }
 
-    /// Adds an event. Returns the stream's previous event if `event` doesn't continue it.
-    pub fn push(&mut self, event: LogEvent) -> Option<LogEvent> {
+    /// Adds an event and returns the events that are complete now: the stream's previous event
+    /// when `event` doesn't continue it, and `event` itself if nothing can be joined into it
+    /// (JSON events carry their own stack trace, so they are never held back).
+    pub fn push(&mut self, event: LogEvent) -> Vec<LogEvent> {
         // `get_mut` mutably borrows `self.pending`, so `self` can't be borrowed as a whole while
         // `previous` is alive: copy the window out first and pass it to a free function.
         let window = self.window;
-        match self.pending.get_mut(&event.stream) {
-            Some(previous) if continues(window, previous, &event) => {
-                append(previous, event);
-                None
-            }
-            _ => self.pending.insert(event.stream.clone(), event),
+        if let Some(previous) = self.pending.get_mut(&event.stream)
+            && continues(window, previous, &event)
+        {
+            append(previous, event);
+            return Vec::new();
         }
+        let mut done: Vec<LogEvent> = self.pending.remove(&event.stream).into_iter().collect();
+        if can_receive_continuations(&event) {
+            self.pending.insert(event.stream.clone(), event);
+        } else {
+            done.push(event);
+        }
+        done
+    }
+
+    /// Returns the held-back events from before `cutoff` (nothing can be joined into them any
+    /// more once their window has passed), in timestamp order.
+    pub fn flush_before(&mut self, cutoff: crate::timestamp::Timestamp) -> Vec<LogEvent> {
+        let ready: Vec<String> = self
+            .pending
+            .iter()
+            .filter(|(_, e)| e.cw_timestamp < cutoff)
+            .map(|(stream, _)| stream.clone())
+            .collect();
+        let mut done: Vec<LogEvent> = ready
+            .iter()
+            .filter_map(|stream| self.pending.remove(stream))
+            .collect();
+        done.sort_by_key(|e| e.cw_timestamp);
+        done
     }
 
     /// Returns all events still held back (e.g. at the end of a backfill), in timestamp order.
@@ -76,13 +102,17 @@ impl MultilineJoiner {
     }
 }
 
+/// Only plain-text events (and Spring-pattern lines) can get continuation lines.
+fn can_receive_continuations(event: &LogEvent) -> bool {
+    matches!(event.line.kind, LogKind::Plain | LogKind::Spring)
+}
+
 /// Whether `next` continues `previous` (same stream, checked by the caller).
 fn continues(window: Duration, previous: &LogEvent, next: &LogEvent) -> bool {
     let close_in_time = next.cw_timestamp.0 - previous.cw_timestamp.0 <= window;
     // Structured lines (JSON, Spring pattern) always start a new event, and only plain-text
     // events can receive continuation lines.
-    let joinable = next.line.kind == LogKind::Plain
-        && matches!(previous.line.kind, LogKind::Plain | LogKind::Spring);
+    let joinable = next.line.kind == LogKind::Plain && can_receive_continuations(previous);
     if !close_in_time || !joinable {
         return false;
     }
@@ -122,7 +152,7 @@ pub fn join_all(mut events: Vec<LogEvent>, window: Duration) -> Vec<LogEvent> {
     // A stable sort keeps CloudWatch's order for events with the same timestamp.
     events.sort_by_key(|e| e.cw_timestamp);
     let mut joiner = MultilineJoiner::new(window);
-    let mut done: Vec<LogEvent> = events.into_iter().filter_map(|e| joiner.push(e)).collect();
+    let mut done: Vec<LogEvent> = events.into_iter().flat_map(|e| joiner.push(e)).collect();
     done.extend(joiner.flush());
     done
 }
@@ -234,42 +264,65 @@ mod tests {
     #[test]
     fn streaming_push_returns_the_previous_event_when_a_new_one_starts() {
         let mut joiner = MultilineJoiner::default();
-        assert!(
-            joiner
-                .push(event(
-                    "a",
-                    0,
-                    "2026-01-15T11:40:02.000Z ERROR 1 --- [main] c.e.X : boom"
-                ))
-                .is_none()
-        );
+        let error_line = "2026-01-15T11:40:02.000Z ERROR 1 --- [main] c.e.X : boom";
+        assert!(joiner.push(event("a", 0, error_line)).is_empty());
         assert!(
             joiner
                 .push(event("a", 1, "java.lang.IllegalStateException: x"))
-                .is_none()
+                .is_empty()
         );
         assert!(
             joiner
                 .push(event("a", 2, "\tat com.example.X.run(X.java:1)"))
-                .is_none()
+                .is_empty()
         );
-        let done = joiner
-            .push(event(
-                "a",
-                3,
-                "2026-01-15T11:40:02.003Z INFO 1 --- [main] c.e.X : next",
-            ))
-            .unwrap();
+        let done = joiner.push(event(
+            "a",
+            3,
+            "2026-01-15T11:40:02.003Z INFO 1 --- [main] c.e.X : next",
+        ));
+        assert_eq!(done.len(), 1);
         assert_eq!(
-            done.line
+            done[0]
+                .line
                 .error
+                .as_ref()
                 .unwrap()
                 .stack_trace
+                .as_ref()
                 .unwrap()
                 .lines()
                 .count(),
             2
         );
+        assert_eq!(joiner.flush().len(), 1);
+    }
+
+    #[test]
+    fn json_events_are_never_held_back() {
+        let mut joiner = MultilineJoiner::default();
+        let json = r#"{"@timestamp":"2026-01-15T11:40:02Z","log.level":"INFO","message":"m"}"#;
+        assert_eq!(joiner.push(event("a", 0, json)).len(), 1);
+        assert!(joiner.flush().is_empty());
+    }
+
+    #[test]
+    fn flush_before_releases_events_whose_window_passed() {
+        let mut joiner = MultilineJoiner::default();
+        joiner.push(event(
+            "a",
+            0,
+            "2026-01-15T11:40:02.000Z ERROR 1 --- [main] c.e.X : one",
+        ));
+        joiner.push(event(
+            "b",
+            1_500,
+            "2026-01-15T11:40:03.500Z INFO 1 --- [main] c.e.X : two",
+        ));
+        let base = datetime!(2026-01-15 11:40:02 UTC);
+        let ready = joiner.flush_before(Timestamp(base + Duration::seconds(1)));
+        assert_eq!(ready.len(), 1);
+        assert_eq!(ready[0].stream, "a");
         assert_eq!(joiner.flush().len(), 1);
     }
 }
