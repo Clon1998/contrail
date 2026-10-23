@@ -1,0 +1,102 @@
+/** M6: session search — query types, modes, navigation, chips, click-to-filter, noise. */
+import { expect, test, type Page } from "@playwright/test";
+
+async function openLogs(page: Page, cluster: string, service: string) {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: cluster }).getByRole("button").first().click();
+  await tree.getByRole("treeitem", { name: service }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  const list = page.getByRole("list", { name: "Log events" });
+  await expect(list).toBeVisible();
+  return list;
+}
+
+async function rowCount(page: Page) {
+  return Number(await page.getByRole("list", { name: "Log events" }).getAttribute("aria-rowcount"));
+}
+
+test("free text, level and negation narrow the list", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  const all = await rowCount(page);
+
+  await search.fill("shipment");
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+  const shipments = await rowCount(page);
+  await expect(page.getByLabel("Match count")).toContainText(`${shipments} of`);
+  // Matching words are marked.
+  await expect(page.locator("mark").first()).toHaveText(/shipment/i);
+
+  await search.fill("shipment level>=WARN");
+  await expect.poll(() => rowCount(page)).toBeLessThan(shipments);
+
+  await search.fill("-shipment");
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+  // (The live tail keeps adding rows, so counts are compared loosely.)
+  await expect(page.getByRole("list", { name: "Log events" }).getByText(/shipment/i)).toHaveCount(
+    0,
+  );
+});
+
+test("field globs and click-to-filter", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  await search.fill("log.logger:*StatusManager*");
+  await expect.poll(() => rowCount(page)).toBeGreaterThan(0);
+
+  await search.fill("");
+  await list.getByRole("button").first().click();
+  // Clicking a field value adds key:value to the search.
+  await list.getByLabel("Fields").getByRole("button", { name: "DEMO" }).click();
+  await expect(search).toHaveValue("service.environment:DEMO");
+});
+
+test("invalid queries explain themselves", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  await page.getByRole("textbox", { name: "Search logs" }).fill("level:LOUD");
+  await expect(page.getByRole("alert")).toContainText('unknown level "LOUD"');
+  await expect(page.getByRole("alert")).toContainText("TRACE, DEBUG, INFO, WARN, ERROR");
+});
+
+test("highlight mode marks matches and steps through them", async ({ page }) => {
+  await openLogs(page, "demo-core", "payments-worker");
+  const all = await rowCount(page);
+  await page.getByRole("radio", { name: "highlight" }).click();
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  await search.fill("settling");
+  await expect(page.getByLabel("Match count")).toContainText("matches");
+  expect(await rowCount(page)).toBe(all);
+
+  await search.press("Enter");
+  await expect(page.getByLabel("Match count")).toContainText(/^1 \//);
+  await page.keyboard.press("F3");
+  await expect(page.getByLabel("Match count")).toContainText(/^2 \//);
+  await page.keyboard.press("Shift+F3");
+  await expect(page.getByLabel("Match count")).toContainText(/^1 \//);
+});
+
+test("level chips hide levels", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = await rowCount(page);
+  const levels = page.getByRole("group", { name: "Levels" });
+  await levels.getByRole("button", { name: /^INFO / }).click();
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+  await levels.getByRole("button", { name: /^INFO / }).click();
+  await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
+});
+
+test("hide noise from a line and show it again", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = await rowCount(page);
+  await list
+    .getByRole("button", { name: /GET \/actuator\/health/ })
+    .first()
+    .click();
+  await list.getByRole("button", { name: "Hide lines like this" }).click();
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+
+  await page.getByRole("button", { name: "Noise" }).click();
+  await page.getByRole("button", { name: /Show lines like GET \/actuator\/health/ }).click();
+  await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
+});
