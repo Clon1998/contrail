@@ -18,8 +18,10 @@ use time::macros::datetime;
 const DEMO_DATA_PATH: &str = "../ui/src/e2e/demo-ecs.json";
 const DEMO_LOGS_PATH: &str = "../ui/src/e2e/demo-logs.json";
 
-/// Services whose logs are recorded (one per format), and how many events of each.
+/// Services whose logs are recorded (one per format, plus billing-sync: it logs the same documents
+/// as orders-api, so a trace leads through two services), and how many events of each.
 const LOG_SERVICES: &[(&str, &str)] = &[
+    ("demo-core", "billing-sync"),
     ("demo-core", "orders-api"),
     ("demo-core", "payments-worker"),
     ("demo-edge", "legacy-gateway"),

@@ -3,6 +3,1780 @@
   "account": "111122223333",
   "region": "eu-central-1",
   "services": {
+    "demo-core/billing-sync": {
+      "location": {
+        "logGroup": "/ecs/billing-sync",
+        "region": "eu-central-1",
+        "streamPrefix": "ecs",
+        "container": "billing-sync"
+      },
+      "streams": 4,
+      "stats": {
+        "total": 360,
+        "evicted": 0,
+        "trace": 0,
+        "debug": 43,
+        "info": 287,
+        "warn": 22,
+        "error": 8,
+        "unknown": 0,
+        "states": {
+          "COMPLETED": 72,
+          "CONSUMING": 68,
+          "FAILED": 8
+        }
+      },
+      "truncated": false,
+      "events": [
+        {
+          "seq": 1,
+          "timestamp": "2026-01-01T11:45:00.911740899Z",
+          "cwTimestamp": "2026-01-01T11:45:00.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:00.911740899Z",
+            "level": "DEBUG",
+            "message": "Refreshed 1011 catalog entries",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:00.911740899Z"
+              },
+              {
+                "key": "log.level",
+                "value": "DEBUG"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.cache.CatalogCache"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.911740899Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1011 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 2,
+          "timestamp": "2026-01-01T11:45:04.391234964Z",
+          "cwTimestamp": "2026-01-01T11:45:04.391Z",
+          "stream": "ecs/billing-sync/cb2279220662b8a012f2968f75a6f37a",
+          "taskId": "cb2279220662b8a012f2968f75a6f37a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:04.391234964Z",
+            "level": "WARN",
+            "message": "Retrying after 503, body: {\"title\":\"Service Unavailable\",\"status\":503}",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:04.391234964Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.client.DownstreamClient"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              26,
+              70
+            ]
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:04.391234964Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 3,
+          "timestamp": "2026-01-01T11:45:05.071001066Z",
+          "cwTimestamp": "2026-01-01T11:45:05.071Z",
+          "stream": "ecs/billing-sync/84f5b6f87313e32d470a5f64d15c4dc2",
+          "taskId": "84f5b6f87313e32d470a5f64d15c4dc2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:05.071001066Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:05.071001066Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 231679
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000002-0000000000003DDE"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:05.071001066Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":231679,\"correlationId\":\"DE40C0DE00000002-0000000000003DDE\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "DE40C0DE00000002-0000000000003DDE",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 4,
+          "timestamp": "2026-01-01T11:45:06.177652539Z",
+          "cwTimestamp": "2026-01-01T11:45:06.177Z",
+          "stream": "ecs/billing-sync/cb25df2206659bc9177cd810f7854f4a",
+          "taskId": "cb25df2206659bc9177cd810f7854f4a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:06.177652539Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:06.177652539Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.177652539Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 5,
+          "timestamp": "2026-01-01T11:45:10.911354533Z",
+          "cwTimestamp": "2026-01-01T11:45:10.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:10.911354533Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:10.911354533Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 2
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 238450
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000004-0000000000007BBC"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.911354533Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":238450,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000004-0000000000007BBC",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 6,
+          "timestamp": "2026-01-01T11:45:14.391060376Z",
+          "cwTimestamp": "2026-01-01T11:45:14.391Z",
+          "stream": "ecs/billing-sync/cb2279220662b8a012f2968f75a6f37a",
+          "taskId": "cb2279220662b8a012f2968f75a6f37a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:14.391060376Z",
+            "level": "WARN",
+            "message": "Retrying after 503, body: {\"title\":\"Service Unavailable\",\"status\":503}",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:14.391060376Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.client.DownstreamClient"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              26,
+              70
+            ]
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.391060376Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 7,
+          "timestamp": "2026-01-01T11:45:15.071753497Z",
+          "cwTimestamp": "2026-01-01T11:45:15.071Z",
+          "stream": "ecs/billing-sync/84f5b6f87313e32d470a5f64d15c4dc2",
+          "taskId": "84f5b6f87313e32d470a5f64d15c4dc2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:15.071753497Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:15.071753497Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 2
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 235650
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000003-0000000000005CCD"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.071753497Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":235650,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000003-0000000000005CCD",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 8,
+          "timestamp": "2026-01-01T11:45:16.177040681Z",
+          "cwTimestamp": "2026-01-01T11:45:16.177Z",
+          "stream": "ecs/billing-sync/cb25df2206659bc9177cd810f7854f4a",
+          "taskId": "cb25df2206659bc9177cd810f7854f4a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:16.177040681Z",
+            "level": "INFO",
+            "message": "POST /api/v1/requests -> 202 Accepted",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:16.177040681Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:16.177040681Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 9,
+          "timestamp": "2026-01-01T11:45:20.911419184Z",
+          "cwTimestamp": "2026-01-01T11:45:20.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:20.911419184Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:20.911419184Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 3
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 238129
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000003-0000000000005CCD"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:20.911419184Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":238129,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000003-0000000000005CCD",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 10,
+          "timestamp": "2026-01-01T11:45:24.391836928Z",
+          "cwTimestamp": "2026-01-01T11:45:24.391Z",
+          "stream": "ecs/billing-sync/cb2279220662b8a012f2968f75a6f37a",
+          "taskId": "cb2279220662b8a012f2968f75a6f37a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:24.391836928Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:24.391836928Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:24.391836928Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 11,
+          "timestamp": "2026-01-01T11:45:25.071329187Z",
+          "cwTimestamp": "2026-01-01T11:45:25.071Z",
+          "stream": "ecs/billing-sync/84f5b6f87313e32d470a5f64d15c4dc2",
+          "taskId": "84f5b6f87313e32d470a5f64d15c4dc2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:25.071329187Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:25.071329187Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 3
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 235029
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000005-0000000000009AAB"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.071329187Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":235029,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000005-0000000000009AAB",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 12,
+          "timestamp": "2026-01-01T11:45:26.177968132Z",
+          "cwTimestamp": "2026-01-01T11:45:26.177Z",
+          "stream": "ecs/billing-sync/cb25df2206659bc9177cd810f7854f4a",
+          "taskId": "cb25df2206659bc9177cd810f7854f4a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:26.177968132Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:26.177968132Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 5
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 237093
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000004-0000000000007BBC"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:26.177968132Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":237093,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "DE40C0DE00000004-0000000000007BBC",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 13,
+          "timestamp": "2026-01-01T11:45:30.911998966Z",
+          "cwTimestamp": "2026-01-01T11:45:30.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:30.911998966Z",
+            "level": "INFO",
+            "message": "POST /api/v1/requests -> 202 Accepted",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:30.911998966Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:30.911998966Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 14,
+          "timestamp": "2026-01-01T11:45:34.391971184Z",
+          "cwTimestamp": "2026-01-01T11:45:34.391Z",
+          "stream": "ecs/billing-sync/cb2279220662b8a012f2968f75a6f37a",
+          "taskId": "cb2279220662b8a012f2968f75a6f37a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:34.391971184Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:34.391971184Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 237958
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000004-0000000000007BBC"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:34.391971184Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":237958,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000004-0000000000007BBC",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 15,
+          "timestamp": "2026-01-01T11:45:35.071218287Z",
+          "cwTimestamp": "2026-01-01T11:45:35.071Z",
+          "stream": "ecs/billing-sync/84f5b6f87313e32d470a5f64d15c4dc2",
+          "taskId": "84f5b6f87313e32d470a5f64d15c4dc2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:35.071218287Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:35.071218287Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 4
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 238144
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000006-000000000000B99A"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:35.071218287Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":238144,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000006-000000000000B99A",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 16,
+          "timestamp": "2026-01-01T11:45:36.17738963Z",
+          "cwTimestamp": "2026-01-01T11:45:36.177Z",
+          "stream": "ecs/billing-sync/cb25df2206659bc9177cd810f7854f4a",
+          "taskId": "cb25df2206659bc9177cd810f7854f4a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:36.17738963Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:36.17738963Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 2
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 236584
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000003-0000000000005CCD"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:36.17738963Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":236584,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "DE40C0DE00000003-0000000000005CCD",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 17,
+          "timestamp": "2026-01-01T11:45:40.911785472Z",
+          "cwTimestamp": "2026-01-01T11:45:40.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:40.911785472Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:40.911785472Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:40.911785472Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 18,
+          "timestamp": "2026-01-01T11:45:44.391374988Z",
+          "cwTimestamp": "2026-01-01T11:45:44.391Z",
+          "stream": "ecs/billing-sync/cb2279220662b8a012f2968f75a6f37a",
+          "taskId": "cb2279220662b8a012f2968f75a6f37a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:44.391374988Z",
+            "level": "WARN",
+            "message": "Retrying after 503, body: {\"title\":\"Service Unavailable\",\"status\":503}",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:44.391374988Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.client.DownstreamClient"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              26,
+              70
+            ]
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:44.391374988Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 19,
+          "timestamp": "2026-01-01T11:45:45.071659912Z",
+          "cwTimestamp": "2026-01-01T11:45:45.071Z",
+          "stream": "ecs/billing-sync/84f5b6f87313e32d470a5f64d15c4dc2",
+          "taskId": "84f5b6f87313e32d470a5f64d15c4dc2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:45.071659912Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:45.071659912Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:45.071659912Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 20,
+          "timestamp": "2026-01-01T11:45:46.177695861Z",
+          "cwTimestamp": "2026-01-01T11:45:46.177Z",
+          "stream": "ecs/billing-sync/cb25df2206659bc9177cd810f7854f4a",
+          "taskId": "cb25df2206659bc9177cd810f7854f4a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:46.177695861Z",
+            "level": "INFO",
+            "message": "Document status change: [order] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:46.177695861Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 5
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 237823
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000005-0000000000009AAB"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:46.177695861Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":237823,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "DE40C0DE00000005-0000000000009AAB",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 21,
+          "timestamp": "2026-01-01T11:45:50.911687746Z",
+          "cwTimestamp": "2026-01-01T11:45:50.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:50.911687746Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:50.911687746Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 2
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 230886
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000003-0000000000005CCD"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:50.911687746Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":230886,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000003-0000000000005CCD",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 22,
+          "timestamp": "2026-01-01T11:45:54.391374714Z",
+          "cwTimestamp": "2026-01-01T11:45:54.391Z",
+          "stream": "ecs/billing-sync/cb2279220662b8a012f2968f75a6f37a",
+          "taskId": "cb2279220662b8a012f2968f75a6f37a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:54.391374714Z",
+            "level": "INFO",
+            "message": "POST /api/v1/requests -> 202 Accepted",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:54.391374714Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "scheduling-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:54.391374714Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 23,
+          "timestamp": "2026-01-01T11:45:55.071655405Z",
+          "cwTimestamp": "2026-01-01T11:45:55.071Z",
+          "stream": "ecs/billing-sync/84f5b6f87313e32d470a5f64d15c4dc2",
+          "taskId": "84f5b6f87313e32d470a5f64d15c4dc2",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:55.071655405Z",
+            "level": "INFO",
+            "message": "Received 3 records from example.orders.events.v1",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:55.071655405Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "http-nio-8080-exec-2"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:55.071655405Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        },
+        {
+          "seq": 24,
+          "timestamp": "2026-01-01T11:45:56.177260061Z",
+          "cwTimestamp": "2026-01-01T11:45:56.177Z",
+          "stream": "ecs/billing-sync/cb25df2206659bc9177cd810f7854f4a",
+          "taskId": "cb25df2206659bc9177cd810f7854f4a",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:56.177260061Z",
+            "level": "INFO",
+            "message": "Document status change: [order] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:56.177260061Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "main"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "example.orders.events.v1"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 231682
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "DE40C0DE00000004-0000000000007BBC"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:56.177260061Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231682,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "DE40C0DE00000004-0000000000007BBC",
+            "topic": "example.orders.events.v1"
+          }
+        },
+        {
+          "seq": 25,
+          "timestamp": "2026-01-01T11:46:00.911629774Z",
+          "cwTimestamp": "2026-01-01T11:46:00.911Z",
+          "stream": "ecs/billing-sync/4b25b7aaedfe458b55957af051e224ca",
+          "taskId": "4b25b7aaedfe458b55957af051e224ca",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:46:00.911629774Z",
+            "level": "WARN",
+            "message": "Retrying after 503, body: {\"title\":\"Service Unavailable\",\"status\":503}",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:46:00.911629774Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.client.DownstreamClient"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "billing-sync"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              26,
+              70
+            ]
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:46:00.911629774Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
+        }
+      ]
+    },
     "demo-core/orders-api": {
       "location": {
         "logGroup": "/ecs/orders-api",
