@@ -42,7 +42,7 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Keyboard shortcuts:** press `?`.
 - **Permissions:** read-only; [docs/iam-policy.json](docs/iam-policy.json) lists exactly what Contrail calls.
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
-  default log time window and timestamps in local time or UTC.
+  default log time window, newest-first order and timestamps in local time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in
   [docs/iam-policy.json](docs/iam-policy.json).
 

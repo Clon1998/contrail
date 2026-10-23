@@ -517,6 +517,8 @@ export type Settings = {
 	bufferSize: number,
 	/**  The optional columns shown in log lists. */
 	logColumns: LogColumn[],
+	/**  Log lists show the newest event at the top (and follow new events there). */
+	newestFirst: boolean,
 };
 
 export type Task = {

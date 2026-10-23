@@ -174,3 +174,36 @@ test("time windows: longer ones open paused, a fixed range isn't followed", asyn
   await expect(page.getByText("fixed range", { exact: true })).toBeVisible();
   await expect(page.getByRole("status", { name: /^Live tail/ })).toHaveCount(0);
 });
+
+test("newest first: the newest event on top, new events arrive there", async ({ page }) => {
+  await page.keyboard.press("ControlOrMeta+,");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("button", { name: "Logs" }).click();
+  await dialog.getByRole("checkbox", { name: "Newest first" }).click();
+  await page.keyboard.press("Escape");
+
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  const top = list.locator('[aria-posinset="1"]');
+  await expect(top).toContainText("Ingested event #100000 ");
+  // Live events (the generated view grows) appear at the top while following.
+  await expect(top).not.toContainText("Ingested event #100000 ", { timeout: 5_000 });
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+
+  // Scrolled away, rows added on top don't move what's being read.
+  const scroller = list.locator("..");
+  await scroller.evaluate((el) => {
+    el.scrollTop = 2_000;
+  });
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  const readLine = () =>
+    scroller.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return document.elementFromPoint(box.left + box.width / 2, box.top + 100)?.textContent ?? "";
+    });
+  const before = await readLine();
+  const rows = Number(await list.getAttribute("aria-rowcount"));
+  await expect
+    .poll(async () => Number(await list.getAttribute("aria-rowcount")), { timeout: 5_000 })
+    .toBeGreaterThan(rows);
+  expect(await readLine()).toBe(before);
+});

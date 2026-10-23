@@ -1,19 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDownToLineIcon } from "lucide-react";
+import { ArrowDownToLineIcon, ArrowUpToLineIcon } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
 import { LogRow } from "./LogRow";
 
-/** How close to the end counts as "at the bottom" (follow mode), in pixels. */
-const BOTTOM_SLACK = 8;
+/** How close to the newest end counts as "at the newest event" (follow mode), in pixels. */
+const EDGE_SLACK = 8;
 
 /**
  * The virtualized list of a view's events: only the rows on screen (plus a margin) exist in the
  * DOM, and their data is fetched page by page from the Rust buffer. Starts at the newest event
- * and stays there (follow mode) until you scroll up.
+ * and stays there (follow mode) until you scroll away.
+ *
+ * The buffer is oldest first. With the "newest first" setting the list shows it the other way
+ * round: list position `i` shows buffer index `total - 1 - i` (`toData`; the mapping is its own
+ * inverse). Pages, matches and scroll targets stay in buffer indices.
  */
 export function LogList({
   viewId,
@@ -34,11 +39,14 @@ export function LogList({
   const current = useLogs((s) => s.matchPositions[s.currentMatch]);
   const matchSet = highlightMode ? new Set(positions) : null;
   const fetchRows = useLogs((s) => s.fetchRows);
+  const newestFirst = usePrefs((s) => s.prefs.settings.newestFirst);
+  const toData = (index: number) => (newestFirst ? total - 1 - index : index);
   const row = (index: number) => pages.get(Math.floor(index / PAGE_SIZE))?.[index % PAGE_SIZE];
-  const [atBottom, setAtBottom] = useState(true);
+  const [atNewest, setAtNewest] = useState(true);
   // Read inside effects without re-running them when it changes.
   const following = useRef(true);
-  following.current = atBottom;
+  following.current = atNewest;
+  const previousTotal = useRef(total);
 
   // TanStack Virtual decides which rows to render. Rows have a fixed height until expanded;
   // `measureElement` corrects the size of rows that turn out taller. The React compiler can't
@@ -49,36 +57,53 @@ export function LogList({
     getScrollElement: () => scrollRef.current,
     estimateSize: () => Math.round(fontSize * 1.6),
     overscan: 40,
+    // Keyed by buffer index, so a row keeps its measured height (e.g. expanded) when newer
+    // rows are added in front of it.
+    getItemKey: toData,
   });
   const items = virtualizer.getVirtualItems();
   const first = items[0]?.index ?? 0;
   const last = items.at(-1)?.index ?? 0;
+  const scrollToNewest = () =>
+    newestFirst
+      ? virtualizer.scrollToIndex(0, { align: "start" })
+      : virtualizer.scrollToIndex(total - 1, { align: "end" });
 
   // Load what's on screen (again, after live updates made cached pages stale).
+  const [dataFrom, dataTo] = newestFirst ? [toData(last), toData(first)] : [first, last];
   useEffect(() => {
-    if (total > 0) fetchRows(first, last);
-  }, [first, last, total, pages, fetchRows]);
+    if (total > 0) fetchRows(dataFrom, dataTo);
+  }, [dataFrom, dataTo, total, pages, fetchRows]);
 
-  // A new view (or font size) starts at the newest event.
+  // A new view (or font size, or order) starts at the newest event.
   useEffect(() => {
-    if (total > 0) virtualizer.scrollToIndex(total - 1, { align: "end" });
-    // Only on a new view or font: new rows must not pull the user back down.
+    if (total > 0) scrollToNewest();
+    setAtNewest(true);
+    // Only on these changes: new rows must not pull the user back to the newest event.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewId, fontSize, virtualizer]);
+  }, [viewId, fontSize, newestFirst, virtualizer]);
 
   // Jumping to a match (search navigation).
   useEffect(() => {
     if (scrollTarget) {
-      virtualizer.scrollToIndex(scrollTarget.index, { align: "center" });
-      setAtBottom(false);
+      virtualizer.scrollToIndex(toData(scrollTarget.index), { align: "center" });
+      setAtNewest(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollTarget, virtualizer]);
 
-  // Follow mode: new rows keep the list at the newest event while the user is at the bottom.
+  // Follow mode: new rows keep the list at the newest event while the user is there. Newest
+  // first, rows added on top would push what the user is reading down: scroll along instead.
   useEffect(() => {
-    if (following.current && total > 0) {
-      virtualizer.scrollToIndex(total - 1, { align: "end" });
+    const added = total - previousTotal.current;
+    previousTotal.current = total;
+    if (total === 0) return;
+    if (following.current) scrollToNewest();
+    else if (newestFirst && added > 0) {
+      const offset = virtualizer.scrollOffset ?? 0;
+      virtualizer.scrollToOffset(offset + added * Math.round(fontSize * 1.6));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total, virtualizer]);
 
   const grid = gridTemplate(showTask, columns);
@@ -89,7 +114,11 @@ export function LogList({
         ref={scrollRef}
         onScroll={(e) => {
           const el = e.currentTarget;
-          setAtBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - BOTTOM_SLACK);
+          setAtNewest(
+            newestFirst
+              ? el.scrollTop <= EDGE_SLACK
+              : el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_SLACK,
+          );
         }}
         className="absolute inset-0 overflow-auto font-mono text-(length:--log-font-size) leading-[1.6]"
       >
@@ -100,7 +129,8 @@ export function LogList({
           style={{ height: virtualizer.getTotalSize(), position: "relative" }}
         >
           {items.map((item) => {
-            const event = row(item.index);
+            const index = toData(item.index);
+            const event = row(index);
             return (
               <div
                 key={item.key}
@@ -122,8 +152,8 @@ export function LogList({
                     event={event}
                     grid={grid}
                     showTask={showTask}
-                    marked={matchSet?.has(item.index) ?? false}
-                    current={current === item.index}
+                    marked={matchSet?.has(index) ?? false}
+                    current={current === index}
                   />
                 ) : (
                   <div className="px-3 text-muted-foreground/50">…</div>
@@ -133,16 +163,16 @@ export function LogList({
           })}
         </div>
       </div>
-      {!atBottom && total > 0 && (
+      {!atNewest && total > 0 && (
         <Button
           size="sm"
-          className="absolute right-6 bottom-4 shadow-md"
+          className={cn("absolute right-6 shadow-md", newestFirst ? "top-4" : "bottom-4")}
           onClick={() => {
-            virtualizer.scrollToIndex(total - 1, { align: "end" });
-            setAtBottom(true);
+            scrollToNewest();
+            setAtNewest(true);
           }}
         >
-          <ArrowDownToLineIcon /> Jump to latest
+          {newestFirst ? <ArrowUpToLineIcon /> : <ArrowDownToLineIcon />} Jump to latest
         </Button>
       )}
     </div>

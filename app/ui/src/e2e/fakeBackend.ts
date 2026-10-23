@@ -212,6 +212,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       autoPauseMinutes: 10,
       bufferSize: 100_000,
       logColumns: [],
+      newestFirst: false,
     },
     noise: {},
     fieldMappings: {},

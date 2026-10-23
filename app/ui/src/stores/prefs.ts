@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoPauseMinutes: 10,
   bufferSize: 100_000,
   logColumns: [],
+  newestFirst: false,
 };
 
 export const EMPTY_PREFS: Prefs = {

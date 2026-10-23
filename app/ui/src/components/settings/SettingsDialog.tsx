@@ -191,6 +191,15 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     ))}
                   </div>
                 </Row>
+                <Row label="Order" hint="Where the newest events are; following sticks to them.">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.newestFirst}
+                      onCheckedChange={(checked) => void update({ newestFirst: checked === true })}
+                    />
+                    Newest first
+                  </label>
+                </Row>
                 <Row
                   label="Live tail"
                   hint="CloudWatch bills Live Tail per session minute. Paused tails catch up when they resume."
