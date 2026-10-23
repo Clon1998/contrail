@@ -253,6 +253,8 @@ Patrick's feedback after testing: the trace dialog lost its result as soon as he
 small to read the events. **Decision (his choices):** a trace opens in a tab of its own next to the service
 tabs, with one merged timeline of all services' events that expand in place, a filter per service, and "Open
 in …" that leaves the tab open. Trace tabs last for the session (like service tabs) and aren't live. `Tab` is
-now a union of service and trace tabs; each trace tab has its own store. The route view shows one row per route
-(systems, topic, an output route's group, disabled routes and targets); everything else opens on click.
+now a union of service and trace tabs; each trace tab has its own store. The route view is a graph (Patrick
+found rows too table-like): sources → topics → targets in three columns, each system once, lines drawn as SVG
+between ordinary HTML nodes (no graph library: three columns need no layout engine or pan and zoom). Disabled
+routes and targets are dashed; settings open on click, a system's shared settings once.
 Settings filled from Secrets Manager or SSM (a route's password) are now part of the route, with Reveal.
