@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LogEvent } from "@/bindings";
-import { isPageComplete, keepValidPages, PAGE_SIZE } from "./logs";
+import { applyLiveRows, isPageComplete, PAGE_SIZE } from "./logs";
 
 const pages = () =>
   new Map<number, LogEvent[]>([
@@ -9,24 +9,47 @@ const pages = () =>
     [2, []],
   ]);
 
-describe("keepValidPages", () => {
+describe("applyLiveRows", () => {
+  const row = (seq: number) => ({ seq }) as LogEvent;
+  const full = (page: number) =>
+    Array.from({ length: PAGE_SIZE }, (_, i) => row(page * PAGE_SIZE + i));
+  const seqs = (pages: Map<number, LogEvent[]>, page: number) => pages.get(page)?.map((e) => e.seq);
+
   it("keeps pages before the first changed row, and the unchanged rows of its page", () => {
-    const full = (page: number) =>
-      Array.from({ length: PAGE_SIZE }, (_, i) => ({ seq: page * PAGE_SIZE + i }) as LogEvent);
     const loaded = new Map([0, 1, 2, 3].map((page) => [page, full(page)]));
-    const kept = keepValidPages(loaded, { firstChanged: PAGE_SIZE * 2 + 5, evicted: 0 });
+    const kept = applyLiveRows(loaded, { firstChanged: PAGE_SIZE * 2 + 5, evicted: 0, rows: [] });
     expect([...kept.keys()]).toEqual([0, 1, 2]);
     // Rows still on screen stay rendered (an expanded row doesn't flicker) until the refetch.
-    expect(kept.get(2)?.map((e) => e.seq)).toEqual([200, 201, 202, 203, 204]);
+    expect(seqs(kept, 2)).toEqual([200, 201, 202, 203, 204]);
     expect(kept.get(1)).toBe(loaded.get(1));
   });
 
-  it("drops everything after an eviction (all indices shifted)", () => {
-    expect(keepValidPages(pages(), { firstChanged: null, evicted: 3 }).size).toBe(0);
+  it("puts the rows that came with the update in place, so new rows need no fetch", () => {
+    const loaded = new Map([[0, full(0).slice(0, 98)]]);
+    const next = applyLiveRows(loaded, {
+      firstChanged: 98,
+      evicted: 0,
+      rows: [row(1098), row(1099), row(1100)],
+    });
+    expect(seqs(next, 0)?.slice(-2)).toEqual([1098, 1099]);
+    expect(seqs(next, 1)).toEqual([1100]);
+    expect(loaded.get(0)).toHaveLength(98); // the previous state is not changed
+  });
+
+  it("shifts the cached rows after an eviction instead of dropping them", () => {
+    const loaded = new Map([0, 1].map((page) => [page, full(page)]));
+    const next = applyLiveRows(loaded, {
+      firstChanged: 2 * PAGE_SIZE - 3,
+      evicted: 3,
+      rows: [row(900), row(901), row(902)],
+    });
+    expect(seqs(next, 0)?.slice(0, 2)).toEqual([3, 4]);
+    expect(seqs(next, 1)?.slice(-4)).toEqual([199, 900, 901, 902]);
+    expect(next.get(1)).toHaveLength(PAGE_SIZE);
   });
 
   it("keeps all pages when no row changed", () => {
-    expect(keepValidPages(pages(), { firstChanged: null, evicted: 0 }).size).toBe(3);
+    expect(applyLiveRows(pages(), { firstChanged: null, evicted: 0, rows: [] }).size).toBe(3);
   });
 });
 

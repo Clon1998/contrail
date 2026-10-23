@@ -123,24 +123,55 @@ export interface LogsState {
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
 
 /**
- * The cached rows still valid after a live update: rows from `firstChanged` on moved or are new.
- * The page holding `firstChanged` keeps its rows before it, so rows on screen stay rendered (and
- * an expanded row stays open) until the page is fetched again.
+ * The cached rows after a live update. Evicted rows shift every index down (the cached rows move
+ * along instead of being dropped); rows from `firstChanged` on moved or are new: the rows that came
+ * with the update take their place, so new rows show without a fetch (no placeholder flash), and
+ * the page holding `firstChanged` keeps its rows before it (an expanded row stays open). Anything
+ * that doesn't fit contiguously is left for the list to fetch.
  */
-export function keepValidPages(
+export function applyLiveRows(
   pages: Map<number, LogEvent[]>,
-  update: Pick<LiveUpdate, "firstChanged" | "evicted">,
+  update: Pick<LiveUpdate, "firstChanged" | "evicted" | "rows">,
 ): Map<number, LogEvent[]> {
-  if (update.evicted > 0) return new Map();
+  const current = update.evicted > 0 ? shiftPages(pages, update.evicted) : pages;
   const first = update.firstChanged;
-  if (first === null) return pages;
-  const kept = new Map<number, LogEvent[]>();
-  for (const [page, rows] of pages) {
+  if (first === null) return current;
+  const next = new Map<number, LogEvent[]>();
+  for (const [page, rows] of current) {
     const start = page * PAGE_SIZE;
-    if (start + rows.length <= first) kept.set(page, rows);
-    else if (start < first) kept.set(page, rows.slice(0, first - start));
+    // The page that new rows continue gets a copy: `appendRow` extends it.
+    if (start + rows.length <= first)
+      next.set(page, start + PAGE_SIZE > first ? rows.slice() : rows);
+    else if (start < first) next.set(page, rows.slice(0, first - start));
   }
-  return kept;
+  update.rows.forEach((event, i) => appendRow(next, first + i, event));
+  return next;
+}
+
+/** The cached rows with every index lowered by `by` (rows below 0 are gone). */
+function shiftPages(pages: Map<number, LogEvent[]>, by: number): Map<number, LogEvent[]> {
+  const next = new Map<number, LogEvent[]>();
+  const ordered = [...pages].sort(([a], [b]) => a - b);
+  for (const [page, rows] of ordered) {
+    rows.forEach((event, i) => {
+      const index = page * PAGE_SIZE + i - by;
+      if (index >= 0) appendRow(next, index, event);
+    });
+  }
+  return next;
+}
+
+/**
+ * Puts `event` at list position `index` if that continues its page's rows (pages hold rows from
+ * their start without gaps); the arrays in `pages` must be fresh copies, they are extended.
+ */
+function appendRow(pages: Map<number, LogEvent[]>, index: number, event: LogEvent) {
+  const page = Math.floor(index / PAGE_SIZE);
+  const offset = index % PAGE_SIZE;
+  const rows = pages.get(page) ?? (offset === 0 ? [] : undefined);
+  if (rows === undefined || rows.length !== offset) return;
+  if (!pages.has(page)) pages.set(page, rows);
+  rows.push(event);
 }
 
 /** Whether a cached page holds all of its rows (the last page only has the rest). */
@@ -237,7 +268,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
           view: { ...current, stats: update.stats },
           visible: update.visible,
           matches: update.matches,
-          pages: keepValidPages(get().pages, update),
+          pages: applyLiveRows(get().pages, update),
         });
         if (update.firstChanged !== null || update.evicted > 0) epoch++;
         if (get().search.mode === "highlight" && update.firstChanged !== null) {

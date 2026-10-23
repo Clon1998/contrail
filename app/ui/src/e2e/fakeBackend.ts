@@ -270,6 +270,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return filter.matched.map((i) => events[i]).filter((e): e is LogEvent => e !== undefined);
   }
 
+  /** The listed rows of a view from `first` on (at most 500). */
+  function changedRows(viewId: number, first: number): LogEvent[] {
+    const rows = listed(viewId);
+    if (rows === undefined) return [];
+    return typeof rows === "function" ? rows(first, 500) : rows.slice(first, first + 500);
+  }
+
   /** Current size of generated views (they grow while live). */
   const bigCounts = new Map<number, number>();
 
@@ -320,6 +327,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       matches: filter ? filter.matched.length : null,
       firstChanged,
       evicted: 0,
+      // Like the Rust side: a few changed rows travel with the update.
+      rows:
+        firstChanged !== null && visible - firstChanged <= 500
+          ? changedRows(viewId, firstChanged)
+          : [],
       message,
     };
     sendOnChannel(tail.channel, tail.sent++, update);

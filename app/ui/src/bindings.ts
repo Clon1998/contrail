@@ -292,6 +292,12 @@ export type LiveUpdate = {
 	firstChanged: number | null,
 	/**  Listed rows dropped at the top because the buffer was full (all indices shifted). */
 	evicted: number,
+	/**
+	 *  The listed rows from `first_changed` to the end, when they are at most
+	 *  [`MAX_INLINE_ROWS`] (the usual case: a few new events). The UI shows them right away
+	 *  instead of fetching them, so new rows never appear as placeholders first. Empty otherwise.
+	 */
+	rows: LogEvent[],
 	/**  Why the state is what it is, when there's something to say (polling, errors). */
 	message: string | null,
 };

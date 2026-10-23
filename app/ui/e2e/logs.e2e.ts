@@ -228,3 +228,29 @@ test("rows near the viewport are loaded before they scroll into view", async ({ 
   // Right after the jump (well within the 300 ms fetch delay), no placeholder is on screen.
   await expect(list.getByText("Ingested event #99700 ")).toBeVisible({ timeout: 100 });
 });
+
+test("live: new rows appear without a placeholder flash", async ({ page }) => {
+  // Row fetches take 300 ms: a new row that had to be fetched would show "…" first.
+  await page.goto("/?rowsDelay=300");
+  await openLogs(page, "demo-core", "orders-api");
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+  await page.waitForTimeout(1_000); // the initial rows are loaded
+
+  const placeholderFrames = await page.evaluate(async () => {
+    const scroller = document.querySelector('[aria-label="Log events"]')?.parentElement;
+    if (!scroller) return -1;
+    let frames = 0;
+    const end = performance.now() + 2_500; // the fake adds an event per second
+    while (performance.now() < end) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const box = scroller.getBoundingClientRect();
+      const placeholder = [...scroller.querySelectorAll('[role="listitem"]')].some((row) => {
+        const rect = row.getBoundingClientRect();
+        return rect.bottom > box.top && rect.top < box.bottom && row.textContent === "…";
+      });
+      if (placeholder) frames++;
+    }
+    return frames;
+  });
+  expect(placeholderFrames).toBe(0);
+});
