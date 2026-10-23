@@ -19,6 +19,7 @@ import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { Environment } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
+import { Routes } from "./Routes";
 
 /**
  * The Overview tab: tasks, deployments and the environment in the main column; the service's
@@ -30,6 +31,7 @@ export function Overview({ detail }: { detail: ServiceDetail }) {
       <div className="flex min-w-0 flex-col gap-4">
         <Tasks />
         <Deployments deployments={detail.deployments} />
+        {detail.taskDefinition && <Routes containers={detail.taskDefinition.containers} />}
         {detail.taskDefinition && <Environment containers={detail.taskDefinition.containers} />}
       </div>
       <div className="flex min-w-0 flex-col gap-4">

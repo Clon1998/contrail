@@ -150,3 +150,26 @@ test("an expired profile gets its tree after logging in", async ({ page }) => {
   await expect(page.getByRole("tree", { name: "Clusters" })).toBeVisible();
   await expect(page.getByRole("treeitem", { name: "demo-core" })).toBeVisible();
 });
+
+test("routes of a routing-framework service, and the services on the same topic", async ({
+  page,
+}) => {
+  const view = await openTreeService(page, "demo-edge", "event-ingest");
+  const routes = view.getByRole("region", { name: "Routes" });
+  const route = routes.getByRole("group", { name: "Route 0" });
+  await expect(route).toContainText("sftp");
+  await expect(route).toContainText("Example Partner");
+  await expect(route).toContainText("demo.events");
+
+  await routes.getByRole("button", { name: "Find connected services" }).click();
+  await routes.getByRole("button", { name: /legacy-gateway/ }).click();
+
+  const gateway = page.getByRole("main", { name: "Service legacy-gateway" });
+  const outputs = gateway
+    .getByRole("region", { name: "Routes" })
+    .getByRole("group", { name: "Route 0" });
+  await expect(outputs).toContainText("Archive");
+  await expect(outputs.getByText("disabled")).toBeVisible();
+  // Credentials in endpoint settings are masked.
+  await expect(outputs).not.toContainText("demo-not-a-secret");
+});
