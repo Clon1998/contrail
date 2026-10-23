@@ -33,8 +33,10 @@ jobs:
         id: create
         env:
           GH_TOKEN: ${{ github.token }}
+        # Tags with a suffix (v0.2.0-rc.1) become pre-releases.
         run: |
-          gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
+          prerelease=$([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag $prerelease \
             --title "Contrail ${GITHUB_REF_NAME#v}" --notes-file notes.md
           echo "id=$(gh release view "$GITHUB_REF_NAME" --json databaseId --jq .databaseId)" >> "$GITHUB_OUTPUT"
 
@@ -107,4 +109,6 @@ jobs:
       - name: Publish the draft
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+        run: |
+          latest=$([[ "$GITHUB_REF_NAME" == *-* ]] && echo --latest=false || echo --latest)
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false $latest

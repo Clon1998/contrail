@@ -42,4 +42,6 @@ commit_parsers = [
 ]
 protect_breaking_commits = true
 tag_pattern = "v[0-9].*"
+# Pre-release tags (v0.1.0-rc.1) are not versions of their own: their commits count for the next release.
+ignore_tags = "-rc"
 sort_commits = "oldest"
