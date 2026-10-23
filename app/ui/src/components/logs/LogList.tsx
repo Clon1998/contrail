@@ -10,6 +10,8 @@ import { LogRow } from "./LogRow";
 
 /** Rows fetched beyond the visible ones in each direction, so scrolling finds them loaded. */
 const PREFETCH_ROWS = 400;
+/** Older events are loaded when the oldest loaded row is this close (in pixels). */
+const OLDER_MARGIN_PX = 2_000;
 
 /** How close to the newest end counts as "at the newest event" (follow mode), in pixels. */
 const EDGE_SLACK = 8;
@@ -50,6 +52,9 @@ export function LogList({
   const following = useRef(true);
   following.current = atNewest;
   const previousTotal = useRef(total);
+  const loadOlder = useLogs((s) => s.loadOlder);
+  const prepended = useLogs((s) => s.prepended);
+  const rowHeight = Math.round(fontSize * 1.6);
 
   // TanStack Virtual decides which rows to render. Rows have a fixed height until expanded;
   // `measureElement` corrects the size of rows that turn out taller. The React compiler can't
@@ -58,11 +63,11 @@ export function LogList({
   const virtualizer = useVirtualizer({
     count: total,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => Math.round(fontSize * 1.6),
+    estimateSize: () => rowHeight,
     overscan: 40,
-    // Keyed by buffer index, so a row keeps its measured height (e.g. expanded) when newer
-    // rows are added in front of it.
-    getItemKey: toData,
+    // Keyed by the event (its sequence number) once loaded, so a row keeps its measured height
+    // (e.g. expanded) when rows are added in front of it.
+    getItemKey: (index) => row(toData(index))?.seq ?? `row-${toData(index)}`,
   });
   const items = virtualizer.getVirtualItems();
   const first = items[0]?.index ?? 0;
@@ -99,6 +104,21 @@ export function LogList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollTarget, virtualizer]);
 
+  // Older rows put in front (oldest first: at the top) would push what's on screen down: scroll
+  // along. Newest first, they are added at the bottom and nothing moves.
+  useEffect(() => {
+    if (prepended && !newestFirst) {
+      virtualizer.scrollToOffset((scrollRef.current?.scrollTop ?? 0) + prepended.count * rowHeight);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prepended]);
+
+  // A list shorter than the screen can't be scrolled to its oldest row: load older right away.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && total > 0 && el.scrollHeight <= el.clientHeight) void loadOlder();
+  }, [total, viewId, loadOlder]);
+
   // Follow mode: new rows keep the list at the newest event while the user is there. Newest
   // first, rows added on top would push what the user is reading down: scroll along instead.
   useEffect(() => {
@@ -107,7 +127,8 @@ export function LogList({
     if (total === 0) return;
     if (following.current) scrollToNewest();
     else if (newestFirst && added > 0) {
-      const offset = virtualizer.scrollOffset ?? 0;
+      // The element's position, not the virtualizer's: that one can lag behind a scroll.
+      const offset = scrollRef.current?.scrollTop ?? 0;
       virtualizer.scrollToOffset(offset + added * Math.round(fontSize * 1.6));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,6 +142,8 @@ export function LogList({
         ref={scrollRef}
         onScroll={(e) => {
           const el = e.currentTarget;
+          const fromBottom = el.scrollHeight - el.clientHeight - el.scrollTop;
+          if ((newestFirst ? fromBottom : el.scrollTop) < OLDER_MARGIN_PX) void loadOlder();
           setAtNewest(
             newestFirst
               ? el.scrollTop <= EDGE_SLACK

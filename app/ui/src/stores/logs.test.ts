@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LogEvent } from "@/bindings";
-import { applyLiveRows, isPageComplete, PAGE_SIZE } from "./logs";
+import { applyLiveRows, isPageComplete, PAGE_SIZE, placeOlderRows } from "./logs";
 
 const pages = () =>
   new Map<number, LogEvent[]>([
@@ -50,6 +50,27 @@ describe("applyLiveRows", () => {
 
   it("keeps all pages when no row changed", () => {
     expect(applyLiveRows(pages(), { firstChanged: null, evicted: 0, rows: [] }).size).toBe(3);
+  });
+});
+
+describe("placeOlderRows", () => {
+  const row = (seq: number) => ({ seq }) as LogEvent;
+  const full = (page: number) =>
+    Array.from({ length: PAGE_SIZE }, (_, i) => row(1000 + page * PAGE_SIZE + i));
+
+  it("moves the cached rows behind the older ones and fills in the rows that came along", () => {
+    const loaded = new Map([0, 1, 2].map((page) => [page, full(page)]));
+    // 250 older rows in front; the result carries listed rows 150..549.
+    const rows = Array.from({ length: 400 }, (_, i) => row(i < 100 ? 150 + i : 1000 + i - 100));
+    const next = placeOlderRows(loaded, { added: 250, rowsFrom: 150, rows });
+    // Page 1 (rows 100..199) starts before the rows that came along: left for a fetch.
+    expect(next.has(1)).toBe(false);
+    // Page 2 holds the newest older rows, then the previous first rows.
+    expect(next.get(2)?.[49]?.seq).toBe(249);
+    expect(next.get(2)?.[50]?.seq).toBe(1000);
+    // The rest of the cache moved by 250 (row 1000 + 299 was at 299, now at 549).
+    expect(next.get(5)?.[49]?.seq).toBe(1299);
+    expect(loaded.get(0)?.[0]?.seq).toBe(1000); // the previous state is not changed
   });
 });
 

@@ -254,3 +254,37 @@ test("live: new rows appear without a placeholder flash", async ({ page }) => {
   });
   expect(placeholderFrames).toBe(0);
 });
+
+test("a long window starts with the newest events; scrolling up loads older ones", async ({
+  page,
+}) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list).toHaveAttribute("aria-rowcount", /^10000\d$/); // 15 min: everything
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  // 1 h opens paused (the count stays put) with only the newest half loaded.
+  await expect(list).toHaveAttribute("aria-rowcount", "50000");
+  await expect(page.getByRole("button", { name: "Load older" })).toBeVisible();
+
+  // At the top, the older half comes in and the line on screen stays put.
+  const scroller = list.locator("..");
+  await scroller.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await expect(list).toHaveAttribute("aria-rowcount", "100000");
+  await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
+  await expect(list.getByText("Ingested event #50001 ")).toBeVisible();
+});
+
+test("a long window that fits on screen loads its older events right away", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = Number(await list.getAttribute("aria-rowcount"));
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  await expect(list).toHaveAttribute("aria-rowcount", String(all));
+  await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
+});

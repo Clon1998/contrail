@@ -7,7 +7,7 @@ use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::{
     BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeWindow,
-    ViewFilter, process, resolve_log_location, write_events,
+    ViewFilter, backfill_newest, process, resolve_log_location, write_events,
 };
 use contrail_core::prefs::ServiceKey;
 use contrail_core::query::{MatchOptions, QueryError, parse_query, parse_regex_query};
@@ -31,11 +31,23 @@ pub struct LogViewInfo {
     /// How many task streams were read (running and recently stopped tasks).
     pub streams: u32,
     pub stats: BufferStats,
-    /// The backfill hit the buffer size before reaching the newest events.
+    /// A slice held more events than the buffer has room for: some are missing.
     pub truncated: bool,
+    /// The view's time window.
     pub from: Timestamp,
     pub to: Timestamp,
+    /// How far back events are loaded so far (newest first; `load_older` goes further back).
+    pub loaded_from: Timestamp,
+    /// The whole window is loaded.
+    pub complete: bool,
 }
+
+/// How many events a view loads at first (the newest); scrolling up loads older ones.
+const INITIAL_EVENTS: usize = 2_000;
+/// How many older events one `load_older` adds (at least, unless the window ends first).
+const OLDER_EVENTS: usize = 5_000;
+/// Listed rows on each side of the old first row that `load_older` returns along.
+const BOUNDARY_ROWS: usize = 300;
 
 /// Opens a service's logs: backfills the time `window` into a new view. Without `task_id` the
 /// view merges all tasks of the service (running and recently stopped); with it, only that
@@ -88,10 +100,17 @@ async fn open_logs(
     let prefs = state.prefs.get();
     let capacity = prefs.settings.buffer_capacity();
     let mapping = prefs.field_mapping(&ServiceKey::new(&ctx.profile, &service));
-    let backfill = state
-        .logs
-        .backfill(&ctx, &selection, range, capacity)
-        .await?;
+    // `&*state.logs`: from `Arc<dyn LogSource>` to the `&dyn LogSource` the function takes.
+    let backfill = backfill_newest(
+        &*state.logs,
+        &ctx,
+        &selection,
+        range.end,
+        range.start,
+        INITIAL_EVENTS,
+        capacity,
+    )
+    .await?;
 
     let mut events = process(backfill.events);
     if !mapping.is_empty() {
@@ -107,12 +126,99 @@ async fn open_logs(
         truncated: backfill.truncated,
         from: range.start,
         to: range.end,
+        loaded_from: backfill.from,
+        complete: backfill.complete,
     };
     state.views.lock().expect("views lock poisoned").insert(
         info.view_id,
-        LogView::new(buffer, ctx, selection, range.end).with_mapping(mapping),
+        LogView::new(buffer, ctx, selection, range.end)
+            .with_mapping(mapping)
+            .with_loaded(range.start, backfill.from),
     );
     Ok(info)
+}
+
+/// What `load_older` added to a view.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OlderEvents {
+    /// Listed rows added in front of the previous first row (every listed index moved by this).
+    pub added: u32,
+    pub visible: u32,
+    pub matches: Option<u32>,
+    pub stats: BufferStats,
+    pub loaded_from: Timestamp,
+    pub complete: bool,
+    /// The buffer is full: no older events can be added.
+    pub full: bool,
+    /// The listed rows from `rows_from` on, around the previous first row, so the rows on screen
+    /// don't have to be fetched again.
+    pub rows_from: u32,
+    pub rows: Vec<LogEvent>,
+}
+
+/// Loads the next older events of a view's window (newest first, in slices).
+#[tauri::command]
+#[specta::specta]
+pub async fn load_older(state: State<'_, AppState>, view_id: u32) -> ApiResult<OlderEvents> {
+    load_older_events(&state, view_id).await
+}
+
+async fn load_older_events(state: &AppState, view_id: u32) -> ApiResult<OlderEvents> {
+    // Copy what the read needs and release the lock: it can't be held across an `.await`.
+    let (ctx, selection, from, window_start, room) = {
+        let views = state.views.lock().expect("views lock poisoned");
+        let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+        let room = view.buffer.capacity().saturating_sub(view.buffer.len());
+        (
+            view.ctx.clone(),
+            view.selection.clone(),
+            view.loaded_from,
+            view.window_start,
+            room,
+        )
+    };
+    let slices = if from > window_start && room > 0 {
+        let slices = backfill_newest(
+            &*state.logs,
+            &ctx,
+            &selection,
+            from,
+            window_start,
+            OLDER_EVENTS,
+            room,
+        )
+        .await?;
+        Some(slices)
+    } else {
+        None
+    };
+
+    let mut views = state.views.lock().expect("views lock poisoned");
+    let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
+    let before = view.visible_len();
+    // A second request for the same slices may have finished first: then these are already in.
+    if let Some(slices) = slices
+        && view.loaded_from == from
+    {
+        view.insert(process(slices.events));
+        view.loaded_from = slices.from;
+    }
+    let visible = view.visible_len();
+    let added = visible.saturating_sub(before);
+    let rows_from = added.saturating_sub(BOUNDARY_ROWS);
+    let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
+    Ok(OlderEvents {
+        added: count(added),
+        visible: count(visible),
+        matches: view.match_count().map(count),
+        stats: view.buffer.stats(),
+        loaded_from: view.loaded_from,
+        complete: view.complete(),
+        full: view.buffer.len() >= view.buffer.capacity(),
+        rows_from: count(rows_from),
+        rows: view.window(rows_from, added - rows_from + BOUNDARY_ROWS),
+    })
 }
 
 /// Up to `limit` events of a view from `offset` (oldest first).
@@ -493,6 +599,46 @@ mod tests {
             regex: false,
             noise: Vec::new(),
         }
+    }
+
+    #[tokio::test]
+    async fn a_long_window_opens_with_the_newest_events_and_loads_older_ones() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "orders-api");
+        let six_hours = TimeWindow::Last { minutes: 360 };
+        let info = open_logs(&state, ctx, service, six_hours, None)
+            .await
+            .unwrap();
+        assert!(!info.complete, "only the newest part of 6 hours is loaded");
+        assert!(info.loaded_from > info.from);
+        let mut total = info.stats.total;
+        let mut loaded_from = info.loaded_from;
+        for _ in 0..50 {
+            let older = load_older_events(&state, info.view_id).await.unwrap();
+            assert!(older.loaded_from <= loaded_from, "goes back in time");
+            assert_eq!(older.stats.total, total + older.added);
+            // The returned rows end right after the previous first row's neighbourhood.
+            assert_eq!(
+                older.rows.len() as u32 + older.rows_from,
+                (older.added + 300).min(older.visible)
+            );
+            total = older.stats.total;
+            loaded_from = older.loaded_from;
+            if older.complete || older.full {
+                break;
+            }
+        }
+        let views = state.views.lock().unwrap();
+        let view = &views[&info.view_id];
+        assert!(view.complete());
+        let rows = view.window(0, usize::MAX);
+        assert_eq!(rows.len() as u32, total, "no duplicates");
+        assert!(
+            rows.windows(2)
+                .all(|w| w[0].cw_timestamp <= w[1].cw_timestamp),
+            "in order"
+        );
+        assert!(rows[0].cw_timestamp >= info.from);
     }
 
     #[tokio::test]

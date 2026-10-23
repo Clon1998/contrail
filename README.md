@@ -26,6 +26,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   fields, raw JSON, embedded JSON and stack trace (with copy buttons). The task picker in the toolbar (or a
   task's **Logs** button) shows only one task; the columns button adds logger, thread or correlation/trace ID.
 - **Time window:** 5 min, 15 min, 1 h, 6 h, or custom (the last N minutes/hours/days, or a fixed from–to range).
+  A view loads the newest events first; scrolling to the oldest row (or "Load older" / "Load all") loads more.
+  Search and export cover the loaded events.
 - After loading its window, a log view **follows live** (CloudWatch Live Tail; new tasks of the service are
   included automatically). Windows longer than 15 minutes open paused (press ▶ to follow); a fixed range is
   never followed. The toolbar shows the state and lets you pause. Without the `logs:StartLiveTail`

@@ -25,6 +25,7 @@ import type {
   SessionStatus,
   Task,
   TimeWindow,
+  OlderEvents,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -277,6 +278,24 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return typeof rows === "function" ? rows(first, 500) : rows.slice(first, first + 500);
   }
 
+  /** Events a view holds back until `load_older` (long windows start with the newest). */
+  const olderPending = new Map<number, LogEvent[]>();
+
+  /** How many rows a view lists (all events, or the matches when filtering). */
+  function listedCount(viewId: number): number {
+    const rows = listed(viewId);
+    if (Array.isArray(rows)) return rows.length;
+    return bigVisible(viewId);
+  }
+
+  /** Generated views of long windows hide their older half until `load_older`. */
+  const bigHidden = new Map<number, number>();
+
+  /** How many rows a generated view lists. */
+  function bigVisible(viewId: number): number {
+    return (bigCounts.get(viewId) ?? BIG_VIEW) - (bigHidden.get(viewId) ?? 0);
+  }
+
   /** Current size of generated views (they grow while live). */
   const bigCounts = new Map<number, number>();
 
@@ -307,8 +326,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const tail = tails.get(viewId);
     const events = views.get(viewId);
     if (!tail || events === undefined) return;
-    const total =
-      typeof events === "function" ? (bigCounts.get(viewId) ?? BIG_VIEW) : events.length;
+    const total = typeof events === "function" ? bigVisible(viewId) : events.length;
     const filter = filters.get(viewId);
     if (filter && Array.isArray(events)) {
       // Check the events added since the search was set (or last checked).
@@ -352,9 +370,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     tail.timer = setInterval(() => {
       const events = views.get(viewId);
       if (typeof events === "function") {
-        const count = bigCounts.get(viewId) ?? BIG_VIEW;
-        bigCounts.set(viewId, count + 1);
-        return sendLive(viewId, "live", count);
+        bigCounts.set(viewId, (bigCounts.get(viewId) ?? BIG_VIEW) + 1);
+        return sendLive(viewId, "live", bigVisible(viewId) - 1);
       }
       if (!events || events.length === 0) return sendLive(viewId, "live", null);
       const template = events[events.length % Math.min(events.length, 25)] ?? events[0];
@@ -441,17 +458,31 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           .filter((e) => taskId === null || e.taskId === taskId)
           .map((e) => (mapping ? applyMapping(e, mapping) : e));
         const viewId = nextViewId++;
+        const timeWindow = args?.window as TimeWindow;
         // The high-volume demo service gets 100,000 generated events, for scrolling tests.
         const big = service.serviceName === "event-ingest";
         if (big) bigCounts.set(viewId, BIG_VIEW);
+        // Like the Rust side, long windows start with the newest events: here the newer half,
+        // the older half comes with `load_older`.
+        const long = timeWindow.kind === "range" || timeWindow.minutes > 15;
+        const half = long ? Math.floor((big ? BIG_VIEW : events.length) / 2) : 0;
+        if (half > 0 && big) bigHidden.set(viewId, half);
+        else if (half > 0) olderPending.set(viewId, events.slice(0, half));
         views.set(
           viewId,
           big
-            ? generatedRows(service.serviceName, () => bigCounts.get(viewId) ?? BIG_VIEW)
-            : events,
+            ? generatedRows(
+                service.serviceName,
+                () => bigCounts.get(viewId) ?? BIG_VIEW,
+                () => bigHidden.get(viewId) ?? 0,
+              )
+            : events.slice(half),
         );
-        const timeWindow = args?.window as TimeWindow;
         const to = timeWindow.kind === "range" ? timeWindow.to : new Date().toISOString();
+        const from =
+          timeWindow.kind === "range"
+            ? timeWindow.from
+            : new Date(Date.now() - timeWindow.minutes * 60_000).toISOString();
         const info: LogViewInfo = {
           viewId,
           location: recordedService?.location ?? {
@@ -469,15 +500,52 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
                 info: BIG_VIEW - BIG_VIEW / 50,
                 warn: BIG_VIEW / 50,
               }
-            : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
+            : half > 0 && !big
+              ? statsOf(events.slice(half))
+              : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
           truncated: big || (recordedService?.truncated ?? false),
-          from:
-            timeWindow.kind === "range"
-              ? timeWindow.from
-              : new Date(Date.now() - timeWindow.minutes * 60_000).toISOString(),
+          from,
           to,
+          loadedFrom: half > 0 ? (events[half]?.cwTimestamp ?? from) : from,
+          complete: half === 0,
         };
         return info;
+      }
+      case "load_older": {
+        const viewId = args?.viewId as number;
+        const events = views.get(viewId);
+        if (!events) throw apiError("notFound", "log view is closed");
+        const before = listedCount(viewId);
+        const older = olderPending.get(viewId) ?? [];
+        olderPending.delete(viewId);
+        bigHidden.delete(viewId);
+        if (Array.isArray(events) && older.length > 0) {
+          const all = [...older, ...events];
+          views.set(viewId, all);
+          const filter = filters.get(viewId);
+          if (filter) {
+            filter.matched = all.flatMap((e, i) => (filter.accepts(e) ? [i] : []));
+            filter.checked = all.length;
+          }
+        }
+        const visible = listedCount(viewId);
+        const added = visible - before;
+        const rowsFrom = Math.max(0, added - 300);
+        const rows = listed(viewId);
+        const now = views.get(viewId);
+        return {
+          added,
+          visible,
+          matches: filters.get(viewId)?.matched.length ?? null,
+          stats: Array.isArray(now) ? statsOf(now) : emptyStats(),
+          loadedFrom: Array.isArray(now) ? (now[0]?.cwTimestamp ?? "") : "",
+          complete: true,
+          full: false,
+          rowsFrom,
+          rows: Array.isArray(rows)
+            ? rows.slice(rowsFrom, added + 300)
+            : (rows?.(rowsFrom, added + 300 - rowsFrom) ?? []),
+        } satisfies OlderEvents;
       }
       case "get_log_rows": {
         if (options.rowsDelayMs) await new Promise((r) => setTimeout(r, options.rowsDelayMs));
@@ -503,9 +571,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           spec.query.trim() === "" && spec.hiddenLevels.length === 0 && spec.noise.length === 0;
         if (trivial || !Array.isArray(events)) {
           filters.delete(viewId);
-          const visible = Array.isArray(events)
-            ? events.length
-            : (bigCounts.get(viewId) ?? BIG_VIEW);
+          const visible = Array.isArray(events) ? events.length : bigVisible(viewId);
           return {
             kind: "applied",
             visible,
@@ -538,9 +604,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       }
       case "export_log_view": {
         const rows = listed(args?.viewId as number);
-        const count = Array.isArray(rows)
-          ? rows.length
-          : (bigCounts.get(args?.viewId as number) ?? BIG_VIEW);
+        const count = Array.isArray(rows) ? rows.length : bigVisible(args?.viewId as number);
         const last = exports.at(-1);
         if (last) Object.assign(last, { format: args?.format as string, count });
         return count;
@@ -670,11 +734,12 @@ function emptyStats(): BufferStats {
 const BIG_VIEW = 100_000;
 
 /** Simple events (100,000 at first), made only for the rows that are asked for. */
-function generatedRows(service: string, count: () => number) {
+function generatedRows(service: string, count: () => number, hidden: () => number = () => 0) {
   const start = Date.now() - BIG_VIEW * 9;
   return (offset: number, limit: number): LogEvent[] => {
     const rows: LogEvent[] = [];
-    for (let i = offset; i < Math.min(offset + limit, count()); i++) {
+    // Listed row `j` is event `j + hidden()` (the hidden ones are the oldest).
+    for (let i = offset + hidden(); i < Math.min(offset + hidden() + limit, count()); i++) {
       const timestamp = new Date(start + i * 9).toISOString();
       const warn = i % 50 === 0;
       rows.push({

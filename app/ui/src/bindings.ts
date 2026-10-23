@@ -53,6 +53,8 @@ export const commands = {
 	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
 	 */
 	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>, paused: boolean) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate, paused })),
+	/**  Loads the next older events of a view's window (newest first, in slices). */
+	loadOlder: (viewId: number) => typedError<OlderEvents, ApiError>(__TAURI_INVOKE("load_older", { viewId })),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
@@ -355,10 +357,15 @@ export type LogViewInfo = {
 	/**  How many task streams were read (running and recently stopped tasks). */
 	streams: number,
 	stats: BufferStats,
-	/**  The backfill hit the buffer size before reaching the newest events. */
+	/**  A slice held more events than the buffer has room for: some are missing. */
 	truncated: boolean,
+	/**  The view's time window. */
 	from: Timestamp,
 	to: Timestamp,
+	/**  How far back events are loaded so far (newest first; `load_older` goes further back). */
+	loadedFrom: Timestamp,
+	/**  The whole window is loaded. */
+	complete: boolean,
 };
 
 /**  Progress of a running `aws sso login`, streamed to the UI. */
@@ -368,6 +375,25 @@ export type LoginProgress =
  *  browser doesn't open by itself).
  */
 { kind: "output"; line: string };
+
+/**  What `load_older` added to a view. */
+export type OlderEvents = {
+	/**  Listed rows added in front of the previous first row (every listed index moved by this). */
+	added: number,
+	visible: number,
+	matches: number | null,
+	stats: BufferStats,
+	loadedFrom: Timestamp,
+	complete: boolean,
+	/**  The buffer is full: no older events can be added. */
+	full: boolean,
+	/**
+	 *  The listed rows from `rows_from` on, around the previous first row, so the rows on screen
+	 *  don't have to be fetched again.
+	 */
+	rowsFrom: number,
+	rows: LogEvent[],
+};
 
 /**  What the parser gets out of one raw log line. */
 export type ParsedLine = {

@@ -72,6 +72,10 @@ pub struct LogView {
     pub selection: StreamSelection,
     /// The end of the backfill: the live tail catches up from here.
     pub backfilled_until: Timestamp,
+    /// The start of the view's time window, and how far back events are loaded so far (the view
+    /// loads newest first; older events are loaded on request).
+    pub window_start: Timestamp,
+    pub loaded_from: Timestamp,
     /// The running live tail, if any. Dropping it (view closed) stops the task.
     pub live: Option<LiveHandle>,
     /// The search, if one is set (and not trivial).
@@ -92,10 +96,24 @@ impl LogView {
             ctx,
             selection,
             backfilled_until,
+            window_start: backfilled_until,
+            loaded_from: backfilled_until,
             live: None,
             filter: None,
             mapping: FieldMapping::default(),
         }
+    }
+
+    /// Records the window and how much of it is loaded (by default: all of it).
+    pub fn with_loaded(mut self, window_start: Timestamp, loaded_from: Timestamp) -> Self {
+        self.window_start = window_start;
+        self.loaded_from = loaded_from;
+        self
+    }
+
+    /// Whether every event of the window is loaded.
+    pub fn complete(&self) -> bool {
+        self.loaded_from <= self.window_start
     }
 
     /// Uses a field mapping for the events inserted from now on.

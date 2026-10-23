@@ -83,6 +83,10 @@ export interface LogsState {
   taskFilter: { service: ServiceRef; taskId: string } | null;
   /** Expanded rows, by sequence number. */
   expanded: Record<number, boolean>;
+  /** Loading older events of the window (the view starts with the newest). */
+  older: { loading: boolean; full: boolean; error: ApiError | null };
+  /** Rows just put in front of the list (`nonce` makes each load count), for keeping the scroll. */
+  prepended: { count: number; nonce: number } | null;
 
   /**
    * Opens the logs of `service` (or one task of it) for `timeWindow`, then follows new events (live,
@@ -118,9 +122,14 @@ export interface LogsState {
   /** Shows only `taskId`'s logs, or all tasks again with `null`. */
   showTask: (service: ServiceRef, taskId: string | null) => void;
   toggleExpanded: (seq: number) => void;
+  /** Loads the next older events of the window, unless all are loaded or the buffer is full. */
+  loadOlder: () => Promise<void>;
+  /** Loads older events until the whole window is loaded (or the buffer is full). */
+  loadAll: () => Promise<void>;
 }
 
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
+const NO_OLDER = { loading: false, full: false, error: null };
 
 /**
  * The cached rows after a live update. Evicted rows shift every index down (the cached rows move
@@ -148,7 +157,29 @@ export function applyLiveRows(
   return next;
 }
 
-/** The cached rows with every index lowered by `by` (rows below 0 are gone). */
+/**
+ * The cached rows after `load_older` put `added` rows in front: every cached row moves back by
+ * `added`, and the rows that came along (listed rows from `rowsFrom`, around the previous first
+ * row) are placed, so the rows on screen stay rendered.
+ */
+export function placeOlderRows(
+  pages: Map<number, LogEvent[]>,
+  older: { added: number; rowsFrom: number; rows: LogEvent[] },
+): Map<number, LogEvent[]> {
+  const next = shiftPages(pages, -older.added);
+  older.rows.forEach((event, i) => putRow(next, older.rowsFrom + i, event));
+  return next;
+}
+
+/** Like `appendRow`, but also replaces a row already cached at `index`. */
+function putRow(pages: Map<number, LogEvent[]>, index: number, event: LogEvent) {
+  const rows = pages.get(Math.floor(index / PAGE_SIZE));
+  const offset = index % PAGE_SIZE;
+  if (rows && offset < rows.length) rows[offset] = event;
+  else appendRow(pages, index, event);
+}
+
+/** The cached rows with every index lowered by `by` (rows below 0 are gone; `by` < 0 raises). */
 function shiftPages(pages: Map<number, LogEvent[]>, by: number): Map<number, LogEvent[]> {
   const next = new Map<number, LogEvent[]>();
   const ordered = [...pages].sort(([a], [b]) => a - b);
@@ -221,6 +252,8 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     tab: "overview",
     taskFilter: null,
     expanded: {},
+    older: NO_OLDER,
+    prepended: null,
 
     open: async (ctx, service, timeWindow, taskId) => {
       const mine = ++generation;
@@ -237,6 +270,8 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         pages: new Map(),
         matchPositions: [],
         currentMatch: -1,
+        older: NO_OLDER,
+        prepended: null,
         pauseReasons: { ...get().pauseReasons, user: false },
       });
       if (previous) void commands.closeLogView(previous.viewId);
@@ -412,6 +447,47 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     showTask: (service, taskId) =>
       set({ taskFilter: taskId ? { service, taskId } : null, tab: "logs" }),
     toggleExpanded: (seq) => set((s) => ({ expanded: { ...s.expanded, [seq]: !s.expanded[seq] } })),
+
+    loadOlder: async () => {
+      const { view, older } = get();
+      if (!view || view.complete || older.loading || older.full) return;
+      set({ older: { ...older, loading: true, error: null } });
+      const result = await commands.loadOlder(view.viewId);
+      const current = get().view;
+      if (current?.viewId !== view.viewId) return;
+      if (result.status === "error") {
+        set({ older: { loading: false, full: false, error: result.error } });
+        return;
+      }
+      const loaded = result.data;
+      epoch++; // row fetches that started before are stale (indices moved)
+      set({
+        view: {
+          ...current,
+          stats: loaded.stats,
+          loadedFrom: loaded.loadedFrom,
+          complete: loaded.complete,
+        },
+        visible: loaded.visible,
+        matches: loaded.matches,
+        pages: placeOlderRows(get().pages, loaded),
+        older: { loading: false, full: loaded.full, error: null },
+        prepended:
+          loaded.added > 0
+            ? { count: loaded.added, nonce: (get().prepended?.nonce ?? 0) + 1 }
+            : get().prepended,
+      });
+      if (get().search.mode === "highlight") scheduleMatchRefresh();
+    },
+
+    loadAll: async () => {
+      const viewId = get().view?.viewId;
+      while (viewId !== undefined && get().view?.viewId === viewId) {
+        const { view, older } = get();
+        if (!view || view.complete || older.full || older.error) return;
+        await get().loadOlder();
+      }
+    },
   }));
 
   /** Fetches the rows that match (highlight mode) for marking and navigation. */

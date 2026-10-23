@@ -26,8 +26,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { shortTaskId } from "@/lib/ecs";
-import { liveMode } from "@/lib/logs";
+import { formatDateTime, shortTaskId } from "@/lib/ecs";
+import { formatLogTime, liveMode } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -106,6 +106,54 @@ function LiveControls() {
       >
         {userPaused ? <PlayIcon /> : <PauseIcon />}
       </Button>
+    </span>
+  );
+}
+
+/**
+ * How much of the window is loaded (views start with the newest events), and buttons to load
+ * older ones; scrolling to the oldest row loads them too.
+ */
+function OlderControls() {
+  const view = useLogs((s) => s.view);
+  const older = useLogs((s) => s.older);
+  const loadOlder = useLogs((s) => s.loadOlder);
+  const loadAll = useLogs((s) => s.loadAll);
+  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  if (!view || view.complete) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
+      <Hint
+        content={`Loaded from ${formatDateTime(view.loadedFrom, timeZone)}. Search and export cover the loaded events; scroll to the oldest row or press "Load all" for the whole window.`}
+      >
+        <span>since {formatLogTime(view.loadedFrom, timeZone).slice(0, 5)}</span>
+      </Hint>
+      {older.loading ? (
+        <Loader2Icon aria-label="Loading older events" className="size-3.5 animate-spin" />
+      ) : older.full ? (
+        <Hint content="The buffer is full (see the buffer size setting): older events can't be added.">
+          <Badge variant="outline">buffer full</Badge>
+        </Hint>
+      ) : (
+        <>
+          <Button variant="ghost" size="xs" onClick={() => void loadOlder()}>
+            Load older
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            tooltip="Load the whole time window (needed to search or export all of it)"
+            onClick={() => void loadAll()}
+          >
+            Load all
+          </Button>
+        </>
+      )}
+      {older.error && (
+        <Hint content={older.error.hint ?? older.error.message}>
+          <CircleAlertIcon aria-label={older.error.message} className="size-3.5 text-destructive" />
+        </Hint>
+      )}
     </span>
   );
 }
@@ -229,9 +277,10 @@ export function LogViewer() {
             {`${view.location.logGroup} · ${view.streams} ${view.streams === 1 ? "stream" : "streams"}`}
           </span>
         )}
+        <OlderControls />
         <span className="ml-auto" />
         {view?.truncated && (
-          <Hint content="The window holds more events than the buffer; the newest are missing.">
+          <Hint content="More events than the buffer holds: some are missing (see the buffer size setting).">
             <Badge variant="outline">truncated</Badge>
           </Hint>
         )}
