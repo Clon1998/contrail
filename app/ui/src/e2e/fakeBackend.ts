@@ -224,6 +224,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
   >();
 
+  /** Current size of generated views (they grow while live). */
+  const bigCounts = new Map<number, number>();
+
   /** Open log views: their events by view ID (an array, or generated on demand). */
   const views = new Map<number, LogEvent[] | ((offset: number, limit: number) => LogEvent[])>();
   let nextViewId = 1;
@@ -246,7 +249,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const tail = tails.get(viewId);
     const events = views.get(viewId);
     if (!tail || events === undefined) return;
-    const total = typeof events === "function" ? BIG_VIEW : events.length;
+    const total =
+      typeof events === "function" ? (bigCounts.get(viewId) ?? BIG_VIEW) : events.length;
     const update: LiveUpdate = {
       state,
       sampled: false,
@@ -265,7 +269,12 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     sendLive(viewId, "live", null);
     tail.timer = setInterval(() => {
       const events = views.get(viewId);
-      if (!Array.isArray(events) || events.length === 0) return sendLive(viewId, "live", null);
+      if (typeof events === "function") {
+        const count = bigCounts.get(viewId) ?? BIG_VIEW;
+        bigCounts.set(viewId, count + 1);
+        return sendLive(viewId, "live", count);
+      }
+      if (!events || events.length === 0) return sendLive(viewId, "live", null);
       const template = events[events.length % Math.min(events.length, 25)] ?? events[0];
       if (!template) return;
       const now = new Date().toISOString();
@@ -349,7 +358,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const viewId = nextViewId++;
         // The high-volume demo service gets 100,000 generated events, for scrolling tests.
         const big = service.serviceName === "event-ingest";
-        views.set(viewId, big ? generatedRows(service.serviceName) : events);
+        if (big) bigCounts.set(viewId, BIG_VIEW);
+        views.set(
+          viewId,
+          big
+            ? generatedRows(service.serviceName, () => bigCounts.get(viewId) ?? BIG_VIEW)
+            : events,
+        );
         const minutes = args?.minutes as number;
         const info: LogViewInfo = {
           viewId,
@@ -387,6 +402,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       case "close_log_view": {
         const viewId = args?.viewId as number;
         views.delete(viewId);
+        bigCounts.delete(viewId);
         clearInterval(tails.get(viewId)?.timer);
         tails.delete(viewId);
         return null;
@@ -465,12 +481,12 @@ function emptyStats(): BufferStats {
 /** Size of the generated high-volume view. */
 const BIG_VIEW = 100_000;
 
-/** 100,000 simple events, made only for the rows that are asked for. */
-function generatedRows(service: string) {
+/** Simple events (100,000 at first), made only for the rows that are asked for. */
+function generatedRows(service: string, count: () => number) {
   const start = Date.now() - BIG_VIEW * 9;
   return (offset: number, limit: number): LogEvent[] => {
     const rows: LogEvent[] = [];
-    for (let i = offset; i < Math.min(offset + limit, BIG_VIEW); i++) {
+    for (let i = offset; i < Math.min(offset + limit, count()); i++) {
       const timestamp = new Date(start + i * 9).toISOString();
       const warn = i % 50 === 0;
       rows.push({

@@ -89,3 +89,42 @@ test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", a
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
 });
+
+test("live: new events arrive, pause stops them, resume continues", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+  // The fake backend adds an event per second.
+  await expect
+    .poll(async () => Number(await list.getAttribute("aria-rowcount")), { timeout: 5_000 })
+    .toBeGreaterThan(25);
+
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
+  const paused = Number(await list.getAttribute("aria-rowcount"));
+  await page.waitForTimeout(1_500);
+  expect(Number(await list.getAttribute("aria-rowcount"))).toBe(paused);
+
+  await page.getByRole("button", { name: "Resume live tail" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+  await expect
+    .poll(async () => Number(await list.getAttribute("aria-rowcount")), { timeout: 5_000 })
+    .toBeGreaterThan(paused);
+});
+
+test("live: following stops when scrolled up and resumes with Jump to latest", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+  await list.locator("..").evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  // New events (the generated view grows while live) don't pull the list down.
+  const before = Number(await list.getAttribute("aria-rowcount"));
+  await expect
+    .poll(async () => Number(await list.getAttribute("aria-rowcount")), { timeout: 5_000 })
+    .toBeGreaterThan(before);
+  await expect(list.getByText("Ingested event #1 ", { exact: false }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  await page.getByRole("button", { name: "Jump to latest" }).click();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+});
