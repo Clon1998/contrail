@@ -1,73 +1,36 @@
-# Handoff — state on 2026-10-23
+# Handoff — state on 2026-10-23 (evening)
 
 For the next agent (or person) continuing Contrail. Read `CLAUDE.md` and `plan.md` first; decisions are in
-`docs/decisions.md`. Patrick paused autonomous work here to test against a real AWS account.
+`docs/decisions.md`.
 
 ## Where things stand
 
 | Milestone | State |
 |---|---|
-| M0–M6 | Merged into `main`, CI green (M6 run 39880633714, incl. Windows/macOS installers). |
-| M7 workflow polish | Merged into `main` (merge `0ab11d3`, pushed). **CI run 39885085268 failed**: Playwright, WebKit, `e2e/day-in-the-life.e2e.ts` (noise step). Rust and frontend jobs passed; installers were skipped. |
-| M7 fixes | **On local `main`, not pushed** (5 commits after `0ab11d3`, see below). |
-| M8 release | On local branch `feat/m8-release` (4 commits, not merged, not pushed). |
+| M0–M7 | Done on `main`. Patrick tested against real AWS (live tail, login/AccessDenied, export, columns, tasks, secrets, overview) and fed back two rounds; all fixed. |
+| After M7 (Patrick's feature list) | On `main`: filter-change flicker fix, pipeline framework view (state badges/chips, "show this document"), cross-service tracing (FilterLogEvents, Logs Insights opt-in), route view (routes from `<PREFIX>_ROUTES_<n>_…` env vars, services on the same topic), fade-in of live rows, view state remembered per service, in-app updates (app side). |
+| M8 release | Branch `feat/m8-release`, **not merged** (Patrick: no release yet). Also holds the updater part of the release workflow (`d3406d5`). Its README conflicts with `main`'s README; screenshots need regenerating. |
 
-### Unpushed commits on `main` (fix for the red M7 run)
+## Open, needs Patrick
 
-- `37ba0d9` test(e2e): make the day-in-the-life noise step deterministic
-- `83063ee` fix(ui): keep rows on screen during live updates. Real bug: each live update dropped the cached
-  page holding the first new row, so the newest rows flickered to placeholders and an expanded row
-  re-mounted every second. Also discards page fetches that started before rows changed (epoch counter).
-  Unit tests in `app/ui/src/stores/logs.test.ts`.
-- `3b6decc` refactor(ui): use the view's profile for noise lists and mappings
-- `593d63c` test(ui): fake backend applies noise and hidden levels to live events. It used to re-add all
-  matches when noise hid every match.
-- `4d671fa` test(e2e): wait until the noise search is applied before expanding
+- **Updates / going public:** follow `docs/updates-and-public-release.md`: decide on the history-audit findings
+  (and the employer sentence in `plan.md` line 8), generate the signing key, put the public key into
+  `tauri.conf.json`, set the two secrets, switch the repository to public.
+- **Release:** merge `feat/m8-release` when he asks, then tag.
+- **Real-AWS checks of the new features:** tracing across his pipeline services (correlation IDs in `fw.*`) and
+  APIs (`traceId`), Logs Insights opt-in, route view on route-generator services, "Find connected services".
 
-**Not verified:** the full local suite was not completed after these commits; the machine was overloaded by
-OS/antivirus processes (load average ~150–290, Vitest workers timed out). Unit tests passed before the overload.
+## Also open
 
-### Commits on `feat/m8-release`
+- WebdriverIO + tauri-driver smoke tests (plan §6) are not done.
+- Later ideas in `plan.md` §10 (rebindable shortcuts, …); window-state plugin deferred.
 
-- `881da5b` build: changelog via git-cliff (`cliff.toml`, `CHANGELOG.md`; rc tags ignored)
-- `d80c595` ci: `.github/workflows/release.yml` for `v*` tags (draft release with git-cliff notes →
-  tauri-action v1 builds macOS arm64 + x64, Windows NSIS, Linux on Ubuntu 22.04 → publish)
-- `33bac0b` docs: README (install, first run, demo mode, screenshots, IAM, known limitations), screenshots
-  in `docs/screenshots/` from the opt-in spec `app/ui/e2e/screenshots.e2e.ts`, release commands in CLAUDE.md
-- `acec1ab` ci: `-rc` tags become pre-releases
+## Working notes
 
-Both workflows pass actionlint (v1.7.12).
-
-## Next steps
-
-1. On `main`: run the full suite when the machine is idle (check `uptime`). Run
-   `cargo fmt --check`, `cargo clippy -D warnings` and `cargo test`, then in `app/` run `pnpm lint`,
-   `pnpm typecheck`, `pnpm test`, and `pnpm test:e2e` a few times. If green, push `main` and watch CI
-   (`gh run watch`). M7 is done only when that run is green.
-2. Merge `feat/m8-release` into `main` (`--no-ff`) and push; wait for green CI.
-3. Tag `v0.1.0-rc.1` on `main` and push the tag; watch `release.yml`. Check the asset names against the
-   README install table (it assumes Tauri's defaults, e.g. `Contrail_0.1.0_aarch64.dmg`,
-   `Contrail_0.1.0_x64-setup.exe`), and the Windows install path in the README demo-mode section.
-4. Regenerate `CHANGELOG.md` (command in CLAUDE.md), commit `chore(release): v0.1.0`, push, tag `v0.1.0`
-   and push it. Patrick approved publishing v0.1.0 (private repo, unsigned installers).
-5. Open from plan.md: M7 "UX review with Patrick". WebdriverIO + tauri-driver smoke tests (plan §6) are not
-   done. The window-state plugin is deferred (decisions.md).
-
-## Pitfalls seen in this session
-
-- See memory `contrail-ci-notes` / docs/decisions.md: slow apt mirror, specta limits (no u64), pnpm minimum
-  release age, `*.log` ignore, `git push | grep` SIGPIPE.
-- jsdom renders no virtual-list rows (no layout): check row content in Playwright, not Vitest.
-- WebKit sends no `auxclick`, so middle click is handled on mousedown; Playwright's WebKit middle click is unreliable.
-- Inputs with `list=` have the ARIA role `combobox`.
-- The search box debounces 200 ms. Tests must wait for a signal only the new search produces; the match
-  count may still show the previous search.
-- macOS reserves ⌘W (Close Window), so tabs have no close shortcut.
-
-## What Patrick checks with real AWS (after M5–M7)
-
-- Live tail on a busy service: "sampled" badge, pause when hidden / background tab, catch-up on resume.
-- Search on real ECS JSON and Spring logs, noise lists, click-to-filter.
-- Tabs across services, export (`.log` / `.jsonl`), field mapping on non-ECS JSON logs.
-- A role without e.g. `logs:FilterLogEvents`: it must say "missing permission", not "log in again".
-- An expired SSO session during a live tail: banner, log in, Retry.
+- **GitHub Actions minutes are scarce** (private repo): push to `main` only once per batch of work, verify
+  locally first (fmt, clippy, `cargo test --workspace`, `pnpm lint/typecheck/test`, `pnpm test:e2e`).
+- Bitdefender excludes the project now; macOS "Developer Tools" exemption for the terminal is optional.
+- `fixtures/` (gitignored) holds real samples and Patrick's framework/route docs (`fixtures/docs/`): read only,
+  never quote in tracked files.
+- Pitfalls: jsdom renders no virtual rows (check rows in Playwright); WebKit sends no `auxclick`; the search box
+  debounces 200 ms; macOS reserves ⌘W; specta can't export `u64`; pnpm refuses packages younger than a day.
