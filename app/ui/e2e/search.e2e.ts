@@ -86,6 +86,38 @@ test("level chips hide levels", async ({ page }) => {
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
 });
 
+test("level chips: middle click shows only that level, right click offers more", async ({
+  page,
+}) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = await rowCount(page);
+  const levels = page.getByRole("group", { name: "Levels" });
+  const warn = levels.getByRole("button", { name: /^WARN / });
+
+  await warn.click({ button: "middle" });
+  await expect(warn).toHaveAttribute("aria-pressed", "true");
+  await expect(levels.getByRole("button", { name: /^INFO / })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+
+  await levels.getByRole("button", { name: /^INFO / }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "INFO and above" }).click();
+  await expect(levels.getByRole("button", { name: /^ERROR / })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(levels.getByRole("button", { name: /^DEBUG / })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+
+  await warn.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Show all levels" }).click();
+  await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
+});
+
 test("hide noise from a line and show it again", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "legacy-gateway");
   const all = await rowCount(page);

@@ -10,11 +10,19 @@ import {
 import { cn } from "cn";
 import type { Level } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { noiseKey, usePrefs } from "@/stores/prefs";
-import { LEVEL_TONE, LEVELS } from "./levels";
+import { hiddenForAtLeast, hiddenForOnly, LEVEL_TONE, LEVELS, toggleLevel } from "./levels";
 
 /** Typing pauses this long before the search runs. */
 const DEBOUNCE_MS = 200;
@@ -118,36 +126,62 @@ function NoiseMenu() {
   );
 }
 
-/** Level chips: counts per level; clicking hides or shows a level. */
+/**
+ * Level chips with counts per level. Click hides or shows a level, middle click shows only that
+ * level (again: all), right click opens a menu with all options.
+ */
 function LevelChips() {
   const stats = useLogs((s) => s.view?.stats);
   const hidden = useLogs((s) => s.search.hiddenLevels);
   const setSearch = useLogs((s) => s.setSearch);
   if (!stats) return null;
-  const toggle = (level: Level) =>
-    void setSearch({
-      hiddenLevels: hidden.includes(level) ? hidden.filter((l) => l !== level) : [...hidden, level],
-    });
+  const hide = (hiddenLevels: Level[]) => void setSearch({ hiddenLevels });
   return (
     <span className="flex items-center gap-1" role="group" aria-label="Levels">
       {LEVELS.map((level) => {
         const shown = !hidden.includes(level);
+        const count = stats[level.toLowerCase() as Lowercase<Level>];
         return (
-          <button
-            key={level}
-            type="button"
-            aria-pressed={shown}
-            aria-label={`${level} ${stats[level.toLowerCase() as Lowercase<Level>]}`}
-            onClick={() => toggle(level)}
-            className={cn(
-              "rounded border px-1.5 py-0.5 tabular-nums",
-              shown
-                ? cn("border-border", LEVEL_TONE[level])
-                : "border-transparent text-muted-foreground/50 line-through",
-            )}
-          >
-            {level} {stats[level.toLowerCase() as Lowercase<Level>].toLocaleString()}
-          </button>
+          <ContextMenu key={level}>
+            <ContextMenuTrigger asChild>
+              <button
+                type="button"
+                aria-pressed={shown}
+                aria-label={`${level} ${count}`}
+                title="Click: hide/show · middle click: only this · right click: more"
+                onClick={() => hide(toggleLevel(hidden, level))}
+                // Middle click on mousedown: WebKit sends no `auxclick` (see the tabs).
+                onMouseDown={(e) => {
+                  if (e.button === 1) {
+                    e.preventDefault();
+                    hide(hiddenForOnly(hidden, level));
+                  }
+                }}
+                className={cn(
+                  "rounded border px-1.5 py-0.5 tabular-nums",
+                  shown
+                    ? cn("border-border", LEVEL_TONE[level])
+                    : "border-transparent text-muted-foreground/50 line-through",
+                )}
+              >
+                {level} {count.toLocaleString()}
+              </button>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuLabel>{level}</ContextMenuLabel>
+              <ContextMenuItem onSelect={() => hide(LEVELS.filter((l) => l !== level))}>
+                Only {level}
+              </ContextMenuItem>
+              <ContextMenuItem onSelect={() => hide(hiddenForAtLeast(level))}>
+                {level} and above
+              </ContextMenuItem>
+              <ContextMenuItem onSelect={() => hide(toggleLevel(hidden, level))}>
+                {shown ? `Hide ${level}` : `Show ${level}`}
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem onSelect={() => hide([])}>Show all levels</ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         );
       })}
     </span>

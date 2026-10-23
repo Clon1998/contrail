@@ -35,7 +35,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   stack traces that CloudWatch split into one event per line are joined again. The log group comes from the
   task definition (`awslogs` driver with a stream prefix).
 - **Search** the loaded logs: `timeout level>=WARN trace.id:abc123 -healthcheck`, regular expressions, field
-  globs and comparisons, as a filter or highlighted with next/previous (Enter, F3). Level chips hide levels;
+  globs and comparisons, as a filter or highlighted with next/previous (Enter, F3). Level chips hide levels (middle click: only
+  this level; right click: more);
   "Hide lines like this" builds a per-service noise list. See [docs/query-syntax.md](docs/query-syntax.md).
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
