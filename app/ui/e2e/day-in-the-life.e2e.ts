@@ -58,12 +58,13 @@ test("a day in the life", async ({ page }) => {
   await tabs.getByRole("tab", { name: "payments-worker" }).click();
   await expect(search).toHaveValue("level:ERROR");
 
-  // The known settlement retries are noise today.
-  await search.fill("");
-  const retries = list.getByText("Error while settling batch", { exact: true });
-  await retries.first().click();
+  // The known settlement retries are noise today. (Filter to them first: the list keeps growing,
+  // and an applied search resets expanded rows, so wait for it before expanding one.)
+  await search.fill('"Error while settling batch"');
+  await expect(payments.getByLabel("Match count")).toContainText(/^[1-9]\d* of/);
+  await list.getByText("Error while settling batch", { exact: true }).first().click();
   await list.getByRole("button", { name: "Hide lines like this" }).click();
-  await expect(retries).toHaveCount(0);
+  await expect(payments.getByText("No events match the search.")).toBeVisible();
 
   // Evidence for the incident ticket.
   await search.fill("level>=WARN");
