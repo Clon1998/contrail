@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferSize: 100_000,
   logColumns: [],
   newestFirst: false,
+  checkForUpdates: true,
 };
 
 export const EMPTY_PREFS: Prefs = {
@@ -45,6 +46,7 @@ export const EMPTY_PREFS: Prefs = {
   settings: DEFAULT_SETTINGS,
   noise: {},
   fieldMappings: {},
+  lastUpdateCheck: null,
 };
 
 /** The key of a service's noise list (same as `ServiceKey::storage_key` in Rust). */

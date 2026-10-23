@@ -380,3 +380,11 @@ One short entry per pattern: what it is, why it's used here, where to find it.
 - **What:** inside a closure returning `Option`, `?` returns `None` early (like Java's `Optional.flatMap` chains,
   but flat). `iter().find_map(|f| …)` returns the first `Some` the closure produces.
 - **Where:** `from_fields` in `crates/contrail-core/src/logs/status.rs` (finding `<prefix>.state` fields).
+
+## A one-shot channel as a cancel signal (`tokio::sync::oneshot` + `select!`)
+
+- **What:** `install_update` keeps the sending half of a `oneshot` channel in the app state; `cancel_update`
+  sends on it. `tokio::select!` waits for the download or the signal, whichever comes first; the losing future
+  is dropped, which stops it (futures only run while polled). Like completing a `CompletableFuture` to
+  interrupt work, without threads.
+- **Where:** `download` in `app/src-tauri/src/commands/update.rs`.

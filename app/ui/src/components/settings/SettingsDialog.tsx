@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useId, useState } from "react";
-import { CheckIcon, SettingsIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, SettingsIcon } from "lucide-react";
 import { cn } from "cn";
 import type { Accent, ColorMode, TimeZone } from "@/bindings";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { ShortcutList } from "./ShortcutsDialog";
 import { usePrefs } from "@/stores/prefs";
+import { useUpdate } from "@/stores/update";
 import { MOD } from "@/lib/keys";
 
 type Section = "appearance" | "logs" | "shortcuts" | "about";
@@ -274,6 +275,12 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                   </p>
                 </Row>
                 <Row
+                  label="Updates"
+                  hint="New versions come from the GitHub releases; installing restarts Contrail."
+                >
+                  <UpdateSettings />
+                </Row>
+                <Row
                   label="Read-only"
                   hint="Contrail only reads from AWS and never stores credentials; the AWS SDK uses your SSO token cache."
                 >
@@ -285,6 +292,39 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** "Check now" and the daily check on start. */
+function UpdateSettings() {
+  const enabled = usePrefs((s) => s.prefs.settings.checkForUpdates);
+  const updateSettings = usePrefs((s) => s.updateSettings);
+  const checkNow = useUpdate((s) => s.checkNow);
+  const phase = useUpdate((s) => s.phase);
+  const checked = useUpdate((s) => s.checked);
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox
+          checked={enabled}
+          onCheckedChange={(on) => void updateSettings({ checkForUpdates: on === true })}
+        />
+        Check for updates on start (once a day)
+      </label>
+      <div className="flex items-center gap-2 text-sm">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={phase !== "idle"}
+          onClick={() => void checkNow()}
+        >
+          {phase === "checking" && <Loader2Icon className="animate-spin" />}
+          Check now
+        </Button>
+        {checked?.upToDate && <span className="text-muted-foreground">Contrail is up to date</span>}
+        {checked?.error && <span className="text-destructive">{checked.error.message}</span>}
+      </div>
+    </div>
   );
 }
 

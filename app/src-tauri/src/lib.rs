@@ -26,7 +26,7 @@ const BINDINGS_PATH: &str = "../ui/src/bindings.ts";
 /// functions for them, so the frontend can't call a command with the wrong name or arguments.
 /// It's a separate function so both [`run`] and the `export_bindings` test can use it.
 fn specta_builder() -> Builder<tauri::Wry> {
-    use commands::{app, auth, ecs, logs, prefs, trace};
+    use commands::{app, auth, ecs, logs, prefs, trace, update};
 
     Builder::<tauri::Wry>::new().commands(collect_commands![
         app::app_info,
@@ -49,6 +49,9 @@ fn specta_builder() -> Builder<tauri::Wry> {
         ecs::reveal_secret,
         ecs::services_on_topics,
         trace::trace_id,
+        update::check_for_update,
+        update::install_update,
+        update::cancel_update,
         logs::pause_live,
         logs::resume_live,
         prefs::get_prefs,
@@ -90,8 +93,14 @@ pub fn run() {
 
     let demo = state::demo_requested(std::env::args(), std::env::var("CONTRAIL_DEMO").ok());
 
+    // Two TLS stacks end up in the build: the AWS SDK's (aws-lc-rs) and the updater's. Whoever
+    // needs TLS first without naming one would make "theirs" the process default; choosing it
+    // here keeps every connection on the same one (`install_default` only fails if one is set).
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(builder.invoke_handler())
         // `setup` runs once the app exists, so the app data folder (for preferences) is known.
         .setup(move |app| {

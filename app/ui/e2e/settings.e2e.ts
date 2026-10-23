@@ -84,3 +84,34 @@ test("controls explain themselves in tooltips", async ({ page }) => {
     }),
   ).toHaveCount(1);
 });
+
+test("updates: check by hand in the settings", async ({ page }) => {
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
+  await page.keyboard.press("ControlOrMeta+,");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("button", { name: "About" }).click();
+  await dialog.getByRole("button", { name: "Check now" }).click();
+  await expect(dialog.getByText("Contrail is up to date")).toBeVisible();
+  await expect(
+    dialog.getByRole("checkbox", { name: /Check for updates on start/ }),
+  ).toHaveAttribute("data-state", "checked");
+});
+
+test("updates: a newer version is offered and installed", async ({ page }) => {
+  await page.goto("/?update=0.2.0");
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
+  await page.keyboard.press("ControlOrMeta+,");
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  await settings.getByRole("button", { name: "About" }).click();
+  await settings.getByRole("button", { name: "Check now" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Contrail 0.2.0 is available" });
+  await expect(dialog).toContainText("Something new");
+  await dialog.getByRole("button", { name: "Install and restart" }).click();
+  await expect(dialog.getByRole("progressbar")).toBeVisible();
+  // Closed (the update dialog, then the settings), the header still offers it.
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Update to 0.2.0" })).toBeVisible();
+});

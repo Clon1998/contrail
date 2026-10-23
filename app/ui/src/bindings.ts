@@ -70,6 +70,33 @@ export const commands = {
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 	 */
 	traceId: (ctx: AwsCtx, services: ServiceRef[], id: string, window: TimeWindow, insights: boolean) => typedError<Trace, ApiError>(__TAURI_INVOKE("trace_id", { ctx, services, id, window, insights })),
+	/**
+	 *  Looks for a newer version. `manual` is "Check for updates" in the settings; otherwise this
+	 *  is the check on start, which does nothing unless it's switched on and due (once a day) and
+	 *  never runs in development builds. Returns `None` when Contrail is up to date (or the
+	 *  automatic check was skipped).
+	 */
+	checkForUpdate: (manual: boolean) => typedError<{
+	version: string,
+	currentVersion: string,
+	/**  The release notes (Markdown), when the release has any. */
+	notes: string | null,
+	/**  When the release was published, RFC 3339. */
+	date: string | null,
+	/**
+	 *  Why this copy can't update itself (no update key yet, a development build, not installed
+	 *  from an installer). `None`: "Install and restart" works.
+	 */
+	installBlocker: string | null,
+} | null, ApiError>(__TAURI_INVOKE("check_for_update", { manual })),
+	/**
+	 *  Downloads and installs the update found by the last [`check_for_update`], then restarts
+	 *  Contrail. Progress arrives on `on_progress`; [`cancel_update`] stops the download. On
+	 *  Windows the installer closes the app itself.
+	 */
+	installUpdate: (onProgress: Channel<UpdateProgress>) => typedError<null, ApiError>(__TAURI_INVOKE("install_update", { onProgress })),
+	/**  Stops a running update download. Installing (after the download) can't be stopped. */
+	cancelUpdate: () => __TAURI_INVOKE<void>("cancel_update"),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
@@ -240,7 +267,11 @@ export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing"
 /**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
 "logsUnavailable" | 
 /**  The UI sent something unusable, e.g. an empty time window. */
-"invalidInput";
+"invalidInput" | 
+/**  Checking for, downloading or installing an update failed. */
+"update" | 
+/**  The user cancelled (e.g. an update download). */
+"cancelled";
 
 export type ExportFormat = 
 /**  The original lines, as CloudWatch delivered them (stack traces joined). */
@@ -478,6 +509,8 @@ export type Prefs = {
 	noise: { [key in string]: string[] },
 	/**  Field mappings per service (by [`ServiceKey::storage_key`]). */
 	fieldMappings: { [key in string]: FieldMapping },
+	/**  When the automatic update check last ran (Unix seconds). */
+	lastUpdateCheck: number | null,
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
@@ -671,6 +704,8 @@ export type Settings = {
 	logColumns: LogColumn[],
 	/**  Log lists show the newest event at the top (and follow new events there). */
 	newestFirst: boolean,
+	/**  Look for a new Contrail version on start (at most once a day). */
+	checkForUpdates: boolean,
 };
 
 /**  What a status-change event says, for the state badge, the state chips and correlation. */
@@ -777,6 +812,28 @@ export type TraceOutcome =
 "completed" | 
 /**  A service is still in an earlier state (or there are no status events). */
 "open";
+
+/**  A newer version that can be installed (or, see `install_blocker`, only downloaded by hand). */
+export type UpdateInfo = {
+	version: string,
+	currentVersion: string,
+	/**  The release notes (Markdown), when the release has any. */
+	notes: string | null,
+	/**  When the release was published, RFC 3339. */
+	date: string | null,
+	/**
+	 *  Why this copy can't update itself (no update key yet, a development build, not installed
+	 *  from an installer). `None`: "Install and restart" works.
+	 */
+	installBlocker: string | null,
+};
+
+/**  Sent while an update downloads. `total` is `None` when the server doesn't say. */
+export type UpdateProgress = {
+	/**  Bytes. `u32` (up to 4 GB) because specta can't export `u64` to TypeScript numbers. */
+	downloaded: number,
+	total: number | null,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

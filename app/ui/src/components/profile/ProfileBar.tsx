@@ -2,6 +2,7 @@ import { RefreshCwIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { ShortcutsDialog } from "@/components/settings/ShortcutsDialog";
+import { UpdateDialog } from "@/components/settings/UpdateDialog";
 import { Button } from "@/components/ui/button";
 import { useProfiles } from "@/stores/profiles";
 import { IdentityLabel } from "./IdentityLabel";
@@ -33,6 +34,7 @@ export function ProfileBar({ demo, version }: { demo: boolean; version?: string 
       <div className="ml-auto flex min-w-0 items-center gap-3">
         <IdentityLabel />
         {demo && <Badge variant="secondary">Demo</Badge>}
+        <UpdateDialog />
         <ShortcutsDialog />
         <SettingsDialog version={version} demo={demo} />
       </div>

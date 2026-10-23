@@ -10,6 +10,7 @@ import { useAppearance } from "@/hooks/useAppearance";
 import { ctxKey, useEcs } from "@/stores/ecs";
 import { useCurrentRegion, useProfiles } from "@/stores/profiles";
 import { useTabs } from "@/stores/tabs";
+import { useUpdate } from "@/stores/update";
 
 /** Session states change as tokens expire; re-read them (local files only) this often. */
 const STATUS_REFRESH_MS = 60_000;
@@ -29,6 +30,7 @@ export default function App() {
   useEffect(() => {
     void commands.appInfo().then(setInfo);
     void load();
+    void useUpdate.getState().checkOnStart();
     const timer = setInterval(() => void refreshStatuses(), STATUS_REFRESH_MS);
     return () => clearInterval(timer);
   }, [load, refreshStatuses]);
