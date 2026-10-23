@@ -44,8 +44,8 @@ page has the details.
 ## Live tail
 
 - After loading its window, a log view **follows live** (CloudWatch Live Tail; new tasks of the service are
-  included automatically). Windows longer than 15 minutes open paused (press ▶ to follow); a fixed range is never
-  followed. The toolbar shows the state and lets you pause.
+  included automatically). The toolbar shows the live state, with a button to pause and resume. Windows longer
+  than 15 minutes open paused (resume to follow); a fixed range is never followed.
 - Without the `logs:StartLiveTail` permission Contrail checks for new events every 2 seconds instead.
 - Live Tail is billed per session minute: by default tails pause while Contrail is hidden (after 30 s) and resume
   with a catch-up when you're back, and tails of views you haven't looked at for 10 minutes pause too.
@@ -57,8 +57,6 @@ page has the details.
   See [Search syntax](query-syntax.md).
 - Level chips hide levels (middle click: only this level; right click: more); "Hide lines like this" builds a
   per-service noise list.
-- **Pipeline status events** (a framework logging `<prefix>.state` + `<prefix>.correlationId` per document step):
-  state badges, state chips (`state:FAILED`) and "Show this document" (`correlation:<id>`).
 
 ## Tracing across services
 
