@@ -176,6 +176,8 @@ test("time windows: longer ones open paused, a fixed range isn't followed", asyn
 });
 
 test("newest first: the newest event on top, new events arrive there", async ({ page }) => {
+  // The shortcut works once the app is up.
+  await expect(page.getByRole("tree", { name: "Clusters" })).toBeVisible();
   await page.keyboard.press("ControlOrMeta+,");
   const dialog = page.getByRole("dialog", { name: "Settings" });
   await dialog.getByRole("button", { name: "Logs" }).click();
