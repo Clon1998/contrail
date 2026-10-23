@@ -10,6 +10,7 @@ import {
 import { cn } from "cn";
 import type { Level } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -92,10 +93,9 @@ function NoiseMenu() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 space-y-2 text-xs">
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={hideNoise}
-            onChange={(e) => void setSearch({ hideNoise: e.target.checked })}
+            onCheckedChange={(checked) => void setSearch({ hideNoise: checked === true })}
           />
           Hide lines containing these texts
         </label>
@@ -320,13 +320,12 @@ export function SearchBar() {
           ))}
         </div>
         <label
-          className="flex items-center gap-1 text-muted-foreground"
+          className="flex items-center gap-1.5 text-muted-foreground"
           title="Search all fields and the full stack trace"
         >
-          <input
-            type="checkbox"
+          <Checkbox
             checked={search.raw}
-            onChange={(e) => void setSearch({ raw: e.target.checked })}
+            onCheckedChange={(checked) => void setSearch({ raw: checked === true })}
           />
           whole line
         </label>

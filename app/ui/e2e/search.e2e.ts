@@ -146,3 +146,14 @@ test("regex mode reads the whole search as one expression", async ({ page }) => 
   await expect.poll(() => rowCount(page)).toBeLessThan(all);
   await expect.poll(() => rowCount(page)).toBeGreaterThan(0);
 });
+
+test("the search options use the app's checkboxes", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const wholeLine = page.getByRole("checkbox", { name: "whole line" });
+  await wholeLine.click();
+  await expect(wholeLine).toHaveAttribute("data-state", "checked");
+
+  await page.getByRole("button", { name: "Noise" }).click();
+  const hide = page.getByRole("checkbox", { name: "Hide lines containing these texts" });
+  await expect(hide).toHaveAttribute("data-state", "checked");
+});
