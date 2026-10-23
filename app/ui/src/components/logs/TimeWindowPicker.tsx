@@ -158,7 +158,8 @@ function CustomWindow({
             </Button>
           </div>
           <p className="text-muted-foreground">
-            Windows longer than {LIVE_BY_DEFAULT_MINUTES} min open paused; ▶ follows new events.
+            Windows longer than {LIVE_BY_DEFAULT_MINUTES} minutes open paused: they don’t follow new
+            events until you resume the live tail.
           </p>
         </form>
 

@@ -168,6 +168,8 @@ export interface FakeBackendOptions {
   rejectedSessions?: string[];
   /** Delay of row fetches, like the real IPC round trip (default: none). */
   rowsDelayMs?: number;
+  /** Delay of `load_older` (default: none). */
+  olderDelayMs?: number;
 }
 
 /**
@@ -277,6 +279,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     if (rows === undefined) return [];
     return typeof rows === "function" ? rows(first, 500) : rows.slice(first, first + 500);
   }
+
+  /** The start of each view's time window (`load_older` loads up to it). */
+  const windowStarts = new Map<number, string>();
 
   /** Events a view holds back until `load_older` (long windows start with the newest). */
   const olderPending = new Map<number, LogEvent[]>();
@@ -436,6 +441,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!services) throw apiError("notFound", "cluster not found");
         return services;
       }
+      case "reveal_secret": {
+        checkCredentials(args?.ctx as AwsCtx);
+        const name = (args?.valueFrom as string).split("/").at(-1);
+        return `demo-${name}-not-a-real-secret`;
+      }
       case "describe_service":
         return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;
       case "list_tasks": {
@@ -483,6 +493,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           timeWindow.kind === "range"
             ? timeWindow.from
             : new Date(Date.now() - timeWindow.minutes * 60_000).toISOString();
+        windowStarts.set(viewId, from);
         const info: LogViewInfo = {
           viewId,
           location: recordedService?.location ?? {
@@ -494,12 +505,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           streams: taskId !== null ? 1 : big ? 6 : (recordedService?.streams ?? 0),
           // The recording keeps a sample of the events; the counts describe all of them.
           stats: big
-            ? {
-                ...emptyStats(),
-                total: BIG_VIEW,
-                info: BIG_VIEW - BIG_VIEW / 50,
-                warn: BIG_VIEW / 50,
-              }
+            ? bigStats(BIG_VIEW - half)
             : half > 0 && !big
               ? statsOf(events.slice(half))
               : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
@@ -512,6 +518,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         return info;
       }
       case "load_older": {
+        if (options.olderDelayMs) await new Promise((r) => setTimeout(r, options.olderDelayMs));
         const viewId = args?.viewId as number;
         const events = views.get(viewId);
         if (!events) throw apiError("notFound", "log view is closed");
@@ -537,8 +544,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           added,
           visible,
           matches: filters.get(viewId)?.matched.length ?? null,
-          stats: Array.isArray(now) ? statsOf(now) : emptyStats(),
-          loadedFrom: Array.isArray(now) ? (now[0]?.cwTimestamp ?? "") : "",
+          stats: Array.isArray(now) ? statsOf(now) : bigStats(bigVisible(viewId)),
+          loadedFrom: windowStarts.get(viewId) ?? new Date().toISOString(),
           complete: true,
           full: false,
           rowsFrom,
@@ -724,6 +731,12 @@ export function uninstallFakeBackend() {
   stopInstalled?.();
   stopInstalled = null;
   clearMocks();
+}
+
+/** Counts of a generated view with `total` events (every 50th is a WARN). */
+function bigStats(total: number): BufferStats {
+  const warn = Math.ceil(total / 50);
+  return { ...emptyStats(), total, info: total - warn, warn };
 }
 
 function emptyStats(): BufferStats {

@@ -10,9 +10,11 @@ pub mod ecs;
 mod error;
 pub mod files;
 pub mod logs;
+pub mod secrets;
 mod sts;
 
 pub use auth::AwsAuth;
 pub use ecs::AwsEcs;
 pub use files::AwsFiles;
 pub use logs::AwsLogs;
+pub use secrets::AwsSecrets;

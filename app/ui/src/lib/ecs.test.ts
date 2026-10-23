@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatAgo,
+  groupEvents,
   formatDateTime,
   nameFromArn,
   serviceHealth,
@@ -54,5 +55,44 @@ describe("looksSecret", () => {
     for (const name of ["SERVER_PORT", "SPRING_PROFILES_ACTIVE", "ROUTES_0_KEYEXPRESSION"]) {
       expect(looksSecret(name), name).toBe(false);
     }
+  });
+});
+
+describe("groupEvents", () => {
+  const event = (id: string, at: string, message: string) => ({ id, createdAt: at, message });
+
+  it("collapses repeats in a row and drops the service prefix", () => {
+    const groups = groupEvents(
+      [
+        event("1", "2026-10-23T12:00:00Z", "(service api) has reached a steady state."),
+        event("2", "2026-10-23T06:00:00Z", "(service api) has reached a steady state."),
+        event("3", "2026-10-23T05:00:00Z", "(service api) has started 1 tasks: (task abc)."),
+        event("4", "2026-10-23T00:00:00Z", "(service api) has reached a steady state."),
+      ],
+      "api",
+    );
+    expect(groups).toEqual([
+      {
+        id: "1",
+        message: "has reached a steady state.",
+        count: 2,
+        latest: "2026-10-23T12:00:00Z",
+        earliest: "2026-10-23T06:00:00Z",
+      },
+      {
+        id: "3",
+        message: "has started 1 tasks: (task abc).",
+        count: 1,
+        latest: "2026-10-23T05:00:00Z",
+        earliest: "2026-10-23T05:00:00Z",
+      },
+      {
+        id: "4",
+        message: "has reached a steady state.",
+        count: 1,
+        latest: "2026-10-23T00:00:00Z",
+        earliest: "2026-10-23T00:00:00Z",
+      },
+    ]);
   });
 });

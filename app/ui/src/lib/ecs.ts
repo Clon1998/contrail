@@ -49,3 +49,45 @@ export function looksSecret(name: string): boolean {
     name,
   );
 }
+
+/** Service events in a row with the same message, shown once with a count. */
+export interface EventGroup {
+  /** The newest event's ID. */
+  id: string;
+  message: string;
+  count: number;
+  latest: string | null;
+  earliest: string | null;
+}
+
+/**
+ * Collapses consecutive events with the same message (ECS repeats "has reached a steady state"
+ * every few hours) and drops the "(service <name>) " prefix every message starts with. `events`
+ * are newest first, as ECS returns them.
+ */
+export function groupEvents(
+  events: { id: string; createdAt: string | null; message: string }[],
+  serviceName: string,
+): EventGroup[] {
+  const prefix = `(service ${serviceName}) `;
+  const groups: EventGroup[] = [];
+  for (const event of events) {
+    const message = event.message.startsWith(prefix)
+      ? event.message.slice(prefix.length)
+      : event.message;
+    const last = groups.at(-1);
+    if (last?.message === message) {
+      last.count++;
+      last.earliest = event.createdAt;
+    } else {
+      groups.push({
+        id: event.id,
+        message,
+        count: 1,
+        latest: event.createdAt,
+        earliest: event.createdAt,
+      });
+    }
+  }
+  return groups;
+}

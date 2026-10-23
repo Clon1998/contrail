@@ -49,6 +49,8 @@ tauri-specta = { version = "=2.0.0-rc.25", features = ["derive", "typescript"] }
 aws-config = { version = "1.13.0", features = ["behavior-version-latest"] }
 aws-sdk-cloudwatchlogs = "1.160.0"
 aws-sdk-ecs = "1.154.0"
+aws-sdk-secretsmanager = "1.123.0"
+aws-sdk-ssm = "1.131.0"
 aws-sdk-sts = "1.122.0"
 aws-smithy-mocks = "0.3.0"
 aws-smithy-types = "1.4"

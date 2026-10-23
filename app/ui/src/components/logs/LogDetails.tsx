@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckIcon, ChevronRightIcon, CopyIcon, EyeOffIcon } from "lucide-react";
+import { ChevronRightIcon, EyeOffIcon } from "lucide-react";
 import { cn } from "cn";
 import type { LogEvent } from "@/bindings";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
 import { appendTerm, fieldTerm } from "@/lib/highlight";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
+import { CopyButton } from "@/components/CopyButton";
 import { Ansi } from "./Ansi";
 
 /** Stack traces longer than this start collapsed. */
@@ -45,25 +46,6 @@ function JsonView({ json, label }: { json: string; label: string }) {
         </span>
       ))}
     </pre>
-  );
-}
-
-function CopyButton({ label, text }: { label: string; text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Button
-      variant="outline"
-      size="xs"
-      onClick={() => {
-        void navigator.clipboard.writeText(text).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
-    >
-      {copied ? <CheckIcon /> : <CopyIcon />}
-      {copied ? "Copied" : label}
-    </Button>
   );
 }
 

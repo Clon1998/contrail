@@ -55,6 +55,11 @@ export const commands = {
 	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>, paused: boolean) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate, paused })),
 	/**  Loads the next older events of a view's window (newest first, in slices). */
 	loadOlder: (viewId: number) => typedError<OlderEvents, ApiError>(__TAURI_INVOKE("load_older", { viewId })),
+	/**
+	 *  The value of a secret-backed environment variable (`valueFrom` of the task definition), read
+	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
+	 */
+	revealSecret: (ctx: AwsCtx, valueFrom: string) => typedError<string, ApiError>(__TAURI_INVOKE("reveal_secret", { ctx, valueFrom })),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
@@ -169,7 +174,15 @@ export type ContainerState = {
 	exitCode: number | null,
 	reason: string | null,
 	healthStatus: string | null,
+	/**  The image reference the container was started with (`repo:tag` or `repo@sha256:…`). */
 	image: string | null,
+	/**  [`image_tag`] of `image`, for display. */
+	imageTag: string | null,
+	/**
+	 *  The digest of the image actually running (`sha256:…`), which tells tasks of the same tag
+	 *  apart when the tag was pushed again.
+	 */
+	imageDigest: string | null,
 };
 
 export type Deployment = {

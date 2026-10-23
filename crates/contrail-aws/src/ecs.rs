@@ -395,6 +395,8 @@ fn map_task(t: &aws_sdk_ecs::types::Task) -> Task {
                 reason: c.reason().map(str::to_owned),
                 health_status: c.health_status().map(|h| h.as_str().to_owned()),
                 image: c.image().map(str::to_owned),
+                image_tag: c.image().map(image_tag),
+                image_digest: c.image_digest().map(str::to_owned),
             })
             .collect(),
         arn,
@@ -756,6 +758,8 @@ mod tests {
                             .name("orders")
                             .last_status(if stopped { "STOPPED" } else { "RUNNING" })
                             .set_exit_code(stopped.then_some(1))
+                            .image("111122223333.dkr.ecr.eu-central-1.amazonaws.com/orders:1.2.3")
+                            .image_digest("sha256:4f2a9c1e0b7d6a5e4f3c2b1a09876543210fedcba9876543210fedcba987654")
                             .build(),
                     );
                 if stopped {
@@ -779,6 +783,15 @@ mod tests {
         assert_eq!(running[0].id, "running1");
         assert_eq!(running[0].health_status.as_deref(), Some("HEALTHY"));
         assert_eq!(running[0].task_definition, "orders:4");
+        let container = &running[0].containers[0];
+        assert_eq!(container.image_tag.as_deref(), Some("1.2.3"));
+        assert!(
+            container
+                .image_digest
+                .as_deref()
+                .unwrap()
+                .starts_with("sha256:4f2a")
+        );
 
         let all = list_tasks(&client, "dev", &svc_ref("orders"), true)
             .await

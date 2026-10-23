@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDateTime, shortTaskId } from "@/lib/ecs";
-import { formatLogTime, liveMode } from "@/lib/logs";
+import { formatLogTime, liveHint, liveMode } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -35,6 +35,7 @@ import { OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { ExportMenu } from "./ExportMenu";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
+import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
 import { TimeWindowPicker } from "./TimeWindowPicker";
 import { Hint } from "@/components/ui/tooltip";
@@ -74,13 +75,7 @@ function LiveControls() {
   }
   if (!live) return null;
 
-  const hint =
-    live.message ??
-    (live.state === "paused" && !userPaused && autoPaused
-      ? "Paused automatically (see the live tail settings); resumes when you're back."
-      : live.state === "paused" && userPaused && mode === "paused"
-        ? "Longer time windows open paused; ▶ follows new events."
-        : undefined);
+  const hint = liveHint({ state: live.state, message: live.message, userPaused, autoPaused, mode });
   return (
     <span className="flex items-center gap-1.5">
       <Hint content={hint}>
@@ -117,7 +112,6 @@ function LiveControls() {
 function OlderControls() {
   const view = useLogs((s) => s.view);
   const older = useLogs((s) => s.older);
-  const loadOlder = useLogs((s) => s.loadOlder);
   const loadAll = useLogs((s) => s.loadAll);
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   if (!view || view.complete) return null;
@@ -135,19 +129,14 @@ function OlderControls() {
           <Badge variant="outline">buffer full</Badge>
         </Hint>
       ) : (
-        <>
-          <Button variant="ghost" size="xs" onClick={() => void loadOlder()}>
-            Load older
-          </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            tooltip="Load the whole time window (needed to search or export all of it)"
-            onClick={() => void loadAll()}
-          >
-            Load all
-          </Button>
-        </>
+        <Button
+          variant="ghost"
+          size="xs"
+          tooltip="Load the whole time window (needed to search or export all of it)"
+          onClick={() => void loadAll()}
+        >
+          Load all
+        </Button>
       )}
       {older.error && (
         <Hint content={older.error.hint ?? older.error.message}>
@@ -327,7 +316,10 @@ export function LogViewer() {
         <p className="p-4 text-sm text-muted-foreground">No log events in this time window.</p>
       )}
       {!loading && view && view.stats.total > 0 && visible === 0 && (
-        <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
+        <div>
+          <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
+          {!view.complete && <OlderMarker />}
+        </div>
       )}
       {!loading && view && visible > 0 && (
         <LogList viewId={view.viewId} total={visible} showTask={taskId === null} />

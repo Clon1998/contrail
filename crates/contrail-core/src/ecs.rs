@@ -168,7 +168,13 @@ pub struct ContainerState {
     pub exit_code: Option<i32>,
     pub reason: Option<String>,
     pub health_status: Option<String>,
+    /// The image reference the container was started with (`repo:tag` or `repo@sha256:…`).
     pub image: Option<String>,
+    /// [`image_tag`] of `image`, for display.
+    pub image_tag: Option<String>,
+    /// The digest of the image actually running (`sha256:…`), which tells tasks of the same tag
+    /// apart when the tag was pushed again.
+    pub image_digest: Option<String>,
 }
 
 /// Where clusters, services and tasks come from: AWS or the demo fake. Read-only by design.

@@ -31,6 +31,15 @@ test("tree → crash-looping service shows why its tasks stopped", async ({ page
   await expect(tasks.getByText("exit 1")).toHaveCount(0);
 });
 
+test("each task shows the image it runs", async ({ page }) => {
+  const view = await openTreeService(page, "demo-core", "orders-api");
+  const tasks = view.getByRole("region", { name: "Tasks" });
+  const image = tasks.getByRole("row").nth(1).getByRole("cell", { name: "1.14.2" });
+  await expect(image).toBeVisible();
+  await image.hover();
+  await expect(page.getByRole("tooltip").filter({ hasText: "sha256:" })).toHaveCount(1);
+});
+
 test("a rollout in progress shows both deployments", async ({ page }) => {
   const view = await openTreeService(page, "demo-core", "billing-sync");
   const deployments = view.getByRole("region", { name: "Deployments" });
@@ -72,6 +81,13 @@ test("the overview lists environment variables, masking secret-looking values", 
   await expect(env.getByRole("row", { name: /API_TOKEN/ })).toContainText(
     "parameter/demo/orders-api",
   );
+
+  // A secret's value is read on request, and can be hidden again.
+  const token = env.getByRole("row", { name: /API_TOKEN/ });
+  await token.getByRole("button", { name: "Reveal" }).click();
+  await expect(token).toContainText("demo-api-token-not-a-real-secret");
+  await token.getByRole("button", { name: "Hide value" }).click();
+  await expect(token).not.toContainText("demo-api-token-not-a-real-secret");
 
   await env.getByRole("searchbox", { name: "Filter variables" }).fill("server");
   await expect(env.getByRole("row", { name: /SERVER_PORT/ })).toBeVisible();

@@ -292,3 +292,54 @@ test("a long window that fits on screen loads its older events right away", asyn
   await expect(list).toHaveAttribute("aria-rowcount", String(all));
   await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
 });
+
+test("the end of the list says whether older events are loading, missing or all there", async ({
+  page,
+}) => {
+  await page.goto("/?olderDelay=800");
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  await expect(list).toHaveAttribute("aria-rowcount", "50000");
+  const marker = page.getByRole("status", { name: "Older events" });
+
+  await list.locator("..").evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await expect(marker).toContainText("Loading older events");
+  await expect(marker).toContainText("Start of the time window");
+  await expect(list).toHaveAttribute("aria-rowcount", "100000");
+});
+
+test("with a search, the end of the list says the matches end there", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "payments-worker");
+  await page.getByRole("textbox", { name: "Search logs" }).fill("settling");
+  await expect(page.getByLabel("Match count")).toBeVisible();
+  await list.locator("..").evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await expect(page.getByRole("status", { name: "Older events" })).toContainText(
+    "No older matches · window starts",
+  );
+});
+
+test("the live tail state explains itself in a tooltip", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const live = page.getByRole("status", { name: "Live tail: Live" });
+  await live.hover();
+  await expect(page.getByRole("tooltip").filter({ hasText: "Following new events" })).toHaveCount(
+    1,
+  );
+
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  await page.mouse.move(0, 0);
+  await page.getByRole("status", { name: "Live tail: Paused" }).hover();
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "longer than 15 minutes start paused" }),
+  ).toHaveCount(1);
+});

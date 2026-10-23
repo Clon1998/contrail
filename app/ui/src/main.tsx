@@ -16,6 +16,7 @@ const ready =
           loginDelayMs: 600,
           // `?rowsDelay=30` simulates the IPC latency of row fetches (scrolling checks).
           rowsDelayMs: Number(new URLSearchParams(location.search).get("rowsDelay") ?? 0),
+          olderDelayMs: Number(new URLSearchParams(location.search).get("olderDelay") ?? 0),
         }),
       )
     : Promise.resolve();

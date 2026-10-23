@@ -28,6 +28,18 @@ pub async fn list_services(
     Ok(state.ecs.list_services(&ctx, &cluster_arn).await?)
 }
 
+/// The value of a secret-backed environment variable (`valueFrom` of the task definition), read
+/// from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
+#[tauri::command]
+#[specta::specta]
+pub async fn reveal_secret(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    value_from: String,
+) -> ApiResult<String> {
+    Ok(state.secrets.reveal(&ctx, &value_from).await?)
+}
+
 /// Counts, deployments, task definition and recent events of one service.
 #[tauri::command]
 #[specta::specta]
