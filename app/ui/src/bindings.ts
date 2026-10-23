@@ -62,6 +62,10 @@ export const commands = {
 	toggleFavorite: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("toggle_favorite", { profile, service })),
 	/**  Records that a service was opened (for "recent" in the palette). */
 	addRecent: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_recent", { profile, service })),
+	/**  Adds a "hide noise" text for a service. */
+	addNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_noise", { profile, service, text })),
+	/**  Removes a "hide noise" text of a service. */
+	removeNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("remove_noise", { profile, service, text })),
 };
 
 /* Types */
@@ -346,6 +350,11 @@ export type Prefs = {
 	/**  Recently opened services, newest first, at most [`MAX_RECENT`]. */
 	recent: ServiceKey[],
 	settings: Settings,
+	/**
+	 *  "Hide noise" texts per service (by [`ServiceKey::storage_key`]): log lines whose message
+	 *  contains one of them are hidden while hiding noise is on.
+	 */
+	noise: { [key in string]: string[] },
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */

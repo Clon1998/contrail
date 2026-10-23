@@ -53,6 +53,32 @@ pub fn toggle_favorite(
     })?)
 }
 
+/// Adds a "hide noise" text for a service.
+#[tauri::command]
+#[specta::specta]
+pub fn add_noise(
+    state: State<'_, AppState>,
+    profile: String,
+    service: ServiceRef,
+    text: String,
+) -> ApiResult<Prefs> {
+    let key = ServiceKey::new(&profile, &service);
+    Ok(state.prefs.update(|p| p.add_noise(&key, &text))?)
+}
+
+/// Removes a "hide noise" text of a service.
+#[tauri::command]
+#[specta::specta]
+pub fn remove_noise(
+    state: State<'_, AppState>,
+    profile: String,
+    service: ServiceRef,
+    text: String,
+) -> ApiResult<Prefs> {
+    let key = ServiceKey::new(&profile, &service);
+    Ok(state.prefs.update(|p| p.remove_noise(&key, &text))?)
+}
+
 /// Records that a service was opened (for "recent" in the palette).
 #[tauri::command]
 #[specta::specta]

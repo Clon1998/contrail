@@ -9,6 +9,8 @@ interface PrefsState {
   setRegionOverride: (profile: string, region: string | null) => Promise<void>;
   toggleFavorite: (profile: string, service: ServiceRef) => Promise<void>;
   addRecent: (profile: string, service: ServiceRef) => Promise<void>;
+  addNoise: (profile: string, service: ServiceRef, text: string) => Promise<void>;
+  removeNoise: (profile: string, service: ServiceRef, text: string) => Promise<void>;
   /** Changes some settings; the rest stay as they are. */
   updateSettings: (change: Partial<Settings>) => Promise<void>;
 }
@@ -30,7 +32,13 @@ export const EMPTY_PREFS: Prefs = {
   favorites: [],
   recent: [],
   settings: DEFAULT_SETTINGS,
+  noise: {},
 };
+
+/** The key of a service's noise list (same as `ServiceKey::storage_key` in Rust). */
+export function noiseKey(profile: string, service: ServiceRef): string {
+  return `${profile}|${service.clusterArn}|${service.serviceName}`;
+}
 
 /** Whether `key` refers to `service` of `profile`. */
 export function isSameService(key: ServiceKey, profile: string, service: ServiceRef): boolean {
@@ -55,6 +63,8 @@ export const usePrefs = create<PrefsState>((set, get) => {
     setRegionOverride: (profile, region) => apply(commands.setRegionOverride(profile, region)),
     toggleFavorite: (profile, service) => apply(commands.toggleFavorite(profile, service)),
     addRecent: (profile, service) => apply(commands.addRecent(profile, service)),
+    addNoise: (profile, service, text) => apply(commands.addNoise(profile, service, text)),
+    removeNoise: (profile, service, text) => apply(commands.removeNoise(profile, service, text)),
     updateSettings: (change) => apply(commands.setSettings({ ...get().prefs.settings, ...change })),
   };
 });

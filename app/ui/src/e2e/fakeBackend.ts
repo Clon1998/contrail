@@ -199,6 +199,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       pauseWhenHidden: true,
       autoPauseMinutes: 10,
     },
+    noise: {},
     ...options.prefs,
   };
 
@@ -455,6 +456,19 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             ? prefs.favorites.filter((f) => !sameKey(f, key))
             : [...prefs.favorites, key],
         };
+        return prefs;
+      }
+      case "add_noise":
+      case "remove_noise": {
+        const service = args?.service as ServiceRef;
+        const key = `${args?.profile as string}|${service.clusterArn}|${service.serviceName}`;
+        const text = (args?.text as string).trim();
+        const list = (prefs.noise[key] ?? []).filter((n) => n !== text);
+        if (cmd === "add_noise" && text) list.push(text);
+        const others = Object.entries(prefs.noise).filter(([k]) => k !== key);
+        const noise: Record<string, string[]> = Object.fromEntries(others);
+        if (list.length > 0) noise[key] = list;
+        prefs = { ...prefs, noise };
         return prefs;
       }
       case "add_recent": {

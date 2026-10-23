@@ -52,6 +52,8 @@ fn specta_builder() -> Builder<tauri::Wry> {
         prefs::set_settings,
         prefs::toggle_favorite,
         prefs::add_recent,
+        prefs::add_noise,
+        prefs::remove_noise,
     ])
 }
 

@@ -43,6 +43,14 @@ impl ServiceKey {
     pub fn cluster_name(&self) -> &str {
         name_from_arn(&self.cluster_arn)
     }
+
+    /// The key under which per-service settings (the noise list) are stored.
+    pub fn storage_key(&self) -> String {
+        format!(
+            "{}|{}|{}",
+            self.profile, self.cluster_arn, self.service_name
+        )
+    }
 }
 
 /// Light or dark UI; `System` follows the operating system.
@@ -166,6 +174,9 @@ pub struct Prefs {
     /// Recently opened services, newest first, at most [`MAX_RECENT`].
     pub recent: Vec<ServiceKey>,
     pub settings: Settings,
+    /// "Hide noise" texts per service (by [`ServiceKey::storage_key`]): log lines whose message
+    /// contains one of them are hidden while hiding noise is on.
+    pub noise: BTreeMap<String, Vec<String>>,
 }
 
 impl Prefs {
@@ -183,6 +194,7 @@ impl Prefs {
             recent: Vec<ServiceKey>,
             #[serde(deserialize_with = "settings_or_default")]
             settings: Settings,
+            noise: BTreeMap<String, Vec<String>>,
         }
 
         /// Settings are read leniently (see [`Settings::from_saved`]), so an unknown value never
@@ -202,6 +214,7 @@ impl Prefs {
             favorites: stored.favorites,
             recent: stored.recent,
             settings: stored.settings,
+            noise: stored.noise,
         })
     }
 
@@ -220,6 +233,28 @@ impl Prefs {
         } else {
             self.favorites.push(key);
             true
+        }
+    }
+
+    /// Adds a "hide noise" text for a service (ignoring duplicates and blank text).
+    pub fn add_noise(&mut self, key: &ServiceKey, text: &str) {
+        let text = text.trim();
+        if text.is_empty() {
+            return;
+        }
+        let list = self.noise.entry(key.storage_key()).or_default();
+        if !list.iter().any(|n| n == text) {
+            list.push(text.to_owned());
+        }
+    }
+
+    pub fn remove_noise(&mut self, key: &ServiceKey, text: &str) {
+        let storage_key = key.storage_key();
+        if let Some(list) = self.noise.get_mut(&storage_key) {
+            list.retain(|n| n != text);
+            if list.is_empty() {
+                self.noise.remove(&storage_key);
+            }
         }
     }
 
@@ -280,6 +315,27 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    #[test]
+    fn noise_lists_per_service() {
+        let mut prefs = Prefs::default();
+        let orders = key("dev", "orders");
+        prefs.add_noise(&orders, " GET /actuator/health ");
+        prefs.add_noise(&orders, "GET /actuator/health");
+        prefs.add_noise(&orders, "   ");
+        assert_eq!(prefs.noise[&orders.storage_key()], ["GET /actuator/health"]);
+        assert!(
+            !prefs
+                .noise
+                .contains_key(&key("dev", "billing").storage_key())
+        );
+
+        let json = serde_json::to_string(&prefs).unwrap();
+        assert_eq!(Prefs::from_json(&json).unwrap().noise, prefs.noise);
+
+        prefs.remove_noise(&orders, "GET /actuator/health");
+        assert!(prefs.noise.is_empty());
     }
 
     #[test]
