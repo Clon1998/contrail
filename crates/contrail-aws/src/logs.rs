@@ -183,12 +183,26 @@ async fn backfill(
     limit: usize,
 ) -> Result<Backfill, SourceError> {
     let mut result = Backfill::default();
-    // Batches run one after another so the limit applies across all of them.
-    for streams in selection.streams.chunks(MAX_STREAMS_PER_REQUEST) {
-        let mut pages = client
+    // A whole service is read by its stream prefix (one request, every task that logged); a
+    // task by its stream names, in batches of 100 that run one after another so the limit
+    // applies across all of them.
+    let batches: Vec<Option<&[String]>> = match &selection.stream_prefix {
+        Some(_) => vec![None],
+        None => selection
+            .streams
+            .chunks(MAX_STREAMS_PER_REQUEST)
+            .map(Some)
+            .collect(),
+    };
+    for streams in batches {
+        let request = client
             .filter_log_events()
-            .log_group_name(&selection.log_group)
-            .set_log_stream_names(Some(streams.to_vec()))
+            .log_group_name(&selection.log_group);
+        let request = match (streams, &selection.stream_prefix) {
+            (Some(streams), _) => request.set_log_stream_names(Some(streams.to_vec())),
+            (None, prefix) => request.set_log_stream_name_prefix(prefix.clone()),
+        };
+        let mut pages = request
             .start_time(millis(range.start))
             .end_time(millis(range.end))
             .into_paginator()
@@ -409,5 +423,31 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(start_error("dev", err), LiveError::Unavailable(_)));
+    }
+
+    #[tokio::test]
+    async fn a_whole_service_is_read_by_its_stream_prefix() {
+        let rule = mock!(Client::filter_log_events)
+            .match_requests(|req| {
+                req.log_stream_name_prefix() == Some("ecs/orders-api/")
+                    && req.log_stream_names().is_empty()
+            })
+            .then_output(|| {
+                FilterLogEventsOutput::builder()
+                    .events(event(
+                        "ecs/orders-api/new-task",
+                        1,
+                        "from a task started later",
+                    ))
+                    .build()
+            });
+        let client = mock_client!(aws_sdk_cloudwatchlogs, [&rule]);
+        let mut sel = selection(150);
+        sel.stream_prefix = Some("ecs/orders-api/".into());
+
+        let result = backfill(&client, "dev", &sel, range(), 100).await.unwrap();
+
+        assert_eq!(rule.num_calls(), 1, "one request instead of two batches");
+        assert_eq!(result.events[0].stream, "ecs/orders-api/new-task");
     }
 }
