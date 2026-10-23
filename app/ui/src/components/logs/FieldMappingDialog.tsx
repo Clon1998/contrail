@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { noiseKey, usePrefs } from "@/stores/prefs";
-import { useProfiles } from "@/stores/profiles";
 
 const PARTS: { key: keyof FieldMapping; label: string; defaults: string }[] = [
   { key: "message", label: "Message", defaults: "message, msg, log" },
@@ -43,7 +42,7 @@ export function FieldMappingDialog() {
   const minutes = useLogs((s) => s.minutes);
   const open = useLogs((s) => s.open);
   const ctx = useEcs((s) => s.ctx);
-  const profile = useProfiles((s) => s.selected);
+  const profile = useLogs((s) => s.profile);
   const saved = usePrefs((s) =>
     profile && service ? s.prefs.fieldMappings[noiseKey(profile, service)] : undefined,
   );

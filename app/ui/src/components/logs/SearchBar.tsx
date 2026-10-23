@@ -14,7 +14,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { noiseKey, usePrefs } from "@/stores/prefs";
-import { useProfiles } from "@/stores/profiles";
 import { LEVEL_TONE, LEVELS } from "./levels";
 
 /** Typing pauses this long before the search runs. */
@@ -64,7 +63,7 @@ function NoiseMenu() {
   const hideNoise = useLogs((s) => s.search.hideNoise);
   const setSearch = useLogs((s) => s.setSearch);
   const applySearch = useLogs((s) => s.applySearch);
-  const profile = useProfiles((s) => s.selected);
+  const profile = useLogs((s) => s.profile);
   const noise = usePrefs((s) => s.prefs.noise);
   const removeNoise = usePrefs((s) => s.removeNoise);
   if (!service || !profile) return null;

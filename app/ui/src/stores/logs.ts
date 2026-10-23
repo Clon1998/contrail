@@ -47,6 +47,8 @@ export interface LogsState {
   /** The service (and task, for a task view) the view belongs to. */
   service: ServiceRef | null;
   taskId: string | null;
+  /** The profile the view was opened with (noise lists and field mappings are per profile). */
+  profile: string | null;
   loading: boolean;
   error: ApiError | null;
   /** The latest live update (state, sampled, message), `null` before the tail started. */
@@ -157,6 +159,7 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     view: null,
     service: null,
     taskId: null,
+    profile: null,
     loading: false,
     error: null,
     live: null,
@@ -182,6 +185,7 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
       set({
         service,
         taskId,
+        profile: ctx.profile,
         loading: true,
         error: null,
         expanded: {},
@@ -297,9 +301,8 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     },
 
     applySearch: async () => {
-      const { view, service, search } = get();
+      const { view, service, search, profile } = get();
       if (!view || !service) return;
-      const profile = usePrefs.getState().prefs.lastProfile;
       const noise =
         search.hideNoise && profile
           ? (usePrefs.getState().prefs.noise[noiseKey(profile, service)] ?? [])

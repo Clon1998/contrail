@@ -14,7 +14,6 @@ import {
 import { appendTerm, fieldTerm } from "@/lib/highlight";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
-import { useProfiles } from "@/stores/profiles";
 import { Ansi } from "./Ansi";
 
 /** Stack traces longer than this start collapsed. */
@@ -102,7 +101,7 @@ export function LogDetails({ event }: { event: LogEvent }) {
   const setSearch = useLogs((s) => s.setSearch);
   const applySearch = useLogs((s) => s.applySearch);
   const service = useLogs((s) => s.service);
-  const profile = useProfiles((s) => s.selected);
+  const profile = useLogs((s) => s.profile);
   const addNoise = usePrefs((s) => s.addNoise);
   const filterBy = (term: string) => void setSearch({ query: appendTerm(query, term) });
   // The first line of the message, cut at 80 characters: specific enough, short enough to read.
