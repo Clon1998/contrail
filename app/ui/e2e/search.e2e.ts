@@ -263,3 +263,23 @@ test("trace a document across services, in a tab of its own", async ({ page }) =
   await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
   await expect(timeline.getByLabel("Fields").first()).toBeVisible();
 });
+
+test("trace an API request by its trace ID, without a document outcome", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "payments-worker");
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page.getByRole("textbox", { name: "Search logs" }).fill("POST");
+  await expect(page.getByLabel("Match count")).toContainText(/^\d+ of \d+$/);
+  await list.getByRole("listitem").first().getByRole("button").first().click();
+  await page.getByRole("button", { name: "Trace across services" }).click();
+
+  const trace = page.getByRole("main", { name: /^Trace / });
+  await trace.getByRole("button", { name: "All (3)" }).click();
+  await trace.getByRole("button", { name: "Search 3 services" }).click();
+  const timeline = trace.getByRole("list", { name: "Trace events" });
+  await expect(timeline.getByRole("listitem").first()).toBeVisible();
+  // Only status events say how a document ended; a request has no outcome.
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toHaveCount(0);
+  await expect(
+    trace.getByRole("list", { name: "Services on the way" }).getByRole("listitem"),
+  ).not.toHaveCount(1);
+});

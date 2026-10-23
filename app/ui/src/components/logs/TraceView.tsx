@@ -96,7 +96,7 @@ export function TraceView({ tab }: { tab: TraceTab }) {
         <section aria-label="Trace result" className="min-w-0 flex-1 overflow-y-auto">
           {result.kind === "idle" && (
             <p className="p-4 text-sm text-muted-foreground">
-              Choose the services the document may have passed through, then search.
+              Choose the services the request may have passed through, then search.
             </p>
           )}
           {result.kind === "loading" && (
@@ -224,20 +224,23 @@ function ServicePicker({ store }: { store: TraceTab["trace"] }) {
 function TraceResult({ store, trace }: { store: TraceTab["trace"]; trace: Trace }) {
   const only = useStore(store, (s) => s.only);
   const setOnly = useStore(store, (s) => s.setOnly);
-  const outcome = OUTCOME[trace.outcome];
+  // Only status events say how a document ended; a plain trace ID (an API request) has no outcome.
+  const outcome = trace.services.some((s) => s.lastState) ? OUTCOME[trace.outcome] : null;
   const hits = only ? trace.hits.filter((h) => h.service === only) : trace.hits;
 
   return (
     <div className="space-y-3 p-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge
-          role="status"
-          aria-label="Trace outcome"
-          variant="outline"
-          className={cn("text-xs", outcome.tone)}
-        >
-          {outcome.label}
-        </Badge>
+        {outcome && (
+          <Badge
+            role="status"
+            aria-label="Trace outcome"
+            variant="outline"
+            className={cn("text-xs", outcome.tone)}
+          >
+            {outcome.label}
+          </Badge>
+        )}
         <span className="text-muted-foreground">
           {trace.hits.length} {trace.hits.length === 1 ? "event" : "events"} in{" "}
           {trace.services.length} {trace.services.length === 1 ? "service" : "services"}
