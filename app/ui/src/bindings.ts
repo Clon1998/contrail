@@ -36,8 +36,18 @@ export const commands = {
 	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, minutes, taskId })),
 	/**  Up to `limit` events of a view from `offset` (oldest first). */
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
-	/**  Frees a view's buffer. */
+	/**  Frees a view's buffer and stops its live tail. */
 	closeLogView: (viewId: number) => __TAURI_INVOKE<void>("close_log_view", { viewId }),
+	/**
+	 *  Starts following a view live (after its backfill). Updates arrive on `on_update`.
+	 * 
+	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
+	 */
+	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate })),
+	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
+	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
+	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
+	resumeLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("resume_live", { viewId })),
 	getPrefs: () => __TAURI_INVOKE<Prefs>("get_prefs"),
 	setLastProfile: (profile: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_last_profile", { profile })),
 	/**  Sets (or with `None` clears) the region override of a profile. */
@@ -179,6 +189,29 @@ number | null | boolean;
  *  `Level::Warn > Level::Info` works for "WARN and above" filters).
  */
 export type Level = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR";
+
+/**  What the live task is doing, shown in the log view's toolbar. */
+export type LiveState = "connecting" | "live" | 
+/**  Live Tail isn't available (permissions, session limit): asking every 2 seconds instead. */
+"polling" | 
+/**  The session ended; a new one is being started. */
+"reconnecting" | "paused" | 
+/**  Stopped by an error that needs the user (e.g. expired credentials). */
+"failed";
+
+/**  One message to the UI: the new state and what changed in the buffer. */
+export type LiveUpdate = {
+	state: LiveState,
+	/**  CloudWatch sampled the last update (more than 500 events per second). */
+	sampled: boolean,
+	stats: BufferStats,
+	/**  The first row index that changed (new or moved rows); `None` if no rows changed. */
+	firstChanged: number | null,
+	/**  Rows dropped at the top because the buffer was full (all indices shifted by this). */
+	evicted: number,
+	/**  Why the state is what it is, when there's something to say (polling, errors). */
+	message: string | null,
+};
 
 /**  An exception attached to an event (ECS `error.*`, or a joined plain-text stack trace). */
 export type LogError = {

@@ -25,13 +25,17 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 time = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+async-trait = { workspace = true }
 specta = { workspace = true }
 specta-typescript = { workspace = true }
 tauri-specta = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-tokio = { workspace = true }
+# `test-util` lets tests pause tokio's clock (`#[tokio::test(start_paused = true)]`).
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true

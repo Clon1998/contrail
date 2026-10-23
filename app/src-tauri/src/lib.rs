@@ -5,6 +5,7 @@ mod commands;
 #[cfg(test)]
 mod demo_data;
 mod error;
+mod live;
 mod prefs_store;
 mod state;
 
@@ -40,6 +41,9 @@ fn specta_builder() -> Builder<tauri::Wry> {
         logs::open_service_logs,
         logs::get_log_rows,
         logs::close_log_view,
+        logs::start_live,
+        logs::pause_live,
+        logs::resume_live,
         prefs::get_prefs,
         prefs::set_last_profile,
         prefs::set_region_override,

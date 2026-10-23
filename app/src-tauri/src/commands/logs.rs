@@ -1,5 +1,6 @@
 //! Log views: open (backfill into a buffer), read windows of rows, close.
 
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use contrail_core::auth::AwsCtx;
@@ -12,9 +13,11 @@ use contrail_core::timestamp::Timestamp;
 use serde::Serialize;
 use specta::Type;
 use tauri::State;
+use tauri::ipc::Channel;
 use time::{Duration, OffsetDateTime};
 
 use crate::error::{ApiError, ApiResult, ErrorCode};
+use crate::live::{self, Control, LiveTask, LiveUpdate};
 use crate::state::{AppState, LogView};
 
 /// What the UI needs to know about an opened log view.
@@ -99,11 +102,10 @@ async fn open_logs(
         from: range.start,
         to: range.end,
     };
-    state
-        .views
-        .lock()
-        .expect("views lock poisoned")
-        .insert(info.view_id, LogView { buffer });
+    state.views.lock().expect("views lock poisoned").insert(
+        info.view_id,
+        LogView::new(buffer, ctx, selection, range.end),
+    );
     Ok(info)
 }
 
@@ -123,15 +125,73 @@ pub fn get_log_rows(
     Ok(view.buffer.window(offset as usize, limit as usize))
 }
 
-/// Frees a view's buffer.
+/// Frees a view's buffer and stops its live tail.
 #[tauri::command]
 #[specta::specta]
 pub fn close_log_view(state: State<'_, AppState>, view_id: u32) {
+    // Removing the view drops its `LiveHandle`, which stops the task.
     state
         .views
         .lock()
         .expect("views lock poisoned")
         .remove(&view_id);
+}
+
+/// Starts following a view live (after its backfill). Updates arrive on `on_update`.
+///
+/// Async so it runs on Tauri's tokio runtime, where the live task is spawned.
+#[tauri::command]
+#[specta::specta]
+pub async fn start_live(
+    state: State<'_, AppState>,
+    view_id: u32,
+    on_update: Channel<LiveUpdate>,
+) -> ApiResult<()> {
+    let mut views = state.views.lock().expect("views lock poisoned");
+    let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
+    let task = LiveTask {
+        source: state.logs.clone(),
+        ctx: view.ctx.clone(),
+        selection: view.selection.clone(),
+        views: state.views.clone(),
+        view_id,
+        last_seen: view.backfilled_until,
+        sink: Arc::new(move |update| {
+            if let Err(err) = on_update.send(update) {
+                tracing::debug!(%err, "live update not delivered (view closed in the UI?)");
+            }
+        }),
+    };
+    // Replacing a running tail drops (and stops) the old one.
+    view.live = Some(live::spawn(task));
+    Ok(())
+}
+
+/// Pauses a view's live tail (the UI's pause button, or auto-pause when hidden).
+#[tauri::command]
+#[specta::specta]
+pub fn pause_live(state: State<'_, AppState>, view_id: u32) -> ApiResult<()> {
+    set_live(&state, view_id, Control::Pause)
+}
+
+/// Resumes a paused live tail; it first catches up on what was logged meanwhile.
+#[tauri::command]
+#[specta::specta]
+pub fn resume_live(state: State<'_, AppState>, view_id: u32) -> ApiResult<()> {
+    set_live(&state, view_id, Control::Run)
+}
+
+fn set_live(state: &AppState, view_id: u32, control: Control) -> ApiResult<()> {
+    let views = state.views.lock().expect("views lock poisoned");
+    let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+    if let Some(live) = &view.live {
+        live.set(control);
+    }
+    Ok(())
+}
+
+fn closed(view_id: u32) -> ApiError {
+    ApiError::new(ErrorCode::NotFound, format!("log view {view_id} is closed"))
 }
 
 #[cfg(test)]
