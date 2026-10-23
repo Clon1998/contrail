@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
-    # The website has its own workflow (site.yml).
-    paths-ignore: ["site/**", ".github/workflows/site.yml"]
+    # Changes to only the website (its own workflow, site.yml) or documentation don't build the app.
+    paths-ignore: ["site/**", ".github/workflows/site.yml", "docs/**", "**.md", ".github/ISSUE_TEMPLATE/**", "LICENSE"]
   pull_request:
-    paths-ignore: ["site/**", ".github/workflows/site.yml"]
+    paths-ignore: ["site/**", ".github/workflows/site.yml", "docs/**", "**.md", ".github/ISSUE_TEMPLATE/**", "LICENSE"]
   workflow_dispatch:
 
 # A new push to a pull request cancels its previous run. Pushes to main (one per milestone) queue

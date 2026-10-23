@@ -51,6 +51,9 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (enfo
 
 ## CI builds
 
+CI (`.github/workflows/ci.yml`) and the website (`site.yml`) are separate workflows. Changes to only `site/`,
+`docs/`, Markdown files or the issue templates don't run CI; changes to only the app don't rebuild the website.
+
 Every CI run on `main` builds installers and attaches them to the run (Actions → the run → *Artifacts*, kept
 14 days, or `gh run download <run id> -n contrail-windows`):
 
