@@ -349,7 +349,7 @@ async fn describe_task_definition(
                 routes: None,
             })
             .map(|mut container| {
-                container.routes = parse_routes(&container.environment);
+                container.routes = parse_routes(&container.environment, &container.secrets);
                 container
             })
             .collect(),
