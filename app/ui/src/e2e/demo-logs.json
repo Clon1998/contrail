@@ -19,7 +19,11 @@
         "info": 706,
         "warn": 45,
         "error": 27,
-        "unknown": 0
+        "unknown": 0,
+        "states": {
+          "COMPLETED": 362,
+          "FAILED": 27
+        }
       },
       "truncated": false,
       "events": [
@@ -75,7 +79,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.993666893Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1212 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.993666893Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1212 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 2,
@@ -129,7 +134,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02.341803064Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1114 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02.341803064Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1114 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 3,
@@ -183,7 +189,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.117044285Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1010 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.117044285Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1010 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 4,
@@ -261,7 +268,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.141953704Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":234039,\"correlationId\":\"00000000000012dd33136fc586028ab9\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.141953704Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":234039,\"correlationId\":\"00000000000012dd33136fc586028ab9\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "00000000000012dd33136fc586028ab9",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 5,
@@ -318,7 +332,8 @@
               70
             ]
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:05.993395761Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:05.993395761Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 6,
@@ -396,7 +411,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.34188929Z\",\"log\":{\"level\":\"ERROR\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> FAILED\",\"pipeline\":{\"state\":\"FAILED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231706,\"correlationId\":\"0000000000000b4e03653f790c33efe6\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.34188929Z\",\"log\":{\"level\":\"ERROR\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> FAILED\",\"pipeline\":{\"state\":\"FAILED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231706,\"correlationId\":\"0000000000000b4e03653f790c33efe6\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "FAILED",
+            "previousState": "CONSUMING",
+            "correlationId": "0000000000000b4e03653f790c33efe6",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 7,
@@ -474,7 +496,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.117871506Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":232894,\"correlationId\":\"0000000000000990feb8a7391c13d0e2\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.117871506Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":232894,\"correlationId\":\"0000000000000990feb8a7391c13d0e2\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "0000000000000990feb8a7391c13d0e2",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 8,
@@ -528,7 +557,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.141081869Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1215 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.141081869Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1215 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 9,
@@ -606,7 +636,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.99366019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":230460,\"correlationId\":\"0000000000001a67a52758be8c6cb5b4\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.99366019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":230460,\"correlationId\":\"0000000000001a67a52758be8c6cb5b4\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "0000000000001a67a52758be8c6cb5b4",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 10,
@@ -660,7 +697,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.341435578Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1413 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.341435578Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1413 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 11,
@@ -738,7 +776,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.117904912Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":239549,\"correlationId\":\"00000000000007749acf43b14eb9bb03\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.117904912Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":239549,\"correlationId\":\"00000000000007749acf43b14eb9bb03\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "00000000000007749acf43b14eb9bb03",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 12,
@@ -795,7 +840,8 @@
               70
             ]
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.141139293Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.141139293Z\",\"log\":{\"level\":\"WARN\",\"logger\":\"com.example.client.DownstreamClient\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Retrying after 503, body: {\\\"title\\\":\\\"Service Unavailable\\\",\\\"status\\\":503}\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 13,
@@ -849,7 +895,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:13.993720853Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:13.993720853Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 14,
@@ -903,7 +950,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.341511025Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.341511025Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 15,
@@ -981,7 +1029,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.117107043Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":234345,\"correlationId\":\"000000000000145f4791aa4afc9baab7\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.117107043Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":234345,\"correlationId\":\"000000000000145f4791aa4afc9baab7\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "000000000000145f4791aa4afc9baab7",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 16,
@@ -1035,7 +1090,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.141824269Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.141824269Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 17,
@@ -1089,7 +1145,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:17.993272661Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:17.993272661Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 18,
@@ -1167,7 +1224,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.341772997Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":232681,\"correlationId\":\"000000000000053807f3bd71f9d4cc97\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.341772997Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":232681,\"correlationId\":\"000000000000053807f3bd71f9d4cc97\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "000000000000053807f3bd71f9d4cc97",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 19,
@@ -1221,7 +1285,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.117685468Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.117685468Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Received 3 records from example.orders.events.v1\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 20,
@@ -1299,7 +1364,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.141001436Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":231760,\"correlationId\":\"000000000000108cedb181b16e5bf670\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.141001436Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":231760,\"correlationId\":\"000000000000108cedb181b16e5bf670\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "000000000000108cedb181b16e5bf670",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 21,
@@ -1353,7 +1425,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:21.993536603Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1210 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:21.993536603Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1210 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 22,
@@ -1407,7 +1480,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:22.341966497Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1008 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:22.341966497Z\",\"log\":{\"level\":\"DEBUG\",\"logger\":\"com.example.cache.CatalogCache\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Refreshed 1008 catalog entries\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         },
         {
           "seq": 23,
@@ -1485,7 +1559,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.117965314Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":235888,\"correlationId\":\"0000000000001a1933a15c52cc0541b0\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.117965314Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":235888,\"correlationId\":\"0000000000001a1933a15c52cc0541b0\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "0000000000001a1933a15c52cc0541b0",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 24,
@@ -1563,7 +1644,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.141840019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":237793,\"correlationId\":\"000000000000190616d89ec79f31b0cf\"},\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.141840019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":237793,\"correlationId\":\"000000000000190616d89ec79f31b0cf\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "000000000000190616d89ec79f31b0cf",
+            "topic": "example.orders.events.v1"
+          }
         },
         {
           "seq": 25,
@@ -1617,7 +1705,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.993219124Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.993219124Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"POST /api/v1/requests -> 202 Accepted\",\"ecs\":{\"version\":\"8.11\"}}",
+          "status": null
         }
       ]
     },
@@ -1637,7 +1726,8 @@
         "info": 600,
         "warn": 64,
         "error": 86,
-        "unknown": 0
+        "unknown": 0,
+        "states": {}
       },
       "truncated": false,
       "events": [
@@ -1693,7 +1783,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.532701546Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/3525\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.532701546Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/3525\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 2,
@@ -1747,7 +1838,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.333955143Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/7972\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.333955143Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/7972\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 3,
@@ -1813,7 +1905,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02.001327121Z\",\"log.level\":\"ERROR\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\\n\\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\\n\\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\\n\\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\\n\\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step6(ThreadPoolExecutor.java:58)\\n\\tat com.example.payments.client.LedgerClient.step7(LedgerClient.java:61)\\n\\tat com.example.payments.service.SettlementService.step8(SettlementService.java:64)\\n\\tat org.springframework.web.client.RestTemplate.step9(RestTemplate.java:67)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step10(ThreadPoolExecutor.java:70)\\n\\tat com.example.payments.client.LedgerClient.step11(LedgerClient.java:73)\\n\\tat com.example.payments.service.SettlementService.step12(SettlementService.java:76)\\n\\tat org.springframework.web.client.RestTemplate.step13(RestTemplate.java:79)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step14(ThreadPoolExecutor.java:82)\\n\\tat com.example.payments.client.LedgerClient.step15(LedgerClient.java:85)\\n\\tat com.example.payments.service.SettlementService.step16(SettlementService.java:88)\\n\\tat org.springframework.web.client.RestTemplate.step17(RestTemplate.java:91)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step18(ThreadPoolExecutor.java:94)\\n\\tat com.example.payments.client.LedgerClient.step19(LedgerClient.java:97)\\n\\tat com.example.payments.service.SettlementService.step20(SettlementService.java:100)\\n\\tat org.springframework.web.client.RestTemplate.step21(RestTemplate.java:103)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step22(ThreadPoolExecutor.java:106)\\n\\tat com.example.payments.client.LedgerClient.step23(LedgerClient.java:109)\\n\\tat com.example.payments.service.SettlementService.step24(SettlementService.java:112)\\n\\tat org.springframework.web.client.RestTemplate.step25(RestTemplate.java:115)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step26(ThreadPoolExecutor.java:118)\\n\\tat com.example.payments.client.LedgerClient.step27(LedgerClient.java:121)\\n\\tat com.example.payments.service.SettlementService.step28(SettlementService.java:124)\\n\\tat org.springframework.web.client.RestTemplate.step29(RestTemplate.java:127)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step30(ThreadPoolExecutor.java:130)\\n\\tat com.example.payments.client.LedgerClient.step31(LedgerClient.java:133)\\n\\tat com.example.payments.service.SettlementService.step32(SettlementService.java:136)\\n\\tat org.springframework.web.client.RestTemplate.step33(RestTemplate.java:139)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step34(ThreadPoolExecutor.java:142)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 33 common frames omitted\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02.001327121Z\",\"log.level\":\"ERROR\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\\n\\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\\n\\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\\n\\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\\n\\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step6(ThreadPoolExecutor.java:58)\\n\\tat com.example.payments.client.LedgerClient.step7(LedgerClient.java:61)\\n\\tat com.example.payments.service.SettlementService.step8(SettlementService.java:64)\\n\\tat org.springframework.web.client.RestTemplate.step9(RestTemplate.java:67)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step10(ThreadPoolExecutor.java:70)\\n\\tat com.example.payments.client.LedgerClient.step11(LedgerClient.java:73)\\n\\tat com.example.payments.service.SettlementService.step12(SettlementService.java:76)\\n\\tat org.springframework.web.client.RestTemplate.step13(RestTemplate.java:79)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step14(ThreadPoolExecutor.java:82)\\n\\tat com.example.payments.client.LedgerClient.step15(LedgerClient.java:85)\\n\\tat com.example.payments.service.SettlementService.step16(SettlementService.java:88)\\n\\tat org.springframework.web.client.RestTemplate.step17(RestTemplate.java:91)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step18(ThreadPoolExecutor.java:94)\\n\\tat com.example.payments.client.LedgerClient.step19(LedgerClient.java:97)\\n\\tat com.example.payments.service.SettlementService.step20(SettlementService.java:100)\\n\\tat org.springframework.web.client.RestTemplate.step21(RestTemplate.java:103)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step22(ThreadPoolExecutor.java:106)\\n\\tat com.example.payments.client.LedgerClient.step23(LedgerClient.java:109)\\n\\tat com.example.payments.service.SettlementService.step24(SettlementService.java:112)\\n\\tat org.springframework.web.client.RestTemplate.step25(RestTemplate.java:115)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step26(ThreadPoolExecutor.java:118)\\n\\tat com.example.payments.client.LedgerClient.step27(LedgerClient.java:121)\\n\\tat com.example.payments.service.SettlementService.step28(SettlementService.java:124)\\n\\tat org.springframework.web.client.RestTemplate.step29(RestTemplate.java:127)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step30(ThreadPoolExecutor.java:130)\\n\\tat com.example.payments.client.LedgerClient.step31(LedgerClient.java:133)\\n\\tat com.example.payments.service.SettlementService.step32(SettlementService.java:136)\\n\\tat org.springframework.web.client.RestTemplate.step33(RestTemplate.java:139)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step34(ThreadPoolExecutor.java:142)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 33 common frames omitted\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 4,
@@ -1867,7 +1960,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.224110988Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6790\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.224110988Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6790\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 5,
@@ -1921,7 +2015,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:04.023979769Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/8121\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:04.023979769Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/8121\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 6,
@@ -1987,7 +2082,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.532946294Z\",\"log.level\":\"WARN\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\\n\\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\\n\\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\\n\\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\\n\\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\\n\\tat com.example.payments.service.SettlementService.step6(SettlementService.java:58)\\n\\tat org.springframework.web.client.RestTemplate.step7(RestTemplate.java:61)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step8(ThreadPoolExecutor.java:64)\\n\\tat com.example.payments.client.LedgerClient.step9(LedgerClient.java:67)\\n\\tat com.example.payments.service.SettlementService.step10(SettlementService.java:70)\\n\\tat org.springframework.web.client.RestTemplate.step11(RestTemplate.java:73)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step12(ThreadPoolExecutor.java:76)\\n\\tat com.example.payments.client.LedgerClient.step13(LedgerClient.java:79)\\n\\tat com.example.payments.service.SettlementService.step14(SettlementService.java:82)\\n\\tat org.springframework.web.client.RestTemplate.step15(RestTemplate.java:85)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step16(ThreadPoolExecutor.java:88)\\n\\tat com.example.payments.client.LedgerClient.step17(LedgerClient.java:91)\\n\\tat com.example.payments.service.SettlementService.step18(SettlementService.java:94)\\n\\tat org.springframework.web.client.RestTemplate.step19(RestTemplate.java:97)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step20(ThreadPoolExecutor.java:100)\\n\\tat com.example.payments.client.LedgerClient.step21(LedgerClient.java:103)\\n\\tat com.example.payments.service.SettlementService.step22(SettlementService.java:106)\\n\\tat org.springframework.web.client.RestTemplate.step23(RestTemplate.java:109)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step24(ThreadPoolExecutor.java:112)\\n\\tat com.example.payments.client.LedgerClient.step25(LedgerClient.java:115)\\n\\tat com.example.payments.service.SettlementService.step26(SettlementService.java:118)\\n\\tat org.springframework.web.client.RestTemplate.step27(RestTemplate.java:121)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step28(ThreadPoolExecutor.java:124)\\n\\tat com.example.payments.client.LedgerClient.step29(LedgerClient.java:127)\\n\\tat com.example.payments.service.SettlementService.step30(SettlementService.java:130)\\n\\tat org.springframework.web.client.RestTemplate.step31(RestTemplate.java:133)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step32(ThreadPoolExecutor.java:136)\\n\\tat com.example.payments.client.LedgerClient.step33(LedgerClient.java:139)\\n\\tat com.example.payments.service.SettlementService.step34(SettlementService.java:142)\\n\\tat org.springframework.web.client.RestTemplate.step35(RestTemplate.java:145)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step36(ThreadPoolExecutor.java:148)\\n\\tat com.example.payments.client.LedgerClient.step37(LedgerClient.java:151)\\n\\tat com.example.payments.service.SettlementService.step38(SettlementService.java:154)\\n\\tat org.springframework.web.client.RestTemplate.step39(RestTemplate.java:157)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step40(ThreadPoolExecutor.java:160)\\n\\tat com.example.payments.client.LedgerClient.step41(LedgerClient.java:163)\\n\\tat com.example.payments.service.SettlementService.step42(SettlementService.java:166)\\n\\tat org.springframework.web.client.RestTemplate.step43(RestTemplate.java:169)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step44(ThreadPoolExecutor.java:172)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 43 common frames omitted\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.532946294Z\",\"log.level\":\"WARN\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\\n\\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\\n\\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\\n\\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\\n\\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\\n\\tat com.example.payments.service.SettlementService.step6(SettlementService.java:58)\\n\\tat org.springframework.web.client.RestTemplate.step7(RestTemplate.java:61)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step8(ThreadPoolExecutor.java:64)\\n\\tat com.example.payments.client.LedgerClient.step9(LedgerClient.java:67)\\n\\tat com.example.payments.service.SettlementService.step10(SettlementService.java:70)\\n\\tat org.springframework.web.client.RestTemplate.step11(RestTemplate.java:73)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step12(ThreadPoolExecutor.java:76)\\n\\tat com.example.payments.client.LedgerClient.step13(LedgerClient.java:79)\\n\\tat com.example.payments.service.SettlementService.step14(SettlementService.java:82)\\n\\tat org.springframework.web.client.RestTemplate.step15(RestTemplate.java:85)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step16(ThreadPoolExecutor.java:88)\\n\\tat com.example.payments.client.LedgerClient.step17(LedgerClient.java:91)\\n\\tat com.example.payments.service.SettlementService.step18(SettlementService.java:94)\\n\\tat org.springframework.web.client.RestTemplate.step19(RestTemplate.java:97)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step20(ThreadPoolExecutor.java:100)\\n\\tat com.example.payments.client.LedgerClient.step21(LedgerClient.java:103)\\n\\tat com.example.payments.service.SettlementService.step22(SettlementService.java:106)\\n\\tat org.springframework.web.client.RestTemplate.step23(RestTemplate.java:109)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step24(ThreadPoolExecutor.java:112)\\n\\tat com.example.payments.client.LedgerClient.step25(LedgerClient.java:115)\\n\\tat com.example.payments.service.SettlementService.step26(SettlementService.java:118)\\n\\tat org.springframework.web.client.RestTemplate.step27(RestTemplate.java:121)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step28(ThreadPoolExecutor.java:124)\\n\\tat com.example.payments.client.LedgerClient.step29(LedgerClient.java:127)\\n\\tat com.example.payments.service.SettlementService.step30(SettlementService.java:130)\\n\\tat org.springframework.web.client.RestTemplate.step31(RestTemplate.java:133)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step32(ThreadPoolExecutor.java:136)\\n\\tat com.example.payments.client.LedgerClient.step33(LedgerClient.java:139)\\n\\tat com.example.payments.service.SettlementService.step34(SettlementService.java:142)\\n\\tat org.springframework.web.client.RestTemplate.step35(RestTemplate.java:145)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step36(ThreadPoolExecutor.java:148)\\n\\tat com.example.payments.client.LedgerClient.step37(LedgerClient.java:151)\\n\\tat com.example.payments.service.SettlementService.step38(SettlementService.java:154)\\n\\tat org.springframework.web.client.RestTemplate.step39(RestTemplate.java:157)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step40(ThreadPoolExecutor.java:160)\\n\\tat com.example.payments.client.LedgerClient.step41(LedgerClient.java:163)\\n\\tat com.example.payments.service.SettlementService.step42(SettlementService.java:166)\\n\\tat org.springframework.web.client.RestTemplate.step43(RestTemplate.java:169)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step44(ThreadPoolExecutor.java:172)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 43 common frames omitted\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 7,
@@ -2053,7 +2149,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.333354797Z\",\"log.level\":\"WARN\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat org.springframework.web.client.RestTemplate.step0(RestTemplate.java:40)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step1(ThreadPoolExecutor.java:43)\\n\\tat com.example.payments.client.LedgerClient.step2(LedgerClient.java:46)\\n\\tat com.example.payments.service.SettlementService.step3(SettlementService.java:49)\\n\\tat org.springframework.web.client.RestTemplate.step4(RestTemplate.java:52)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step5(ThreadPoolExecutor.java:55)\\n\\tat com.example.payments.client.LedgerClient.step6(LedgerClient.java:58)\\n\\tat com.example.payments.service.SettlementService.step7(SettlementService.java:61)\\n\\tat org.springframework.web.client.RestTemplate.step8(RestTemplate.java:64)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step9(ThreadPoolExecutor.java:67)\\n\\tat com.example.payments.client.LedgerClient.step10(LedgerClient.java:70)\\n\\tat com.example.payments.service.SettlementService.step11(SettlementService.java:73)\\n\\tat org.springframework.web.client.RestTemplate.step12(RestTemplate.java:76)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step13(ThreadPoolExecutor.java:79)\\n\\tat com.example.payments.client.LedgerClient.step14(LedgerClient.java:82)\\n\\tat com.example.payments.service.SettlementService.step15(SettlementService.java:85)\\n\\tat org.springframework.web.client.RestTemplate.step16(RestTemplate.java:88)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step17(ThreadPoolExecutor.java:91)\\n\\tat com.example.payments.client.LedgerClient.step18(LedgerClient.java:94)\\n\\tat com.example.payments.service.SettlementService.step19(SettlementService.java:97)\\n\\tat org.springframework.web.client.RestTemplate.step20(RestTemplate.java:100)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step21(ThreadPoolExecutor.java:103)\\n\\tat com.example.payments.client.LedgerClient.step22(LedgerClient.java:106)\\n\\tat com.example.payments.service.SettlementService.step23(SettlementService.java:109)\\n\\tat org.springframework.web.client.RestTemplate.step24(RestTemplate.java:112)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step25(ThreadPoolExecutor.java:115)\\n\\tat com.example.payments.client.LedgerClient.step26(LedgerClient.java:118)\\n\\tat com.example.payments.service.SettlementService.step27(SettlementService.java:121)\\n\\tat org.springframework.web.client.RestTemplate.step28(RestTemplate.java:124)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step29(ThreadPoolExecutor.java:127)\\n\\tat com.example.payments.client.LedgerClient.step30(LedgerClient.java:130)\\n\\tat com.example.payments.service.SettlementService.step31(SettlementService.java:133)\\n\\tat org.springframework.web.client.RestTemplate.step32(RestTemplate.java:136)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step33(ThreadPoolExecutor.java:139)\\n\\tat com.example.payments.client.LedgerClient.step34(LedgerClient.java:142)\\n\\tat com.example.payments.service.SettlementService.step35(SettlementService.java:145)\\n\\tat org.springframework.web.client.RestTemplate.step36(RestTemplate.java:148)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step37(ThreadPoolExecutor.java:151)\\n\\tat com.example.payments.client.LedgerClient.step38(LedgerClient.java:154)\\n\\tat com.example.payments.service.SettlementService.step39(SettlementService.java:157)\\n\\tat org.springframework.web.client.RestTemplate.step40(RestTemplate.java:160)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step41(ThreadPoolExecutor.java:163)\\n\\tat com.example.payments.client.LedgerClient.step42(LedgerClient.java:166)\\n\\tat com.example.payments.service.SettlementService.step43(SettlementService.java:169)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 42 common frames omitted\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.333354797Z\",\"log.level\":\"WARN\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat org.springframework.web.client.RestTemplate.step0(RestTemplate.java:40)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step1(ThreadPoolExecutor.java:43)\\n\\tat com.example.payments.client.LedgerClient.step2(LedgerClient.java:46)\\n\\tat com.example.payments.service.SettlementService.step3(SettlementService.java:49)\\n\\tat org.springframework.web.client.RestTemplate.step4(RestTemplate.java:52)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step5(ThreadPoolExecutor.java:55)\\n\\tat com.example.payments.client.LedgerClient.step6(LedgerClient.java:58)\\n\\tat com.example.payments.service.SettlementService.step7(SettlementService.java:61)\\n\\tat org.springframework.web.client.RestTemplate.step8(RestTemplate.java:64)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step9(ThreadPoolExecutor.java:67)\\n\\tat com.example.payments.client.LedgerClient.step10(LedgerClient.java:70)\\n\\tat com.example.payments.service.SettlementService.step11(SettlementService.java:73)\\n\\tat org.springframework.web.client.RestTemplate.step12(RestTemplate.java:76)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step13(ThreadPoolExecutor.java:79)\\n\\tat com.example.payments.client.LedgerClient.step14(LedgerClient.java:82)\\n\\tat com.example.payments.service.SettlementService.step15(SettlementService.java:85)\\n\\tat org.springframework.web.client.RestTemplate.step16(RestTemplate.java:88)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step17(ThreadPoolExecutor.java:91)\\n\\tat com.example.payments.client.LedgerClient.step18(LedgerClient.java:94)\\n\\tat com.example.payments.service.SettlementService.step19(SettlementService.java:97)\\n\\tat org.springframework.web.client.RestTemplate.step20(RestTemplate.java:100)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step21(ThreadPoolExecutor.java:103)\\n\\tat com.example.payments.client.LedgerClient.step22(LedgerClient.java:106)\\n\\tat com.example.payments.service.SettlementService.step23(SettlementService.java:109)\\n\\tat org.springframework.web.client.RestTemplate.step24(RestTemplate.java:112)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step25(ThreadPoolExecutor.java:115)\\n\\tat com.example.payments.client.LedgerClient.step26(LedgerClient.java:118)\\n\\tat com.example.payments.service.SettlementService.step27(SettlementService.java:121)\\n\\tat org.springframework.web.client.RestTemplate.step28(RestTemplate.java:124)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step29(ThreadPoolExecutor.java:127)\\n\\tat com.example.payments.client.LedgerClient.step30(LedgerClient.java:130)\\n\\tat com.example.payments.service.SettlementService.step31(SettlementService.java:133)\\n\\tat org.springframework.web.client.RestTemplate.step32(RestTemplate.java:136)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step33(ThreadPoolExecutor.java:139)\\n\\tat com.example.payments.client.LedgerClient.step34(LedgerClient.java:142)\\n\\tat com.example.payments.service.SettlementService.step35(SettlementService.java:145)\\n\\tat org.springframework.web.client.RestTemplate.step36(RestTemplate.java:148)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step37(ThreadPoolExecutor.java:151)\\n\\tat com.example.payments.client.LedgerClient.step38(LedgerClient.java:154)\\n\\tat com.example.payments.service.SettlementService.step39(SettlementService.java:157)\\n\\tat org.springframework.web.client.RestTemplate.step40(RestTemplate.java:160)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step41(ThreadPoolExecutor.java:163)\\n\\tat com.example.payments.client.LedgerClient.step42(LedgerClient.java:166)\\n\\tat com.example.payments.service.SettlementService.step43(SettlementService.java:169)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 42 common frames omitted\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 8,
@@ -2107,7 +2204,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:08.001210579Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9827\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:08.001210579Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9827\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 9,
@@ -2161,7 +2259,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.224337711Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5880\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.224337711Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5880\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 10,
@@ -2215,7 +2314,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.023995185Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5168\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.023995185Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5168\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 11,
@@ -2269,7 +2369,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:12.532025871Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9366\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:12.532025871Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9366\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 12,
@@ -2323,7 +2424,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:13.33313885Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9667\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:13.33313885Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/9667\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 13,
@@ -2377,7 +2479,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.001062516Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2198\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:14.001062516Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2198\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 14,
@@ -2431,7 +2534,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.224203778Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2797\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.224203778Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2797\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 15,
@@ -2485,7 +2589,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:16.023970401Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2070\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:16.023970401Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2070\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 16,
@@ -2551,7 +2656,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.532970036Z\",\"log.level\":\"ERROR\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat com.example.payments.client.LedgerClient.step0(LedgerClient.java:40)\\n\\tat com.example.payments.service.SettlementService.step1(SettlementService.java:43)\\n\\tat org.springframework.web.client.RestTemplate.step2(RestTemplate.java:46)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step3(ThreadPoolExecutor.java:49)\\n\\tat com.example.payments.client.LedgerClient.step4(LedgerClient.java:52)\\n\\tat com.example.payments.service.SettlementService.step5(SettlementService.java:55)\\n\\tat org.springframework.web.client.RestTemplate.step6(RestTemplate.java:58)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step7(ThreadPoolExecutor.java:61)\\n\\tat com.example.payments.client.LedgerClient.step8(LedgerClient.java:64)\\n\\tat com.example.payments.service.SettlementService.step9(SettlementService.java:67)\\n\\tat org.springframework.web.client.RestTemplate.step10(RestTemplate.java:70)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step11(ThreadPoolExecutor.java:73)\\n\\tat com.example.payments.client.LedgerClient.step12(LedgerClient.java:76)\\n\\tat com.example.payments.service.SettlementService.step13(SettlementService.java:79)\\n\\tat org.springframework.web.client.RestTemplate.step14(RestTemplate.java:82)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step15(ThreadPoolExecutor.java:85)\\n\\tat com.example.payments.client.LedgerClient.step16(LedgerClient.java:88)\\n\\tat com.example.payments.service.SettlementService.step17(SettlementService.java:91)\\n\\tat org.springframework.web.client.RestTemplate.step18(RestTemplate.java:94)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step19(ThreadPoolExecutor.java:97)\\n\\tat com.example.payments.client.LedgerClient.step20(LedgerClient.java:100)\\n\\tat com.example.payments.service.SettlementService.step21(SettlementService.java:103)\\n\\tat org.springframework.web.client.RestTemplate.step22(RestTemplate.java:106)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step23(ThreadPoolExecutor.java:109)\\n\\tat com.example.payments.client.LedgerClient.step24(LedgerClient.java:112)\\n\\tat com.example.payments.service.SettlementService.step25(SettlementService.java:115)\\n\\tat org.springframework.web.client.RestTemplate.step26(RestTemplate.java:118)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step27(ThreadPoolExecutor.java:121)\\n\\tat com.example.payments.client.LedgerClient.step28(LedgerClient.java:124)\\n\\tat com.example.payments.service.SettlementService.step29(SettlementService.java:127)\\n\\tat org.springframework.web.client.RestTemplate.step30(RestTemplate.java:130)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step31(ThreadPoolExecutor.java:133)\\n\\tat com.example.payments.client.LedgerClient.step32(LedgerClient.java:136)\\n\\tat com.example.payments.service.SettlementService.step33(SettlementService.java:139)\\n\\tat org.springframework.web.client.RestTemplate.step34(RestTemplate.java:142)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step35(ThreadPoolExecutor.java:145)\\n\\tat com.example.payments.client.LedgerClient.step36(LedgerClient.java:148)\\n\\tat com.example.payments.service.SettlementService.step37(SettlementService.java:151)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 36 common frames omitted\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.532970036Z\",\"log.level\":\"ERROR\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Error while settling batch\",\"error.type\":\"java.lang.IllegalStateException\",\"error.message\":\"Ledger batch is closed\",\"error.stack_trace\":\"java.lang.IllegalStateException: Ledger batch is closed\\n\\tat com.example.payments.client.LedgerClient.step0(LedgerClient.java:40)\\n\\tat com.example.payments.service.SettlementService.step1(SettlementService.java:43)\\n\\tat org.springframework.web.client.RestTemplate.step2(RestTemplate.java:46)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step3(ThreadPoolExecutor.java:49)\\n\\tat com.example.payments.client.LedgerClient.step4(LedgerClient.java:52)\\n\\tat com.example.payments.service.SettlementService.step5(SettlementService.java:55)\\n\\tat org.springframework.web.client.RestTemplate.step6(RestTemplate.java:58)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step7(ThreadPoolExecutor.java:61)\\n\\tat com.example.payments.client.LedgerClient.step8(LedgerClient.java:64)\\n\\tat com.example.payments.service.SettlementService.step9(SettlementService.java:67)\\n\\tat org.springframework.web.client.RestTemplate.step10(RestTemplate.java:70)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step11(ThreadPoolExecutor.java:73)\\n\\tat com.example.payments.client.LedgerClient.step12(LedgerClient.java:76)\\n\\tat com.example.payments.service.SettlementService.step13(SettlementService.java:79)\\n\\tat org.springframework.web.client.RestTemplate.step14(RestTemplate.java:82)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step15(ThreadPoolExecutor.java:85)\\n\\tat com.example.payments.client.LedgerClient.step16(LedgerClient.java:88)\\n\\tat com.example.payments.service.SettlementService.step17(SettlementService.java:91)\\n\\tat org.springframework.web.client.RestTemplate.step18(RestTemplate.java:94)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step19(ThreadPoolExecutor.java:97)\\n\\tat com.example.payments.client.LedgerClient.step20(LedgerClient.java:100)\\n\\tat com.example.payments.service.SettlementService.step21(SettlementService.java:103)\\n\\tat org.springframework.web.client.RestTemplate.step22(RestTemplate.java:106)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step23(ThreadPoolExecutor.java:109)\\n\\tat com.example.payments.client.LedgerClient.step24(LedgerClient.java:112)\\n\\tat com.example.payments.service.SettlementService.step25(SettlementService.java:115)\\n\\tat org.springframework.web.client.RestTemplate.step26(RestTemplate.java:118)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step27(ThreadPoolExecutor.java:121)\\n\\tat com.example.payments.client.LedgerClient.step28(LedgerClient.java:124)\\n\\tat com.example.payments.service.SettlementService.step29(SettlementService.java:127)\\n\\tat org.springframework.web.client.RestTemplate.step30(RestTemplate.java:130)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step31(ThreadPoolExecutor.java:133)\\n\\tat com.example.payments.client.LedgerClient.step32(LedgerClient.java:136)\\n\\tat com.example.payments.service.SettlementService.step33(SettlementService.java:139)\\n\\tat org.springframework.web.client.RestTemplate.step34(RestTemplate.java:142)\\n\\tat java.util.concurrent.ThreadPoolExecutor.step35(ThreadPoolExecutor.java:145)\\n\\tat com.example.payments.client.LedgerClient.step36(LedgerClient.java:148)\\n\\tat com.example.payments.service.SettlementService.step37(SettlementService.java:151)\\nCaused by: java.net.SocketTimeoutException: Read timed out\\n\\tat java.base\\/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\\n\\t... 36 common frames omitted\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 17,
@@ -2605,7 +2711,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.333937793Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6961\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.333937793Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6961\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 18,
@@ -2659,7 +2766,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:20.001044484Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5577\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:20.001044484Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/5577\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 19,
@@ -2713,7 +2821,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:21.224194327Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/1134\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:21.224194327Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/1134\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 20,
@@ -2767,7 +2876,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:22.023585345Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/8937\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:22.023585345Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"scheduling-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/8937\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 21,
@@ -2821,7 +2931,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:24.532110408Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2127\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:24.532110408Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/2127\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 22,
@@ -2875,7 +2986,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.333394176Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/7538\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.333394176Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/7538\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 23,
@@ -2929,7 +3041,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:26.001215189Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6491\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:26.001215189Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"main\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6491\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 24,
@@ -2983,7 +3096,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:27.224557061Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/1244\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:27.224557061Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"http-nio-8080-exec-2\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/1244\",\"ecs.version\":\"8.11\"}",
+          "status": null
         },
         {
           "seq": 25,
@@ -3037,7 +3151,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:28.023255836Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6671\",\"ecs.version\":\"8.11\"}"
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:28.023255836Z\",\"log.level\":\"INFO\",\"process.pid\":1,\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"payments-worker\",\"service.version\":\"2.3.0\",\"service.environment\":\"DEMO\",\"log.logger\":\"com.example.payments.service.SettlementService\",\"message\":\"Settled batch 2026\\/6671\",\"ecs.version\":\"8.11\"}",
+          "status": null
         }
       ]
     },
@@ -3057,7 +3172,8 @@
         "info": 213,
         "warn": 27,
         "error": 59,
-        "unknown": 0
+        "unknown": 0,
+        "states": {}
       },
       "truncated": false,
       "events": [
@@ -3097,7 +3213,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:01.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 28 shipments, 1 changed"
+          "raw": "2026-01-01T11:45:01.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 28 shipments, 1 changed",
+          "status": null
         },
         {
           "seq": 2,
@@ -3139,7 +3256,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:01.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+          "raw": "2026-01-01T11:45:01.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted",
+          "status": null
         },
         {
           "seq": 3,
@@ -3177,7 +3295,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:06.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 0 changed"
+          "raw": "2026-01-01T11:45:06.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 0 changed",
+          "status": null
         },
         {
           "seq": 4,
@@ -3215,7 +3334,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:06.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 2 changed"
+          "raw": "2026-01-01T11:45:06.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 2 changed",
+          "status": null
         },
         {
           "seq": 5,
@@ -3257,7 +3377,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:11.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\n\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\n\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\n\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\n\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\n\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+          "raw": "2026-01-01T11:45:11.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat java.util.concurrent.ThreadPoolExecutor.step0(ThreadPoolExecutor.java:40)\n\tat com.example.payments.client.LedgerClient.step1(LedgerClient.java:43)\n\tat com.example.payments.service.SettlementService.step2(SettlementService.java:46)\n\tat org.springframework.web.client.RestTemplate.step3(RestTemplate.java:49)\n\tat java.util.concurrent.ThreadPoolExecutor.step4(ThreadPoolExecutor.java:52)\n\tat com.example.payments.client.LedgerClient.step5(LedgerClient.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted",
+          "status": null
         },
         {
           "seq": 6,
@@ -3295,7 +3416,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:11.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+          "raw": "2026-01-01T11:45:11.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms",
+          "status": null
         },
         {
           "seq": 7,
@@ -3336,7 +3458,8 @@
               94
             ]
           },
-          "raw": "2026-01-01T11:45:16.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\""
+          "raw": "2026-01-01T11:45:16.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
+          "status": null
         },
         {
           "seq": 8,
@@ -3374,7 +3497,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:16.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 19 shipments, 2 changed"
+          "raw": "2026-01-01T11:45:16.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 19 shipments, 2 changed",
+          "status": null
         },
         {
           "seq": 9,
@@ -3412,7 +3536,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:21.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 2 changed"
+          "raw": "2026-01-01T11:45:21.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 2 changed",
+          "status": null
         },
         {
           "seq": 10,
@@ -3450,7 +3575,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:21.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 29 shipments, 0 changed"
+          "raw": "2026-01-01T11:45:21.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 29 shipments, 0 changed",
+          "status": null
         },
         {
           "seq": 11,
@@ -3488,7 +3614,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:26.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 27 shipments, 0 changed"
+          "raw": "2026-01-01T11:45:26.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 27 shipments, 0 changed",
+          "status": null
         },
         {
           "seq": 12,
@@ -3526,7 +3653,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:26.890Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+          "raw": "2026-01-01T11:45:26.890Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
+          "status": null
         },
         {
           "seq": 13,
@@ -3567,7 +3695,8 @@
               94
             ]
           },
-          "raw": "2026-01-01T11:45:31.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\""
+          "raw": "2026-01-01T11:45:31.465Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
+          "status": null
         },
         {
           "seq": 14,
@@ -3605,7 +3734,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:31.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 20 shipments, 2 changed"
+          "raw": "2026-01-01T11:45:31.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 20 shipments, 2 changed",
+          "status": null
         },
         {
           "seq": 15,
@@ -3643,7 +3773,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:36.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 0 changed"
+          "raw": "2026-01-01T11:45:36.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 22 shipments, 0 changed",
+          "status": null
         },
         {
           "seq": 16,
@@ -3681,7 +3812,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:36.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+          "raw": "2026-01-01T11:45:36.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms",
+          "status": null
         },
         {
           "seq": 17,
@@ -3719,7 +3851,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:41.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+          "raw": "2026-01-01T11:45:41.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
+          "status": null
         },
         {
           "seq": 18,
@@ -3760,7 +3893,8 @@
               94
             ]
           },
-          "raw": "2026-01-01T11:45:41.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\""
+          "raw": "2026-01-01T11:45:41.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
+          "status": null
         },
         {
           "seq": 19,
@@ -3798,7 +3932,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:46.465Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+          "raw": "2026-01-01T11:45:46.465Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms",
+          "status": null
         },
         {
           "seq": 20,
@@ -3836,7 +3971,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:46.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 14 shipments, 2 changed"
+          "raw": "2026-01-01T11:45:46.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 14 shipments, 2 changed",
+          "status": null
         },
         {
           "seq": 21,
@@ -3874,7 +4010,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:51.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 1 changed"
+          "raw": "2026-01-01T11:45:51.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 1 changed",
+          "status": null
         },
         {
           "seq": 22,
@@ -3912,7 +4049,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:51.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms"
+          "raw": "2026-01-01T11:45:51.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms",
+          "status": null
         },
         {
           "seq": 23,
@@ -3950,7 +4088,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:56.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+          "raw": "2026-01-01T11:45:56.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
+          "status": null
         },
         {
           "seq": 24,
@@ -3992,7 +4131,8 @@
             },
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:45:56.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
+          "raw": "2026-01-01T11:45:56.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted",
+          "status": null
         },
         {
           "seq": 25,
@@ -4030,7 +4170,8 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "2026-01-01T11:46:01.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)"
+          "raw": "2026-01-01T11:46:01.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
+          "status": null
         }
       ]
     }

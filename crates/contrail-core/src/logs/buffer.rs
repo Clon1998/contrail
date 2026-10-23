@@ -25,6 +25,8 @@ pub struct BufferStats {
     pub error: u32,
     /// Events without a recognisable level.
     pub unknown: u32,
+    /// Pipeline status-change events per state (`COMPLETED` → 12, …); empty for other services.
+    pub states: std::collections::BTreeMap<String, u32>,
 }
 
 impl BufferStats {
@@ -113,6 +115,9 @@ impl LogBuffer {
             self.next_seq += 1;
             *self.stats.count(event.line.level) += 1;
             self.stats.total += 1;
+            if let Some(status) = &event.status {
+                *self.stats.states.entry(status.state.clone()).or_default() += 1;
+            }
 
             // Usually newer than everything (append); late events are inserted in place.
             let key = order_key(&event);
@@ -132,6 +137,14 @@ impl LogBuffer {
                 self.seen.remove(&dedupe_key(&oldest));
                 *self.stats.count(oldest.line.level) -= 1;
                 self.stats.total -= 1;
+                if let Some(status) = &oldest.status
+                    && let Some(count) = self.stats.states.get_mut(&status.state)
+                {
+                    *count -= 1;
+                    if *count == 0 {
+                        self.stats.states.remove(&status.state);
+                    }
+                }
                 self.stats.evicted += 1;
                 report.evicted += 1;
             }
@@ -189,6 +202,29 @@ mod tests {
             timestamp: Timestamp(datetime!(2026-01-15 12:00 UTC) + Duration::seconds(second)),
             message: message.to_owned(),
         })
+    }
+
+    #[test]
+    fn counts_pipeline_states_and_forgets_evicted_ones() {
+        let status = |second, state: &str| {
+            event(
+                "s",
+                second,
+                &format!(
+                    r#"{{"message":"m{second}","acme":{{"state":"{state}","correlationId":"c"}}}}"#
+                ),
+            )
+        };
+        let mut buffer = LogBuffer::new(2);
+        buffer.insert([status(1, "RECEIVED"), status(2, "COMPLETED")]);
+        assert_eq!(buffer.stats().states.get("RECEIVED"), Some(&1));
+        buffer.insert([status(3, "COMPLETED")]);
+        let states = buffer.stats().states;
+        assert_eq!(states.get("COMPLETED"), Some(&2));
+        assert!(
+            !states.contains_key("RECEIVED"),
+            "evicted state counts go away"
+        );
     }
 
     fn messages(buffer: &LogBuffer) -> Vec<String> {

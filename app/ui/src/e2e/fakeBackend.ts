@@ -761,7 +761,17 @@ function bigStats(total: number): BufferStats {
 }
 
 function emptyStats(): BufferStats {
-  return { total: 0, evicted: 0, trace: 0, debug: 0, info: 0, warn: 0, error: 0, unknown: 0 };
+  return {
+    total: 0,
+    evicted: 0,
+    trace: 0,
+    debug: 0,
+    info: 0,
+    warn: 0,
+    error: 0,
+    unknown: 0,
+    states: {},
+  };
 }
 
 /** Size of the generated high-volume view. */
@@ -783,6 +793,7 @@ function generatedRows(service: string, count: () => number, hidden: () => numbe
         stream: `ecs/${service}/task${i % 6}`,
         taskId: `${(i % 6).toString().repeat(8)}aaaabbbbccccdddd00001111`,
         raw: `event ${i + 1}`,
+        status: null,
         line: {
           kind: "ecs",
           timestamp,
@@ -901,6 +912,7 @@ function statsOf(events: LogEvent[]): BufferStats {
     const level = e.line.level;
     if (level === null) stats.unknown++;
     else stats[level.toLowerCase() as Lowercase<Level>]++;
+    if (e.status) stats.states[e.status.state] = (stats.states[e.status.state] ?? 0) + 1;
   }
   return stats;
 }

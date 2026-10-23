@@ -12,6 +12,7 @@ pub mod parse;
 pub mod slices;
 pub mod source;
 mod spring;
+pub mod status;
 
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -30,6 +31,7 @@ pub use source::{
     Backfill, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource, StreamSelection,
     TimeRange, TimeWindow,
 };
+pub use status::{StatusChange, correlation_id, status_change};
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
 /// `Level::Warn > Level::Info` works for "WARN and above" filters).
@@ -178,6 +180,8 @@ pub struct LogEvent {
     pub line: ParsedLine,
     /// The original text (several lines when a stack trace was joined).
     pub raw: String,
+    /// The pipeline framework status change this line reports, if any (see [`status`]).
+    pub status: Option<StatusChange>,
 }
 
 impl LogEvent {
@@ -185,6 +189,7 @@ impl LogEvent {
     pub fn from_raw(raw: RawEvent) -> Self {
         let line = parse_line(&raw.message);
         Self {
+            status: status_change(&line),
             seq: 0,
             timestamp: line.timestamp.unwrap_or(raw.timestamp),
             cw_timestamp: raw.timestamp,

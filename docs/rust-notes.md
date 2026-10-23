@@ -374,3 +374,9 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   `location` for the pattern; after the last use of `region` the borrow ends (non-lexical lifetimes), so
   `location` can be moved into a function inside the same arm.
 - **Where:** `AwsSecrets::reveal` in `crates/contrail-aws/src/secrets.rs`.
+
+## Chained `Option` helpers (`strip_suffix(..)?.strip_suffix('.')?` inside `find_map`)
+
+- **What:** inside a closure returning `Option`, `?` returns `None` early (like Java's `Optional.flatMap` chains,
+  but flat). `iter().find_map(|f| …)` returns the first `Some` the closure produces.
+- **Where:** `from_fields` in `crates/contrail-core/src/logs/status.rs` (finding `<prefix>.state` fields).

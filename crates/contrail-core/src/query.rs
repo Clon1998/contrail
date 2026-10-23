@@ -18,7 +18,7 @@ use regex::{Regex, RegexBuilder};
 use serde::Serialize;
 use specta::Type;
 
-use crate::logs::{FieldValue, Level, LogEvent};
+use crate::logs::{FieldValue, Level, LogEvent, correlation_id};
 
 /// A comparison in `key<op>value`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +40,10 @@ pub enum Condition {
     Level(Op, Level),
     /// The task ID starts with this (lower-cased) text.
     Task(String),
+    /// A pipeline status change in this state (or a plain `state` field), any case.
+    State(String),
+    /// The event's correlation ID (status change or any `…correlationId` field), any case.
+    Correlation(String),
     /// A field equals (case-insensitive) this text.
     FieldIs {
         key: String,
@@ -302,6 +306,8 @@ fn parse_term(body: &str, start: usize, end: usize) -> Result<Condition, QueryEr
         }
         "message" | "msg" if op == Op::Is => Ok(Condition::Text(value.to_lowercase())),
         "task" if op == Op::Is => Ok(Condition::Task(value.to_lowercase())),
+        "state" if op == Op::Is => Ok(Condition::State(value.to_lowercase())),
+        "correlation" if op == Op::Is => Ok(Condition::Correlation(value.to_lowercase())),
         _ if op == Op::Is && value.contains(['*', '?']) => Ok(Condition::FieldGlob {
             key: key.to_owned(),
             pattern: glob(&value),
@@ -378,6 +384,15 @@ impl Query {
                 Condition::Task(prefix) => {
                     event.task_id.to_lowercase().starts_with(prefix.as_str())
                 }
+                Condition::State(state) => {
+                    event
+                        .status
+                        .as_ref()
+                        .is_some_and(|s| s.state.to_lowercase() == *state)
+                        || field_text(event, "state").is_some_and(|t| t.to_lowercase() == *state)
+                }
+                Condition::Correlation(id) => correlation_id(event.status.as_ref(), &event.line)
+                    .is_some_and(|actual| actual.to_lowercase() == *id),
                 Condition::FieldIs { key, value } => {
                     field_text(event, key).is_some_and(|text| text.to_lowercase() == *value)
                 }
@@ -509,6 +524,24 @@ mod tests {
         let error = parse_regex_query("time(out").unwrap_err();
         assert!(error.message.starts_with("invalid regular expression"));
         assert_eq!((error.start, error.end), (0, 8));
+    }
+
+    #[test]
+    fn pipeline_state_and_correlation_terms() {
+        let status = LogEvent::from_raw(RawEvent {
+            stream: "ecs/app/abc".into(),
+            timestamp: Timestamp(datetime!(2026-01-15 12:00 UTC)),
+            message:
+                r#"{"message":"status","acme":{"state":"FAILED","correlationId":"CE50-66FE"}}"#
+                    .into(),
+        });
+        assert!(matches("state:failed", &status));
+        assert!(!matches("state:COMPLETED", &status));
+        assert!(matches("correlation:ce50-66fe", &status));
+        assert!(!matches("correlation:other", &status));
+        // A plain `state` field counts too (logs that aren't status events).
+        let order = ecs("INFO", "order");
+        assert!(!matches("state:SHIPPED", &order));
     }
 
     #[test]
