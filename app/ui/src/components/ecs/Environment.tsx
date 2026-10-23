@@ -5,6 +5,7 @@ import { CopyButton } from "@/components/CopyButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { looksSecret } from "@/lib/ecs";
+import { OverviewCard } from "./OverviewCard";
 import { useEcs } from "@/stores/ecs";
 
 /**
@@ -23,20 +24,20 @@ export function Environment({ containers }: { containers: ContainerDefinitionInf
     query === "" || texts.some((t) => t.toLowerCase().includes(query));
 
   return (
-    <section aria-label="Environment">
-      <div className="mb-1.5 flex items-center gap-2">
-        <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Environment
-        </h2>
+    <OverviewCard
+      title="Environment"
+      count={total}
+      action={
         <Input
           type="search"
           aria-label="Filter variables"
           placeholder="Filter…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="ml-auto h-6 w-48 text-xs"
+          className="h-7 w-48 text-xs"
         />
-      </div>
+      }
+    >
       {containers.map((container) => (
         <table key={container.name} className="mb-3 w-full table-fixed text-sm">
           {containers.length > 1 && (
@@ -78,7 +79,7 @@ export function Environment({ containers }: { containers: ContainerDefinitionInf
           </tbody>
         </table>
       ))}
-    </section>
+    </OverviewCard>
   );
 }
 
