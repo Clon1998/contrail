@@ -380,4 +380,14 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "JSON Lines (.jsonl)" }));
     expect(await within(view).findByText(`Exported ${matches} events`)).toBeTruthy();
   });
+
+  it("opens the keyboard shortcuts with ?", async () => {
+    installFakeBackend();
+    render(<App />);
+    await screen.findByText("DemoReadOnly/demo.user");
+    fireEvent.keyDown(document.body, { key: "?" });
+    const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(within(dialog).getByText("Go to a service")).toBeTruthy();
+    expect(within(dialog).getByRole("region", { name: "Search" })).toBeTruthy();
+  });
 });
