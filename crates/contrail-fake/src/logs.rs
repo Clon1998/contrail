@@ -8,8 +8,11 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use contrail_core::auth::AwsCtx;
 use contrail_core::error::SourceError;
-use contrail_core::logs::{Backfill, LogSource, RawEvent, StreamSelection, TimeRange};
+use contrail_core::logs::{
+    Backfill, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection, TimeRange,
+};
 use contrail_core::timestamp::Timestamp;
+use futures::StreamExt;
 use serde_json::json;
 use time::format_description::well_known::Rfc3339;
 use time::{Duration, OffsetDateTime};
@@ -57,11 +60,24 @@ fn pick<'a>(seed: u64, items: &[&'a str]) -> &'a str {
 /// Demo logs. Shares the session state of [`FakeAuth`], like the other fake sources.
 pub struct FakeLogs {
     auth: Arc<FakeAuth>,
+    /// How often a live tail delivers (CloudWatch: every second).
+    live_interval: std::time::Duration,
 }
 
 impl FakeLogs {
     pub fn new(auth: Arc<FakeAuth>) -> Self {
-        Self { auth }
+        Self {
+            auth,
+            live_interval: std::time::Duration::from_secs(1),
+        }
+    }
+
+    /// Like [`FakeLogs::new`] with a different live update interval (shorter in tests).
+    pub fn with_live_interval(auth: Arc<FakeAuth>, live_interval: std::time::Duration) -> Self {
+        Self {
+            auth,
+            live_interval,
+        }
     }
 }
 
@@ -87,6 +103,54 @@ impl LogSource for FakeLogs {
         let truncated = events.len() > limit;
         events.truncate(limit);
         Ok(Backfill { events, truncated })
+    }
+
+    async fn live(
+        &self,
+        ctx: &AwsCtx,
+        selection: &StreamSelection,
+    ) -> Result<LiveStream, LiveError> {
+        self.auth.check_credentials(&ctx.profile)?;
+        let Some((format, interval, service)) = profile_of(&selection.log_group) else {
+            return Err(LiveError::Unavailable(format!(
+                "no demo logs for {}",
+                selection.log_group
+            )));
+        };
+        let streams = selection.streams.clone();
+        let service = service.to_owned();
+        let every = self.live_interval;
+
+        // `stream::unfold` builds a stream from a state and an async step function, like a
+        // generator: each step waits for the next update, then returns the events whose slots
+        // passed since the previous one. The `move` closure owns everything it uses, because the
+        // stream lives on after this method returns.
+        let updates = futures::stream::unfold(OffsetDateTime::now_utc(), move |since| {
+            let streams = streams.clone();
+            let service = service.clone();
+            async move {
+                tokio::time::sleep(every).await;
+                let now = OffsetDateTime::now_utc();
+                let range = TimeRange {
+                    start: Timestamp(since),
+                    end: Timestamp(now),
+                };
+                let mut events: Vec<RawEvent> = streams
+                    .iter()
+                    .flat_map(|stream| generate(stream, &service, format, interval, range))
+                    .collect();
+                events.sort_by_key(|e| e.timestamp);
+                Some((
+                    Ok(LiveItem::Events {
+                        events,
+                        sampled: false,
+                    }),
+                    now,
+                ))
+            }
+        });
+        let started = futures::stream::once(async { Ok(LiveItem::Started) });
+        Ok(started.chain(updates).boxed())
     }
 }
 
@@ -469,5 +533,43 @@ mod tests {
             .backfill(&ctx, &selection("orders-api", &["t1"]), minutes(1), 10)
             .await;
         assert!(matches!(result, Err(SourceError::Credentials { .. })));
+    }
+
+    #[tokio::test]
+    async fn live_tail_delivers_new_events_after_starting() {
+        let logs = FakeLogs::with_live_interval(
+            Arc::new(FakeAuth::with_login_delay(StdDuration::ZERO)),
+            StdDuration::from_millis(450),
+        );
+        let mut live = logs
+            .live(&ctx(), &selection("event-ingest", &["t1", "t2"]))
+            .await
+            .unwrap();
+        assert_eq!(live.next().await, Some(Ok(LiveItem::Started)));
+        let Some(Ok(LiveItem::Events { events, sampled })) = live.next().await else {
+            panic!("expected events");
+        };
+        // Two streams with one event per 200 ms each, over 450 ms.
+        assert!(events.len() >= 2, "got {}", events.len());
+        assert!(!sampled);
+        assert!(events.windows(2).all(|w| w[0].timestamp <= w[1].timestamp));
+    }
+
+    #[tokio::test]
+    async fn live_tail_fails_for_expired_sessions_and_unknown_groups() {
+        let expired = AwsCtx {
+            profile: "demo-prod".into(),
+            region: None,
+        };
+        assert!(matches!(
+            fake()
+                .live(&expired, &selection("orders-api", &["t1"]))
+                .await,
+            Err(LiveError::Source(SourceError::Credentials { .. }))
+        ));
+        assert!(matches!(
+            fake().live(&ctx(), &selection("unknown", &["t1"])).await,
+            Err(LiveError::Unavailable(_))
+        ));
     }
 }

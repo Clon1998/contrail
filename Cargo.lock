@@ -1061,6 +1061,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "contrail-core",
+ "futures",
  "serde_json",
  "time",
  "tokio",
