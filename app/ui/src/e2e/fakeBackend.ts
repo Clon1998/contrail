@@ -1,5 +1,5 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
-import { mockIPC } from "@tauri-apps/api/mocks";
+import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import type {
   FieldMapping,
   FilterResult,
@@ -166,7 +166,10 @@ export interface FakeBackendOptions {
   rejectedSessions?: string[];
 }
 
-/** Creates the IPC handler. Each call starts from the initial demo state. */
+/**
+ * Creates the IPC handler. Each call starts from the initial demo state. `stop()` ends all live
+ * tails.
+ */
 export function createFakeBackend(options: FakeBackendOptions = {}) {
   const now = Date.now();
   const iso = (ms: number) => new Date(ms).toISOString();
@@ -353,7 +356,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     }, options.liveIntervalMs ?? 1_000);
   }
 
-  return async (cmd: string, payload?: InvokeArgs): Promise<unknown> => {
+  const handler = async (cmd: string, payload?: InvokeArgs): Promise<unknown> => {
     const args = payload as Record<string, unknown> | undefined;
     switch (cmd) {
       case "app_info":
@@ -613,11 +616,28 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         throw new Error(`fake backend: unknown command ${cmd}`);
     }
   };
+  const stop = () => tails.forEach((tail) => clearInterval(tail.timer));
+  return Object.assign(handler, { stop });
 }
+
+/** Stops the installed backend's live tail timers (see `uninstallFakeBackend`). */
+let stopInstalled: (() => void) | null = null;
 
 /** Routes all `invoke` calls to a fresh fake backend. */
 export function installFakeBackend(options?: FakeBackendOptions) {
-  mockIPC(createFakeBackend(options));
+  const backend = createFakeBackend(options);
+  stopInstalled = backend.stop;
+  mockIPC(backend);
+}
+
+/**
+ * Removes the mocked IPC after a test. Live tails still running (a test may end with a view
+ * open) are stopped first: their timers would otherwise fire into the next test without IPC.
+ */
+export function uninstallFakeBackend() {
+  stopInstalled?.();
+  stopInstalled = null;
+  clearMocks();
 }
 
 function emptyStats(): BufferStats {

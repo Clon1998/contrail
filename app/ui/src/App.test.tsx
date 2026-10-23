@@ -1,8 +1,7 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
-import { installFakeBackend } from "@/e2e/fakeBackend";
+import { installFakeBackend, uninstallFakeBackend } from "@/e2e/fakeBackend";
 import { useEcs } from "@/stores/ecs";
 import { useTabs } from "@/stores/tabs";
 import { EMPTY_PREFS, usePrefs } from "@/stores/prefs";
@@ -25,7 +24,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearMocks();
+  uninstallFakeBackend();
 });
 
 async function openSwitcherAndPick(name: string) {
