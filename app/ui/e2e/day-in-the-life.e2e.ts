@@ -7,6 +7,7 @@ import { expect, test } from "@playwright/test";
 
 test("a day in the life", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByText("Connected to demo-dev")).toBeVisible();
 
   // Morning: the prod session expired overnight. Switch and log in.
   await page.keyboard.press("ControlOrMeta+Shift+P");
