@@ -163,3 +163,12 @@ resumed (e.g. after logging in).
 - **AccessDenied ≠ expired login.** It was mapped to a credentials error; it now has its own error code with a
   hint to `docs/iam-policy.json`, and a live tail hitting it stops and waits (banner with Retry).
 - **Window state plugin** (plan §5) is deferred: not needed for v0.1.
+
+## 2026-10-23 — Real-account feedback: a "valid" session can still be rejected
+
+Patrick's first real-account test started with a session the token cache called valid/refreshable, but the SSO
+portal answered `UnauthorizedException: Session token not found or invalid` (the session had ended server-side).
+The earlier assumption ("refreshable ⇒ show as valid") holds for the local view only. **Decision:** the local
+state stays a first guess; a credentials error from the identity check overrides it ("session rejected", login
+offered in the main panel). Credential errors show only their root cause; the SDK chain goes to the debug log.
+`aws sso login` runs without a console window on Windows.
