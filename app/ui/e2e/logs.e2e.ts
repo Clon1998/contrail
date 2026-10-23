@@ -343,3 +343,12 @@ test("the live tail state explains itself in a tooltip", async ({ page }) => {
     page.getByRole("tooltip").filter({ hasText: "longer than 15 minutes start paused" }),
   ).toHaveCount(1);
 });
+
+test("live: new rows fade in briefly", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+  // The fake adds an event per second: one shows up marked fresh, and the mark goes away.
+  await expect(list.locator('[data-fresh="true"]').first()).toBeVisible({ timeout: 5_000 });
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await expect(list.locator('[data-fresh="true"]')).toHaveCount(0, { timeout: 3_000 });
+});

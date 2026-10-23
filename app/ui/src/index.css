@@ -113,6 +113,19 @@
   --ring: oklch(0.556 0 0);
 }
 
+/* A row that just arrived live: a light highlight that fades out. */
+@theme {
+  --animate-row-in: row-in 1.5s ease-out;
+  @keyframes row-in {
+    from {
+      background-color: color-mix(in oklab, var(--primary) 18%, transparent);
+    }
+    to {
+      background-color: transparent;
+    }
+  }
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

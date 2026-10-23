@@ -50,4 +50,28 @@ describe("tabs", () => {
     expect(names).not.toContain("s1");
     vi.useRealTimers();
   });
+
+  it("remembers a closed service's view for the session", () => {
+    const { activate } = useTabs.getState();
+    activate(service("a"));
+    const first = useTabs.getState().tabs[0]?.logs;
+    first?.setState({
+      tab: "logs",
+      timeWindow: { kind: "last", minutes: 360 },
+      search: { ...first.getState().search, query: "level:ERROR", regex: false },
+    });
+    useTabs.getState().close(useTabs.getState().tabs[0]?.key ?? "");
+
+    activate(service("a"));
+    const reopened = useTabs.getState().tabs[0]?.logs.getState();
+    expect(reopened?.tab).toBe("logs");
+    expect(reopened?.timeWindow).toEqual({ kind: "last", minutes: 360 });
+    expect(reopened?.search.query).toBe("level:ERROR");
+
+    // Switching profile or region closes all tabs; their views are remembered too.
+    reopened?.setTab("overview");
+    useTabs.getState().closeAll();
+    activate(service("a"));
+    expect(useTabs.getState().tabs[0]?.logs.getState().tab).toBe("overview");
+  });
 });

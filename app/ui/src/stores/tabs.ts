@@ -26,6 +26,20 @@ interface TabsState {
   closeAll: () => void;
 }
 
+/** What a service's view looked like when its tab closed (search, window, tab, task). */
+type ViewMemory = Pick<LogsState, "search" | "timeWindow" | "tab" | "taskFilter">;
+
+/**
+ * The views of closed tabs, by tab key, for this session (not saved to disk): reopening a service
+ * brings back its search, time window, Overview/Logs choice and task.
+ */
+const remembered = new Map<string, ViewMemory>();
+
+function remember(tab: ServiceTab) {
+  const { search, timeWindow, tab: shown, taskFilter } = tab.logs.getState();
+  remembered.set(tab.key, { search, timeWindow, tab: shown, taskFilter });
+}
+
 export function tabKey(service: ServiceRef): string {
   return `${service.clusterArn}|${service.serviceName}`;
 }
@@ -43,14 +57,15 @@ export const useTabs = create<TabsState>((set, get) => ({
     } else {
       if (tabs.length >= MAX_TABS) {
         const oldest = tabs.reduce((a, b) => (a.lastActive <= b.lastActive ? a : b));
+        remember(oldest);
         void oldest.logs.getState().close();
         tabs = tabs.filter((t) => t !== oldest);
       }
       const minutes = usePrefs.getState().prefs.settings.backfillMinutes;
-      tabs = [
-        ...tabs,
-        { key, service, logs: createLogsStore({ kind: "last", minutes }), lastActive: now },
-      ];
+      const logs = createLogsStore({ kind: "last", minutes });
+      const memory = remembered.get(key);
+      if (memory) logs.setState(memory);
+      tabs = [...tabs, { key, service, logs, lastActive: now }];
     }
     set({ tabs, activeKey: key });
   },
@@ -60,6 +75,7 @@ export const useTabs = create<TabsState>((set, get) => ({
     const index = tabs.findIndex((t) => t.key === key);
     const tab = tabs[index];
     if (!tab) return null;
+    remember(tab);
     void tab.logs.getState().close();
     const rest = tabs.filter((t) => t.key !== key);
     if (key !== activeKey) {
@@ -72,7 +88,10 @@ export const useTabs = create<TabsState>((set, get) => ({
   },
 
   closeAll: () => {
-    for (const tab of get().tabs) void tab.logs.getState().close();
+    for (const tab of get().tabs) {
+      remember(tab);
+      void tab.logs.getState().close();
+    }
     set({ tabs: [], activeKey: null });
   },
 }));
