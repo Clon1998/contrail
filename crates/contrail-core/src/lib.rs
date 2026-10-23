@@ -11,5 +11,6 @@ mod ini;
 pub mod logs;
 pub mod prefs;
 pub mod profile;
+pub mod query;
 pub mod sso;
 pub mod timestamp;
