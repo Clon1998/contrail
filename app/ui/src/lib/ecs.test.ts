@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatDateTime, nameFromArn, serviceHealth, shortTaskId } from "./ecs";
+import {
+  formatAgo,
+  formatDateTime,
+  nameFromArn,
+  serviceHealth,
+  looksSecret,
+  shortTaskId,
+} from "./ecs";
 
 describe("serviceHealth", () => {
   it.each([
@@ -30,5 +37,22 @@ describe("formatting", () => {
     expect(nameFromArn("arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core")).toBe(
       "demo-core",
     );
+  });
+});
+
+describe("looksSecret", () => {
+  it("flags names that usually hold credentials", () => {
+    for (const name of [
+      "DB_PASSWORD",
+      "API_TOKEN",
+      "AWS_SECRET_ACCESS_KEY",
+      "PRIVATE_KEY",
+      "spring.datasource.password",
+    ]) {
+      expect(looksSecret(name), name).toBe(true);
+    }
+    for (const name of ["SERVER_PORT", "SPRING_PROFILES_ACTIVE", "ROUTES_0_KEYEXPRESSION"]) {
+      expect(looksSecret(name), name).toBe(false);
+    }
   });
 });

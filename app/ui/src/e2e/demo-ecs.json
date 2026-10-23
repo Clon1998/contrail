@@ -148,7 +148,36 @@
               "awslogs-group": "/ecs/billing-sync",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "billing-sync"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/billing-sync/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -209,7 +238,36 @@
               "awslogs-group": "/ecs/orders-api",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "orders-api"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/orders-api/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -265,7 +323,36 @@
               "awslogs-group": "/ecs/payments-worker",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "payments-worker"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/payments-worker/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -331,7 +418,56 @@
               "awslogs-group": "/ecs/event-ingest",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "ACME_ROUTES_0_INPUT_PROPERTIES_HOST",
+                "value": "sftp.example.com"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_PROPERTIES_PATH",
+                "value": "outbox"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_SYSTEM",
+                "value": "Example Partner"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_TYPE",
+                "value": "sftp"
+              },
+              {
+                "name": "ACME_ROUTES_0_TOPIC",
+                "value": "demo.events"
+              },
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "event-ingest"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/event-ingest/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -387,7 +523,36 @@
               "awslogs-group": "/ecs/legacy-gateway",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "legacy-gateway"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/legacy-gateway/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },

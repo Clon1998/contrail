@@ -101,6 +101,30 @@ pub struct ContainerDefinitionInfo {
     pub log_driver: Option<String>,
     /// The log driver's options (`awslogs-group`, `awslogs-stream-prefix`, `awslogs-region`, …).
     pub log_options: std::collections::BTreeMap<String, String>,
+    /// Plain environment variables, sorted by name.
+    pub environment: Vec<EnvVar>,
+    /// Variables filled from Secrets Manager or SSM at start: only their references (Contrail
+    /// never reads secret values).
+    pub secrets: Vec<SecretRef>,
+    /// `.env` files loaded from S3 (their ARNs).
+    pub environment_files: Vec<String>,
+}
+
+/// An environment variable of a container definition.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct EnvVar {
+    pub name: String,
+    pub value: String,
+}
+
+/// A variable whose value comes from Secrets Manager or SSM Parameter Store.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SecretRef {
+    pub name: String,
+    /// The secret's or parameter's ARN (or name).
+    pub value_from: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]

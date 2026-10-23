@@ -12,8 +12,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{
-    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, ServiceDetail,
-    ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo, sort_tasks,
+    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, EnvVar,
+    SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo,
+    sort_tasks,
 };
 use contrail_core::error::SourceError;
 use contrail_core::timestamp::Timestamp;
@@ -186,6 +187,39 @@ const SERVICES: &[ServiceSpec] = &[
 ];
 
 const CLUSTERS: &[&str] = &["demo-batch", "demo-core", "demo-edge"];
+
+/// Demo environment variables: a few common ones, a secret-looking one (the UI masks it), and
+/// routing config in Spring's relaxed-binding form for `event-ingest`.
+fn environment(spec: &ServiceSpec) -> Vec<EnvVar> {
+    let mut vars = vec![
+        ("SPRING_APPLICATION_NAME", spec.name.to_owned()),
+        ("SPRING_PROFILES_ACTIVE", "demo".to_owned()),
+        ("SERVER_PORT", "8080".to_owned()),
+        ("LOGGING_STRUCTURED_FORMAT_CONSOLE", "ecs".to_owned()),
+        ("DB_PASSWORD", "demo-not-a-secret".to_owned()),
+    ];
+    if spec.name == "event-ingest" {
+        vars.extend([
+            ("ACME_ROUTES_0_TOPIC", "demo.events".to_owned()),
+            ("ACME_ROUTES_0_INPUT_TYPE", "sftp".to_owned()),
+            ("ACME_ROUTES_0_INPUT_SYSTEM", "Example Partner".to_owned()),
+            (
+                "ACME_ROUTES_0_INPUT_PROPERTIES_HOST",
+                "sftp.example.com".to_owned(),
+            ),
+            ("ACME_ROUTES_0_INPUT_PROPERTIES_PATH", "outbox".to_owned()),
+        ]);
+    }
+    let mut vars: Vec<EnvVar> = vars
+        .into_iter()
+        .map(|(name, value)| EnvVar {
+            name: name.to_owned(),
+            value,
+        })
+        .collect();
+    vars.sort_by(|a, b| a.name.cmp(&b.name));
+    vars
+}
 
 /// Demo ECS data. Shares the session state of [`FakeAuth`]: an expired demo profile can't list
 /// anything until it has "logged in", just like with real AWS.
@@ -412,6 +446,15 @@ impl EcsSource for FakeEcs {
                     .into_iter()
                     .map(|(k, v)| (k.to_owned(), v))
                     .collect(),
+                    environment: environment(spec),
+                    secrets: vec![SecretRef {
+                        name: "API_TOKEN".to_owned(),
+                        value_from: format!(
+                            "arn:aws:ssm:{region}:{account}:parameter/demo/{}/api-token",
+                            spec.name
+                        ),
+                    }],
+                    environment_files: Vec::new(),
                 }],
             }),
             events,

@@ -150,6 +150,15 @@ export type ContainerDefinitionInfo = {
 	logDriver: string | null,
 	/**  The log driver's options (`awslogs-group`, `awslogs-stream-prefix`, `awslogs-region`, …). */
 	logOptions: { [key in string]: string },
+	/**  Plain environment variables, sorted by name. */
+	environment: EnvVar[],
+	/**
+	 *  Variables filled from Secrets Manager or SSM at start: only their references (Contrail
+	 *  never reads secret values).
+	 */
+	secrets: SecretRef[],
+	/**  `.env` files loaded from S3 (their ARNs). */
+	environmentFiles: string[],
 };
 
 export type ContainerState = {
@@ -176,6 +185,12 @@ export type Deployment = {
 	failed: number,
 	createdAt: Timestamp | null,
 	updatedAt: Timestamp | null,
+};
+
+/**  An environment variable of a container definition. */
+export type EnvVar = {
+	name: string,
+	value: string,
 };
 
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
@@ -427,6 +442,13 @@ export type QueryError = {
 	start: number,
 	end: number,
 	hint: string | null,
+};
+
+/**  A variable whose value comes from Secrets Manager or SSM Parameter Store. */
+export type SecretRef = {
+	name: string,
+	/**  The secret's or parameter's ARN (or name). */
+	valueFrom: string,
 };
 
 /**  Everything the service overview shows. */

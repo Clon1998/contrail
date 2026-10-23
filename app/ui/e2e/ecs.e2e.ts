@@ -56,6 +56,28 @@ test("a long task definition fits: cut at the front, revision visible", async ({
   expect(clipped).toBe(true);
 });
 
+test("the overview lists environment variables, masking secret-looking values", async ({
+  page,
+}) => {
+  const view = await openTreeService(page, "demo-core", "orders-api");
+  const env = view.getByRole("region", { name: "Environment" });
+  await expect(env.getByRole("row", { name: /SPRING_PROFILES_ACTIVE/ })).toContainText("demo");
+
+  const password = env.getByRole("row", { name: /DB_PASSWORD/ });
+  await expect(password).not.toContainText("demo-not-a-secret");
+  await password.getByRole("button", { name: "Show value" }).click();
+  await expect(password).toContainText("demo-not-a-secret");
+
+  // Secrets show only where they come from.
+  await expect(env.getByRole("row", { name: /API_TOKEN/ })).toContainText(
+    "parameter/demo/orders-api",
+  );
+
+  await env.getByRole("searchbox", { name: "Filter variables" }).fill("server");
+  await expect(env.getByRole("row", { name: /SERVER_PORT/ })).toBeVisible();
+  await expect(env.getByRole("row", { name: /SPRING_PROFILES_ACTIVE/ })).toHaveCount(0);
+});
+
 test("⌘K jumps to a service in a collapsed cluster", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+K");
   const palette = page.getByRole("dialog", { name: "Go to service" });

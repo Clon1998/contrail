@@ -19,6 +19,7 @@ import { LogsContext, useLogs } from "@/stores/logs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 import { tabKey, useTabs } from "@/stores/tabs";
+import { Environment } from "./Environment";
 import { HealthDot } from "./HealthDot";
 import { ServiceTabs } from "./ServiceTabs";
 
@@ -96,6 +97,7 @@ function ServicePane() {
               <Deployments deployments={data.deployments} />
               <Tasks />
               <Events detail={data} />
+              {data.taskDefinition && <Environment containers={data.taskDefinition.containers} />}
             </div>
           )}
         </TabsContent>

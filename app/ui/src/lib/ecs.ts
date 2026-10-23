@@ -39,3 +39,13 @@ export function shortTaskId(id: string): string {
 export function nameFromArn(arn: string): string {
   return arn.split("/").at(-1) ?? arn;
 }
+
+/**
+ * Whether an environment variable name usually holds a credential (its value is masked until
+ * clicked). Matches whole words, so `ROUTES_0_KEYEXPRESSION` is not a "key".
+ */
+export function looksSecret(name: string): boolean {
+  return /(^|[_.-])(PASSWORD|PASSWD|PWD|SECRET|TOKEN|CREDENTIALS?|API_?KEY|ACCESS_KEY|PRIVATE_KEY|KEY)([_.-]|$)/i.test(
+    name,
+  );
+}

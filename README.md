@@ -17,7 +17,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   must be installed. Contrail only reads the expiry of the SSO token cache; the AWS SDK handles credentials.
 - Switch profiles with ⌘⇧P / Ctrl+Shift+P (search by name, account ID or region).
 - Browse **Cluster → Service** in the sidebar (the filter box narrows it by name); a service shows its tasks (running and recently stopped, with
-  stop reasons and exit codes), deployments, task definition and recent events. It refreshes every 30 s.
+  stop reasons and exit codes), deployments, task definition, recent events and the environment variables
+  (secret-looking values masked; secrets only by reference). It refreshes every 30 s.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile.
   Star a service to pin it to the sidebar. Favorites, recent services, the last profile and region overrides
   are kept in `prefs.json` in Contrail's app data folder (never credentials).
