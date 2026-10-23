@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowRightIcon, ChevronRightIcon, EyeOffIcon, FileSearchIcon } from "lucide-react";
 import { cn } from "cn";
 import type { LogEvent } from "@/bindings";
@@ -17,7 +17,7 @@ import { usePrefs } from "@/stores/prefs";
 import { CopyButton } from "@/components/CopyButton";
 import { Ansi } from "./Ansi";
 import { columnValue } from "./columns";
-import { TraceDialog } from "./TraceDialog";
+import { TraceButton } from "./TraceButton";
 import { StateBadge } from "./StateBadge";
 
 /** Stack traces longer than this start collapsed. */
@@ -79,10 +79,11 @@ function StackTrace({ trace }: { trace: string }) {
   );
 }
 
-/** The expanded view of one event: message, error, fields, raw JSON and copy actions. */
-/** A pipeline status change: the transition, the document's correlation ID and its topic. */
-function StatusSummary({ event }: { event: LogEvent }) {
-  const setSearch = useLogs((s) => s.setSearch);
+/**
+ * A pipeline status change: the transition, the document's correlation ID and its topic, then
+ * `actions` for the document.
+ */
+export function StatusSummary({ event, actions }: { event: LogEvent; actions?: ReactNode }) {
   const status = event.status;
   if (!status) return null;
   const id = status.correlationId;
@@ -103,25 +104,16 @@ function StatusSummary({ event }: { event: LogEvent }) {
         </span>
       )}
       {id && (
-        <>
-          <span className="text-muted-foreground">
-            document <span className="font-mono text-foreground">{id}</span>
-          </span>
-          <Button
-            variant="outline"
-            size="xs"
-            tooltip="List every event of this document (its correlation ID) in this service"
-            onClick={() => void setSearch({ query: `correlation:${id}`, mode: "filter" })}
-          >
-            <FileSearchIcon /> Show this document
-          </Button>
-          <TraceDialog id={id} term={`correlation:${id}`} at={event.timestamp} />
-        </>
+        <span className="text-muted-foreground">
+          document <span className="font-mono text-foreground">{id}</span>
+        </span>
       )}
+      {id && actions}
     </div>
   );
 }
 
+/** The expanded view of one event in a service's log view: actions, then the event itself. */
 export function LogDetails({ event }: { event: LogEvent }) {
   const { line } = event;
   const query = useLogs((s) => s.search.query);
@@ -133,11 +125,10 @@ export function LogDetails({ event }: { event: LogEvent }) {
   const filterBy = (term: string) => void setSearch({ query: appendTerm(query, term) });
   // The first line of the message, cut at 80 characters: specific enough, short enough to read.
   const noiseText = (line.message.split("\n", 1)[0] ?? "").trim().slice(0, 80);
-  const embedded = splitEmbeddedJson(line.message, line.jsonSpan);
-  const embeddedPretty = embedded ? prettyJson(embedded.json) : null;
   const rawPretty = line.kind === "ecs" || line.kind === "json" ? prettyJson(event.raw) : null;
   // A correlation or trace ID (e.g. an API's `traceId`) can be followed across services.
   const traceId = columnValue(event, "correlation");
+  const documentId = event.status?.correlationId;
 
   return (
     <div className="space-y-3 border-l-2 border-primary/60 bg-muted/30 py-2 pr-4 pl-4">
@@ -155,13 +146,61 @@ export function LogDetails({ event }: { event: LogEvent }) {
             <EyeOffIcon /> Hide lines like this
           </Button>
         )}
-        {!event.status?.correlationId && traceId && (
-          <TraceDialog id={traceId} term={`"${traceId}"`} at={event.timestamp} />
+        {!documentId && traceId && (
+          <TraceButton id={traceId} term={`"${traceId}"`} at={event.timestamp} />
         )}
       </div>
 
-      {event.status && <StatusSummary event={event} />}
+      {event.status && (
+        <StatusSummary
+          event={event}
+          actions={
+            documentId && (
+              <>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  tooltip="List every event of this document (its correlation ID) in this service"
+                  onClick={() =>
+                    void setSearch({ query: `correlation:${documentId}`, mode: "filter" })
+                  }
+                >
+                  <FileSearchIcon /> Show this document
+                </Button>
+                <TraceButton
+                  id={documentId}
+                  term={`correlation:${documentId}`}
+                  at={event.timestamp}
+                />
+              </>
+            )
+          }
+        />
+      )}
 
+      <EventBody event={event} onField={filterBy} />
+    </div>
+  );
+}
+
+/**
+ * An event's content: message (with embedded JSON), error and stack trace, fields, raw JSON.
+ * With `onField`, a field's value adds a search term when clicked.
+ */
+export function EventBody({
+  event,
+  onField,
+}: {
+  event: LogEvent;
+  onField?: (term: string) => void;
+}) {
+  const { line } = event;
+  const embedded = splitEmbeddedJson(line.message, line.jsonSpan);
+  const embeddedPretty = embedded ? prettyJson(embedded.json) : null;
+  const rawPretty = line.kind === "ecs" || line.kind === "json" ? prettyJson(event.raw) : null;
+
+  return (
+    <>
       <div className="whitespace-pre-wrap break-words">
         {embedded && embeddedPretty ? (
           <>
@@ -196,14 +235,18 @@ export function LogDetails({ event }: { event: LogEvent }) {
             <div key={field.key} className="contents">
               <dt className="text-muted-foreground">{field.key}</dt>
               <dd className="break-all">
-                <button
-                  type="button"
-                  title="Add to the search"
-                  onClick={() => filterBy(fieldTerm(field.key, String(field.value)))}
-                  className="text-left hover:text-primary hover:underline"
-                >
-                  {String(field.value)}
-                </button>
+                {onField ? (
+                  <button
+                    type="button"
+                    title="Add to the search"
+                    onClick={() => onField(fieldTerm(field.key, String(field.value)))}
+                    className="text-left hover:text-primary hover:underline"
+                  >
+                    {String(field.value)}
+                  </button>
+                ) : (
+                  String(field.value)
+                )}
               </dd>
             </div>
           ))}
@@ -220,6 +263,6 @@ export function LogDetails({ event }: { event: LogEvent }) {
       <p className="text-muted-foreground">
         {line.kind} · {event.stream}
       </p>
-    </div>
+    </>
   );
 }

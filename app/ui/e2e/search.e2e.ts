@@ -211,7 +211,7 @@ test("pipeline status events: state badges, state chips and one document", async
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(1);
 });
 
-test("trace a document across services", async ({ page }) => {
+test("trace a document across services, in a tab of its own", async ({ page }) => {
   const list = await openLogs(page, "demo-core", "orders-api");
   await page.getByRole("button", { name: "Pause live tail" }).click();
   await page
@@ -222,21 +222,44 @@ test("trace a document across services", async ({ page }) => {
   await list.getByRole("listitem").first().getByRole("button").first().click();
   await page.getByRole("button", { name: "Trace across services" }).click();
 
-  const dialog = page.getByRole("dialog", { name: /^Trace / });
+  const tabs = page.getByRole("tablist", { name: "Open tabs" });
+  await expect(tabs.getByRole("tab", { name: /^Trace / })).toHaveAttribute("aria-selected", "true");
+  const trace = page.getByRole("main", { name: /^Trace / });
   // The current service is chosen; add another one of the cluster.
-  await expect(dialog.getByRole("checkbox", { name: "orders-api" })).toHaveAttribute(
+  await expect(trace.getByRole("checkbox", { name: "orders-api" })).toHaveAttribute(
     "data-state",
     "checked",
   );
-  await dialog.getByRole("checkbox", { name: "payments-worker" }).click();
-  await dialog.getByRole("button", { name: "Search 2 services" }).click();
+  await trace.getByRole("checkbox", { name: "payments-worker" }).click();
+  await trace.getByRole("button", { name: "Search 2 services" }).click();
 
-  await expect(dialog.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
-  const timeline = dialog.getByRole("list", { name: "Trace events" });
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
+  const timeline = trace.getByRole("list", { name: "Trace events" });
   await expect(timeline.getByRole("listitem").first()).toContainText("orders-api");
 
-  // An entry opens that service's logs, filtered to the document.
-  await timeline.getByRole("listitem").first().getByRole("button").click();
-  await expect(dialog).toBeHidden();
+  // An event expands in place, with its fields.
+  await timeline.getByRole("listitem").first().getByRole("button").first().click();
+  await expect(timeline.getByLabel("Fields").first()).toBeVisible();
+
+  // A service on the way shows only its events; pressed again, all of them.
+  const step = trace
+    .getByRole("list", { name: "Services on the way" })
+    .getByRole("button", { name: /orders-api/ });
+  const all = await timeline.getByRole("listitem").count();
+  await step.click();
+  await expect(step).toHaveAttribute("aria-pressed", "true");
+  await expect(timeline.getByRole("listitem").first()).toContainText("orders-api");
+  await step.click();
+  await expect(timeline.getByRole("listitem")).toHaveCount(all);
+
+  // "Open in …" opens that service's logs filtered to the document; the trace tab stays.
+  await timeline
+    .getByRole("listitem")
+    .first()
+    .getByRole("button", { name: "Open in orders-api" })
+    .click();
   await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue(/^correlation:/);
+  await tabs.getByRole("tab", { name: /^Trace / }).click();
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
+  await expect(timeline.getByLabel("Fields").first()).toBeVisible();
 });

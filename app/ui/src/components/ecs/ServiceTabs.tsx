@@ -1,14 +1,20 @@
-import { useEffect } from "react";
-import { XIcon } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
+import { RouteIcon, XIcon } from "lucide-react";
+import { useStore } from "zustand";
 import { cn } from "cn";
 import { useAutoPause } from "@/hooks/useAutoPause";
 import { nameFromArn } from "@/lib/ecs";
 import { useEcs } from "@/stores/ecs";
 import { LogsContext, useLogs } from "@/stores/logs";
-import { useTabs, type ServiceTab } from "@/stores/tabs";
+import { useTabs, type ServiceTab, type Tab, type TraceTab } from "@/stores/tabs";
 
-/** Shows a tab's service (the tabs follow the selected service). */
-function show(tab: ServiceTab) {
+/** Shows a tab: a service tab also selects its service (the sidebar follows it). */
+function show(tab: Tab) {
+  if (tab.kind === "trace") {
+    useTabs.getState().show(tab.key);
+    return;
+  }
+  useTabs.getState().activate(tab.service);
   void useEcs.getState().openService(tab.service);
 }
 
@@ -28,16 +34,63 @@ const DOT: Record<string, string> = {
   failed: "bg-destructive",
 };
 
-/** One tab; also auto-pauses its live tail while it's in the background. */
-function TabItem({ tab, active }: { tab: ServiceTab; active: boolean }) {
+/** A service's tab; also auto-pauses its live tail while it's in the background. */
+function ServiceTabItem({ tab, active }: { tab: ServiceTab; active: boolean }) {
   const state = useLogs((s) => s.live?.state);
   useAutoPause(active);
+  return (
+    <TabShell
+      tab={tab}
+      active={active}
+      label={tab.service.serviceName}
+      title={`${tab.service.serviceName} · ${nameFromArn(tab.service.clusterArn)}`}
+      icon={
+        <span
+          aria-hidden
+          className={cn(
+            "size-1.5 shrink-0 rounded-full",
+            DOT[state ?? ""] ?? "bg-muted-foreground/40",
+          )}
+        />
+      }
+    />
+  );
+}
+
+/** A trace's tab: the ID it follows. */
+function TraceTabItem({ tab, active }: { tab: TraceTab; active: boolean }) {
+  const request = useStore(tab.trace, (s) => s.request);
+  return (
+    <TabShell
+      tab={tab}
+      active={active}
+      label={`Trace ${request.id}`}
+      title={`Trace ${request.id} · from ${request.origin}`}
+      icon={<RouteIcon aria-hidden className="size-3 shrink-0 text-muted-foreground" />}
+    />
+  );
+}
+
+/** The look and behaviour every tab shares: click shows it, middle click or × closes it. */
+function TabShell({
+  tab,
+  active,
+  label,
+  title,
+  icon,
+}: {
+  tab: Tab;
+  active: boolean;
+  label: string;
+  title: string;
+  icon: ReactNode;
+}) {
   return (
     <div
       role="tab"
       aria-selected={active}
-      aria-label={tab.service.serviceName}
-      title={`${tab.service.serviceName} · ${nameFromArn(tab.service.clusterArn)}`}
+      aria-label={label}
+      title={title}
       tabIndex={active ? 0 : -1}
       onClick={() => show(tab)}
       // Middle click closes (on mousedown: WebKit sends no auxclick, and it stops autoscroll).
@@ -55,17 +108,11 @@ function TabItem({ tab, active }: { tab: ServiceTab; active: boolean }) {
           : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "size-1.5 shrink-0 rounded-full",
-          DOT[state ?? ""] ?? "bg-muted-foreground/40",
-        )}
-      />
-      <span className="truncate">{tab.service.serviceName}</span>
+      {icon}
+      <span className="truncate">{label}</span>
       <button
         type="button"
-        aria-label={`Close ${tab.service.serviceName}`}
+        aria-label={`Close ${label}`}
         onClick={(e) => {
           e.stopPropagation();
           closeTab(tab.key);
@@ -110,14 +157,18 @@ export function ServiceTabs() {
   return (
     <div
       role="tablist"
-      aria-label="Open services"
+      aria-label="Open tabs"
       className="flex overflow-x-auto border-b border-border bg-muted/30"
     >
-      {tabs.map((tab) => (
-        <LogsContext.Provider key={tab.key} value={tab.logs}>
-          <TabItem tab={tab} active={tab.key === activeKey} />
-        </LogsContext.Provider>
-      ))}
+      {tabs.map((tab) =>
+        tab.kind === "service" ? (
+          <LogsContext.Provider key={tab.key} value={tab.logs}>
+            <ServiceTabItem tab={tab} active={tab.key === activeKey} />
+          </LogsContext.Provider>
+        ) : (
+          <TraceTabItem key={tab.key} tab={tab} active={tab.key === activeKey} />
+        ),
+      )}
     </div>
   );
 }

@@ -382,7 +382,7 @@ describe("App", () => {
 
     await pick("orders-api");
     await screen.findByRole("main", { name: "Service orders-api" });
-    const tabs = screen.getByRole("tablist", { name: "Open services" });
+    const tabs = screen.getByRole("tablist", { name: "Open tabs" });
     expect(
       within(tabs)
         .getAllByRole("tab")
@@ -400,9 +400,7 @@ describe("App", () => {
     fireEvent.mouseDown(within(tabs).getByRole("tab", { name: "payments-worker" }), { button: 1 });
     await screen.findByRole("main", { name: "Service orders-api" });
     fireEvent.click(screen.getByRole("button", { name: "Close orders-api" }));
-    await waitFor(() =>
-      expect(screen.queryByRole("tablist", { name: "Open services" })).toBeNull(),
-    );
+    await waitFor(() => expect(screen.queryByRole("tablist", { name: "Open tabs" })).toBeNull());
   });
 
   it("exports the matches of a search", async () => {

@@ -41,18 +41,13 @@ async function setTheme(page: Page, theme: "Light" | "Dark") {
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 }
 
-/**
- * Takes the shot twice, in light and dark mode, with transitions settled and no hover. A dialog
- * in the picture is opened by `openDialog` after each theme change and closed again after it.
- */
-async function shoot(page: Page, name: string, openDialog?: () => Promise<void>) {
+/** Takes the shot twice, in light and dark mode, with transitions settled and no hover. */
+async function shoot(page: Page, name: string) {
   for (const scheme of ["light", "dark"] as const) {
     await setTheme(page, scheme === "light" ? "Light" : "Dark");
-    await openDialog?.();
     await page.mouse.move(0, 0);
     await page.waitForTimeout(300);
     await page.screenshot({ path: `${OUT}/${name}-${scheme}.png` });
-    if (openDialog) await page.keyboard.press("Escape");
   }
 }
 
@@ -91,14 +86,15 @@ test("trace across services", async ({ page }) => {
     .click();
   await list.getByRole("listitem").first().getByRole("button").first().click();
 
-  const dialog = page.getByRole("dialog", { name: /^Trace / });
-  const trace = async () => {
-    await page.getByRole("button", { name: "Trace across services" }).click();
-    await dialog.getByRole("checkbox", { name: "payments-worker" }).click();
-    await dialog.getByRole("button", { name: "Search 2 services" }).click();
-    await expect(dialog.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
-  };
-  await shoot(page, "trace", trace);
+  await page.getByRole("button", { name: "Trace across services" }).click();
+  const trace = page.getByRole("main", { name: /^Trace / });
+  await trace.getByRole("checkbox", { name: "payments-worker" }).click();
+  await trace.getByRole("button", { name: "Search 2 services" }).click();
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
+  // A failed event expanded, so the picture shows the error next to the way the document took.
+  const events = trace.getByRole("list", { name: "Trace events" }).getByRole("listitem");
+  await events.filter({ hasText: "FAILED" }).last().getByRole("button").first().click();
+  await shoot(page, "trace");
 });
 
 /**
