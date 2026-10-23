@@ -54,11 +54,19 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org) (enfo
 CI (`.github/workflows/ci.yml`) and the website (`site.yml`) are separate workflows. Changes to only `site/`,
 `docs/`, Markdown files or the issue templates don't run CI; changes to only the app don't rebuild the website.
 
-Every CI run on `main` builds installers and attaches them to the run (Actions → the run → *Artifacts*, kept
-14 days, or `gh run download <run id> -n contrail-windows`):
+Pushes run lint and tests only. **Installers** are built on pull requests (all platforms) or when you start CI by
+hand: Actions → CI → **Run workflow**, tick the platforms (Windows and macOS Apple silicon by default) and whether
+to run lint and tests first. From the terminal:
 
-- **Windows:** `contrail-windows` contains an NSIS `.exe` that installs per user (no admin rights needed).
-- **macOS (Apple silicon):** `contrail-macos-arm64` contains a `.dmg`.
+```sh
+gh workflow run ci.yml                                   # Windows + macOS (Apple silicon)
+gh workflow run ci.yml -f macos-arm64=false -f checks=false   # just a Windows installer, quickly
+gh run download <run id> -n contrail-windows             # or download from the run's page (Artifacts)
+```
+
+The artifacts (`contrail-windows`, `contrail-macos-arm64`, `contrail-macos-x64`, `contrail-linux`) are kept
+14 days. Windows gets an NSIS `.exe` that installs per user (no admin rights needed). macOS runner minutes count
+ten times, so tick only what you need.
 
 The builds are unsigned: Windows SmartScreen asks once ("More info" → "Run anyway"); on macOS, right-click the app
 → Open the first time.

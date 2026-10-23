@@ -237,3 +237,12 @@ reports) and issue templates. They are in the website's sidebar and linked from 
 team?" section on the landing page. No "migrating" page: Contrail replaces the AWS console, not another tool.
 The README follows Frida's layout: its long feature walkthrough moved to `docs/user-guide.md`, the development
 details to `docs/development.md`, both also on the website.
+
+## 2026-10-23 — CI builds installers only on demand, like Frida
+
+Every push to `main` built a Windows and a macOS installer; macOS runner minutes count ten times, and the Actions
+budget is small. **Decision:** CI takes Frida's setup: pushes run lint and tests only (and none for changes to only
+docs or the website), pull requests also build all platforms, and a manual run ("Run workflow" / `gh workflow run
+ci.yml`) builds the ticked platforms (Windows and macOS Apple silicon by default; macOS Intel and Linux on request),
+optionally without lint and tests. A newer push cancels the running push build. Contrail keeps its own fixes on
+top (pinned toolchain, apt retries, the Playwright container, the generated-files check).
