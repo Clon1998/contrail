@@ -82,6 +82,10 @@ pnpm lint && pnpm typecheck && pnpm test   # frontend (delegates to app/ui; *.te
 pnpm format                    # auto-fix ESLint + Prettier
 pnpm --dir ui dev              # frontend only, in a browser (no Tauri IPC)
 pnpm test:e2e                  # Playwright UI flows (fake backend, WebKit + Chromium)
+pnpm --dir ui screenshots      # refresh the website's app screenshots after visible UI changes
+
+# Website: from site/ (Astro + Starlight, deployed to GitHub Pages by .github/workflows/site.yml)
+pnpm install && pnpm dev       # landing page, quick start, download + pages from docs/ (site.config.mjs)
 ```
 
 ## Working style
