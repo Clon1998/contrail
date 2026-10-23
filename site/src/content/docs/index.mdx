@@ -12,7 +12,7 @@ editUrl: false
 pagefind: false
 ---
 
-import { LinkButton } from "@astrojs/starlight/components";
+import { CardGrid, LinkButton, LinkCard } from "@astrojs/starlight/components";
 import Downloads from "../../components/Downloads.astro";
 import Features from "../../components/Features.astro";
 import Screenshot from "../../components/Screenshot.astro";
@@ -82,6 +82,35 @@ import Showcase from "../../components/Showcase.astro";
 </div>
 
 <Features />
+
+<div class="landing-heading not-content">
+  <p class="eyebrow">evaluation</p>
+  <h2>Evaluating Contrail for your team?</h2>
+  <p>What a team lead or security review usually wants to know, in one place.</p>
+</div>
+
+<CardGrid>
+  <LinkCard
+    title="Using Contrail in a team"
+    description="The shared AWS config, which permissions to hand out, what it costs, and logs that work well."
+    href={`${import.meta.env.BASE_URL}guides/teams/`}
+  />
+  <LinkCard
+    title="Security & privacy"
+    description="What Contrail reads, stores and sends, why it can't change anything in AWS, and how secrets are handled."
+    href={`${import.meta.env.BASE_URL}security/`}
+  />
+  <LinkCard
+    title="AWS permissions"
+    description="The read-only IAM policy, ready for your SSO permission set, with optional statements explained."
+    href={`${import.meta.env.BASE_URL}permissions/`}
+  />
+  <LinkCard
+    title="FAQ"
+    description="License, system requirements, limitations, stability and support."
+    href={`${import.meta.env.BASE_URL}faq/`}
+  />
+</CardGrid>
 
 <div class="landing-heading not-content" id="download">
   <p class="eyebrow">download</p>

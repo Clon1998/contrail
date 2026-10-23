@@ -226,3 +226,14 @@ The app uses `tauri-plugin-updater` (check on start at most once a day, a settin
 progress and cancel); release builds sign updater artifacts and tauri-action uploads `latest.json` when the
 signing-key secret exists. The public key in `tauri.conf.json` stays empty until Patrick generates the key;
 until then installing explains why it can't.
+
+## 2026-10-23 — Pages for teams evaluating Contrail; README like Frida's
+
+Like Frida's website pass: pages for the people who decide whether a team may use Contrail. `docs/security.md`
+(what is read, stored and sent; read-only towards AWS; secret values; unsigned builds and signed updates),
+`docs/teams.md` (shared AWS config, permission set, Live Tail and Logs Insights costs, log formats that work well)
+and `docs/faq.md` (requirements: macOS 11+, as for Frida; limitations), plus `SECURITY.md` (private vulnerability
+reports) and issue templates. They are in the website's sidebar and linked from an "Evaluating Contrail for your
+team?" section on the landing page. No "migrating" page: Contrail replaces the AWS console, not another tool.
+The README follows Frida's layout: its long feature walkthrough moved to `docs/user-guide.md`, the development
+details to `docs/development.md`, both also on the website.

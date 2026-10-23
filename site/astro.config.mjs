@@ -45,8 +45,20 @@ export default defineConfig({
           ],
         },
         {
+          label: "Guides",
+          items: [doc("guides/user-guide"), doc("guides/teams")],
+        },
+        {
           label: "Reference",
           items: [doc("search-syntax"), { label: "AWS permissions", slug: "permissions" }],
+        },
+        {
+          label: "Contributing",
+          items: [doc("contributing/development")],
+        },
+        {
+          label: "About",
+          items: [doc("security"), doc("faq")],
         },
       ],
     }),
