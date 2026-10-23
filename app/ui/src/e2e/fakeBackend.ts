@@ -238,7 +238,16 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
   const exports: { path: string; format?: string; count?: number }[] = [];
 
   /** Searches per view: the spec and the indices of matching events. */
-  const filters = new Map<number, { spec: FilterSpec; matched: number[] }>();
+  const filters = new Map<
+    number,
+    {
+      spec: FilterSpec;
+      accepts: (e: LogEvent) => boolean;
+      matched: number[];
+      /** Events before this index have been checked. */
+      checked: number;
+    }
+  >();
 
   /** The events a view lists: the matches when filtering, all otherwise. */
   function listed(
@@ -285,14 +294,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const filter = filters.get(viewId);
     if (filter && Array.isArray(events)) {
       // Check the events added since the search was set (or last checked).
-      const compiled = compileQuery(filter.spec.query);
-      const from = (filter.matched.at(-1) ?? -1) + 1;
-      for (let i = from; i < events.length; i++) {
+      for (let i = filter.checked; i < events.length; i++) {
         const e = events[i];
-        if (e && "test" in compiled && compiled.test(e, filter.spec.searchRaw)) {
-          filter.matched.push(i);
-        }
+        if (e && filter.accepts(e)) filter.matched.push(i);
       }
+      filter.checked = events.length;
     }
     const visible = filter?.spec.mode === "filter" ? filter.matched.length : total;
     const update: LiveUpdate = {
@@ -483,7 +489,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           !spec.noise.some((n) => e.line.message.toLowerCase().includes(n.toLowerCase())) &&
           compiled.test(e, spec.searchRaw);
         const matched = events.flatMap((e, i) => (accepts(e) ? [i] : []));
-        filters.set(viewId, { spec, matched });
+        filters.set(viewId, { spec, accepts, matched, checked: events.length });
         return {
           kind: "applied",
           visible: spec.mode === "filter" ? matched.length : events.length,
