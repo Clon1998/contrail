@@ -6,13 +6,23 @@ export function useLogColumns(): LogColumn[] {
   return usePrefs((s) => s.prefs.settings.logColumns);
 }
 
-/** Field names that hold a correlation/trace ID, in order of preference. */
-const CORRELATION_FIELDS = [
-  "pipeline.correlationId",
-  "correlationId",
-  "trace.id",
-  "log.correlation",
-];
+/**
+ * Fields that hold a correlation ID: `correlationId` or `correlation_id`, alone or under any
+ * prefix (frameworks nest it in their own object, e.g. `<framework>.correlationId`).
+ */
+const CORRELATION_FIELD = /(^|\.)correlation_?id$/i;
+/** Fallbacks when there is no correlation ID, in order of preference. */
+const TRACE_FIELDS = ["trace.id", "log.correlation"];
+
+function correlationValue(fields: LogEvent["line"]["fields"]) {
+  const correlation = fields.find((f) => CORRELATION_FIELD.test(f.key) && f.value !== "");
+  if (correlation) return correlation.value;
+  for (const key of TRACE_FIELDS) {
+    const field = fields.find((f) => f.key === key);
+    if (field) return field.value;
+  }
+  return undefined;
+}
 
 export const OPTIONAL_COLUMNS: { id: LogColumn; label: string; width: string }[] = [
   { id: "logger", label: "Logger", width: "22ch" },
@@ -28,7 +38,7 @@ export function columnValue(event: LogEvent, column: LogColumn): string {
       ? field("log.logger")
       : column === "thread"
         ? field("process.thread.name")
-        : CORRELATION_FIELDS.map(field).find((v) => v !== undefined);
+        : correlationValue(event.line.fields);
   return value === undefined || value === null ? "" : String(value);
 }
 
