@@ -239,4 +239,31 @@ describe("App", () => {
     fireEvent.click(within(view).getByRole("button", { name: "Show all tasks" }));
     expect(await within(view).findByText("/ecs/legacy-gateway · 2 streams")).toBeTruthy();
   });
+
+  it("follows a view live, and pausing stops new rows", async () => {
+    installFakeBackend({ liveIntervalMs: 50 });
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "orders-api" })).getByRole("button"),
+    );
+    const view = await screen.findByRole("main", { name: "Service orders-api" });
+    fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
+
+    expect(await within(view).findByRole("status", { name: "Live tail: Live" })).toBeTruthy();
+    const list = await within(view).findByRole("list", { name: "Log events" });
+    await waitFor(() => expect(Number(list.getAttribute("aria-rowcount"))).toBeGreaterThan(25));
+
+    fireEvent.click(within(view).getByRole("button", { name: "Pause live tail" }));
+    expect(await within(view).findByRole("status", { name: "Live tail: Paused" })).toBeTruthy();
+    const paused = Number(list.getAttribute("aria-rowcount"));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(Number(list.getAttribute("aria-rowcount"))).toBe(paused);
+
+    fireEvent.click(within(view).getByRole("button", { name: "Resume live tail" }));
+    expect(await within(view).findByRole("status", { name: "Live tail: Live" })).toBeTruthy();
+  });
 });

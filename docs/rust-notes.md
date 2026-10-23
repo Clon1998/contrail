@@ -250,3 +250,45 @@ One short entry per pattern: what it is, why it's used here, where to find it.
 - **What:** `AtomicU32::fetch_add(1, Ordering::Relaxed)` hands out unique view IDs without a lock (like Java's
   `AtomicInteger.getAndIncrement()`). `Relaxed` is enough: only uniqueness matters, not ordering with other memory.
 - **Where:** `next_view_id` in `app/src-tauri/src/state.rs`, used in `commands/logs.rs`.
+
+## Async streams: `Pin<Box<dyn Stream>>`, `stream::unfold`, `StreamExt`
+
+- **What:** a `Stream` is the async version of an `Iterator` (`next().await` instead of `next()`). Each source
+  returns its own concrete stream type, so the port hides it behind `Pin<Box<dyn Stream<Item = …> + Send>>`
+  (a boxed trait object; `Pin` guarantees it won't move in memory while being polled). `stream::unfold(state,
+  step)` builds a stream from a state and an async step function, like a generator; `.chain()`, `.boxed()` and
+  `.next()` come from `futures::StreamExt`.
+- **Where:** `LiveStream` in `crates/contrail-core/src/logs/source.rs`; `FakeLogs::live`, `AwsLogs::live`.
+
+## `tokio::select!`
+
+- **What:** waits on several futures at once and runs the branch of whichever finishes first (the others are
+  dropped/cancelled): here the next stream item, a control change (pause/stop) and a flush timer.
+- **Where:** `LiveTask::follow` in `app/src-tauri/src/live.rs`.
+
+## `watch` channels for "latest value" signals
+
+- **What:** `tokio::sync::watch` holds one value that a sender updates and receivers observe (`changed().await`,
+  `borrow()`). Ideal for "what should the task be doing now" (run/pause/stop); unlike a queue, only the latest
+  value matters.
+- **Where:** `Control` and `LiveHandle` in `app/src-tauri/src/live.rs`.
+
+## Borrow guards live until the end of the statement
+
+- **What:** `match *control.borrow_and_update() { … }` keeps the borrow guard alive for the whole `match`, so the
+  arms can't borrow `control` again. Copying the value out first (`let current = *control.borrow_and_update();`)
+  ends the borrow at the semicolon.
+- **Where:** `LiveTask::run` in `app/src-tauri/src/live.rs`.
+
+## `Drop` for cleanup (RAII)
+
+- **What:** `impl Drop for LiveHandle` aborts the task when the handle goes away, so removing a view from the map
+  is enough to stop its live tail — like try-with-resources, but automatic for every owner.
+- **Where:** `LiveHandle` in `app/src-tauri/src/live.rs`.
+
+## Testing time-based async code on a paused clock
+
+- **What:** `#[tokio::test(start_paused = true)]` (tokio's `test-util` feature) freezes tokio's clock; `sleep`
+  and intervals advance instantly once all tasks are idle. The reconnect/backoff/polling tests run in
+  milliseconds and deterministically.
+- **Where:** tests in `app/src-tauri/src/live.rs`.

@@ -1,14 +1,16 @@
 //! Process-wide app state, managed by Tauri and injected into commands as `State<AppState>`.
 
-use std::collections::HashMap;
 use std::path::Path;
+use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
-use std::sync::{Arc, Mutex};
 
 use contrail_core::auth::AuthProvider;
+use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::EcsSource;
-use contrail_core::logs::{LogBuffer, LogSource};
+use contrail_core::logs::{LogBuffer, LogSource, StreamSelection};
+use contrail_core::timestamp::Timestamp;
 
+use crate::live::{LiveHandle, Views};
 use crate::prefs_store::PrefsStore;
 
 /// Everything commands need, chosen once at start-up: real AWS or demo fakes.
@@ -20,9 +22,9 @@ pub struct AppState {
     pub ecs: Arc<dyn EcsSource>,
     pub logs: Arc<dyn LogSource>,
     pub prefs: PrefsStore,
-    /// Open log views by ID. Commands run concurrently, hence the `Mutex`; it is only held for
-    /// quick reads and inserts, never across an `.await`.
-    pub views: Mutex<HashMap<u32, LogView>>,
+    /// Open log views by ID, shared with their live tasks (see [`Views`]). The lock is only held
+    /// for quick reads and inserts, never across an `.await`.
+    pub views: Views,
     /// The next view ID. An atomic integer needs no lock (like Java's `AtomicInteger`).
     pub next_view_id: AtomicU32,
     pub demo: bool,
@@ -38,7 +40,7 @@ impl AppState {
             ecs: Arc::new(contrail_fake::FakeEcs::new(auth.clone())),
             logs: Arc::new(contrail_fake::FakeLogs::new(auth.clone())),
             auth,
-            views: Mutex::default(),
+            views: Views::default(),
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::in_memory(),
             demo: true,
@@ -52,7 +54,7 @@ impl AppState {
             auth: Arc::new(contrail_aws::AwsAuth::new(files)),
             ecs: Arc::new(contrail_aws::AwsEcs::new()),
             logs: Arc::new(contrail_aws::AwsLogs::new()),
-            views: Mutex::default(),
+            views: Views::default(),
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::load(data_dir.join("prefs.json")),
             demo: false,
@@ -63,6 +65,30 @@ impl AppState {
 /// One open log view: the events of a service, kept in Rust; the UI reads windows of rows.
 pub struct LogView {
     pub buffer: LogBuffer,
+    /// Where the events come from, for starting the live tail.
+    pub ctx: AwsCtx,
+    pub selection: StreamSelection,
+    /// The end of the backfill: the live tail catches up from here.
+    pub backfilled_until: Timestamp,
+    /// The running live tail, if any. Dropping it (view closed) stops the task.
+    pub live: Option<LiveHandle>,
+}
+
+impl LogView {
+    pub fn new(
+        buffer: LogBuffer,
+        ctx: AwsCtx,
+        selection: StreamSelection,
+        backfilled_until: Timestamp,
+    ) -> Self {
+        Self {
+            buffer,
+            ctx,
+            selection,
+            backfilled_until,
+            live: None,
+        }
+    }
 }
 
 /// Whether to start in demo mode: `--demo` on the command line or `CONTRAIL_DEMO=1`.

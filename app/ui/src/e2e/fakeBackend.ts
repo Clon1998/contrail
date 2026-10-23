@@ -2,6 +2,8 @@ import type { InvokeArgs } from "@tauri-apps/api/core";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
   AppInfo,
+  LiveState,
+  LiveUpdate,
   AwsCtx,
   BufferStats,
   CallerIdentity,
@@ -152,6 +154,8 @@ export interface FakeBackendOptions {
   cliMissing?: boolean;
   /** Preferences to start with (default: none). */
   prefs?: Partial<Prefs>;
+  /** How often live tails add an event (default: every second). */
+  liveIntervalMs?: number;
 }
 
 /** Creates the IPC handler. Each call starts from the initial demo state. */
@@ -177,12 +181,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
   }
 
   function sendProgress(channel: { id: number }, index: number, message: LoginProgress) {
-    const internals = (
-      window as unknown as {
-        __TAURI_INTERNALS__: { runCallback: (id: number, data: unknown) => void };
-      }
-    ).__TAURI_INTERNALS__;
-    internals.runCallback(channel.id, { index, message });
+    sendOnChannel(channel, index, message);
   }
 
   let prefs: Prefs = {
@@ -197,6 +196,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       backfillMinutes: 15,
       uiScale: 100,
       logFontSize: 12,
+      pauseWhenHidden: true,
+      autoPauseMinutes: 10,
     },
     ...options.prefs,
   };
@@ -217,6 +218,15 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return profile.auth.kind === "sso" ? profile.auth.accountId : "999988887777";
   }
 
+  /** Live tails by view ID: the timer adding events, and the channel's message counter. */
+  const tails = new Map<
+    number,
+    { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
+  >();
+
+  /** Current size of generated views (they grow while live). */
+  const bigCounts = new Map<number, number>();
+
   /** Open log views: their events by view ID (an array, or generated on demand). */
   const views = new Map<number, LogEvent[] | ((offset: number, limit: number) => LogEvent[])>();
   let nextViewId = 1;
@@ -232,6 +242,52 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const detail = data.details[key];
     if (!detail) throw apiError("notFound", `service ${service.serviceName} not found`);
     return { detail, tasks: data.tasks[key] ?? [] };
+  }
+
+  /** Sends a live update for a view: its state and counts, and which rows changed. */
+  function sendLive(viewId: number, state: LiveState, firstChanged: number | null) {
+    const tail = tails.get(viewId);
+    const events = views.get(viewId);
+    if (!tail || events === undefined) return;
+    const total =
+      typeof events === "function" ? (bigCounts.get(viewId) ?? BIG_VIEW) : events.length;
+    const update: LiveUpdate = {
+      state,
+      sampled: false,
+      stats: { ...emptyStats(), total, info: total },
+      firstChanged,
+      evicted: 0,
+      message: null,
+    };
+    sendOnChannel(tail.channel, tail.sent++, update);
+  }
+
+  /** Every second, appends copies of a view's first events with fresh timestamps. */
+  function startTail(viewId: number) {
+    const tail = tails.get(viewId);
+    if (!tail || tail.timer) return;
+    sendLive(viewId, "live", null);
+    tail.timer = setInterval(() => {
+      const events = views.get(viewId);
+      if (typeof events === "function") {
+        const count = bigCounts.get(viewId) ?? BIG_VIEW;
+        bigCounts.set(viewId, count + 1);
+        return sendLive(viewId, "live", count);
+      }
+      if (!events || events.length === 0) return sendLive(viewId, "live", null);
+      const template = events[events.length % Math.min(events.length, 25)] ?? events[0];
+      if (!template) return;
+      const now = new Date().toISOString();
+      const first = events.length;
+      events.push({
+        ...template,
+        seq: (events.at(-1)?.seq ?? 0) + 1,
+        timestamp: now,
+        cwTimestamp: now,
+        line: { ...template.line, timestamp: now },
+      });
+      sendLive(viewId, "live", first);
+    }, options.liveIntervalMs ?? 1_000);
   }
 
   return async (cmd: string, payload?: InvokeArgs): Promise<unknown> => {
@@ -302,7 +358,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const viewId = nextViewId++;
         // The high-volume demo service gets 100,000 generated events, for scrolling tests.
         const big = service.serviceName === "event-ingest";
-        views.set(viewId, big ? generatedRows(service.serviceName) : events);
+        if (big) bigCounts.set(viewId, BIG_VIEW);
+        views.set(
+          viewId,
+          big
+            ? generatedRows(service.serviceName, () => bigCounts.get(viewId) ?? BIG_VIEW)
+            : events,
+        );
         const minutes = args?.minutes as number;
         const info: LogViewInfo = {
           viewId,
@@ -337,8 +399,33 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           ? events(offset, limit)
           : events.slice(offset, offset + limit);
       }
-      case "close_log_view":
-        views.delete(args?.viewId as number);
+      case "close_log_view": {
+        const viewId = args?.viewId as number;
+        views.delete(viewId);
+        bigCounts.delete(viewId);
+        clearInterval(tails.get(viewId)?.timer);
+        tails.delete(viewId);
+        return null;
+      }
+      case "start_live": {
+        const viewId = args?.viewId as number;
+        const tail = { channel: args?.onUpdate as { id: number }, sent: 0 };
+        tails.set(viewId, tail);
+        startTail(viewId);
+        return null;
+      }
+      case "pause_live": {
+        const viewId = args?.viewId as number;
+        const tail = tails.get(viewId);
+        if (tail) {
+          clearInterval(tail.timer);
+          tail.timer = undefined;
+          sendLive(viewId, "paused", null);
+        }
+        return null;
+      }
+      case "resume_live":
+        startTail(args?.viewId as number);
         return null;
       case "get_prefs":
         return prefs;
@@ -394,12 +481,12 @@ function emptyStats(): BufferStats {
 /** Size of the generated high-volume view. */
 const BIG_VIEW = 100_000;
 
-/** 100,000 simple events, made only for the rows that are asked for. */
-function generatedRows(service: string) {
+/** Simple events (100,000 at first), made only for the rows that are asked for. */
+function generatedRows(service: string, count: () => number) {
   const start = Date.now() - BIG_VIEW * 9;
   return (offset: number, limit: number): LogEvent[] => {
     const rows: LogEvent[] = [];
-    for (let i = offset; i < Math.min(offset + limit, BIG_VIEW); i++) {
+    for (let i = offset; i < Math.min(offset + limit, count()); i++) {
       const timestamp = new Date(start + i * 9).toISOString();
       const warn = i % 50 === 0;
       rows.push({
@@ -422,4 +509,14 @@ function generatedRows(service: string) {
     }
     return rows;
   };
+}
+
+/** Delivers a message on a (mocked) Tauri channel, as the Rust side would. */
+function sendOnChannel(channel: { id: number }, index: number, message: unknown) {
+  const internals = (
+    window as unknown as {
+      __TAURI_INTERNALS__: { runCallback: (id: number, data: unknown) => void };
+    }
+  ).__TAURI_INTERNALS__;
+  internals.runCallback(channel.id, { index, message });
 }

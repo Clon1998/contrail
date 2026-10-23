@@ -363,7 +363,8 @@ Commits are small and conventional throughout (see CLAUDE.md).
 ### M5 — Live streaming
 - `StartLiveTail` adapter with session handling, reconnect, sampling indicator.
 - Polling fallback; automatic switch on Live Tail errors.
-- Stream-set refresh on deployments; background-tab auto-pause + gap backfill on resume.
+- Service views tail by stream prefix (new tasks from deployments are included automatically, see
+  `docs/decisions.md`); auto-pause (hidden window, background views) + gap backfill on resume.
 - **Done when:** fake-source tests cover reconnect/dedupe/auto-pause; Patrick confirms live tail on a real service.
 
 ### M6 — Session search & filters

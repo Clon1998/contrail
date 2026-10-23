@@ -86,6 +86,8 @@ pub const DEFAULT_BACKFILL_MINUTES: u32 = 15;
 pub const DEFAULT_UI_SCALE: u32 = 100;
 /// The default font size of log lines, in pixels.
 pub const DEFAULT_LOG_FONT_SIZE: u32 = 12;
+/// Background log views pause their live tail after this many minutes by default.
+pub const DEFAULT_AUTO_PAUSE_MINUTES: u32 = 10;
 
 /// The app settings (the settings dialog).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -100,6 +102,11 @@ pub struct Settings {
     pub ui_scale: u32,
     /// The font size of log lines, in pixels.
     pub log_font_size: u32,
+    /// Pause live tails while Contrail's window is hidden or minimized (Live Tail is billed per
+    /// session minute).
+    pub pause_when_hidden: bool,
+    /// Pause live tails of views that aren't shown after this many minutes; 0 = never.
+    pub auto_pause_minutes: u32,
 }
 
 /// Written by hand (instead of derived) because the numbers don't default to 0.
@@ -112,6 +119,8 @@ impl Default for Settings {
             backfill_minutes: DEFAULT_BACKFILL_MINUTES,
             ui_scale: DEFAULT_UI_SCALE,
             log_font_size: DEFAULT_LOG_FONT_SIZE,
+            pause_when_hidden: true,
+            auto_pause_minutes: DEFAULT_AUTO_PAUSE_MINUTES,
         }
     }
 }
@@ -139,6 +148,8 @@ impl Settings {
         read(value, "backfillMinutes", &mut settings.backfill_minutes);
         read(value, "uiScale", &mut settings.ui_scale);
         read(value, "logFontSize", &mut settings.log_font_size);
+        read(value, "pauseWhenHidden", &mut settings.pause_when_hidden);
+        read(value, "autoPauseMinutes", &mut settings.auto_pause_minutes);
         settings
     }
 }
@@ -297,7 +308,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10}"#
         );
     }
 

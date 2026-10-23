@@ -25,12 +25,21 @@ impl LogLocation {
         format!("{}/{}/{task_id}", self.stream_prefix, self.container)
     }
 
-    /// The streams of the given tasks (running and recently stopped ones).
-    pub fn selection(&self, tasks: &[Task]) -> StreamSelection {
+    /// The streams of the given tasks (running and recently stopped ones). `whole_service` adds
+    /// the stream prefix of the service, so live tails also pick up tasks started later.
+    pub fn selection(
+        &self,
+        tasks: &[Task],
+        account_id: Option<String>,
+        whole_service: bool,
+    ) -> StreamSelection {
         StreamSelection {
             log_group: self.log_group.clone(),
             region: self.region.clone(),
+            account_id,
             streams: tasks.iter().map(|t| self.stream_for(&t.id)).collect(),
+            stream_prefix: whole_service
+                .then(|| format!("{}/{}/", self.stream_prefix, self.container)),
         }
     }
 }

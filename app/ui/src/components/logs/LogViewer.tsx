@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import { CircleAlertIcon, Columns3Icon, Loader2Icon, RefreshCwIcon, XIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  Columns3Icon,
+  Loader2Icon,
+  PauseIcon,
+  PlayIcon,
+  RefreshCwIcon,
+  XIcon,
+} from "lucide-react";
 import { cn } from "cn";
-import type { Level } from "@/bindings";
+import type { Level, LiveState } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +19,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAutoPause } from "@/hooks/useAutoPause";
 import { shortTaskId } from "@/lib/ecs";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
@@ -20,7 +29,69 @@ import { OPTIONAL_COLUMNS } from "./columns";
 import { LEVEL_TONE, LEVELS } from "./levels";
 import { LogList } from "./LogList";
 
-/** The Logs tab: a service's (or one task's) backfilled events in a virtualized list. */
+const LIVE_LABEL: Record<LiveState, string> = {
+  connecting: "Connecting…",
+  live: "Live",
+  polling: "Polling",
+  reconnecting: "Reconnecting…",
+  paused: "Paused",
+  failed: "Stopped",
+};
+
+const LIVE_TONE: Record<LiveState, string> = {
+  connecting: "bg-muted-foreground",
+  live: "bg-success animate-pulse",
+  polling: "bg-warning",
+  reconnecting: "bg-warning animate-pulse",
+  paused: "bg-muted-foreground",
+  failed: "bg-destructive",
+};
+
+/** The live tail's state, sampling badge and pause/resume button. */
+function LiveControls() {
+  const live = useLogs((s) => s.live);
+  const userPaused = useLogs((s) => s.pauseReasons.user);
+  const autoPaused = useLogs((s) => s.pauseReasons.hidden || s.pauseReasons.background);
+  const setPaused = useLogs((s) => s.setPaused);
+  if (!live) return null;
+
+  const hint =
+    live.message ??
+    (live.state === "paused" && !userPaused && autoPaused
+      ? "Paused automatically (see the live tail settings); resumes when you're back."
+      : undefined);
+  return (
+    <span className="flex items-center gap-1.5">
+      <span
+        role="status"
+        aria-label={`Live tail: ${LIVE_LABEL[live.state]}`}
+        title={hint}
+        className="flex items-center gap-1.5 rounded-md border border-border px-1.5 py-0.5"
+      >
+        <span className={cn("size-2 rounded-full", LIVE_TONE[live.state])} />
+        {LIVE_LABEL[live.state]}
+      </span>
+      {live.sampled && (
+        <Badge
+          variant="outline"
+          title="More than 500 events per second: CloudWatch sends a sample."
+        >
+          sampled
+        </Badge>
+      )}
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label={userPaused ? "Resume live tail" : "Pause live tail"}
+        onClick={() => setPaused("user", !userPaused)}
+      >
+        {userPaused ? <PlayIcon /> : <PauseIcon />}
+      </Button>
+    </span>
+  );
+}
+
+/** The Logs tab: a service's (or one task's) events, backfilled and then followed live. */
 export function LogViewer() {
   const ctx = useEcs((s) => s.ctx);
   const selected = useEcs((s) => s.selected);
@@ -33,6 +104,9 @@ export function LogViewer() {
   useEffect(() => {
     if (ctx && selected) void open(ctx, selected, minutes, taskId);
   }, [ctx, selected, minutes, taskId, open]);
+
+  // The tab is shown while this component exists; background views come with tabs (M7).
+  useAutoPause(true);
 
   // Free the view's buffer in Rust when the tab goes away.
   useEffect(() => () => void close(), [close]);
@@ -85,6 +159,7 @@ export function LogViewer() {
             </button>
           </Badge>
         )}
+        <LiveControls />
         {view && (
           <span className="truncate text-muted-foreground" title={view.location.logGroup}>
             {`${view.location.logGroup} · ${view.streams} ${view.streams === 1 ? "stream" : "streams"}`}
