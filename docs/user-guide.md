@@ -22,15 +22,16 @@ page has the details.
   click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored or logged. It
   needs the optional `ContrailOptionalRevealSecrets` statement of the [IAM policy](iam-policy.json).
 - **Routes** of routing-framework services (configured as `<PREFIX>_ROUTES_<n>_…` environment variables) are drawn
-  as a graph. Such a service is either an **input service** (external systems → Kafka topics) or an **output
-  service** (topics → external systems, read as its consumer group, shown once above the graph); the graph says
-  which. Each system appears once (several routes to one system meet there); disabled routes and targets are
-  dashed. "Find connected services" adds the services on the other side of the topics: for an output service
-  the input services writing them (and their sources), for an input service the output services reading them
-  (with their consumer group and targets). Services on the same side (other readers of the same topic) are a
-  note on the topic ("also read by …"), not a step on the way. Hover a node to highlight the paths through it;
-  click it for the settings: a system shows what its routes share once (connection, user, password from
-  Secrets Manager or SSM with **Reveal**) and what differs per route (a queue, a path).
+  as a graph around the service's topics, with the same columns in every service: **Sources → Written by →
+  Topics → Read by → Targets**. Such a service is either an **input service** (external systems → topics, in
+  "Written by") or an **output service** (topics → external systems, in "Read by", with its consumer group shown
+  once above the graph); the graph says which. The service is selected at first, so its paths stand out (click
+  it again to show all evenly). Each system appears once (several routes to one system meet there); disabled
+  routes and targets are dashed. "Find connected services" adds the other services on the topics in their
+  column, each with its consumer group and its own systems: the input services writing them and the output
+  services reading them. Hover a node to highlight the paths through it; click a topic or one of the service's
+  systems for the settings: a system shows what its routes share once (connection, user, password from Secrets
+  Manager or SSM with **Reveal**) and what differs per route (a queue, a path); another service opens from there.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile. Star a
   service to pin it to the sidebar.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).

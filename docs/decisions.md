@@ -275,3 +275,8 @@ them. **Decision:** the graph names the service an input or an output service. S
 topic are steps on the way (writers upstream of an output service, readers downstream of an input service);
 services on the same side (other readers of an output service's topic, other writers of an input service's)
 are listed on the topic instead. The demo's `demo-edge` gets a second writer, `partner-poller`.
+
+Later the same day, Patrick preferred the siblings next to the service rather than as a note on the topic.
+**Decision:** the graph has the same five columns for every service (Sources → Written by → Topics → Read by →
+Targets); the service shown is a node in its column, next to the other services on its topics, and is selected
+at first so its paths are highlighted.
