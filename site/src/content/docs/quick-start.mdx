@@ -1,0 +1,78 @@
+---
+title: Quick start
+description: Install Contrail, log in with an AWS SSO profile, open a service and follow its logs.
+---
+
+import { Aside, LinkButton, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+From zero to a service's live logs. You need Contrail, the
+[AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and at
+least one SSO profile in your AWS config.
+
+## Install
+
+<LinkButton href={`${import.meta.env.BASE_URL}download/`} icon="download" iconPlacement="start">
+  Download Contrail
+</LinkButton>
+
+<Tabs syncKey="os">
+  <TabItem label="macOS" icon="apple">
+    Open the `.dmg` (Apple silicon or Intel) and drag Contrail into *Applications*. The app isn't
+    signed by Apple yet: the first time, right-click it and choose **Open**.
+  </TabItem>
+  <TabItem label="Windows" icon="laptop">
+    Run the `-setup.exe`. It installs for your user only, so no admin rights are needed. The
+    installer isn't code-signed yet, so SmartScreen asks once: choose **More info → Run anyway**.
+  </TabItem>
+  <TabItem label="Linux" icon="linux">
+    Install the `.deb` or `.rpm`, or make the AppImage executable and start it:
+
+    ```sh
+    chmod +x Contrail_*_amd64.AppImage
+    ./Contrail_*_amd64.AppImage
+    ```
+  </TabItem>
+</Tabs>
+
+## Your first logs
+
+<Steps>
+
+1. **Pick a profile.** Contrail lists the profiles from `~/.aws/config` (or `AWS_CONFIG_FILE`)
+   with their SSO session state. Switch with <kbd>Cmd/Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>;
+   search by name, account ID or region.
+
+2. **Log in.** If the session has expired, **Log in** runs `aws sso login --profile <name>` for
+   you and the browser opens. Contrail only reads when the session expires; the AWS SDK handles
+   the credentials.
+
+3. **Open a service.** Expand a cluster in the sidebar and click a service, or press
+   <kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd> and type part of its name. Star it to pin it to the sidebar.
+
+4. **Read the logs.** The **Logs** tab loads the last minutes of all its tasks and then follows
+   them live. Click a line to see its fields, the raw JSON and the stack trace.
+
+5. **Search.** Type in the search box: `level>=WARN timeout`, `trace.id:abc123`,
+   `-healthcheck`. See the [search syntax](../search-syntax/) for everything it understands.
+
+</Steps>
+
+<Aside type="tip" title="Keyboard shortcuts">
+  Press <kbd>?</kbd> anywhere for the list. Every service you open stays in a tab
+  (<kbd>Cmd/Ctrl</kbd>+<kbd>1</kbd>…<kbd>9</kbd>).
+</Aside>
+
+## Not allowed to read something?
+
+Contrail only reads from AWS. If your role misses a permission, Contrail tells you instead of failing silently; the
+[AWS permissions](../permissions/) page has the policy to give to whoever manages your SSO roles.
+
+## Try it without AWS
+
+Demo mode starts Contrail with invented profiles, clusters and logs, and never talks to AWS:
+
+```sh
+CONTRAIL_DEMO=1 /Applications/Contrail.app/Contents/MacOS/contrail   # macOS
+```
+
+On Windows and Linux, start Contrail with `--demo`.

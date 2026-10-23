@@ -8,6 +8,8 @@ readable logs — structured (ECS JSON) or plain — with session search.
 > (M1–M7). Release builds come next.
 > See [plan.md](plan.md) for scope and milestones.
 
+Website: **[clon1998.github.io/contrail](https://clon1998.github.io/contrail/)**
+
 Contrail is strictly **read-only** towards AWS and never stores credentials.
 
 ## Using it
@@ -121,7 +123,16 @@ pnpm test:e2e         # Playwright UI flows (in app/; uses a fake backend, no Ta
 | `app/`                  | The desktop app: Tauri CLI and repo tooling (pnpm workspace root)  |
 | `app/src-tauri/`        | Tauri app crate: commands, state, wiring                           |
 | `app/ui/`               | React + Vite frontend (shadcn/ui, Tailwind); tests beside the code |
+| `site/`                 | The website (Astro + Starlight), deployed to GitHub Pages          |
 | `docs/`                 | [Rust notes](docs/rust-notes.md), [decisions](docs/decisions.md)   |
+
+### Website
+
+`site/` is the website: an [Astro](https://astro.build) + [Starlight](https://starlight.astro.build) site
+with a landing page, quick start, downloads (from the latest GitHub release, looked up at build time) and
+pages generated from `docs/` (listed in `site/site.config.mjs`). `cd site && pnpm install && pnpm dev` runs it
+locally; pushes to `main` that touch `site/` or `docs/` deploy it. After visible UI changes, refresh its
+screenshots with `pnpm --dir app/ui screenshots` (Playwright against the demo backend, light and dark).
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org) (enforced by a commit-msg hook).
 

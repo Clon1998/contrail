@@ -1,0 +1,26 @@
+---
+title: AWS permissions
+description: The read-only IAM permissions Contrail needs, and what each optional statement is for.
+---
+
+import { Aside, Code } from "@astrojs/starlight/components";
+import policy from "../../../../docs/iam-policy.json?raw";
+
+Contrail only reads from AWS. If your SSO role is an admin or read-only role, you're set. Teammates
+with narrower roles need the permissions below: give the policy to whoever manages your SSO
+permission sets.
+
+- **`ContrailReadOnly`**: listing clusters, services, tasks and task definitions, reading log
+  events and Live Tail. Without `logs:StartLiveTail` Contrail checks for new events every
+  2 seconds instead.
+- **`ContrailOptionalRevealSecrets`**: only to reveal secret values of environment variables.
+  Narrow its `Resource` to the secrets your team may read. Each read shows up in CloudTrail.
+- **`ContrailOptionalInsightsTrace`**: only for "Use Logs Insights" when tracing across many
+  services (billed per GB scanned).
+
+<Code code={policy} lang="json" title="docs/iam-policy.json" />
+
+<Aside type="note" title="Nothing is stored">
+  Contrail never stores credentials. It reads the expiry of the SSO token cache to show whether a
+  profile is logged in; the AWS SDK handles everything else.
+</Aside>
