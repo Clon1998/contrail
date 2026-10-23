@@ -244,8 +244,58 @@ fn environment(spec: &ServiceSpec) -> Vec<EnvVar> {
             value,
         })
         .collect();
+    if spec.name == "legacy-gateway" {
+        // Several routes to one message queue, as output services often have; the password
+        // comes from Secrets Manager (see `secrets`).
+        for (n, (topic, queue)) in MQ_ROUTES.iter().enumerate() {
+            let prefix = format!("ACME_ROUTES_{}_", n + 1);
+            for (name, value) in [
+                ("TOPIC", *topic),
+                ("GROUP", "legacy-gateway"),
+                ("CONCURRENCY", "1"),
+                ("OUTPUTS_0_TYPE", "artemis_mq"),
+                ("OUTPUTS_0_SYSTEM", "Billing"),
+                (
+                    "OUTPUTS_0_PROPERTIES_BROKERURL",
+                    "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true",
+                ),
+                ("OUTPUTS_0_PROPERTIES_QUEUE", *queue),
+                ("OUTPUTS_0_PROPERTIES_USER", "app"),
+            ] {
+                vars.push(EnvVar {
+                    name: format!("{prefix}{name}"),
+                    value: value.to_owned(),
+                });
+            }
+        }
+    }
     vars.sort_by(|a, b| a.name.cmp(&b.name));
     vars
+}
+
+/// The message-queue routes of the demo's `legacy-gateway`: topic and queue.
+const MQ_ROUTES: [(&str, &str); 3] = [
+    ("orders.created", "billing/queue/ORDER_IN"),
+    ("orders.cancelled", "billing/queue/ORDER_IN"),
+    ("shipments.dispatched", "billing/queue/SHIPMENT_IN"),
+];
+
+/// The variables a demo service gets from Secrets Manager or SSM (references only).
+fn secrets(spec: &ServiceSpec, region: &str, account: &str) -> Vec<SecretRef> {
+    let mut secrets = vec![SecretRef {
+        name: "API_TOKEN".to_owned(),
+        value_from: format!(
+            "arn:aws:ssm:{region}:{account}:parameter/demo/{}/api-token",
+            spec.name
+        ),
+    }];
+    if spec.name == "legacy-gateway" {
+        secrets.extend((1..=MQ_ROUTES.len()).map(|n| SecretRef {
+            name: format!("ACME_ROUTES_{n}_OUTPUTS_0_PROPERTIES_PASSWORD"),
+            value_from: format!("arn:aws:secretsmanager:{region}:{account}:secret:demo/billing-mq"),
+        }));
+    }
+    secrets
 }
 
 /// Demo ECS data. Shares the session state of [`FakeAuth`]: an expired demo profile can't list
@@ -473,15 +523,9 @@ impl EcsSource for FakeEcs {
                     .into_iter()
                     .map(|(k, v)| (k.to_owned(), v))
                     .collect(),
-                    routes: parse_routes(&environment(spec)),
+                    routes: parse_routes(&environment(spec), &secrets(spec, &region, &account)),
                     environment: environment(spec),
-                    secrets: vec![SecretRef {
-                        name: "API_TOKEN".to_owned(),
-                        value_from: format!(
-                            "arn:aws:ssm:{region}:{account}:parameter/demo/{}/api-token",
-                            spec.name
-                        ),
-                    }],
+                    secrets: secrets(spec, &region, &account),
                     environment_files: Vec::new(),
                 }],
             }),

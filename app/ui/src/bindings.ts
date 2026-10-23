@@ -574,9 +574,15 @@ export type RouteConfig = {
 
 export type RouteProperty = {
 	key: string,
+	/**  Empty for a setting filled from a secret (see `value_from`). */
 	value: string,
 	/**  The original variable name (to mask credentials the same way as in the environment list). */
 	variable: string,
+	/**
+	 *  The Secrets Manager or SSM reference when the value comes from there (it is only read when
+	 *  the user asks, like in the environment list).
+	 */
+	valueFrom: string | null,
 };
 
 /**  Listed rows from `offset` on. */

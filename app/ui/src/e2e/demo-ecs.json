@@ -487,12 +487,14 @@
                       {
                         "key": "host",
                         "value": "sftp.example.com",
-                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_HOST"
+                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_HOST",
+                        "valueFrom": null
                       },
                       {
                         "key": "path",
                         "value": "outbox",
-                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_PATH"
+                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_PATH",
+                        "valueFrom": null
                       }
                     ]
                   },
@@ -599,6 +601,102 @@
                 "value": "demo.events"
               },
               {
+                "name": "ACME_ROUTES_1_CONCURRENCY",
+                "value": "1"
+              },
+              {
+                "name": "ACME_ROUTES_1_GROUP",
+                "value": "legacy-gateway"
+              },
+              {
+                "name": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_BROKERURL",
+                "value": "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true"
+              },
+              {
+                "name": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_QUEUE",
+                "value": "billing/queue/ORDER_IN"
+              },
+              {
+                "name": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_USER",
+                "value": "app"
+              },
+              {
+                "name": "ACME_ROUTES_1_OUTPUTS_0_SYSTEM",
+                "value": "Billing"
+              },
+              {
+                "name": "ACME_ROUTES_1_OUTPUTS_0_TYPE",
+                "value": "artemis_mq"
+              },
+              {
+                "name": "ACME_ROUTES_1_TOPIC",
+                "value": "orders.created"
+              },
+              {
+                "name": "ACME_ROUTES_2_CONCURRENCY",
+                "value": "1"
+              },
+              {
+                "name": "ACME_ROUTES_2_GROUP",
+                "value": "legacy-gateway"
+              },
+              {
+                "name": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_BROKERURL",
+                "value": "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true"
+              },
+              {
+                "name": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_QUEUE",
+                "value": "billing/queue/ORDER_IN"
+              },
+              {
+                "name": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_USER",
+                "value": "app"
+              },
+              {
+                "name": "ACME_ROUTES_2_OUTPUTS_0_SYSTEM",
+                "value": "Billing"
+              },
+              {
+                "name": "ACME_ROUTES_2_OUTPUTS_0_TYPE",
+                "value": "artemis_mq"
+              },
+              {
+                "name": "ACME_ROUTES_2_TOPIC",
+                "value": "orders.cancelled"
+              },
+              {
+                "name": "ACME_ROUTES_3_CONCURRENCY",
+                "value": "1"
+              },
+              {
+                "name": "ACME_ROUTES_3_GROUP",
+                "value": "legacy-gateway"
+              },
+              {
+                "name": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_BROKERURL",
+                "value": "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true"
+              },
+              {
+                "name": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_QUEUE",
+                "value": "billing/queue/SHIPMENT_IN"
+              },
+              {
+                "name": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_USER",
+                "value": "app"
+              },
+              {
+                "name": "ACME_ROUTES_3_OUTPUTS_0_SYSTEM",
+                "value": "Billing"
+              },
+              {
+                "name": "ACME_ROUTES_3_OUTPUTS_0_TYPE",
+                "value": "artemis_mq"
+              },
+              {
+                "name": "ACME_ROUTES_3_TOPIC",
+                "value": "shipments.dispatched"
+              },
+              {
                 "name": "DB_PASSWORD",
                 "value": "demo-not-a-secret"
               },
@@ -623,6 +721,18 @@
               {
                 "name": "API_TOKEN",
                 "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/legacy-gateway/api-token"
+              },
+              {
+                "name": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_PASSWORD",
+                "valueFrom": "arn:aws:secretsmanager:eu-central-1:111122223333:secret:demo/billing-mq"
+              },
+              {
+                "name": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_PASSWORD",
+                "valueFrom": "arn:aws:secretsmanager:eu-central-1:111122223333:secret:demo/billing-mq"
+              },
+              {
+                "name": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_PASSWORD",
+                "valueFrom": "arn:aws:secretsmanager:eu-central-1:111122223333:secret:demo/billing-mq"
               }
             ],
             "environmentFiles": [],
@@ -644,7 +754,8 @@
                         {
                           "key": "bucketnameorarn",
                           "value": "demo-archive",
-                          "variable": "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN"
+                          "variable": "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN",
+                          "valueFrom": null
                         }
                       ]
                     },
@@ -656,17 +767,163 @@
                         {
                           "key": "password",
                           "value": "demo-not-a-secret",
-                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_PASSWORD"
+                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_PASSWORD",
+                          "valueFrom": null
                         },
                         {
                           "key": "url",
                           "value": "https://api.example.com/in",
-                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL"
+                          "variable": "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
+                          "valueFrom": null
                         }
                       ]
                     }
                   ],
                   "settings": []
+                },
+                {
+                  "index": 1,
+                  "topic": "orders.created",
+                  "enabled": true,
+                  "group": "legacy-gateway",
+                  "input": null,
+                  "outputs": [
+                    {
+                      "kind": "artemis_mq",
+                      "system": "Billing",
+                      "enabled": true,
+                      "properties": [
+                        {
+                          "key": "brokerurl",
+                          "value": "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true",
+                          "variable": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_BROKERURL",
+                          "valueFrom": null
+                        },
+                        {
+                          "key": "password",
+                          "value": "",
+                          "variable": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_PASSWORD",
+                          "valueFrom": "arn:aws:secretsmanager:eu-central-1:111122223333:secret:demo/billing-mq"
+                        },
+                        {
+                          "key": "queue",
+                          "value": "billing/queue/ORDER_IN",
+                          "variable": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_QUEUE",
+                          "valueFrom": null
+                        },
+                        {
+                          "key": "user",
+                          "value": "app",
+                          "variable": "ACME_ROUTES_1_OUTPUTS_0_PROPERTIES_USER",
+                          "valueFrom": null
+                        }
+                      ]
+                    }
+                  ],
+                  "settings": [
+                    {
+                      "key": "concurrency",
+                      "value": "1",
+                      "variable": "ACME_ROUTES_1_CONCURRENCY",
+                      "valueFrom": null
+                    }
+                  ]
+                },
+                {
+                  "index": 2,
+                  "topic": "orders.cancelled",
+                  "enabled": true,
+                  "group": "legacy-gateway",
+                  "input": null,
+                  "outputs": [
+                    {
+                      "kind": "artemis_mq",
+                      "system": "Billing",
+                      "enabled": true,
+                      "properties": [
+                        {
+                          "key": "brokerurl",
+                          "value": "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true",
+                          "variable": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_BROKERURL",
+                          "valueFrom": null
+                        },
+                        {
+                          "key": "password",
+                          "value": "",
+                          "variable": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_PASSWORD",
+                          "valueFrom": "arn:aws:secretsmanager:eu-central-1:111122223333:secret:demo/billing-mq"
+                        },
+                        {
+                          "key": "queue",
+                          "value": "billing/queue/ORDER_IN",
+                          "variable": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_QUEUE",
+                          "valueFrom": null
+                        },
+                        {
+                          "key": "user",
+                          "value": "app",
+                          "variable": "ACME_ROUTES_2_OUTPUTS_0_PROPERTIES_USER",
+                          "valueFrom": null
+                        }
+                      ]
+                    }
+                  ],
+                  "settings": [
+                    {
+                      "key": "concurrency",
+                      "value": "1",
+                      "variable": "ACME_ROUTES_2_CONCURRENCY",
+                      "valueFrom": null
+                    }
+                  ]
+                },
+                {
+                  "index": 3,
+                  "topic": "shipments.dispatched",
+                  "enabled": true,
+                  "group": "legacy-gateway",
+                  "input": null,
+                  "outputs": [
+                    {
+                      "kind": "artemis_mq",
+                      "system": "Billing",
+                      "enabled": true,
+                      "properties": [
+                        {
+                          "key": "brokerurl",
+                          "value": "(tcp://mq-a.example.com:61616,tcp://mq-b.example.com:61616)?ha=true",
+                          "variable": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_BROKERURL",
+                          "valueFrom": null
+                        },
+                        {
+                          "key": "password",
+                          "value": "",
+                          "variable": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_PASSWORD",
+                          "valueFrom": "arn:aws:secretsmanager:eu-central-1:111122223333:secret:demo/billing-mq"
+                        },
+                        {
+                          "key": "queue",
+                          "value": "billing/queue/SHIPMENT_IN",
+                          "variable": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_QUEUE",
+                          "valueFrom": null
+                        },
+                        {
+                          "key": "user",
+                          "value": "app",
+                          "variable": "ACME_ROUTES_3_OUTPUTS_0_PROPERTIES_USER",
+                          "valueFrom": null
+                        }
+                      ]
+                    }
+                  ],
+                  "settings": [
+                    {
+                      "key": "concurrency",
+                      "value": "1",
+                      "variable": "ACME_ROUTES_3_CONCURRENCY",
+                      "valueFrom": null
+                    }
+                  ]
                 }
               ]
             }

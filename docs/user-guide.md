@@ -22,7 +22,9 @@ page has the details.
   click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored or logged. It
   needs the optional `ContrailOptionalRevealSecrets` statement of the [IAM policy](iam-policy.json).
 - **Routes** of routing-framework services (configured as `<PREFIX>_ROUTES_<n>_…` environment variables) are shown
-  as source → topic → targets; "Find connected services" lists the services on the other side of each topic.
+  one per row: source system → topic → target systems, the consumer group, and whether a route or target is
+  disabled. Click a route for the types, properties and settings (passwords from Secrets Manager or SSM with
+  **Reveal**). "Find connected services" adds the services on the other side of each topic to the rows.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile. Star a
   service to pin it to the sidebar.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).

@@ -157,19 +157,35 @@ test("routes of a routing-framework service, and the services on the same topic"
   const view = await openTreeService(page, "demo-edge", "event-ingest");
   const routes = view.getByRole("region", { name: "Routes" });
   const route = routes.getByRole("group", { name: "Route 0" });
-  await expect(route).toContainText("sftp");
+  // The row names the systems and the topic; the type and properties only after a click.
   await expect(route).toContainText("Example Partner");
   await expect(route).toContainText("demo.events");
+  await expect(route).not.toContainText("sftp.example.com");
+  await route.getByRole("button", { name: /Route 0/ }).click();
+  await expect(route.getByRole("region", { name: "Input" })).toContainText("sftp");
+  await expect(route).toContainText("sftp.example.com");
 
   await routes.getByRole("button", { name: "Find connected services" }).click();
-  await routes.getByRole("button", { name: /legacy-gateway/ }).click();
+  await routes.getByRole("button", { name: "to legacy-gateway" }).click();
 
   const gateway = page.getByRole("main", { name: "Service legacy-gateway" });
-  const outputs = gateway
-    .getByRole("region", { name: "Routes" })
-    .getByRole("group", { name: "Route 0" });
+  const gatewayRoutes = gateway.getByRole("region", { name: "Routes" });
+  const outputs = gatewayRoutes.getByRole("group", { name: "Route 0" });
   await expect(outputs).toContainText("Archive");
-  await expect(outputs.getByText("disabled")).toBeVisible();
+  await expect(outputs).toContainText("group legacy-gateway");
+  await outputs.getByRole("button", { name: /Route 0/ }).click();
+  await expect(outputs.getByRole("region", { name: "Output 2" })).toContainText("disabled");
   // Credentials in endpoint settings are masked.
   await expect(outputs).not.toContainText("demo-not-a-secret");
+
+  // A password from Secrets Manager shows its reference, and its value only on Reveal.
+  const mq = gatewayRoutes.getByRole("group", { name: "Route 1" });
+  await expect(mq).toContainText("Billing");
+  await expect(mq).not.toContainText("billing/queue/ORDER_IN");
+  await mq.getByRole("button", { name: /Route 1/ }).click();
+  await expect(mq).toContainText("billing/queue/ORDER_IN");
+  await expect(mq.getByRole("region", { name: "Route settings" })).toContainText("concurrency");
+  await expect(mq).toContainText("secret:demo/billing-mq");
+  await mq.getByRole("button", { name: "Reveal" }).click();
+  await expect(mq).toContainText("not-a-real-secret");
 });

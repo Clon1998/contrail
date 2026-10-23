@@ -88,7 +88,7 @@ export function Environment({ containers }: { containers: ContainerDefinitionInf
  * that click only (each read shows up in CloudTrail), kept in this component's state and gone when
  * it is hidden or the view closes; it is never stored.
  */
-function SecretValue({ valueFrom }: { valueFrom: string }) {
+export function SecretValue({ valueFrom }: { valueFrom: string }) {
   const ctx = useEcs((s) => s.ctx);
   const [state, setState] = useState<
     | { kind: "hidden" }
