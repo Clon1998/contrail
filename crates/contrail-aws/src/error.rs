@@ -10,9 +10,10 @@ const CREDENTIAL_ERROR_CODES: &[&str] = &[
     "ExpiredTokenException",
     "InvalidClientTokenId",
     "UnrecognizedClientException",
-    "AccessDeniedException",
-    "AccessDenied",
 ];
+
+/// Codes for a missing IAM permission.
+const ACCESS_DENIED_CODES: &[&str] = &["AccessDeniedException", "AccessDenied"];
 
 /// Turns any SDK error into a [`SourceError`], telling credential problems apart from the rest.
 ///
@@ -35,6 +36,9 @@ where
             match source.code() {
                 Some(code) if CREDENTIAL_ERROR_CODES.contains(&code) => {
                     credentials(format!("{code}: {message}"))
+                }
+                Some(code) if ACCESS_DENIED_CODES.contains(&code) => {
+                    SourceError::AccessDenied(format!("{code}: {message}"))
                 }
                 Some(code) => SourceError::Aws(format!("{code}: {message}")),
                 None => SourceError::Aws(message),

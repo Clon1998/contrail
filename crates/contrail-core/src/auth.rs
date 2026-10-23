@@ -64,7 +64,9 @@ impl From<SourceError> for AuthError {
             SourceError::Credentials { profile, message } => {
                 AuthError::Credentials { profile, message }
             }
-            SourceError::Aws(message) | SourceError::NotFound(message) => AuthError::Aws(message),
+            SourceError::Aws(message)
+            | SourceError::NotFound(message)
+            | SourceError::AccessDenied(message) => AuthError::Aws(message),
             SourceError::Config(message) => AuthError::Config(message),
         }
     }

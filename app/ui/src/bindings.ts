@@ -177,7 +177,9 @@ export type Deployment = {
 };
 
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
-export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config" | "io" | 
+export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | 
+/**  A missing IAM permission. */
+"accessDenied" | "aws" | "config" | "io" | 
 /**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
 "logsUnavailable";
 

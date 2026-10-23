@@ -6,6 +6,9 @@ pub enum SourceError {
     /// The profile's credentials are missing, expired or rejected: a login usually fixes it.
     #[error("no valid credentials for profile \"{profile}\": {message}")]
     Credentials { profile: String, message: String },
+    /// The credentials work, but the role lacks a permission (logging in again won't help).
+    #[error("missing permission: {0}")]
+    AccessDenied(String),
     /// Something AWS (or the connection to it) reported.
     #[error("AWS error: {0}")]
     Aws(String),

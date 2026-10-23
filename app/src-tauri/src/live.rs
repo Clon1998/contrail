@@ -329,7 +329,11 @@ impl LiveTask {
         backoff: &mut StdDuration,
     ) -> bool {
         tracing::warn!(view = self.view_id, %error, "live tail error");
-        if matches!(error, SourceError::Credentials { .. }) {
+        // Errors only the user can fix: report them and wait.
+        if matches!(
+            error,
+            SourceError::Credentials { .. } | SourceError::AccessDenied(_)
+        ) {
             if !self.report(LiveState::Failed, false, None, Some(error.to_string())) {
                 return false;
             }
@@ -716,6 +720,24 @@ mod tests {
 
         assert_eq!(harness.states().last(), Some(&LiveState::Failed));
         // No retry storm while waiting for the user.
+        assert_eq!(harness.source.backfill_ranges.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn missing_permissions_stop_until_resumed() {
+        let source = Scripted::default();
+        source
+            .sessions
+            .lock()
+            .unwrap()
+            .push_back(Err(LiveError::Source(SourceError::AccessDenied(
+                "AccessDeniedException: logs:FilterLogEvents".into(),
+            ))));
+        let harness = Harness::new(source);
+        let _handle = harness.spawn();
+        tokio::time::sleep(StdDuration::from_secs(60)).await;
+
+        assert_eq!(harness.states().last(), Some(&LiveState::Failed));
         assert_eq!(harness.source.backfill_ranges.lock().unwrap().len(), 1);
     }
 
