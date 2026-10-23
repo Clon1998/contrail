@@ -1,0 +1,101 @@
+---
+title: Contrail, the desktop log viewer for AWS ECS
+description: A fast desktop log viewer for AWS ECS services on macOS, Windows and Linux. Switch SSO profiles, browse clusters and services, and follow live, structured logs. Read-only, no credentials stored.
+template: splash
+head:
+  # Instead of Starlight's "<title> | Contrail".
+  - tag: title
+    content: Contrail · Desktop log viewer for AWS ECS
+# Rendered by src/components/Hero.astro (the Starlight Hero override).
+hero: {}
+editUrl: false
+pagefind: false
+---
+
+import { LinkButton } from "@astrojs/starlight/components";
+import Downloads from "../../components/Downloads.astro";
+import Features from "../../components/Features.astro";
+import Screenshot from "../../components/Screenshot.astro";
+import Showcase from "../../components/Showcase.astro";
+
+<div class="pillars not-content">
+  <div>
+    <strong>Straight to the logs</strong>
+    <p>From profile to a service's live logs in a few keystrokes. No console tabs, no log group hunting: Contrail finds the group in the task definition.</p>
+  </div>
+  <div>
+    <strong>Read-only by design</strong>
+    <p>Contrail never changes anything in AWS and never stores credentials. Your SSO session and the AWS SDK do the authentication.</p>
+  </div>
+  <div>
+    <strong>Fast and small</strong>
+    <p>Built with Rust and Tauri. Parsing, buffering and search run natively, so 100,000 lines scroll smoothly.</p>
+  </div>
+</div>
+
+<Showcase eyebrow="Services" title="Everything about a service, on one page">
+  <p>
+    Pick a service in the sidebar or with <kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd>. Its overview shows the
+    running and recently stopped tasks, why they stopped, the deployments in progress, the task
+    definition and recent events.
+  </p>
+  <ul>
+    <li>Environment variables, with secret-looking values masked.</li>
+    <li>Secrets from Secrets Manager or SSM by reference; <strong>Reveal</strong> reads one on click.</li>
+    <li>Refreshes every 30 seconds.</li>
+  </ul>
+  <div slot="media">
+    <Screenshot name="overview" alt="A service's overview in Contrail: tasks, deployments and the task definition." />
+  </div>
+</Showcase>
+
+<Showcase eyebrow="Search" title="Find the one line that matters" flip>
+  <p>
+    Search the loaded logs as you type: words and phrases, fields, levels, regular expressions.
+    Filter the list down or highlight the matches and step through them. Level chips hide what you
+    don't need, "Hide lines like this" builds a noise list per service.
+  </p>
+  <p>
+    <code>timeout level&gt;=WARN trace.id:abc123 -healthcheck</code>
+  </p>
+  <div slot="media">
+    <Screenshot name="search" alt="Contrail's log view filtered with a search, the matching words marked." />
+  </div>
+</Showcase>
+
+<Showcase eyebrow="Tracing" title="Follow one request through your services">
+  <p>
+    Expand a line with a correlation or trace ID and search the other services of the cluster for
+    it. Contrail shows the way it took: the services in order with their last state, every event on
+    a timeline, and whether it completed or failed.
+  </p>
+  <p>Each entry opens that service's logs, filtered to the same ID.</p>
+  <div slot="media">
+    <Screenshot name="trace" alt="A trace across two services in Contrail, with the events on a timeline." />
+  </div>
+</Showcase>
+
+<div class="landing-heading not-content">
+  <h2>Built for the on-call morning</h2>
+  <p>Dark first, dense and keyboard friendly, with light mode and your choice of accent color.</p>
+</div>
+
+<Features />
+
+<div class="landing-heading not-content" id="download">
+  <h2>Download Contrail</h2>
+  <p>Free and open source (MIT), for macOS, Windows and Linux.</p>
+</div>
+
+<Downloads />
+
+<div class="closing not-content">
+  <h2>Ready to read some logs?</h2>
+  <p>All you need is an AWS SSO profile and the AWS CLI. Or try it without AWS in demo mode.</p>
+  <div class="buttons">
+    <LinkButton href={`${import.meta.env.BASE_URL}quick-start/`} icon="right-arrow">Quick start</LinkButton>
+    <LinkButton href={`${import.meta.env.BASE_URL}permissions/`} variant="secondary" icon="padlock" iconPlacement="start">
+      AWS permissions
+    </LinkButton>
+  </div>
+</div>

@@ -1,0 +1,24 @@
+---
+title: Download
+description: Installers for macOS, Windows and Linux.
+tableOfContents: false
+---
+
+import Downloads from "../../components/Downloads.astro";
+
+<Downloads />
+
+## Requirements
+
+Contrail needs the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+for SSO logins, and reads your profiles from `~/.aws/config` (`%USERPROFILE%\.aws\config` on Windows).
+
+## Build from source
+
+You need Rust (stable), Node.js 24, pnpm and your platform's [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). Then:
+
+```sh
+git clone https://github.com/Clon1998/contrail.git && cd contrail/app
+pnpm install
+pnpm build    # installers end up in target/release/bundle/
+```

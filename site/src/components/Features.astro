@@ -1,0 +1,109 @@
+---
+/** The feature grid on the landing page. Keep it in step with the README's "Using it" list. */
+import { Icon } from "@astrojs/starlight/components";
+import type { StarlightIcon } from "@astrojs/starlight/types";
+
+const base = import.meta.env.BASE_URL;
+
+const features: { icon: StarlightIcon; title: string; text: string; link?: string }[] = [
+  {
+    icon: "approve-check",
+    title: "SSO profiles, one keystroke away",
+    text: "Your profiles from ~/.aws/config with their session state. Log in runs aws sso login for you; Cmd/Ctrl+Shift+P switches.",
+    link: "quick-start/",
+  },
+  {
+    icon: "server",
+    title: "Clusters, services, tasks",
+    text: "Running and recently stopped tasks with stop reasons and exit codes, deployments, task definition, events and environment variables.",
+  },
+  {
+    icon: "rocket",
+    title: "Live, without the lag",
+    text: "CloudWatch Live Tail follows every task of the service, new ones included. Pauses while Contrail is hidden, catches up when you're back.",
+  },
+  {
+    icon: "document",
+    title: "Logs you can read",
+    text: "ECS JSON (nested or dotted), Spring Boot's console pattern and plain text. Java stack traces split into one event per line are joined again.",
+  },
+  {
+    icon: "magnifier",
+    title: "Search that knows fields",
+    text: "level>=WARN trace.id:abc123 -healthcheck, regular expressions and globs, as a filter or highlighted. Hide noise per service.",
+    link: "search-syntax/",
+  },
+  {
+    icon: "random",
+    title: "Trace across services",
+    text: "From one line to every service a correlation ID passed through: in order, on a timeline, with the state it ended in.",
+  },
+  {
+    icon: "laptop",
+    title: "Tabs and keyboard",
+    text: "Every service stays open in a tab with its search and live tail. Cmd/Ctrl+K jumps to any service; press ? for all shortcuts.",
+  },
+  {
+    icon: "download",
+    title: "Export the evidence",
+    text: "The listed lines as .log or .jsonl, for the incident ticket. Copy a line's fields, raw JSON or stack trace with one click.",
+  },
+  {
+    icon: "padlock",
+    title: "Read-only, no credentials",
+    text: "Contrail never changes anything in AWS and never stores credentials. Secret values are read only when you click Reveal.",
+    link: "permissions/",
+  },
+];
+---
+
+<div class="features not-content">
+  {
+    features.map((f) => (
+      <a class="feature" href={f.link ? `${base}${f.link}` : undefined}>
+        <Icon name={f.icon} size="1.5rem" class="icon" />
+        <h3>{f.title}</h3>
+        <p>{f.text}</p>
+      </a>
+    ))
+  }
+</div>
+<style>
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+    gap: 1rem;
+  }
+  .feature {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    background: var(--sl-color-bg-nav);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s;
+  }
+  .feature:hover {
+    border-color: var(--sl-color-accent);
+  }
+  .feature :global(.icon) {
+    padding: 0.4rem;
+    border-radius: 0.5rem;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-text-accent);
+    box-sizing: content-box;
+  }
+  h3 {
+    margin: 0.25rem 0 0;
+    font-size: var(--sl-text-lg);
+    color: var(--sl-color-white);
+  }
+  p {
+    margin: 0;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+</style>
