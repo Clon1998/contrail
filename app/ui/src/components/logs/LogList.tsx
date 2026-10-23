@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownToLineIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLogRows } from "@/hooks/useLogRows";
-import { useLogs } from "@/stores/logs";
+import { PAGE_SIZE, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { gridTemplate } from "./columns";
 import { LogRow } from "./LogRow";
@@ -28,8 +27,13 @@ export function LogList({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fontSize = usePrefs((s) => s.prefs.settings.logFontSize);
   const columns = useLogs((s) => s.columns);
-  const { row, ensure } = useLogRows(viewId);
+  const pages = useLogs((s) => s.pages);
+  const fetchRows = useLogs((s) => s.fetchRows);
+  const row = (index: number) => pages.get(Math.floor(index / PAGE_SIZE))?.[index % PAGE_SIZE];
   const [atBottom, setAtBottom] = useState(true);
+  // Read inside effects without re-running them when it changes.
+  const following = useRef(true);
+  following.current = atBottom;
 
   // TanStack Virtual decides which rows to render. Rows have a fixed height until expanded;
   // `measureElement` corrects the size of rows that turn out taller. The React compiler can't
@@ -45,15 +49,24 @@ export function LogList({
   const first = items[0]?.index ?? 0;
   const last = items.at(-1)?.index ?? 0;
 
+  // Load what's on screen (again, after live updates made cached pages stale).
   useEffect(() => {
-    if (total > 0) ensure(first, last);
-  }, [first, last, total, ensure]);
+    if (total > 0) fetchRows(first, last);
+  }, [first, last, total, pages, fetchRows]);
 
   // A new view (or font size) starts at the newest event.
   useEffect(() => {
     if (total > 0) virtualizer.scrollToIndex(total - 1, { align: "end" });
-    setAtBottom(true);
-  }, [viewId, total, fontSize, virtualizer]);
+    // Only on a new view or font: new rows must not pull the user back down.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewId, fontSize, virtualizer]);
+
+  // Follow mode: new rows keep the list at the newest event while the user is at the bottom.
+  useEffect(() => {
+    if (following.current && total > 0) {
+      virtualizer.scrollToIndex(total - 1, { align: "end" });
+    }
+  }, [total, virtualizer]);
 
   const grid = gridTemplate(showTask, columns);
 
