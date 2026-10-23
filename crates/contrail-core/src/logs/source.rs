@@ -28,6 +28,9 @@ pub struct StreamSelection {
     /// Live tail and polling use it instead of `streams`, so tasks started later (deployments,
     /// restarts) are picked up automatically. `None` for a single task.
     pub stream_prefix: Option<String>,
+    /// Only events containing this text (a CloudWatch filter pattern for a quoted phrase), e.g. a
+    /// correlation ID when tracing a document; `None` reads everything.
+    pub filter_pattern: Option<String>,
 }
 
 /// A time range, start inclusive, end exclusive.
@@ -75,6 +78,13 @@ impl TimeWindow {
             end: Timestamp(end),
         })
     }
+}
+
+/// An event found by a Logs Insights query, and the log group it came from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroupEvent {
+    pub log_group: String,
+    pub event: RawEvent,
 }
 
 /// The result of a backfill.
@@ -129,6 +139,23 @@ pub trait LogSource: Send + Sync {
         range: TimeRange,
         limit: usize,
     ) -> Result<Backfill, SourceError>;
+
+    /// Logs Insights: the events of `log_groups` (in `region`, `None` = the profile's) whose
+    /// message contains `text`, oldest first, at most `limit`. One query for many log groups (at
+    /// most 50), billed per GB scanned. The default says it isn't available.
+    async fn insights_find(
+        &self,
+        _ctx: &AwsCtx,
+        _region: Option<String>,
+        _log_groups: &[String],
+        _text: &str,
+        _range: TimeRange,
+        _limit: usize,
+    ) -> Result<Vec<GroupEvent>, SourceError> {
+        Err(SourceError::Aws(
+            "Logs Insights isn't available here".to_owned(),
+        ))
+    }
 
     /// Starts a live tail of `selection` (its `stream_prefix` if set, else its `streams`).
     ///

@@ -208,3 +208,33 @@ test("pipeline status events: state badges, state chips and one document", async
   await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue(/^correlation:\S+$/);
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(1);
 });
+
+test("trace a document across services", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page
+    .getByRole("group", { name: "Pipeline states" })
+    .getByRole("button", { name: /^FAILED / })
+    .click();
+  await expect.poll(() => rowCount(page)).toBe(1);
+  await list.getByRole("listitem").first().getByRole("button").first().click();
+  await page.getByRole("button", { name: "Trace across services" }).click();
+
+  const dialog = page.getByRole("dialog", { name: /^Trace / });
+  // The current service is chosen; add another one of the cluster.
+  await expect(dialog.getByRole("checkbox", { name: "orders-api" })).toHaveAttribute(
+    "data-state",
+    "checked",
+  );
+  await dialog.getByRole("checkbox", { name: "payments-worker" }).click();
+  await dialog.getByRole("button", { name: "Search 2 services" }).click();
+
+  await expect(dialog.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
+  const timeline = dialog.getByRole("list", { name: "Trace events" });
+  await expect(timeline.getByRole("listitem").first()).toContainText("orders-api");
+
+  // An entry opens that service's logs, filtered to the document.
+  await timeline.getByRole("listitem").first().getByRole("button").click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue(/^correlation:/);
+});

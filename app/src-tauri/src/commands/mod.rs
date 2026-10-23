@@ -8,3 +8,4 @@ pub mod auth;
 pub mod ecs;
 pub mod logs;
 pub mod prefs;
+pub mod trace;

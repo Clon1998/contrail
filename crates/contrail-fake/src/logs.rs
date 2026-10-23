@@ -9,7 +9,8 @@ use async_trait::async_trait;
 use contrail_core::auth::AwsCtx;
 use contrail_core::error::SourceError;
 use contrail_core::logs::{
-    Backfill, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection, TimeRange,
+    Backfill, GroupEvent, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection,
+    TimeRange,
 };
 use contrail_core::timestamp::Timestamp;
 use futures::StreamExt;
@@ -94,15 +95,58 @@ impl LogSource for FakeLogs {
         let Some((format, interval, service)) = profile_of(&selection.log_group) else {
             return Ok(Backfill::default());
         };
-        let mut events: Vec<RawEvent> = selection
-            .streams
+        // A whole-service search (a trace) gives only the stream prefix: invent two task streams.
+        let prefixed: Vec<String> = match (&selection.stream_prefix, selection.streams.is_empty()) {
+            (Some(prefix), true) => ["0a1b2c3d4e5f", "6a7b8c9d0e1f"]
+                .iter()
+                .map(|task| format!("{prefix}{task}"))
+                .collect(),
+            _ => selection.streams.clone(),
+        };
+        let mut events: Vec<RawEvent> = prefixed
             .iter()
             .flat_map(|stream| generate(stream, service, format, interval, range))
             .collect();
+        if let Some(pattern) = &selection.filter_pattern {
+            events.retain(|e| e.message.contains(pattern.as_str()));
+        }
         events.sort_by_key(|e| e.timestamp);
         let truncated = events.len() > limit;
         events.truncate(limit);
         Ok(Backfill { events, truncated })
+    }
+
+    /// Demo Logs Insights: the same events, searched per log group (demo groups are
+    /// `/ecs/<service>` with streams `ecs/<service>/<task>`).
+    async fn insights_find(
+        &self,
+        ctx: &AwsCtx,
+        _region: Option<String>,
+        log_groups: &[String],
+        text: &str,
+        range: TimeRange,
+        limit: usize,
+    ) -> Result<Vec<GroupEvent>, SourceError> {
+        let mut found = Vec::new();
+        for group in log_groups {
+            let service = group.trim_start_matches("/ecs/");
+            let selection = StreamSelection {
+                log_group: group.clone(),
+                region: None,
+                account_id: None,
+                streams: Vec::new(),
+                stream_prefix: Some(format!("ecs/{service}/")),
+                filter_pattern: Some(text.to_owned()),
+            };
+            let backfill = self.backfill(ctx, &selection, range, limit).await?;
+            found.extend(backfill.events.into_iter().map(|event| GroupEvent {
+                log_group: group.clone(),
+                event,
+            }));
+        }
+        found.sort_by_key(|g| g.event.timestamp);
+        found.truncate(limit);
+        Ok(found)
     }
 
     async fn live(
@@ -405,6 +449,7 @@ mod tests {
             account_id: None,
             streams: tasks.iter().map(|t| format!("ecs/{service}/{t}")).collect(),
             stream_prefix: None,
+            filter_pattern: None,
         }
     }
 
