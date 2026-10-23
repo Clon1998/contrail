@@ -292,3 +292,24 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   and intervals advance instantly once all tasks are idle. The reconnect/backoff/polling tests run in
   milliseconds and deterministically.
 - **Where:** tests in `app/src-tauri/src/live.rs`.
+
+## Property-based tests (`proptest`)
+
+- **What:** instead of hand-picked examples, `proptest!` generates hundreds of inputs from strategies (string
+  patterns like `"[a-z]{1,6}"`) and checks a property holds for all of them; failures are shrunk to a minimal
+  example. Like jqwik/QuickCheck. Used for "the parser never panics", "`-x` is the complement of `x`".
+- **Where:** `crates/contrail-core/tests/query_props.rs`.
+
+## Collect before mutating what an iterator reads
+
+- **What:** `self.matched.extend(iter.filter(|e| self.accepts(e)))` doesn't compile: the lazy iterator still
+  borrows `self` while `extend` needs `self.matched` mutably. Collecting into a `Vec` first ends the shared
+  borrow before the mutation.
+- **Where:** `ViewFilter::after_insert` in `crates/contrail-core/src/logs/filter.rs`.
+
+## A hand-written parser with positions
+
+- **What:** the query language is tokenized and parsed by hand (no parser generator): each token remembers its
+  byte offset, so errors can point at the exact place (`QueryError { start, end }`). Keys, operators and values
+  are split with plain string methods (`strip_prefix`, `char_indices`).
+- **Where:** `crates/contrail-core/src/query.rs`.
