@@ -61,6 +61,9 @@ test("invalid queries explain themselves", async ({ page }) => {
 
 test("highlight mode marks matches and steps through them", async ({ page }) => {
   await openLogs(page, "demo-core", "payments-worker");
+  // A live event arriving in between would change the count: pause the tail first.
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
   const all = await rowCount(page);
   await page.getByRole("radio", { name: "highlight" }).click();
   const search = page.getByRole("textbox", { name: "Search logs" });
