@@ -77,7 +77,8 @@ Contrail reads the log group from the task definition, so services need the **`a
   work too, with less structure.
 - **Other JSON field names** can be mapped per service (the **Field mapping** button in the log toolbar), so `lvl`
   or `msg` work like `log.level` and `message`. Mappings are saved on each machine.
-- **Trace or correlation IDs** (`trace.id`, `traceId`, `trace_id`, or Spring's `[traceId-spanId]`) enable the
+- **Correlation or trace IDs** (`correlationId` / `correlation_id` or `trace.id` / `traceId` / `trace_id`, alone or
+  under any prefix, or Spring's `[traceId-spanId]`; a correlation ID wins when an event has both) enable the
   correlation column and **tracing across services**: logging the same ID in every service a request passes
   through is what makes that work.
 - **Stack traces** that CloudWatch split into one event per line are joined again; logging them inside the JSON
