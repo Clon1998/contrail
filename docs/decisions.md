@@ -172,3 +172,10 @@ The earlier assumption ("refreshable ⇒ show as valid") holds for the local vie
 state stays a first guess; a credentials error from the identity check overrides it ("session rejected", login
 offered in the main panel). Credential errors show only their root cause; the SDK chain goes to the debug log.
 `aws sso login` runs without a console window on Windows.
+
+## 2026-10-23 — Custom time windows; only short windows follow live by default
+
+Patrick's feedback: looking at the last hours rarely needs a live tail (billed per minute). **Decision:** the
+window is a `TimeWindow` (`last N minutes` or a fixed `from–to` range). Windows up to 15 minutes follow live
+right away; longer relative windows open with the tail paused (▶ resumes with a catch-up); a fixed range is
+never followed. `start_live` takes the initial pause state, so a paused view never opens a Live Tail session.

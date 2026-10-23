@@ -128,9 +128,10 @@ pub struct LiveTask {
     pub sink: Sink,
 }
 
-/// Starts the task on the tokio runtime and returns its handle.
-pub fn spawn(task: LiveTask) -> LiveHandle {
-    let (control, receiver) = watch::channel(Control::Run);
+/// Starts the task on the tokio runtime and returns its handle. With `Control::Pause` it waits
+/// for a resume before connecting (views of long time windows start that way).
+pub fn spawn(task: LiveTask, initial: Control) -> LiveHandle {
+    let (control, receiver) = watch::channel(initial);
     let task = tokio::spawn(task.run(receiver));
     LiveHandle { control, task }
 }
@@ -531,19 +532,26 @@ mod tests {
         }
 
         fn spawn(&self) -> LiveHandle {
+            self.spawn_with(Control::Run)
+        }
+
+        fn spawn_with(&self, initial: Control) -> LiveHandle {
             let updates = self.updates.clone();
-            spawn(LiveTask {
-                source: self.source.clone(),
-                ctx: AwsCtx {
-                    profile: "dev".into(),
-                    region: None,
+            spawn(
+                LiveTask {
+                    source: self.source.clone(),
+                    ctx: AwsCtx {
+                        profile: "dev".into(),
+                        region: None,
+                    },
+                    selection: selection(),
+                    views: self.views.clone(),
+                    view_id: 1,
+                    last_seen: at(0),
+                    sink: Arc::new(move |u| updates.lock().unwrap().push(u)),
                 },
-                selection: selection(),
-                views: self.views.clone(),
-                view_id: 1,
-                last_seen: at(0),
-                sink: Arc::new(move |u| updates.lock().unwrap().push(u)),
-            })
+                initial,
+            )
         }
 
         fn messages(&self) -> Vec<String> {
@@ -738,6 +746,19 @@ mod tests {
         tokio::time::sleep(StdDuration::from_secs(60)).await;
 
         assert_eq!(harness.states().last(), Some(&LiveState::Failed));
+        assert_eq!(harness.source.backfill_ranges.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_task_started_paused_reads_nothing_until_resumed() {
+        let harness = Harness::new(Scripted::default());
+        let handle = harness.spawn_with(Control::Pause);
+        settle().await;
+        assert_eq!(harness.states(), vec![LiveState::Paused]);
+        assert!(harness.source.backfill_ranges.lock().unwrap().is_empty());
+
+        handle.set(Control::Run);
+        settle().await;
         assert_eq!(harness.source.backfill_ranges.lock().unwrap().len(), 1);
     }
 

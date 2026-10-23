@@ -13,7 +13,9 @@ import {
   type LogViewInfo,
   type QueryError,
   type ServiceRef,
+  type TimeWindow,
 } from "@/bindings";
+import { liveMode } from "@/lib/logs";
 import { noiseKey, usePrefs } from "./prefs";
 
 /** Why a live tail is paused; it runs only while none applies. */
@@ -70,8 +72,8 @@ export interface LogsState {
   currentMatch: number;
   /** A row the list should scroll to (`nonce` makes repeated jumps to the same row work). */
   scrollTarget: { index: number; nonce: number } | null;
-  /** The time window (minutes back) the view was opened with. */
-  minutes: number;
+  /** The time window the view was opened with. */
+  timeWindow: TimeWindow;
   /** Which tab of the service view is shown. */
   tab: "overview" | "logs";
   /** A task to show alone, set from the task list ("Logs" on a task row). */
@@ -79,16 +81,24 @@ export interface LogsState {
   /** Expanded rows, by sequence number. */
   expanded: Record<number, boolean>;
 
-  /** Opens the logs of `service` (or one task of it) for the last `minutes`, then goes live. */
-  open: (ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) => Promise<void>;
+  /**
+   * Opens the logs of `service` (or one task of it) for `timeWindow`, then follows new events (live,
+   * paused or not at all, see `liveMode`).
+   */
+  open: (
+    ctx: AwsCtx,
+    service: ServiceRef,
+    timeWindow: TimeWindow,
+    taskId: string | null,
+  ) => Promise<void>;
   /** Like `open`, unless the view is already open (or opening) with exactly these arguments. */
   ensureOpen: (
     ctx: AwsCtx,
     service: ServiceRef,
-    minutes: number,
+    timeWindow: TimeWindow,
     taskId: string | null,
   ) => Promise<void>;
-  setMinutes: (minutes: number) => void;
+  setWindow: (timeWindow: TimeWindow) => void;
   close: () => Promise<void>;
   /** Makes sure the rows `from..=to` are (being) loaded. */
   fetchRows: (from: number, to: number) => void;
@@ -144,7 +154,7 @@ export function isPageComplete(
  * zustand "vanilla" store, i.e. not bound to a React hook); components read the store of the
  * tab they render in through `LogsContext` with `useLogs`.
  */
-export function createLogsStore(minutes: number): StoreApi<LogsState> {
+export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
   /** Counts each `open` call, so an older, slower one can't overwrite a newer one. */
   let generation = 0;
   /** What the view was last opened with (see `ensureOpen`). */
@@ -173,14 +183,14 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     matchPositions: [],
     currentMatch: -1,
     scrollTarget: null,
-    minutes,
+    timeWindow,
     tab: "overview",
     taskFilter: null,
     expanded: {},
 
-    open: async (ctx, service, minutes, taskId) => {
+    open: async (ctx, service, timeWindow, taskId) => {
       const mine = ++generation;
-      openedWith = openKey(ctx, service, minutes, taskId);
+      openedWith = openKey(ctx, service, timeWindow, taskId);
       const previous = get().view;
       set({
         service,
@@ -197,7 +207,7 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
       });
       if (previous) void commands.closeLogView(previous.viewId);
 
-      const opened = await commands.openServiceLogs(ctx, service, minutes, taskId);
+      const opened = await commands.openServiceLogs(ctx, service, timeWindow, taskId);
       if (mine !== generation) {
         if (opened.status === "ok") void commands.closeLogView(opened.data.viewId);
         return;
@@ -210,6 +220,10 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
       set({ view, loading: false, visible: view.stats.total, matches: null });
       // The search carries over to the new view.
       await get().applySearch();
+
+      const mode = liveMode(timeWindow);
+      if (mode === "off") return;
+      if (mode === "paused") set({ pauseReasons: { ...get().pauseReasons, user: true } });
 
       // Live updates for this view: new state and counts, and which cached rows are stale.
       const channel = new Channel<LiveUpdate>((update) => {
@@ -227,19 +241,21 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
           scheduleMatchRefresh();
         }
       });
-      await commands.startLive(view.viewId, channel);
-      // Auto-pause may already apply (e.g. opened while hidden).
-      if (Object.values(get().pauseReasons).some(Boolean)) {
-        void commands.pauseLive(view.viewId);
-      }
+      // Starts paused when a pause applies already (long window, window hidden, background tab),
+      // so no Live Tail session is opened for nothing.
+      await commands.startLive(
+        view.viewId,
+        channel,
+        Object.values(get().pauseReasons).some(Boolean),
+      );
     },
 
-    ensureOpen: async (ctx, service, minutes, taskId) => {
-      if (openedWith === openKey(ctx, service, minutes, taskId)) return;
-      await get().open(ctx, service, minutes, taskId);
+    ensureOpen: async (ctx, service, timeWindow, taskId) => {
+      if (openedWith === openKey(ctx, service, timeWindow, taskId)) return;
+      await get().open(ctx, service, timeWindow, taskId);
     },
 
-    setMinutes: (minutes) => set({ minutes }),
+    setWindow: (timeWindow) => set({ timeWindow }),
 
     close: async () => {
       generation++;
@@ -385,8 +401,10 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
   return store;
 }
 
-function openKey(ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) {
-  return [ctx.profile, ctx.region, service.clusterArn, service.serviceName, minutes, taskId].join(
+function openKey(ctx: AwsCtx, service: ServiceRef, timeWindow: TimeWindow, taskId: string | null) {
+  const range =
+    timeWindow.kind === "last" ? timeWindow.minutes : `${timeWindow.from}/${timeWindow.to}`;
+  return [ctx.profile, ctx.region, service.clusterArn, service.serviceName, range, taskId].join(
     "|",
   );
 }

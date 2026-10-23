@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { shortTaskId } from "@/lib/ecs";
-import { BACKFILL_WINDOWS } from "@/lib/logs";
+import { liveMode } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -36,6 +36,7 @@ import { ExportMenu } from "./ExportMenu";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
+import { TimeWindowPicker } from "./TimeWindowPicker";
 
 const LIVE_LABEL: Record<LiveState, string> = {
   connecting: "Connecting…",
@@ -61,13 +62,24 @@ function LiveControls() {
   const userPaused = useLogs((s) => s.pauseReasons.user);
   const autoPaused = useLogs((s) => s.pauseReasons.hidden || s.pauseReasons.background);
   const setPaused = useLogs((s) => s.setPaused);
+  const mode = useLogs((s) => liveMode(s.timeWindow));
+  const hasView = useLogs((s) => s.view !== null);
+  if (mode === "off" && hasView) {
+    return (
+      <Badge variant="outline" title="A fixed time range is not followed live.">
+        fixed range
+      </Badge>
+    );
+  }
   if (!live) return null;
 
   const hint =
     live.message ??
     (live.state === "paused" && !userPaused && autoPaused
       ? "Paused automatically (see the live tail settings); resumes when you're back."
-      : undefined);
+      : live.state === "paused" && userPaused && mode === "paused"
+        ? "Longer time windows open paused; ▶ follows new events."
+        : undefined);
   return (
     <span className="flex items-center gap-1.5">
       <span
@@ -179,8 +191,8 @@ export function LogViewer() {
   const error = useLogs((s) => s.error);
   const open = useLogs((s) => s.open);
   const ensureOpen = useLogs((s) => s.ensureOpen);
-  const minutes = useLogs((s) => s.minutes);
-  const setMinutes = useLogs((s) => s.setMinutes);
+  const timeWindow = useLogs((s) => s.timeWindow);
+  const setWindow = useLogs((s) => s.setWindow);
   const taskFilter = useLogs((s) => s.taskFilter);
   const columns = useLogColumns();
   const updateSettings = usePrefs((s) => s.updateSettings);
@@ -194,41 +206,19 @@ export function LogViewer() {
 
   // The view stays open while its service tab exists (it's closed with the tab).
   useEffect(() => {
-    if (ctx && selected) void ensureOpen(ctx, selected, minutes, taskId);
-  }, [ctx, selected, minutes, taskId, ensureOpen]);
+    if (ctx && selected) void ensureOpen(ctx, selected, timeWindow, taskId);
+  }, [ctx, selected, timeWindow, taskId, ensureOpen]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-1.5 text-xs">
-        <div
-          role="radiogroup"
-          aria-label="Time window"
-          className="flex rounded-md border border-border p-0.5"
-        >
-          {BACKFILL_WINDOWS.map((w) => (
-            <button
-              key={w.minutes}
-              type="button"
-              role="radio"
-              aria-checked={w.minutes === minutes}
-              onClick={() => setMinutes(w.minutes)}
-              className={cn(
-                "rounded px-2 py-0.5",
-                w.minutes === minutes
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {w.label}
-            </button>
-          ))}
-        </div>
+        <TimeWindowPicker value={timeWindow} onChange={setWindow} />
         <Button
           variant="ghost"
           size="icon-xs"
           aria-label="Reload logs"
           disabled={loading || !ctx || !selected}
-          onClick={() => ctx && selected && void open(ctx, selected, minutes, taskId)}
+          onClick={() => ctx && selected && void open(ctx, selected, timeWindow, taskId)}
         >
           <RefreshCwIcon className={loading ? "animate-spin" : undefined} />
         </Button>

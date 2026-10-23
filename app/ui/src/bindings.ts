@@ -29,11 +29,11 @@ export const commands = {
 	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
 	listTasks: (ctx: AwsCtx, service: ServiceRef, includeStopped: boolean) => typedError<Task[], ApiError>(__TAURI_INVOKE("list_tasks", { ctx, service, includeStopped })),
 	/**
-	 *  Opens a service's logs: backfills the last `minutes` into a new view. Without `task_id` the
+	 *  Opens a service's logs: backfills the time `window` into a new view. Without `task_id` the
 	 *  view merges all tasks of the service (running and recently stopped); with it, only that
 	 *  task's stream (the task view).
 	 */
-	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, minutes, taskId })),
+	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, window: TimeWindow, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, window, taskId })),
 	/**  Up to `limit` events of a view from `offset` (oldest first). */
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**  Frees a view's buffer and stops its live tail. */
@@ -52,7 +52,7 @@ export const commands = {
 	 * 
 	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
 	 */
-	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate })),
+	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>, paused: boolean) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate, paused })),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
@@ -183,7 +183,9 @@ export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing"
 /**  A missing IAM permission. */
 "accessDenied" | "aws" | "config" | "io" | 
 /**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
-"logsUnavailable";
+"logsUnavailable" | 
+/**  The UI sent something unusable, e.g. an empty time window. */
+"invalidInput";
 
 export type ExportFormat = 
 /**  The original lines, as CloudWatch delivered them (stack traces joined). */
@@ -548,6 +550,13 @@ export type TaskDefinitionInfo = {
 	memory: string | null,
 	containers: ContainerDefinitionInfo[],
 };
+
+/**  The time window a log view is opened for, as the UI picks it. */
+export type TimeWindow = 
+/**  The last `minutes` until now (presets and custom "last 2 days"). */
+{ kind: "last"; minutes: number } | 
+/**  A fixed range in the past (custom from–to). */
+{ kind: "range"; from: Timestamp; to: Timestamp };
 
 /**  How absolute timestamps are shown. */
 export type TimeZone = "local" | "utc";

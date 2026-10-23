@@ -24,8 +24,10 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - The log viewer scrolls smoothly through up to 100,000 lines, starts at the newest, and expands a line into its
   fields, raw JSON, embedded JSON and stack trace (with copy buttons). A task's **Logs** button shows only that
   task; the columns button adds logger, thread or correlation/trace ID.
-- After loading the past minutes, a log view **follows live** (CloudWatch Live Tail; new tasks of the service are
-  included automatically). The toolbar shows the state and lets you pause. Without the `logs:StartLiveTail`
+- **Time window:** 5 min, 15 min, 1 h, 6 h, or custom (the last N minutes/hours/days, or a fixed from–to range).
+- After loading its window, a log view **follows live** (CloudWatch Live Tail; new tasks of the service are
+  included automatically). Windows longer than 15 minutes open paused (press ▶ to follow); a fixed range is
+  never followed. The toolbar shows the state and lets you pause. Without the `logs:StartLiveTail`
   permission Contrail checks for new events every 2 seconds instead. Live Tail is billed per session minute:
   by default tails pause while Contrail is hidden (after 30 s) and resume with a catch-up when you're back.
 - A service's **Logs** tab loads the last minutes of all its tasks' logs (running and recently stopped) from

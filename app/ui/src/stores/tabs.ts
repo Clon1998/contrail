@@ -47,7 +47,10 @@ export const useTabs = create<TabsState>((set, get) => ({
         tabs = tabs.filter((t) => t !== oldest);
       }
       const minutes = usePrefs.getState().prefs.settings.backfillMinutes;
-      tabs = [...tabs, { key, service, logs: createLogsStore(minutes), lastActive: now }];
+      tabs = [
+        ...tabs,
+        { key, service, logs: createLogsStore({ kind: "last", minutes }), lastActive: now },
+      ];
     }
     set({ tabs, activeKey: key });
   },

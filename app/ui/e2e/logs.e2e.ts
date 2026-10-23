@@ -144,3 +144,33 @@ test("live: following stops when scrolled up and resumes with Jump to latest", a
   await page.getByRole("button", { name: "Jump to latest" }).click();
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
 });
+
+test("time windows: longer ones open paused, a fixed range isn't followed", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const windows = page.getByRole("radiogroup", { name: "Time window" });
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+
+  await windows.getByRole("radio", { name: "1 h" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
+  await page.getByRole("button", { name: "Resume live tail" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+
+  // Custom: the last 2 days.
+  await windows.getByRole("radio", { name: "Custom" }).click();
+  const relative = page.getByRole("form", { name: "Relative time window" });
+  await relative.getByLabel("Amount").fill("2");
+  await relative.getByRole("radio", { name: "d" }).click();
+  await relative.getByRole("button", { name: "Apply" }).click();
+  await expect(windows.getByRole("radio", { name: "2 d" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
+
+  // Custom: a fixed range.
+  await windows.getByRole("radio", { name: "2 d" }).click();
+  const range = page.getByRole("form", { name: "Fixed time range" });
+  await range.getByLabel("From").fill("2026-01-15T09:00");
+  await range.getByLabel("To").fill("2026-01-15T10:00");
+  await range.getByRole("button", { name: "Apply" }).click();
+  await expect(windows.getByRole("radio", { name: "01-15 09:00 – 01-15 10:00" })).toBeVisible();
+  await expect(page.getByText("fixed range", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: /^Live tail/ })).toHaveCount(0);
+});

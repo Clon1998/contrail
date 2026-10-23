@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::{
-    BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeRange,
+    BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeWindow,
     ViewFilter, process, resolve_log_location, write_events,
 };
 use contrail_core::prefs::ServiceKey;
@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::State;
 use tauri::ipc::Channel;
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 
 use crate::error::{ApiError, ApiResult, ErrorCode};
 use crate::live::{self, Control, LiveTask, LiveUpdate};
@@ -37,7 +37,7 @@ pub struct LogViewInfo {
     pub to: Timestamp,
 }
 
-/// Opens a service's logs: backfills the last `minutes` into a new view. Without `task_id` the
+/// Opens a service's logs: backfills the time `window` into a new view. Without `task_id` the
 /// view merges all tasks of the service (running and recently stopped); with it, only that
 /// task's stream (the task view).
 #[tauri::command]
@@ -46,20 +46,22 @@ pub async fn open_service_logs(
     state: State<'_, AppState>,
     ctx: AwsCtx,
     service: ServiceRef,
-    minutes: u32,
+    window: TimeWindow,
     task_id: Option<String>,
 ) -> ApiResult<LogViewInfo> {
     // `State` derefs to `&AppState`; the logic lives in a plain function so tests can call it.
-    open_logs(&state, ctx, service, minutes, task_id).await
+    open_logs(&state, ctx, service, window, task_id).await
 }
 
 async fn open_logs(
     state: &AppState,
     ctx: AwsCtx,
     service: ServiceRef,
-    minutes: u32,
+    window: TimeWindow,
     task_id: Option<String>,
 ) -> ApiResult<LogViewInfo> {
+    // Check the window before calling AWS.
+    let range = window.range(OffsetDateTime::now_utc())?;
     let detail = state.ecs.describe_service(&ctx, &service).await?;
     let task_definition = detail.task_definition.ok_or_else(|| {
         ApiError::new(
@@ -83,11 +85,6 @@ async fn open_logs(
     let account_id = service.cluster_arn.split(':').nth(4).map(str::to_owned);
     let selection = location.selection(&tasks, account_id, task_id.is_none());
 
-    let now = OffsetDateTime::now_utc();
-    let range = TimeRange {
-        start: Timestamp(now - Duration::minutes(i64::from(minutes))),
-        end: Timestamp(now),
-    };
     let prefs = state.prefs.get();
     let capacity = prefs.settings.buffer_capacity();
     let mapping = prefs.field_mapping(&ServiceKey::new(&ctx.profile, &service));
@@ -281,6 +278,7 @@ pub async fn start_live(
     state: State<'_, AppState>,
     view_id: u32,
     on_update: Channel<LiveUpdate>,
+    paused: bool,
 ) -> ApiResult<()> {
     let mut views = state.views.lock().expect("views lock poisoned");
     let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
@@ -298,7 +296,8 @@ pub async fn start_live(
         }),
     };
     // Replacing a running tail drops (and stops) the old one.
-    view.live = Some(live::spawn(task));
+    let initial = if paused { Control::Pause } else { Control::Run };
+    view.live = Some(live::spawn(task, initial));
     Ok(())
 }
 
@@ -333,6 +332,8 @@ fn closed(view_id: u32) -> ApiError {
 mod tests {
     use super::*;
 
+    const LAST_15: TimeWindow = TimeWindow::Last { minutes: 15 };
+
     fn demo_service(cluster: &str, name: &str) -> (AwsCtx, ServiceRef) {
         (
             AwsCtx {
@@ -351,7 +352,9 @@ mod tests {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
 
-        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
 
         assert_eq!(info.location.log_group, "/ecs/legacy-gateway");
         assert_eq!(info.streams, 2);
@@ -367,7 +370,9 @@ mod tests {
     async fn exports_the_listed_rows() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
-        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
         let spec = FilterSpec {
             query: "level:ERROR".into(),
             mode: FilterMode::Filter,
@@ -397,7 +402,9 @@ mod tests {
             profile: "demo-prod".into(),
             region: None,
         };
-        let error = open_logs(&state, ctx, service, 15, None).await.unwrap_err();
+        let error = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap_err();
         assert_eq!(error.code, ErrorCode::Credentials);
     }
 
@@ -412,7 +419,7 @@ mod tests {
             &state,
             ctx.clone(),
             service.clone(),
-            15,
+            LAST_15,
             Some(task_id.clone()),
         )
         .await
@@ -427,7 +434,7 @@ mod tests {
             assert!(rows.iter().all(|e| e.task_id == task_id));
         }
 
-        let unknown = open_logs(&state, ctx, service, 15, Some("gone".into()))
+        let unknown = open_logs(&state, ctx, service, LAST_15, Some("gone".into()))
             .await
             .unwrap_err();
         assert_eq!(unknown.code, ErrorCode::NotFound);
@@ -437,7 +444,9 @@ mod tests {
     async fn a_demo_view_goes_live_and_grows() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "event-ingest");
-        let info = open_logs(&state, ctx, service, 1, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, TimeWindow::Last { minutes: 1 }, None)
+            .await
+            .unwrap();
 
         let updates: Arc<std::sync::Mutex<Vec<LiveUpdate>>> = Arc::default();
         let recorder = updates.clone();
@@ -454,7 +463,7 @@ mod tests {
                 sink: Arc::new(move |u| recorder.lock().unwrap().push(u)),
             }
         };
-        let _handle = live::spawn(task);
+        let _handle = live::spawn(task, Control::Run);
 
         // The demo source delivers once a second; event-ingest logs every 200 ms per task.
         tokio::time::sleep(std::time::Duration::from_millis(2_300)).await;
@@ -481,7 +490,9 @@ mod tests {
     async fn filtering_a_view_lists_only_matches() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-core", "payments-worker");
-        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
 
         let FilterResult::Applied {
             visible, matches, ..

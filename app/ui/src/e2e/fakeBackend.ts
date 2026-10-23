@@ -24,6 +24,7 @@ import type {
   ServiceSummary,
   SessionStatus,
   Task,
+  TimeWindow,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -434,7 +435,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             ? generatedRows(service.serviceName, () => bigCounts.get(viewId) ?? BIG_VIEW)
             : events,
         );
-        const minutes = args?.minutes as number;
+        const timeWindow = args?.window as TimeWindow;
+        const to = timeWindow.kind === "range" ? timeWindow.to : new Date().toISOString();
         const info: LogViewInfo = {
           viewId,
           location: recordedService?.location ?? {
@@ -454,8 +456,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
               }
             : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
           truncated: big || (recordedService?.truncated ?? false),
-          from: new Date(Date.now() - minutes * 60_000).toISOString(),
-          to: new Date().toISOString(),
+          from:
+            timeWindow.kind === "range"
+              ? timeWindow.from
+              : new Date(Date.now() - timeWindow.minutes * 60_000).toISOString(),
+          to,
         };
         return info;
       }
@@ -537,7 +542,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const viewId = args?.viewId as number;
         const tail = { channel: args?.onUpdate as { id: number }, sent: 0 };
         tails.set(viewId, tail);
-        startTail(viewId);
+        if (args?.paused) sendLive(viewId, "paused", null);
+        else startTail(viewId);
         return null;
       }
       case "pause_live": {

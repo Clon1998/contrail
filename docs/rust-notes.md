@@ -348,3 +348,15 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   `std::iter::successors(Some(err), |e| e.source())` turns that into an iterator, so `.last()` gives the
   root cause. `&(dyn Error + 'static)` is needed because `source()` returns `'static` trait objects.
 - **Where:** `root_cause` in `crates/contrail-aws/src/error.rs` (short credential messages).
+
+## Hand-written `Deserialize` (`impl<'de> Deserialize<'de>`)
+
+- **What:** `Timestamp` parses an RFC 3339 string itself: deserialize a `String`, then parse it. `'de` is the
+  lifetime of the input; a type could borrow from it (zero-copy), this one doesn't and just passes it along.
+- **Where:** `crates/contrail-core/src/timestamp.rs` (used by `TimeWindow::Range`).
+
+## Tagged enums across IPC (`#[serde(tag = "kind")]`)
+
+- **What:** `TimeWindow` is `{ "kind": "last", "minutes": 15 }` or `{ "kind": "range", "from", "to" }` in JSON,
+  a discriminated union in TypeScript. Like Jackson's `@JsonTypeInfo(property = "kind")` on a sealed interface.
+- **Where:** `TimeWindow` in `crates/contrail-core/src/logs/source.rs`.

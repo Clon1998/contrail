@@ -39,7 +39,7 @@ function useFieldKeys(): string[] {
 export function FieldMappingDialog() {
   const service = useLogs((s) => s.service);
   const taskId = useLogs((s) => s.taskId);
-  const minutes = useLogs((s) => s.minutes);
+  const timeWindow = useLogs((s) => s.timeWindow);
   const open = useLogs((s) => s.open);
   const ctx = useEcs((s) => s.ctx);
   const profile = useLogs((s) => s.profile);
@@ -61,7 +61,7 @@ export function FieldMappingDialog() {
       timestamp: clean(mapping.timestamp),
     });
     setShown(false);
-    await open(ctx, service, minutes, taskId);
+    await open(ctx, service, timeWindow, taskId);
   }
 
   return (

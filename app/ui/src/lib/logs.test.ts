@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatLogTime, stripAnsi } from "./logs";
+import {
+  formatLogTime,
+  fromDateTimeLocal,
+  liveMode,
+  stripAnsi,
+  toDateTimeLocal,
+  windowLabel,
+} from "./logs";
 
 describe("log helpers", () => {
   it("formats times with milliseconds in UTC", () => {
@@ -46,5 +53,38 @@ describe("stack traces and JSON", () => {
       json: '{"a":1}',
       after: " end",
     });
+  });
+});
+
+describe("time windows", () => {
+  it("labels relative and absolute windows", () => {
+    expect(windowLabel({ kind: "last", minutes: 15 }, "utc")).toBe("15 min");
+    expect(windowLabel({ kind: "last", minutes: 120 }, "utc")).toBe("2 h");
+    expect(windowLabel({ kind: "last", minutes: 2 * 1440 }, "utc")).toBe("2 d");
+    expect(windowLabel({ kind: "last", minutes: 90 }, "utc")).toBe("90 min");
+    expect(
+      windowLabel(
+        { kind: "range", from: "2026-10-22T08:00:00Z", to: "2026-10-22T09:30:00Z" },
+        "utc",
+      ),
+    ).toBe("10-22 08:00 – 10-22 09:30");
+  });
+
+  it("follows live only for short windows, and never for a fixed range", () => {
+    expect(liveMode({ kind: "last", minutes: 5 })).toBe("live");
+    expect(liveMode({ kind: "last", minutes: 15 })).toBe("live");
+    expect(liveMode({ kind: "last", minutes: 60 })).toBe("paused");
+    expect(
+      liveMode({ kind: "range", from: "2026-10-22T08:00:00Z", to: "2026-10-22T09:00:00Z" }),
+    ).toBe("off");
+  });
+
+  it("converts datetime-local input values in UTC and local time", () => {
+    expect(fromDateTimeLocal("2026-10-22T08:15", "utc")).toBe("2026-10-22T08:15:00.000Z");
+    expect(toDateTimeLocal("2026-10-22T08:15:00Z", "utc")).toBe("2026-10-22T08:15");
+    const local = fromDateTimeLocal("2026-10-22T08:15", "local");
+    expect(local).toBe(new Date(2026, 9, 22, 8, 15).toISOString());
+    expect(toDateTimeLocal(local ?? "", "local")).toBe("2026-10-22T08:15");
+    expect(fromDateTimeLocal("", "utc")).toBeNull();
   });
 });
