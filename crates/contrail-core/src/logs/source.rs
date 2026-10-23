@@ -4,12 +4,13 @@ use std::pin::Pin;
 
 use async_trait::async_trait;
 use futures::Stream;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::auth::AwsCtx;
 use crate::error::SourceError;
 use crate::timestamp::Timestamp;
+use time::{Duration, OffsetDateTime};
 
 use super::RawEvent;
 
@@ -34,6 +35,46 @@ pub struct StreamSelection {
 pub struct TimeRange {
     pub start: Timestamp,
     pub end: Timestamp,
+}
+
+/// The time window a log view is opened for, as the UI picks it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Type)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum TimeWindow {
+    /// The last `minutes` until now (presets and custom "last 2 days").
+    Last { minutes: u32 },
+    /// A fixed range in the past (custom from–to).
+    Range { from: Timestamp, to: Timestamp },
+}
+
+/// A time window that can't be read.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum InvalidWindow {
+    #[error("the time window is empty")]
+    Empty,
+    #[error("the time window starts in the future")]
+    InFuture,
+}
+
+impl TimeWindow {
+    /// The range to backfill at `now`. A range ending in the future ends at `now`.
+    pub fn range(self, now: OffsetDateTime) -> Result<TimeRange, InvalidWindow> {
+        let (start, end) = match self {
+            TimeWindow::Last { minutes: 0 } => return Err(InvalidWindow::Empty),
+            TimeWindow::Last { minutes } => (now - Duration::minutes(i64::from(minutes)), now),
+            TimeWindow::Range { from, to } => (from.0, to.0.min(now)),
+        };
+        if start >= now {
+            return Err(InvalidWindow::InFuture);
+        }
+        if start >= end {
+            return Err(InvalidWindow::Empty);
+        }
+        Ok(TimeRange {
+            start: Timestamp(start),
+            end: Timestamp(end),
+        })
+    }
 }
 
 /// The result of a backfill.
@@ -100,5 +141,72 @@ pub trait LogSource: Send + Sync {
         Err(LiveError::Unavailable(
             "not supported by this source".into(),
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use time::macros::datetime;
+
+    const NOW: OffsetDateTime = datetime!(2026-10-23 12:00 UTC);
+
+    fn ts(value: OffsetDateTime) -> Timestamp {
+        Timestamp(value)
+    }
+
+    #[test]
+    fn last_minutes_end_now() {
+        let range = TimeWindow::Last { minutes: 90 }.range(NOW).unwrap();
+        assert_eq!(range.start, ts(datetime!(2026-10-23 10:30 UTC)));
+        assert_eq!(range.end, ts(NOW));
+        assert_eq!(
+            TimeWindow::Last { minutes: 0 }.range(NOW),
+            Err(InvalidWindow::Empty)
+        );
+    }
+
+    #[test]
+    fn ranges_are_clamped_to_now_and_must_not_be_empty() {
+        let window = |from, to| TimeWindow::Range {
+            from: ts(from),
+            to: ts(to),
+        };
+        let past = window(
+            datetime!(2026-10-22 08:00 UTC),
+            datetime!(2026-10-22 09:00 UTC),
+        );
+        assert_eq!(
+            past.range(NOW).unwrap().end,
+            ts(datetime!(2026-10-22 09:00 UTC))
+        );
+
+        let open_ended = window(
+            datetime!(2026-10-23 11:00 UTC),
+            datetime!(2026-10-24 00:00 UTC),
+        );
+        assert_eq!(open_ended.range(NOW).unwrap().end, ts(NOW));
+
+        let reversed = window(
+            datetime!(2026-10-22 09:00 UTC),
+            datetime!(2026-10-22 08:00 UTC),
+        );
+        assert_eq!(reversed.range(NOW), Err(InvalidWindow::Empty));
+        let future = window(
+            datetime!(2026-10-24 09:00 UTC),
+            datetime!(2026-10-24 10:00 UTC),
+        );
+        assert_eq!(future.range(NOW), Err(InvalidWindow::InFuture));
+    }
+
+    #[test]
+    fn deserializes_from_the_ui() {
+        let window: TimeWindow = serde_json::from_str(
+            r#"{"kind":"range","from":"2026-10-22T08:00:00Z","to":"2026-10-22T09:00:00Z"}"#,
+        )
+        .unwrap();
+        assert!(matches!(window, TimeWindow::Range { .. }));
+        let window: TimeWindow = serde_json::from_str(r#"{"kind":"last","minutes":15}"#).unwrap();
+        assert_eq!(window, TimeWindow::Last { minutes: 15 });
     }
 }

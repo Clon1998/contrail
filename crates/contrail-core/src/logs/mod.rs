@@ -25,7 +25,8 @@ pub use mapping::FieldMapping;
 pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
 pub use source::{
-    Backfill, LiveError, LiveItem, LiveStream, LogSource, StreamSelection, TimeRange,
+    Backfill, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource, StreamSelection,
+    TimeRange, TimeWindow,
 };
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
