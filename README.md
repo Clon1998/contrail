@@ -16,14 +16,14 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Log in** runs `aws sso login --profile <name>` for you, so [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
   must be installed. Contrail only reads the expiry of the SSO token cache; the AWS SDK handles credentials.
 - Switch profiles with ⌘⇧P / Ctrl+Shift+P (search by name, account ID or region).
-- Browse **Cluster → Service** in the sidebar; a service shows its tasks (running and recently stopped, with
+- Browse **Cluster → Service** in the sidebar (the filter box narrows it by name); a service shows its tasks (running and recently stopped, with
   stop reasons and exit codes), deployments, task definition and recent events. It refreshes every 30 s.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile.
   Star a service to pin it to the sidebar. Favorites, recent services, the last profile and region overrides
   are kept in `prefs.json` in Contrail's app data folder (never credentials).
 - The log viewer scrolls smoothly through up to 100,000 lines, starts at the newest, and expands a line into its
-  fields, raw JSON, embedded JSON and stack trace (with copy buttons). A task's **Logs** button shows only that
-  task; the columns button adds logger, thread or correlation/trace ID.
+  fields, raw JSON, embedded JSON and stack trace (with copy buttons). The task picker in the toolbar (or a
+  task's **Logs** button) shows only one task; the columns button adds logger, thread or correlation/trace ID.
 - **Time window:** 5 min, 15 min, 1 h, 6 h, or custom (the last N minutes/hours/days, or a fixed from–to range).
 - After loading its window, a log view **follows live** (CloudWatch Live Tail; new tasks of the service are
   included automatically). Windows longer than 15 minutes open paused (press ▶ to follow); a fixed range is
