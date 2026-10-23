@@ -268,3 +268,10 @@ route is on, and their endpoints (type and system, no settings), so the graph sh
 and where it sends the data (and where writers get theirs), in up to five columns. Hover highlights the paths
 through a node rather than the routes sharing it. The overview puts routes and environment below the tasks over
 the full width, so the graph has room. The demo cluster `demo-edge` gets a second reader, `audit-archiver`.
+
+Same day, Patrick: a route-generator service has **only input or only output routes**, never both; services that
+read and write topics ("transformers") exist, but what they read is only in Java code, so Contrail can't show
+them. **Decision:** the graph names the service an input or an output service. Services on the other side of a
+topic are steps on the way (writers upstream of an output service, readers downstream of an input service);
+services on the same side (other readers of an output service's topic, other writers of an input service's)
+are listed on the topic instead. The demo's `demo-edge` gets a second writer, `partner-poller`.
