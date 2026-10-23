@@ -39,6 +39,23 @@ test("a rollout in progress shows both deployments", async ({ page }) => {
   await expect(deployments).toContainText("billing-sync:7");
 });
 
+test("a long task definition fits: cut at the front, revision visible", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  const view = await openTreeService(page, "demo-edge", "event-ingest");
+  const name = "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5";
+  const deployments = view.getByRole("region", { name: "Deployments" });
+  await expect(deployments.getByTitle(name)).toBeVisible();
+
+  // Nothing in the overview scrolls sideways.
+  const overview = view.getByRole("tabpanel", { name: "Overview" });
+  const overflow = await overview.evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  // The name is cut at the front: its right edge (the revision) is inside the cell.
+  const cell = deployments.getByTitle(name);
+  const clipped = await cell.evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(clipped).toBe(true);
+});
+
 test("⌘K jumps to a service in a collapsed cluster", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+K");
   const palette = page.getByRole("dialog", { name: "Go to service" });

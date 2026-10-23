@@ -75,7 +75,7 @@
         "running": 6,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "event-ingest:5"
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/legacy-gateway",
@@ -297,17 +297,17 @@
         "running": 6,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "event-ingest:5"
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
       "deployments": [
         {
-          "id": "ecs-svc/1fb8fe897dffc40dbd6",
+          "id": "ecs-svc/2fad4e533f6c6aad9ed",
           "status": "PRIMARY",
           "rolloutState": "COMPLETED",
           "rolloutReason": "ECS deployment ecs-svc completed.",
-          "taskDefinition": "event-ingest:5",
+          "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
           "desired": 6,
           "running": 6,
           "pending": 0,
@@ -317,7 +317,7 @@
         }
       ],
       "taskDefinition": {
-        "family": "event-ingest",
+        "family": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E",
         "revision": 5,
         "cpu": "2048",
         "memory": "4096",
@@ -745,7 +745,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1a",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -770,7 +770,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1b",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -795,7 +795,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1c",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -820,7 +820,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1a",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -845,7 +845,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1b",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -870,7 +870,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1c",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
