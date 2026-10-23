@@ -41,6 +41,7 @@ fn profile_of(log_group: &str) -> Option<(Format, Duration, &'static str)> {
         "legacy-gateway" => (Format::Spring, Duration::seconds(5), "legacy-gateway"),
         "event-ingest" => (Format::Nested, Duration::milliseconds(200), "event-ingest"),
         "audit-archiver" => (Format::Dotted, Duration::seconds(8), "audit-archiver"),
+        "partner-poller" => (Format::Nested, Duration::seconds(15), "partner-poller"),
         _ => return None,
     })
 }

@@ -166,7 +166,16 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await expect(details.getByRole("region", { name: "Input" })).toContainText("sftp");
   await expect(details).toContainText("sftp.example.com");
 
+  await expect(routes).toContainText("Input service");
   await routes.getByRole("button", { name: "Find connected services" }).click();
+  // Its readers come after the topic, each with its consumer group; another writer of the same
+  // topic is no step on the way, only a note on the topic.
+  await expect(graph.getByRole("button", { name: "service audit-archiver" })).toContainText(
+    "group audit-archiver",
+  );
+  await expect(graph.getByRole("button", { name: "topic demo.events" })).toContainText(
+    "also written by partner-poller",
+  );
   await graph.getByRole("button", { name: "service legacy-gateway" }).click();
   await routes.getByRole("button", { name: "Open legacy-gateway" }).click();
 
@@ -177,13 +186,16 @@ test("routes of a routing-framework service as a graph, and the services on the 
     gatewayGraph.getByRole("button", { name: "system Example Partner API (disabled)" }),
   ).toBeVisible();
   // Its own consumer group once, not on every topic.
-  await expect(gatewayRoutes).toContainText("Reads its topics as consumer group legacy-gateway");
-  // The other reader of the same topic, its group and where it sends the data.
-  await gatewayRoutes.getByRole("button", { name: "Find connected services" }).click();
-  await expect(gatewayGraph.getByRole("button", { name: "service audit-archiver" })).toContainText(
-    "group audit-archiver",
+  await expect(gatewayRoutes).toContainText(
+    "Output service: reads Kafka topics as consumer group legacy-gateway",
   );
-  await expect(gatewayGraph.getByRole("button", { name: "system Search Index" })).toBeVisible();
+  // The writers of its topics come before them; another reader is only a note on the topic.
+  await gatewayRoutes.getByRole("button", { name: "Find connected services" }).click();
+  await expect(gatewayGraph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
+  await expect(gatewayGraph.getByRole("button", { name: "service audit-archiver" })).toHaveCount(0);
+  await expect(gatewayGraph.getByRole("button", { name: "topic demo.events" })).toContainText(
+    "also read by audit-archiver",
+  );
 
   // Three routes write to one system: one node, its shared connection once, the queues per route.
   await expect(gatewayGraph.getByRole("button", { name: "system Billing" })).toHaveCount(1);

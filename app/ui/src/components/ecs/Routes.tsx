@@ -25,7 +25,14 @@ import { useEcs } from "@/stores/ecs";
 import { SecretValue, Value } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
 
-const COLUMN_TITLES = ["Their sources", "From", "Topics", "To", "Their targets"] as const;
+/** Column titles from the point of view of an input or an output service. */
+const COLUMN_TITLES = {
+  in: ["", "Sources", "Topics", "Read by", "Their targets"],
+  out: ["Their sources", "Written by", "Topics", "Targets", ""],
+} as const;
+
+/** How the other services on a topic in the same direction are named. */
+const SIBLINGS = { in: "also written by", out: "also read by" } as const;
 
 /**
  * The routes of a routing-framework service (rebuilt from its environment in Rust), drawn as a
@@ -92,12 +99,26 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
           No other service of the cluster uses these topics.
         </p>
       )}
-      {graph.ownGroup && (
-        <p className="mb-2 text-xs text-muted-foreground">
-          Reads its topics as consumer group{" "}
-          <span className="font-mono text-foreground">{graph.ownGroup}</span>
-        </p>
-      )}
+      <p className="mb-2 text-xs text-muted-foreground">
+        {graph.direction === "in" ? (
+          <>
+            <span className="font-medium text-foreground">Input service</span>: reads external
+            systems and writes Kafka topics.
+          </>
+        ) : (
+          <>
+            <span className="font-medium text-foreground">Output service</span>: reads Kafka topics
+            {graph.ownGroup && (
+              <>
+                {" "}
+                as consumer group{" "}
+                <span className="font-mono text-foreground">{graph.ownGroup}</span>
+              </>
+            )}{" "}
+            and writes to external systems.
+          </>
+        )}
+      </p>
       <GraphView graph={graph} focus={focus} onFocus={(id) => setFocus(focus === id ? null : id)} />
       {focused ? (
         <NodeDetails node={focused} graph={graph} routes={routes} onClose={() => setFocus(null)} />
@@ -204,13 +225,14 @@ function GraphView({
       {columns.map(({ column, nodes }) => (
         <div key={column} className="flex min-w-0 flex-col">
           <h4 className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-            {COLUMN_TITLES[column]}
+            {COLUMN_TITLES[graph.direction][column]}
           </h4>
           <div className="flex flex-1 flex-col justify-center gap-2">
             {nodes.map((node) => (
               <GraphNode
                 key={node.id}
                 node={node}
+                siblingsLabel={SIBLINGS[graph.direction]}
                 ref={(element) => {
                   if (element) nodeElements.current.set(node.id, element);
                   else nodeElements.current.delete(node.id);
@@ -232,6 +254,7 @@ const NODE_ICON = { system: PlugIcon, service: ServerIcon, topic: WavesIcon } as
 
 function GraphNode({
   node,
+  siblingsLabel,
   ref,
   selected,
   dimmed,
@@ -239,6 +262,8 @@ function GraphNode({
   onHover,
 }: {
   node: RouteNode;
+  /** "also read by" or "also written by". */
+  siblingsLabel: string;
   ref: (element: HTMLButtonElement | null) => void;
   selected: boolean;
   dimmed: boolean;
@@ -282,6 +307,15 @@ function GraphNode({
           <span className="truncate text-[11px] text-muted-foreground">
             {node.detail}
             {node.disabled && <span className="text-warning"> disabled</span>}
+          </span>
+        )}
+        {node.siblings.length > 0 && (
+          <span
+            className="truncate text-[11px] text-muted-foreground"
+            title={`${siblingsLabel} ${node.siblings.map((x) => x.service).join(", ")}`}
+          >
+            {siblingsLabel} {node.siblings[0]?.service}
+            {node.siblings.length > 1 && ` +${node.siblings.length - 1}`}
           </span>
         )}
       </span>
@@ -360,6 +394,39 @@ function NodeDetails({
         </p>
       )}
       {own && node.kind === "system" && <SystemDetails node={node} routes={through} />}
+      {own && node.kind === "topic" && node.siblings.length > 0 && (
+        <section aria-label="Other services on this topic">
+          <h5 className="mb-1 font-medium text-muted-foreground">
+            {graph.direction === "out"
+              ? "Also read by (each with its own consumer group)"
+              : "Also written by"}
+          </h5>
+          <ul className="flex flex-wrap gap-1.5">
+            {node.siblings.map((sibling) => (
+              <li key={sibling.service}>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className={cn(sibling.disabled && "opacity-60")}
+                  onClick={() =>
+                    selected &&
+                    void openService({
+                      clusterArn: selected.clusterArn,
+                      serviceName: sibling.service,
+                    })
+                  }
+                >
+                  <ServerIcon /> {sibling.service}
+                  {sibling.group && (
+                    <span className="text-muted-foreground">group {sibling.group}</span>
+                  )}
+                  {sibling.disabled && <span className="text-warning">disabled</span>}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {own &&
         node.kind === "topic" &&
         through.map((route) => <RouteDetails key={route.index} route={route} />)}

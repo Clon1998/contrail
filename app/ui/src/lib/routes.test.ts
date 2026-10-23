@@ -69,7 +69,7 @@ describe("buildRouteGraph", () => {
     expect(graph.nodes.map((n) => n.detail)).toEqual(["group first", "group second"]);
   });
 
-  it("adds the services on each topic, their groups and where they send the data", () => {
+  it("adds the readers of an input service's topic, their groups and where they send the data", () => {
     const archive = endpoint("s3", "Archive");
     const graph = buildRouteGraph(
       [route(0, "events", { input: endpoint("sftp", "Partner") })],
@@ -91,6 +91,14 @@ describe("buildRouteGraph", () => {
           endpoints: [archive],
         },
         {
+          topic: "events",
+          service: "other-input",
+          direction: "in",
+          group: null,
+          enabled: true,
+          endpoints: [endpoint("sftp", "Other")],
+        },
+        {
           topic: "other",
           service: "unrelated",
           direction: "out",
@@ -100,6 +108,7 @@ describe("buildRouteGraph", () => {
         },
       ],
     );
+    expect(graph.direction).toBe("in");
     expect(graph.nodes.map((n) => [n.column, n.kind, n.label, n.detail])).toEqual([
       [2, "topic", "events", null],
       [1, "system", "Partner", "sftp"],
@@ -112,6 +121,44 @@ describe("buildRouteGraph", () => {
     expect(graph.edges.filter((e) => e.to === "system:4:s3|Archive").map((e) => e.from)).toEqual([
       "service:3:archiver",
       "service:3:auditor",
+    ]);
+    // Another input service writing the same topic is a sibling, not a step on the way.
+    expect(graph.nodes[0]?.siblings).toEqual([
+      { service: "other-input", group: null, disabled: false },
+    ]);
+  });
+
+  it("puts an output service's fellow readers on the topic, its writers upstream", () => {
+    const graph = buildRouteGraph(
+      [route(0, "events", { group: "gateway", outputs: [endpoint("s3", "Archive")] })],
+      [
+        {
+          topic: "events",
+          service: "ingest",
+          direction: "in",
+          group: null,
+          enabled: true,
+          endpoints: [endpoint("sftp", "Partner")],
+        },
+        {
+          topic: "events",
+          service: "auditor",
+          direction: "out",
+          group: "auditor",
+          enabled: true,
+          endpoints: [endpoint("http", "Index")],
+        },
+      ],
+    );
+    expect(graph.direction).toBe("out");
+    expect(graph.nodes.map((n) => [n.column, n.label])).toEqual([
+      [2, "events"],
+      [3, "Archive"],
+      [1, "ingest"],
+      [0, "Partner"],
+    ]);
+    expect(graph.nodes[0]?.siblings).toEqual([
+      { service: "auditor", group: "auditor", disabled: false },
     ]);
   });
 

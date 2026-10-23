@@ -21,6 +21,18 @@ export interface RouteNode {
   disabled: boolean;
   /** This service's routes through this node, by index. */
   routes: number[];
+  /**
+   * On a topic: the other services on it in the same direction as this one (other readers of an
+   * output service's topic, other writers of an input service's). They aren't a step on the way.
+   */
+  siblings: Sibling[];
+}
+
+/** Another service using a topic the same way as this one. */
+export interface Sibling {
+  service: string;
+  group: string | null;
+  disabled: boolean;
 }
 
 export interface RouteEdge {
@@ -36,13 +48,20 @@ export interface RouteGraph {
   edges: RouteEdge[];
   /** The consumer group of all this service's output routes, when they share one. */
   ownGroup: string | null;
+  /**
+   * An input service (external systems → topics) or an output service (topics → external
+   * systems). A route-generator service has one kind of route only.
+   */
+  direction: "in" | "out";
 }
 
 /**
  * The routes of a service as a graph: where data comes from, the topics, where it goes. A system
  * that several routes use is one node, so the graph shows fan-in and fan-out. `links` (from "Find
- * connected services") adds the other services on each topic, with their group, and one step
- * further: where the services upstream get their data and where those downstream send it.
+ * connected services") adds the services on the other side of each topic, with their group, and
+ * one step further: where the input services upstream get their data, where the output services
+ * downstream send it. Services on the same side (other readers of the same topic) are siblings
+ * on the topic, not a step on the way.
  */
 export function buildRouteGraph(routes: Route[], links: TopicLink[] = []): RouteGraph {
   const nodes = new Map<string, RouteNode>();
@@ -51,7 +70,7 @@ export function buildRouteGraph(routes: Route[], links: TopicLink[] = []): Route
   /** Adds a node, or adds the route (and its on/off state) to the existing one. */
   const node = (
     id: string,
-    template: Omit<RouteNode, "id" | "routes" | "disabled">,
+    template: Omit<RouteNode, "id" | "routes" | "disabled" | "siblings">,
     route: number,
     disabled: boolean,
   ) => {
@@ -65,7 +84,7 @@ export function buildRouteGraph(routes: Route[], links: TopicLink[] = []): Route
       );
       existing.detail = details.size > 0 ? [...details].join(", ") : null;
     } else {
-      nodes.set(id, { ...template, id, routes: [route], disabled });
+      nodes.set(id, { ...template, id, routes: [route], disabled, siblings: [] });
     }
   };
   const edge = (from: string, to: string, route: number, disabled: boolean) => {
@@ -86,6 +105,7 @@ export function buildRouteGraph(routes: Route[], links: TopicLink[] = []): Route
     return id;
   };
 
+  const direction = routes.some((r) => r.input) ? "in" : "out";
   const groups = new Set(routes.flatMap((r) => (r.group ? [r.group] : [])));
   const ownGroup = groups.size === 1 ? ([...groups][0] ?? null) : null;
 
@@ -103,6 +123,13 @@ export function buildRouteGraph(routes: Route[], links: TopicLink[] = []): Route
       edge(topic, system(3, output, route.index, disabled), route.index, disabled);
     }
     for (const link of links.filter((l) => l.topic === route.topic)) {
+      if (link.direction === direction) {
+        const siblings = nodes.get(topic)?.siblings;
+        if (siblings && !siblings.some((s) => s.service === link.service)) {
+          siblings.push({ service: link.service, group: link.group, disabled: !link.enabled });
+        }
+        continue;
+      }
       const upstream = link.direction === "in";
       const column: RouteColumn = upstream ? 1 : 3;
       const id = `service:${column}:${link.service}`;
@@ -120,7 +147,7 @@ export function buildRouteGraph(routes: Route[], links: TopicLink[] = []): Route
       }
     }
   }
-  return { nodes: [...nodes.values()], edges: [...edges.values()], ownGroup };
+  return { nodes: [...nodes.values()], edges: [...edges.values()], ownGroup, direction };
 }
 
 /**
