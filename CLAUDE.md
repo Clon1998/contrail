@@ -82,6 +82,11 @@ pnpm lint && pnpm typecheck && pnpm test   # frontend (delegates to app/ui; *.te
 pnpm format                    # auto-fix ESLint + Prettier
 pnpm --dir ui dev              # frontend only, in a browser (no Tauri IPC)
 pnpm test:e2e                  # Playwright UI flows (fake backend, WebKit + Chromium)
+SCREENSHOTS=1 pnpm --dir ui exec playwright test screenshots --project=chromium  # README screenshots (demo data)
+
+# Release: from the repo root on main (CI green), after updating versions and CHANGELOG.md
+pnpm --dir app dlx git-cliff@2.14.2 --config ../cliff.toml --repository .. --tag vX.Y.Z -o ../CHANGELOG.md
+git tag vX.Y.Z && git push origin vX.Y.Z   # .github/workflows/release.yml builds and publishes
 ```
 
 ## Working style

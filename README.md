@@ -4,11 +4,60 @@ A fast, focused desktop log viewer for AWS ECS services.
 Switch AWS SSO profiles, browse clusters → services → tasks, and jump straight into live,
 readable logs — structured (ECS JSON) or plain — with session search.
 
-> **Status:** early development. Profiles, SSO login, ECS browsing and the log viewer with live tail work
-> (M1–M7). Release builds come next.
-> See [plan.md](plan.md) for scope and milestones.
+> **Status:** v0.1 — profiles, SSO login, ECS browsing, the log viewer with live tail, search, tabs and
+> export. See [CHANGELOG.md](CHANGELOG.md), and [plan.md](plan.md) for scope and milestones.
 
 Contrail is strictly **read-only** towards AWS and never stores credentials.
+
+![Logs of a service with an expanded stack trace](docs/screenshots/logs.png)
+
+| Service overview | Search (highlight mode) |
+| --- | --- |
+| ![Service overview with tasks and deployments](docs/screenshots/overview.png) | ![Search with highlighted matches](docs/screenshots/search.png) |
+
+## Install
+
+Download the installer for your system from the [latest release](https://github.com/Clon1998/contrail/releases/latest):
+
+| System | File |
+| --- | --- |
+| macOS, Apple silicon | `Contrail_<version>_aarch64.dmg` |
+| macOS, Intel | `Contrail_<version>_x64.dmg` |
+| Windows | `Contrail_<version>_x64-setup.exe` (installs per user, no admin rights needed) |
+| Linux | `.AppImage`, `.deb` or `.rpm` |
+
+The builds are **not code-signed** yet:
+
+- **macOS:** the first start is blocked ("cannot be opened" / "damaged"). Right-click the app → *Open*, or
+  System Settings → Privacy & Security → *Open Anyway*. If macOS still refuses:
+  `xattr -dr com.apple.quarantine /Applications/Contrail.app`.
+- **Windows:** SmartScreen asks once: *More info* → *Run anyway*.
+- **Linux:** make the AppImage executable (`chmod +x Contrail_*.AppImage`). The app uses WebKitGTK 4.1.
+
+There is no auto-update in v0.1: install a newer release over the old one.
+
+## First run
+
+1. Install the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and
+   configure your SSO profiles as usual (`aws configure sso`). Contrail reads `~/.aws/config`
+   (`%USERPROFILE%\.aws\config` on Windows, or `AWS_CONFIG_FILE`).
+2. Start Contrail and pick a profile (⌘⇧P / Ctrl+Shift+P). If its session expired, **Log in** runs
+   `aws sso login` and opens the browser.
+3. Pick a cluster and service in the sidebar (or ⌘K / Ctrl+K), then the **Logs** tab.
+
+**Permissions:** Contrail needs only read access; [docs/iam-policy.json](docs/iam-policy.json) lists exactly
+the actions it calls, for teammates whose role must be extended. A missing permission is reported as such
+(with the action), not as a login problem.
+
+### Demo mode
+
+Try Contrail without AWS: invented profiles, clusters and logs, no network access at all.
+
+- Installed app: start it with `--demo`, e.g. `open -a Contrail --args --demo` (macOS),
+  `"%LOCALAPPDATA%\Contrail\contrail.exe" --demo` (Windows), or set `CONTRAIL_DEMO=1`.
+- From source: `pnpm dev:demo` in `app/`.
+
+Demo mode powers the UI tests and the screenshots above.
 
 ## Using it
 
@@ -38,28 +87,22 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
 - **Keyboard shortcuts:** press `?`.
-- **Permissions:** read-only; [docs/iam-policy.json](docs/iam-policy.json) lists exactly what Contrail calls.
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
-  default log time window and timestamps in local time or UTC.
-- Contrail only reads from AWS. Teammates without admin rights need the permissions in
-  [docs/iam-policy.json](docs/iam-policy.json).
+  default log time window, buffer size, live tail pausing and timestamps in local time or UTC.
 
-### Demo mode
+## Known limitations
 
-`pnpm dev:demo` (in `app/`) or `CONTRAIL_DEMO=1` starts Contrail with invented profiles and sessions and no
-AWS access at all. It powers the UI tests and screenshots.
-
-## Test builds
-
-Every CI run on `main` builds installers and attaches them to the run (Actions → the run → *Artifacts*, kept
-14 days, or `gh run download <run id> -n contrail-windows`):
-
-- **Windows:** `contrail-windows` contains an NSIS `.exe` that installs per user (no admin rights needed).
-- **macOS (Apple Silicon):** `contrail-macos-arm64` contains a `.dmg`.
-
-The builds are unsigned: Windows SmartScreen asks once ("More info" → "Run anyway"); on macOS, right-click the
-app → Open the first time. Contrail needs the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-for SSO logins and reads `%USERPROFILE%\.aws\config` (Windows) or `~/.aws/config`.
+- **Unsigned builds** (see Install): macOS Gatekeeper and Windows SmartScreen warn on first start.
+- **SSO login needs the AWS CLI v2**; other credential sources (static keys, `credential_process`, …) work
+  through the AWS SDK but have no login button.
+- **Logs must come from the `awslogs` driver with a stream prefix** (the ECS default). FireLens/other drivers
+  are reported as "logs unavailable".
+- **Live Tail** is billed per session minute and sends at most 500 events per second (Contrail shows
+  "sampled" then). Tails pause while the window is hidden and in background tabs (configurable). Without
+  `logs:StartLiveTail`, Contrail polls every 2 seconds.
+- A view keeps up to the buffer size (default 100,000 events); older events are dropped, and very large time
+  windows are cut off ("truncated").
+- Search runs over the loaded events only, not over CloudWatch (no Logs Insights queries).
 
 ## Development
 
@@ -97,6 +140,11 @@ pnpm test:e2e         # Playwright UI flows (in app/; uses a fake backend, no Ta
 | `app/src-tauri/`        | Tauri app crate: commands, state, wiring                           |
 | `app/ui/`               | React + Vite frontend (shadcn/ui, Tailwind); tests beside the code |
 | `docs/`                 | [Rust notes](docs/rust-notes.md), [decisions](docs/decisions.md)   |
+
+Every CI run on `main` also builds a Windows and a macOS installer as run artifacts
+(`gh run download <run id> -n contrail-windows`). Releases are built by pushing a `v*` tag
+(`.github/workflows/release.yml`); `CHANGELOG.md` is generated with git-cliff (see `cliff.toml`).
+README screenshots: `SCREENSHOTS=1 pnpm exec playwright test screenshots --project=chromium` in `app/ui/`.
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org) (enforced by a commit-msg hook).
 

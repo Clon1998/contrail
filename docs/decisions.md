@@ -163,3 +163,15 @@ resumed (e.g. after logging in).
 - **AccessDenied ≠ expired login.** It was mapped to a credentials error; it now has its own error code with a
   hint to `docs/iam-policy.json`, and a live tail hitting it stops and waits (banner with Retry).
 - **Window state plugin** (plan §5) is deferred: not needed for v0.1.
+
+## 2026-10-23 — M8 release
+
+- **Release pipeline:** a `v*` tag runs `.github/workflows/release.yml`: draft release with git-cliff notes →
+  tauri-action builds (macOS arm64 and x64 on the arm64 runner via `--target`, Windows NSIS, Linux on Ubuntu
+  22.04 for older glibc) → publish. Assets keep Tauri's default file names.
+- **Unsigned** for v0.1 (no Apple Developer ID / Windows certificate); the README explains the first-start
+  warnings. No updater (answered by Patrick), so no update signing keys either.
+- **Changelog:** git-cliff from Conventional Commits (`cliff.toml`), committed as `CHANGELOG.md` with each
+  release; merge commits and `chore(release)` are left out.
+- **Screenshots** come from the fake backend (demo data) via an opt-in Playwright spec, so they never show real
+  logs and can be regenerated after UI changes.
