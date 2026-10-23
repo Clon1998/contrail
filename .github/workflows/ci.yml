@@ -76,6 +76,14 @@ jobs:
     name: UI flows (Playwright)
     # The UI against the in-memory fake backend (app/ui/src/e2e); no Rust build needed.
     runs-on: ubuntu-24.04
+    # Microsoft's Playwright image has the browsers and their system libraries preinstalled:
+    # `playwright install --with-deps` needed apt, and the runner's apt mirror sometimes stalls for
+    # 20+ minutes. The tag must match @playwright/test (checked below; GitHub allows no variables in
+    # `container.image`). `--ipc=host` is Playwright's advice for Chromium in Docker.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -89,9 +97,11 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium and WebKit for Playwright
+      - name: Playwright matches the container image
         working-directory: app/ui
-        run: pnpm exec playwright install --with-deps chromium webkit
+        run: |
+          version=$(node -p 'require("@playwright/test/package.json").version')
+          test "$version" = "1.64.1" || { echo "::error::@playwright/test is $version; update the container image tag"; exit 1; }
       - name: UI flow tests
         working-directory: app/ui
         run: pnpm e2e
