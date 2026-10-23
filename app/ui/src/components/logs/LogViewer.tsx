@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   CircleAlertIcon,
   Columns3Icon,
@@ -19,12 +19,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAutoPause } from "@/hooks/useAutoPause";
 import { shortTaskId } from "@/lib/ecs";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
-import { usePrefs } from "@/stores/prefs";
 import { OPTIONAL_COLUMNS } from "./columns";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
@@ -95,22 +93,25 @@ function LiveControls() {
 export function LogViewer() {
   const ctx = useEcs((s) => s.ctx);
   const selected = useEcs((s) => s.selected);
-  const defaultMinutes = usePrefs((s) => s.prefs.settings.backfillMinutes);
-  const [minutes, setMinutes] = useState(defaultMinutes);
-  const { view, loading, error, open, close, taskFilter, showTask, columns, setColumn, visible } =
-    useLogs();
+  const view = useLogs((s) => s.view);
+  const loading = useLogs((s) => s.loading);
+  const error = useLogs((s) => s.error);
+  const open = useLogs((s) => s.open);
+  const ensureOpen = useLogs((s) => s.ensureOpen);
+  const minutes = useLogs((s) => s.minutes);
+  const setMinutes = useLogs((s) => s.setMinutes);
+  const taskFilter = useLogs((s) => s.taskFilter);
+  const showTask = useLogs((s) => s.showTask);
+  const columns = useLogs((s) => s.columns);
+  const setColumn = useLogs((s) => s.setColumn);
+  const visible = useLogs((s) => s.visible);
   // The task filter only applies to the service it was set for.
   const taskId = taskFilter && sameService(taskFilter.service, selected) ? taskFilter.taskId : null;
 
+  // The view stays open while its service tab exists (it's closed with the tab).
   useEffect(() => {
-    if (ctx && selected) void open(ctx, selected, minutes, taskId);
-  }, [ctx, selected, minutes, taskId, open]);
-
-  // The tab is shown while this component exists; background views come with tabs (M7).
-  useAutoPause(true);
-
-  // Free the view's buffer in Rust when the tab goes away.
-  useEffect(() => () => void close(), [close]);
+    if (ctx && selected) void ensureOpen(ctx, selected, minutes, taskId);
+  }, [ctx, selected, minutes, taskId, ensureOpen]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

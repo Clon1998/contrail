@@ -44,7 +44,7 @@ export function sameService(a: ServiceRef | null, b: ServiceRef | null): boolean
   return a?.clusterArn === b?.clusterArn && a?.serviceName === b?.serviceName;
 }
 
-function ctxKey(ctx: AwsCtx): string {
+export function ctxKey(ctx: AwsCtx): string {
   return `${ctx.profile}|${ctx.region ?? ""}`;
 }
 
@@ -68,6 +68,8 @@ interface EcsState {
   /** Loads the services of every cluster (for the palette). */
   loadAllServices: () => Promise<void>;
   openService: (service: ServiceRef) => Promise<void>;
+  /** Shows no service (the last tab was closed). */
+  closeService: () => void;
   /** Reloads the open service's detail and tasks, keeping the old data visible meanwhile. */
   refreshService: () => Promise<void>;
   setIncludeStopped: (include: boolean) => Promise<void>;
@@ -170,6 +172,8 @@ export const useEcs = create<EcsState>((set, get) => {
       }
       await loadServiceData(ctx, service);
     },
+
+    closeService: () => set({ selected: null, detail: IDLE, tasks: IDLE }),
 
     refreshService: async () => {
       const { ctx, selected } = get();
