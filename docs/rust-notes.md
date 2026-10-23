@@ -360,3 +360,10 @@ One short entry per pattern: what it is, why it's used here, where to find it.
 - **What:** `TimeWindow` is `{ "kind": "last", "minutes": 15 }` or `{ "kind": "range", "from", "to" }` in JSON,
   a discriminated union in TypeScript. Like Jackson's `@JsonTypeInfo(property = "kind")` on a sealed interface.
 - **Where:** `TimeWindow` in `crates/contrail-core/src/logs/source.rs`.
+
+## Async functions over trait objects (`&dyn LogSource`)
+
+- **What:** `backfill_newest(source: &dyn LogSource, …)` is a plain `async fn` that awaits calls on a trait
+  object; the same loop runs against CloudWatch, the demo fake and a test double. Core has no tokio: its tests
+  drive the future with `futures::executor::block_on` (a tiny executor, like calling `.join()` on a future).
+- **Where:** `crates/contrail-core/src/logs/slices.rs`.

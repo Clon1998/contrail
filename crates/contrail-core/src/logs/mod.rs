@@ -9,6 +9,7 @@ pub mod location;
 pub mod mapping;
 pub mod multiline;
 pub mod parse;
+pub mod slices;
 pub mod source;
 mod spring;
 
@@ -24,6 +25,7 @@ pub use location::{LocationError, LogLocation, resolve_log_location};
 pub use mapping::FieldMapping;
 pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
+pub use slices::{Slices, backfill_newest};
 pub use source::{
     Backfill, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource, StreamSelection,
     TimeRange, TimeWindow,
