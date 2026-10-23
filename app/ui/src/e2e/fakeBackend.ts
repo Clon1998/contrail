@@ -228,6 +228,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
   >();
 
+  /** Files "saved" through the export dialog. */
+  const exports: { path: string; format?: string; count?: number }[] = [];
+
   /** Searches per view: the spec and the indices of matching events. */
   const filters = new Map<number, { spec: FilterSpec; matched: number[] }>();
 
@@ -472,6 +475,20 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const filter = filters.get(args?.viewId as number);
         if (!filter) return [];
         return filter.spec.mode === "highlight" ? filter.matched : filter.matched.map((_, i) => i);
+      }
+      case "plugin:dialog|save": {
+        const options = args?.options as { defaultPath?: string } | undefined;
+        exports.push({ path: `/tmp/${options?.defaultPath ?? "export"}` });
+        return exports.at(-1)?.path;
+      }
+      case "export_log_view": {
+        const rows = listed(args?.viewId as number);
+        const count = Array.isArray(rows)
+          ? rows.length
+          : (bigCounts.get(args?.viewId as number) ?? BIG_VIEW);
+        const last = exports.at(-1);
+        if (last) Object.assign(last, { format: args?.format as string, count });
+        return count;
       }
       case "close_log_view": {
         const viewId = args?.viewId as number;

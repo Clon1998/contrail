@@ -7,8 +7,8 @@ use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::buffer::DEFAULT_CAPACITY;
 use contrail_core::logs::{
-    BufferStats, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeRange, ViewFilter,
-    process, resolve_log_location,
+    BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeRange,
+    ViewFilter, process, resolve_log_location, write_events,
 };
 use contrail_core::query::{MatchOptions, QueryError, parse_query};
 use contrail_core::timestamp::Timestamp;
@@ -228,6 +228,43 @@ pub fn close_log_view(state: State<'_, AppState>, view_id: u32) {
         .remove(&view_id);
 }
 
+/// Writes the rows a view lists (all events, or the matches when filtering) to `path`, which
+/// the user picked in a save dialog. Returns how many events were written.
+#[tauri::command]
+#[specta::specta]
+pub async fn export_log_view(
+    state: State<'_, AppState>,
+    view_id: u32,
+    path: String,
+    format: ExportFormat,
+) -> ApiResult<u32> {
+    export_view(&state, view_id, path.into(), format).await
+}
+
+pub(crate) async fn export_view(
+    state: &AppState,
+    view_id: u32,
+    path: std::path::PathBuf,
+    format: ExportFormat,
+) -> ApiResult<u32> {
+    // Copy the rows out while holding the lock only briefly; the live tail keeps inserting.
+    let rows = {
+        let views = state.views.lock().expect("views lock poisoned");
+        let view = views.get(&view_id).ok_or_else(|| {
+            ApiError::new(ErrorCode::NotFound, format!("log view {view_id} is closed"))
+        })?;
+        view.window(0, view.visible_len())
+    };
+    // File I/O blocks: run it on tokio's blocking pool, not on an async worker thread.
+    let written = tokio::task::spawn_blocking(move || -> std::io::Result<usize> {
+        let file = std::io::BufWriter::new(std::fs::File::create(&path)?);
+        write_events(&rows, format, file)
+    })
+    .await
+    .map_err(|e| ApiError::new(ErrorCode::Io, e.to_string()))??;
+    Ok(u32::try_from(written).unwrap_or(u32::MAX))
+}
+
 /// Starts following a view live (after its backfill). Updates arrive on `on_update`.
 ///
 /// Async so it runs on Tauri's tokio runtime, where the live task is spawned.
@@ -317,6 +354,32 @@ mod tests {
         // Split stack traces arrive joined.
         assert!(rows.iter().any(|e| e.line.error.is_some()));
         assert!(rows.iter().all(|e| !e.line.message.starts_with("\tat ")));
+    }
+
+    #[tokio::test]
+    async fn exports_the_listed_rows() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
+        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let spec = FilterSpec {
+            query: "level:ERROR".into(),
+            mode: FilterMode::Filter,
+            hidden_levels: vec![],
+            search_raw: false,
+            noise: vec![],
+        };
+        apply_filter(&state, info.view_id, spec).unwrap();
+
+        let path = std::env::temp_dir().join(format!("contrail-export-{}.jsonl", info.view_id));
+        let written = export_view(&state, info.view_id, path.clone(), ExportFormat::Jsonl)
+            .await
+            .unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).unwrap();
+
+        assert!(written > 0);
+        assert_eq!(text.lines().count(), written as usize);
+        assert!(text.lines().all(|l| l.contains(r#""level":"ERROR""#)));
     }
 
     #[tokio::test]

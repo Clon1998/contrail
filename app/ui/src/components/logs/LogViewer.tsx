@@ -24,6 +24,7 @@ import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { OPTIONAL_COLUMNS } from "./columns";
+import { ExportMenu } from "./ExportMenu";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
 
@@ -176,6 +177,7 @@ export function LogViewer() {
             truncated
           </Badge>
         )}
+        <ExportMenu />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-xs" aria-label="Columns">

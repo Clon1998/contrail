@@ -367,4 +367,17 @@ describe("App", () => {
       expect(screen.queryByRole("tablist", { name: "Open services" })).toBeNull(),
     );
   });
+
+  it("exports the matches of a search", async () => {
+    const { view } = await openPaymentsLogs();
+    fireEvent.change(within(view).getByRole("textbox", { name: "Search logs" }), {
+      target: { value: "level:ERROR" },
+    });
+    const count = await within(view).findByLabelText("Match count");
+    const matches = /^(\d+) of/.exec(count.textContent ?? "")?.[1];
+
+    fireEvent.pointerDown(within(view).getByRole("button", { name: "Export" }), { button: 0 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "JSON Lines (.jsonl)" }));
+    expect(await within(view).findByText(`Exported ${matches} events`)).toBeTruthy();
+  });
 });

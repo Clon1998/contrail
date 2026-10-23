@@ -38,6 +38,11 @@ export const commands = {
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**  Frees a view's buffer and stops its live tail. */
 	closeLogView: (viewId: number) => __TAURI_INVOKE<void>("close_log_view", { viewId }),
+	/**
+	 *  Writes the rows a view lists (all events, or the matches when filtering) to `path`, which
+	 *  the user picked in a save dialog. Returns how many events were written.
+	 */
+	exportLogView: (viewId: number, path: string, format: ExportFormat) => typedError<number, ApiError>(__TAURI_INVOKE("export_log_view", { viewId, path, format })),
 	/**  Sets the search of a view (or clears it with an empty spec). */
 	setLogFilter: (viewId: number, spec: FilterSpec) => typedError<FilterResult, ApiError>(__TAURI_INVOKE("set_log_filter", { viewId, spec })),
 	/**  The listed rows that match the search (for stepping through matches in highlight mode). */
@@ -175,6 +180,12 @@ export type Deployment = {
 export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config" | "io" | 
 /**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
 "logsUnavailable";
+
+export type ExportFormat = 
+/**  The original lines, as CloudWatch delivered them (stack traces joined). */
+"log" | 
+/**  One JSON object per event: time, level, task, stream, message, fields, error. */
+"jsonl";
 
 /**  One field of a structured event, with its dotted name (`log.logger`, `pipeline.offset`). */
 export type Field = {

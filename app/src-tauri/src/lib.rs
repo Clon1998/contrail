@@ -41,6 +41,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         logs::open_service_logs,
         logs::get_log_rows,
         logs::close_log_view,
+        logs::export_log_view,
         logs::set_log_filter,
         logs::get_match_positions,
         logs::start_live,
@@ -85,6 +86,7 @@ pub fn run() {
     let demo = state::demo_requested(std::env::args(), std::env::var("CONTRAIL_DEMO").ok());
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(builder.invoke_handler())
         // `setup` runs once the app exists, so the app data folder (for preferences) is known.
         .setup(move |app| {
