@@ -135,13 +135,20 @@ mod tests {
             region: None,
         };
         let id = "DE40C0DE00000001";
+        // One fixed range for both searches: with "the last 60 minutes" each search had its own
+        // window, and a demo event could slip out of the second one.
+        let now = OffsetDateTime::now_utc();
+        let window = TimeWindow::Range {
+            from: (now - time::Duration::minutes(60)).into(),
+            to: now.into(),
+        };
         let search = |insights| {
             trace_services(
                 &state,
                 ctx.clone(),
                 vec![demo("demo-core", "orders-api")],
                 id.into(),
-                TimeWindow::Last { minutes: 60 },
+                window,
                 insights,
             )
         };
