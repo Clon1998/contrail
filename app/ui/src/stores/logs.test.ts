@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { LogEvent } from "@/bindings";
-import { applyLiveRows, isPageComplete, mergeFetchedRows, PAGE_SIZE, placeOlderRows } from "./logs";
+import {
+  applyLiveRows,
+  isPageComplete,
+  mergeFetchedRows,
+  pagesFromBlocks,
+  PAGE_SIZE,
+  placeOlderRows,
+} from "./logs";
 
 const pages = () =>
   new Map<number, LogEvent[]>([
@@ -91,6 +98,19 @@ describe("mergeFetchedRows", () => {
     expect(next.get(1)?.at(-1)?.seq).toBe(179); // row 179 at 149; 150+ changed
     expect(next.get(1)).toHaveLength(50);
     expect(before.get(0)?.[70]?.seq).toBe(70); // the previous state is not changed
+  });
+});
+
+describe("pagesFromBlocks", () => {
+  const row = (seq: number) => ({ seq }) as LogEvent;
+  it("caches the rows of each block from the first page start on", () => {
+    const pages = pagesFromBlocks([
+      { offset: 0, rows: [row(1), row(2)] },
+      // Starts mid-page: the rows before the next page start are left for a fetch.
+      { offset: PAGE_SIZE - 1, rows: [row(9), row(10), row(11)] },
+    ]);
+    expect(pages.get(0)?.map((e) => e.seq)).toEqual([1, 2]);
+    expect(pages.get(1)?.map((e) => e.seq)).toEqual([10, 11]);
   });
 });
 

@@ -1,8 +1,8 @@
 /** M6: session search — query types, modes, navigation, chips, click-to-filter, noise. */
 import { expect, test, type Page } from "@playwright/test";
 
-async function openLogs(page: Page, cluster: string, service: string) {
-  await page.goto("/");
+async function openLogs(page: Page, cluster: string, service: string, url = "/") {
+  await page.goto(url);
   const tree = page.getByRole("tree", { name: "Clusters" });
   await tree.getByRole("treeitem", { name: cluster }).getByRole("button").first().click();
   await tree.getByRole("treeitem", { name: service }).click();
@@ -159,4 +159,32 @@ test("the search options use the app's checkboxes", async ({ page }) => {
   await page.getByRole("button", { name: "Noise" }).click();
   const hide = page.getByRole("checkbox", { name: "Hide lines containing these texts" });
   await expect(hide).toHaveAttribute("data-state", "checked");
+});
+
+test("changing the search swaps the rows without a placeholder flash", async ({ page }) => {
+  // Row fetches take a second: rows that had to be fetched after the change would show "…".
+  const list = await openLogs(page, "demo-edge", "legacy-gateway", "/?rowsDelay=1000");
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  // All rows on screen are loaded.
+  await expect(list.getByText("…", { exact: true })).toHaveCount(0, { timeout: 5_000 });
+
+  const watch = page.evaluate(async () => {
+    const scroller = document.querySelector('[aria-label="Log events"]')?.parentElement;
+    let frames = 0;
+    const end = performance.now() + 2_500;
+    while (performance.now() < end) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      if (
+        scroller &&
+        [...scroller.querySelectorAll('[role="listitem"]')].some((row) => row.textContent === "…")
+      ) {
+        frames++;
+      }
+    }
+    return frames;
+  });
+  await page.waitForTimeout(100); // the frame watch is running
+  await page.getByRole("textbox", { name: "Search logs" }).fill("GET");
+  expect(await watch).toBe(0);
+  await expect(page.getByLabel("Match count")).toBeVisible();
 });

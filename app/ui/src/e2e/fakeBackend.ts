@@ -26,6 +26,8 @@ import type {
   Task,
   TimeWindow,
   OlderEvents,
+  RowBlock,
+  RowWindow,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -271,6 +273,23 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const filter = filters.get(viewId);
     if (!Array.isArray(events) || !filter || filter.spec.mode !== "filter") return events;
     return filter.matched.map((i) => events[i]).filter((e): e is LogEvent => e !== undefined);
+  }
+
+  /** The rows of `windows` in a view's current listing, like `set_log_filter` returns them. */
+  function rowBlocks(viewId: number, windows: RowWindow[] = []): RowBlock[] {
+    const rows = listed(viewId);
+    const count = listedCount(viewId);
+    return windows.map((w) => {
+      const limit = Math.min(w.limit, 1000);
+      const offset = w.fromEnd ? Math.max(0, count - limit) : w.offset;
+      const block =
+        rows === undefined
+          ? []
+          : typeof rows === "function"
+            ? rows(offset, limit)
+            : rows.slice(offset, offset + limit);
+      return { offset, rows: block };
+    });
   }
 
   /** The listed rows of a view from `first` on (at most 500). */
@@ -584,6 +603,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             visible,
             matches: null,
             highlightTerms: [],
+            rows: rowBlocks(viewId, args?.windows as RowWindow[]),
           } satisfies FilterResult;
         }
         const accepts = (e: LogEvent) =>
@@ -597,6 +617,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           visible: spec.mode === "filter" ? matched.length : events.length,
           matches: matched.length,
           highlightTerms: compiled.terms,
+          rows: rowBlocks(viewId, args?.windows as RowWindow[]),
         } satisfies FilterResult;
       }
       case "get_match_positions": {

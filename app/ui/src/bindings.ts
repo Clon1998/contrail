@@ -43,8 +43,11 @@ export const commands = {
 	 *  the user picked in a save dialog. Returns how many events were written.
 	 */
 	exportLogView: (viewId: number, path: string, format: ExportFormat) => typedError<number, ApiError>(__TAURI_INVOKE("export_log_view", { viewId, path, format })),
-	/**  Sets the search of a view (or clears it with an empty spec). */
-	setLogFilter: (viewId: number, spec: FilterSpec) => typedError<FilterResult, ApiError>(__TAURI_INVOKE("set_log_filter", { viewId, spec })),
+	/**
+	 *  Sets the search of a view (or clears it with an empty spec) and returns the rows of `windows`
+	 *  in the new listing.
+	 */
+	setLogFilter: (viewId: number, spec: FilterSpec, windows: RowWindow[]) => typedError<FilterResult, ApiError>(__TAURI_INVOKE("set_log_filter", { viewId, spec, windows })),
 	/**  The listed rows that match the search (for stepping through matches in highlight mode). */
 	getMatchPositions: (viewId: number) => typedError<number[], ApiError>(__TAURI_INVOKE("get_match_positions", { viewId })),
 	/**
@@ -260,7 +263,12 @@ visible: number;
 /**  Matching events (`None` without a search). */
 matches: number | null; 
 /**  Words to highlight in messages. */
-highlightTerms: string[] } | 
+highlightTerms: string[]; 
+/**
+ *  The rows of the requested windows in the new listing, so the list can switch to the
+ *  new rows in one step (no placeholder rows while they would be fetched).
+ */
+rows: RowBlock[] } | 
 /**  The query can't be parsed; the previous search stays in effect. */
 { kind: "invalid"; error: QueryError };
 
@@ -487,6 +495,22 @@ export type QueryError = {
 	start: number,
 	end: number,
 	hint: string | null,
+};
+
+/**  Listed rows from `offset` on. */
+export type RowBlock = {
+	offset: number,
+	rows: LogEvent[],
+};
+
+/**
+ *  Listed rows the UI wants along with a new search: `limit` rows from `offset`, or the last
+ *  `limit` rows with `from_end` (the newest, where a following list stays).
+ */
+export type RowWindow = {
+	offset: number,
+	limit: number,
+	fromEnd: boolean,
 };
 
 /**  A variable whose value comes from Secrets Manager or SSM Parameter Store. */

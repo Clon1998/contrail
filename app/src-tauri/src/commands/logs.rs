@@ -268,23 +268,54 @@ pub enum FilterResult {
         matches: Option<u32>,
         /// Words to highlight in messages.
         highlight_terms: Vec<String>,
+        /// The rows of the requested windows in the new listing, so the list can switch to the
+        /// new rows in one step (no placeholder rows while they would be fetched).
+        rows: Vec<RowBlock>,
     },
     /// The query can't be parsed; the previous search stays in effect.
     Invalid { error: QueryError },
 }
 
-/// Sets the search of a view (or clears it with an empty spec).
+/// Listed rows the UI wants along with a new search: `limit` rows from `offset`, or the last
+/// `limit` rows with `from_end` (the newest, where a following list stays).
+#[derive(Debug, Clone, Copy, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RowWindow {
+    pub offset: u32,
+    pub limit: u32,
+    pub from_end: bool,
+}
+
+/// Listed rows from `offset` on.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RowBlock {
+    pub offset: u32,
+    pub rows: Vec<LogEvent>,
+}
+
+/// At most this many rows per requested window (a screen plus some margin is plenty).
+const MAX_WINDOW_ROWS: u32 = 1_000;
+
+/// Sets the search of a view (or clears it with an empty spec) and returns the rows of `windows`
+/// in the new listing.
 #[tauri::command]
 #[specta::specta]
 pub fn set_log_filter(
     state: State<'_, AppState>,
     view_id: u32,
     spec: FilterSpec,
+    windows: Vec<RowWindow>,
 ) -> ApiResult<FilterResult> {
-    apply_filter(&state, view_id, spec)
+    apply_filter(&state, view_id, spec, &windows)
 }
 
-fn apply_filter(state: &AppState, view_id: u32, spec: FilterSpec) -> ApiResult<FilterResult> {
+fn apply_filter(
+    state: &AppState,
+    view_id: u32,
+    spec: FilterSpec,
+    windows: &[RowWindow],
+) -> ApiResult<FilterResult> {
     let parsed = if spec.regex {
         parse_regex_query(&spec.query)
     } else {
@@ -308,10 +339,27 @@ fn apply_filter(state: &AppState, view_id: u32, spec: FilterSpec) -> ApiResult<F
     let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
     view.set_filter(Some(filter));
     let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
+    let visible = view.visible_len();
+    let rows = windows
+        .iter()
+        .map(|window| {
+            let limit = window.limit.min(MAX_WINDOW_ROWS) as usize;
+            let offset = if window.from_end {
+                visible.saturating_sub(limit)
+            } else {
+                window.offset as usize
+            };
+            RowBlock {
+                offset: count(offset),
+                rows: view.window(offset, limit),
+            }
+        })
+        .collect();
     Ok(FilterResult::Applied {
-        visible: count(view.visible_len()),
+        visible: count(visible),
         matches: view.match_count().map(count),
         highlight_terms,
+        rows,
     })
 }
 
@@ -494,7 +542,7 @@ mod tests {
             regex: false,
             noise: vec![],
         };
-        apply_filter(&state, info.view_id, spec).unwrap();
+        apply_filter(&state, info.view_id, spec, &[]).unwrap();
 
         let path = std::env::temp_dir().join(format!("contrail-export-{}.jsonl", info.view_id));
         let written = export_view(&state, info.view_id, path.clone(), ExportFormat::Jsonl)
@@ -655,13 +703,13 @@ mod tests {
 
         // `level:ERROR` is query syntax; as a regex it is just text no message contains.
         let FilterResult::Applied { visible, .. } =
-            apply_filter(&state, info.view_id, regex("level:ERROR")).unwrap()
+            apply_filter(&state, info.view_id, regex("level:ERROR"), &[]).unwrap()
         else {
             panic!("regex should compile");
         };
         assert_eq!(visible, 0);
         assert!(matches!(
-            apply_filter(&state, info.view_id, regex("time(out")).unwrap(),
+            apply_filter(&state, info.view_id, regex("time(out"), &[]).unwrap(),
             FilterResult::Invalid { .. }
         ));
     }
@@ -675,13 +723,41 @@ mod tests {
             .unwrap();
 
         let FilterResult::Applied {
-            visible, matches, ..
-        } = apply_filter(&state, info.view_id, spec("level:ERROR")).unwrap()
+            visible,
+            matches,
+            rows,
+            ..
+        } = apply_filter(
+            &state,
+            info.view_id,
+            spec("level:ERROR"),
+            &[
+                RowWindow {
+                    offset: 0,
+                    limit: 2,
+                    from_end: false,
+                },
+                RowWindow {
+                    offset: 0,
+                    limit: 1,
+                    from_end: true,
+                },
+            ],
+        )
+        .unwrap()
         else {
             panic!("query should parse");
         };
         assert_eq!(Some(visible), matches);
-        assert!(visible > 0 && visible < info.stats.total);
+        assert!(visible > 1 && visible < info.stats.total);
+        // The requested windows of the new listing come along: the first two and the newest row.
+        assert_eq!((rows[0].offset, rows[0].rows.len()), (0, 2));
+        assert_eq!((rows[1].offset, rows[1].rows.len()), (visible - 1, 1));
+        assert!(
+            rows.iter()
+                .flat_map(|b| &b.rows)
+                .all(|e| e.line.level == Some(Level::Error))
+        );
         {
             let views = state.views.lock().unwrap();
             let rows = views[&info.view_id].window(0, usize::MAX);
@@ -690,7 +766,7 @@ mod tests {
 
         // An invalid query keeps the previous search and says where the problem is.
         let FilterResult::Invalid { error } =
-            apply_filter(&state, info.view_id, spec("level:LOUD")).unwrap()
+            apply_filter(&state, info.view_id, spec("level:LOUD"), &[]).unwrap()
         else {
             panic!("query should be invalid");
         };
