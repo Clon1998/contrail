@@ -23,8 +23,8 @@
       "arn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
       "name": "demo-edge",
       "status": "ACTIVE",
-      "activeServices": 3,
-      "runningTasks": 9,
+      "activeServices": 4,
+      "runningTasks": 10,
       "pendingTasks": 0
     }
   ],
@@ -98,6 +98,17 @@
         "pending": 0,
         "launchType": "EC2",
         "taskDefinition": "legacy-gateway:113"
+      },
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/partner-poller",
+        "name": "partner-poller",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 1,
+        "running": 1,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "partner-poller:3"
       }
     ]
   },
@@ -1106,6 +1117,133 @@
           "message": "(service legacy-gateway) has reached a steady state."
         }
       ]
+    },
+    "demo-edge/partner-poller": {
+      "summary": {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/partner-poller",
+        "name": "partner-poller",
+        "clusterArn": "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge",
+        "status": "ACTIVE",
+        "desired": 1,
+        "running": 1,
+        "pending": 0,
+        "launchType": "FARGATE",
+        "taskDefinition": "partner-poller:3"
+      },
+      "createdAt": "2025-09-03T12:00:00Z",
+      "platformVersion": "1.4.0",
+      "deployments": [
+        {
+          "id": "ecs-svc/8e4acfeb990515bb2be",
+          "status": "PRIMARY",
+          "rolloutState": "COMPLETED",
+          "rolloutReason": "ECS deployment ecs-svc completed.",
+          "taskDefinition": "partner-poller:3",
+          "desired": 1,
+          "running": 1,
+          "pending": 0,
+          "failed": 0,
+          "createdAt": "2025-12-29T12:00:00Z",
+          "updatedAt": "2025-12-29T12:05:00Z"
+        }
+      ],
+      "taskDefinition": {
+        "family": "partner-poller",
+        "revision": 3,
+        "cpu": "256",
+        "memory": "512",
+        "containers": [
+          {
+            "name": "partner-poller",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/partner-poller:1.4.0",
+            "imageTag": "1.4.0",
+            "logDriver": "awslogs",
+            "logOptions": {
+              "awslogs-group": "/ecs/partner-poller",
+              "awslogs-region": "eu-central-1",
+              "awslogs-stream-prefix": "ecs"
+            },
+            "environment": [
+              {
+                "name": "ACME_ROUTES_0_INPUT_PROPERTIES_URL",
+                "value": "https://portal.example.com/orders"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_SYSTEM",
+                "value": "Order Portal"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_TYPE",
+                "value": "http"
+              },
+              {
+                "name": "ACME_ROUTES_0_TOPIC",
+                "value": "demo.events"
+              },
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "partner-poller"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/partner-poller/api-token"
+              }
+            ],
+            "environmentFiles": [],
+            "routes": {
+              "prefix": "ACME_",
+              "routes": [
+                {
+                  "index": 0,
+                  "topic": "demo.events",
+                  "enabled": true,
+                  "group": null,
+                  "input": {
+                    "kind": "http",
+                    "system": "Order Portal",
+                    "enabled": true,
+                    "properties": [
+                      {
+                        "key": "url",
+                        "value": "https://portal.example.com/orders",
+                        "variable": "ACME_ROUTES_0_INPUT_PROPERTIES_URL",
+                        "valueFrom": null
+                      }
+                    ]
+                  },
+                  "outputs": [],
+                  "settings": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "id": "1b1e8823104de7367d6fe40f5cb9f740",
+          "createdAt": "2026-01-01T11:59:00Z",
+          "message": "(service partner-poller) has reached a steady state."
+        }
+      ]
     }
   },
   "tasks": {
@@ -1711,6 +1849,35 @@
             "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/legacy-gateway:2021.11",
             "imageTag": "2021.11",
             "imageDigest": "sha256:f2ab8ee8edc48606d09432cfe4be2104"
+          }
+        ]
+      }
+    ],
+    "demo-edge/partner-poller": [
+      {
+        "arn": "arn:aws:ecs:eu-central-1:111122223333:task/demo-edge/53de419625fecc7d5c318ad3c2a63912",
+        "id": "53de419625fecc7d5c318ad3c2a63912",
+        "lastStatus": "RUNNING",
+        "desiredStatus": "RUNNING",
+        "healthStatus": "HEALTHY",
+        "createdAt": "2026-01-01T11:29:00Z",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "stoppedAt": null,
+        "stopCode": null,
+        "stoppedReason": null,
+        "availabilityZone": "eu-central-1a",
+        "taskDefinition": "partner-poller:3",
+        "launchType": "FARGATE",
+        "containers": [
+          {
+            "name": "partner-poller",
+            "lastStatus": "RUNNING",
+            "exitCode": null,
+            "reason": null,
+            "healthStatus": "HEALTHY",
+            "image": "111122223333.dkr.ecr.eu-central-1.amazonaws.com/partner-poller:1.4.0",
+            "imageTag": "1.4.0",
+            "imageDigest": "sha256:d2c80b654315559da5a8df01b2a35292"
           }
         ]
       }

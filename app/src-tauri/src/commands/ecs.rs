@@ -191,12 +191,12 @@ mod tests {
         )
         .await
         .unwrap();
-        let readers: Vec<_> = links
+        let found: Vec<_> = links
             .iter()
             .map(|l| (l.service.as_str(), l.direction, l.group.as_deref()))
             .collect();
         assert_eq!(
-            readers,
+            found,
             [
                 (
                     "audit-archiver",
@@ -208,6 +208,8 @@ mod tests {
                     TopicDirection::Out,
                     Some("legacy-gateway")
                 ),
+                // Another input service writing the same topic.
+                ("partner-poller", TopicDirection::In, None),
             ]
         );
         // Their targets come along (for the graph's next column), without their settings.
