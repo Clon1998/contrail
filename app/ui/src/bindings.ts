@@ -38,6 +38,11 @@ export const commands = {
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**  Frees a view's buffer and stops its live tail. */
 	closeLogView: (viewId: number) => __TAURI_INVOKE<void>("close_log_view", { viewId }),
+	/**
+	 *  Writes the rows a view lists (all events, or the matches when filtering) to `path`, which
+	 *  the user picked in a save dialog. Returns how many events were written.
+	 */
+	exportLogView: (viewId: number, path: string, format: ExportFormat) => typedError<number, ApiError>(__TAURI_INVOKE("export_log_view", { viewId, path, format })),
 	/**  Sets the search of a view (or clears it with an empty spec). */
 	setLogFilter: (viewId: number, spec: FilterSpec) => typedError<FilterResult, ApiError>(__TAURI_INVOKE("set_log_filter", { viewId, spec })),
 	/**  The listed rows that match the search (for stepping through matches in highlight mode). */
@@ -66,6 +71,8 @@ export const commands = {
 	addNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_noise", { profile, service, text })),
 	/**  Removes a "hide noise" text of a service. */
 	removeNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("remove_noise", { profile, service, text })),
+	/**  Sets a service's field mapping (an empty one removes it). Open views keep theirs until reopened. */
+	setFieldMapping: (profile: string, service: ServiceRef, mapping: FieldMapping) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_field_mapping", { profile, service, mapping })),
 };
 
 /* Types */
@@ -172,14 +179,29 @@ export type Deployment = {
 };
 
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
-export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | "aws" | "config" | "io" | 
+export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | 
+/**  A missing IAM permission. */
+"accessDenied" | "aws" | "config" | "io" | 
 /**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
 "logsUnavailable";
+
+export type ExportFormat = 
+/**  The original lines, as CloudWatch delivered them (stack traces joined). */
+"log" | 
+/**  One JSON object per event: time, level, task, stream, message, fields, error. */
+"jsonl";
 
 /**  One field of a structured event, with its dotted name (`log.logger`, `pipeline.offset`). */
 export type Field = {
 	key: string,
 	value: FieldValue,
+};
+
+/**  Dotted field names to read the message, level and timestamp from; `None` keeps the default. */
+export type FieldMapping = {
+	message: string | null,
+	level: string | null,
+	timestamp: string | null,
 };
 
 /**
@@ -254,6 +276,9 @@ export type LiveUpdate = {
 	/**  Why the state is what it is, when there's something to say (polling, errors). */
 	message: string | null,
 };
+
+/**  Optional columns of the log list (time, level, task and message are always shown). */
+export type LogColumn = "logger" | "thread" | "correlation";
 
 /**  An exception attached to an event (ECS `error.*`, or a joined plain-text stack trace). */
 export type LogError = {
@@ -355,6 +380,8 @@ export type Prefs = {
 	 *  contains one of them are hidden while hiding noise is on.
 	 */
 	noise: { [key in string]: string[] },
+	/**  Field mappings per service (by [`ServiceKey::storage_key`]). */
+	fieldMappings: { [key in string]: FieldMapping },
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
@@ -484,6 +511,10 @@ export type Settings = {
 	pauseWhenHidden: boolean,
 	/**  Pause live tails of views that aren't shown after this many minutes; 0 = never. */
 	autoPauseMinutes: number,
+	/**  How many events a log view keeps (the oldest are dropped beyond that). */
+	bufferSize: number,
+	/**  The optional columns shown in log lists. */
+	logColumns: LogColumn[],
 };
 
 export type Task = {

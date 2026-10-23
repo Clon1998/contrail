@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   CircleAlertIcon,
   Columns3Icon,
@@ -9,7 +9,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import type { LiveState } from "@/bindings";
+import type { LiveState, LogColumn } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,13 +19,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAutoPause } from "@/hooks/useAutoPause";
 import { shortTaskId } from "@/lib/ecs";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
-import { OPTIONAL_COLUMNS } from "./columns";
+import { OPTIONAL_COLUMNS, useLogColumns } from "./columns";
+import { ExportMenu } from "./ExportMenu";
+import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
 
@@ -91,26 +92,60 @@ function LiveControls() {
   );
 }
 
+/** Why the live tail stopped, and a way to try again. */
+function LiveFailure() {
+  const live = useLogs((s) => s.live);
+  const retry = useLogs((s) => s.retryLive);
+  if (live?.state !== "failed") return null;
+  const login = /credentials|token/i.test(live.message ?? "");
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 border-b border-destructive/40 bg-destructive/5 px-4 py-1.5 text-xs"
+    >
+      <CircleAlertIcon className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+      <span className="min-w-0 flex-1">
+        Live tail stopped: {live.message}
+        <span className="block text-muted-foreground">
+          {login
+            ? "Log in again with the button in the top bar, then retry."
+            : "The role lacks a permission (docs/iam-policy.json lists them). Retry once it's fixed."}
+        </span>
+      </span>
+      <Button variant="outline" size="xs" onClick={retry}>
+        <RefreshCwIcon /> Retry
+      </Button>
+    </div>
+  );
+}
+
 /** The Logs tab: a service's (or one task's) events, backfilled and then followed live. */
 export function LogViewer() {
   const ctx = useEcs((s) => s.ctx);
   const selected = useEcs((s) => s.selected);
-  const defaultMinutes = usePrefs((s) => s.prefs.settings.backfillMinutes);
-  const [minutes, setMinutes] = useState(defaultMinutes);
-  const { view, loading, error, open, close, taskFilter, showTask, columns, setColumn, visible } =
-    useLogs();
+  const view = useLogs((s) => s.view);
+  const loading = useLogs((s) => s.loading);
+  const error = useLogs((s) => s.error);
+  const open = useLogs((s) => s.open);
+  const ensureOpen = useLogs((s) => s.ensureOpen);
+  const minutes = useLogs((s) => s.minutes);
+  const setMinutes = useLogs((s) => s.setMinutes);
+  const taskFilter = useLogs((s) => s.taskFilter);
+  const showTask = useLogs((s) => s.showTask);
+  const columns = useLogColumns();
+  const updateSettings = usePrefs((s) => s.updateSettings);
+  const setColumn = (column: LogColumn, shown: boolean) =>
+    void updateSettings({
+      logColumns: shown ? [...columns, column] : columns.filter((c) => c !== column),
+    });
+  const visible = useLogs((s) => s.visible);
   // The task filter only applies to the service it was set for.
   const taskId = taskFilter && sameService(taskFilter.service, selected) ? taskFilter.taskId : null;
 
+  // The view stays open while its service tab exists (it's closed with the tab).
   useEffect(() => {
-    if (ctx && selected) void open(ctx, selected, minutes, taskId);
-  }, [ctx, selected, minutes, taskId, open]);
-
-  // The tab is shown while this component exists; background views come with tabs (M7).
-  useAutoPause(true);
-
-  // Free the view's buffer in Rust when the tab goes away.
-  useEffect(() => () => void close(), [close]);
+    if (ctx && selected) void ensureOpen(ctx, selected, minutes, taskId);
+  }, [ctx, selected, minutes, taskId, ensureOpen]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -175,6 +210,8 @@ export function LogViewer() {
             truncated
           </Badge>
         )}
+        <FieldMappingDialog />
+        <ExportMenu />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-xs" aria-label="Columns">
@@ -186,7 +223,7 @@ export function LogViewer() {
             {OPTIONAL_COLUMNS.map((column) => (
               <DropdownMenuCheckboxItem
                 key={column.id}
-                checked={columns[column.id]}
+                checked={columns.includes(column.id)}
                 onCheckedChange={(checked) => setColumn(column.id, checked === true)}
               >
                 {column.label}
@@ -196,6 +233,7 @@ export function LogViewer() {
         </DropdownMenu>
       </div>
 
+      <LiveFailure />
       {view && <SearchBar />}
       {error && (
         <p className="mx-4 mt-3 flex items-start gap-2 text-sm text-destructive">

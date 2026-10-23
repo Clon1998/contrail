@@ -4,18 +4,18 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
 import { installFakeBackend } from "@/e2e/fakeBackend";
 import { useEcs } from "@/stores/ecs";
-import { useLogs } from "@/stores/logs";
+import { useTabs } from "@/stores/tabs";
 import { EMPTY_PREFS, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 
 const initialProfiles = useProfiles.getState();
 const initialEcs = useEcs.getState();
-const initialLogs = useLogs.getState();
+const initialTabs = useTabs.getState();
 
 beforeEach(() => {
   useProfiles.setState(initialProfiles, true);
   useEcs.setState(initialEcs, true);
-  useLogs.setState(initialLogs, true);
+  useTabs.setState(initialTabs, true);
   usePrefs.setState({ prefs: EMPTY_PREFS });
   // The settings test changes the page's colour mode and accent.
   document.documentElement.className = "dark";
@@ -322,5 +322,112 @@ describe("App", () => {
     fireEvent.click(info);
     await waitFor(() => expect(info.getAttribute("aria-pressed")).toBe("false"));
     await waitFor(() => expect(Number(list.getAttribute("aria-rowcount"))).toBeLessThan(25));
+  });
+
+  it("keeps each opened service in a tab with its log view", async () => {
+    installFakeBackend({ liveIntervalMs: 60_000 });
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    const pick = async (name: string) =>
+      fireEvent.click(
+        within(await within(tree).findByRole("treeitem", { name })).getByRole("button"),
+      );
+
+    await pick("payments-worker");
+    let view = await screen.findByRole("main", { name: "Service payments-worker" });
+    fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
+    fireEvent.change(await within(view).findByRole("textbox", { name: "Search logs" }), {
+      target: { value: "settling" },
+    });
+    await within(view).findByLabelText("Match count");
+
+    await pick("orders-api");
+    await screen.findByRole("main", { name: "Service orders-api" });
+    const tabs = screen.getByRole("tablist", { name: "Open services" });
+    expect(
+      within(tabs)
+        .getAllByRole("tab")
+        .map((t) => t.getAttribute("aria-label")),
+    ).toEqual(["payments-worker", "orders-api"]);
+
+    // Back to the first tab: still on Logs, with its search.
+    fireEvent.click(within(tabs).getByRole("tab", { name: "payments-worker" }));
+    view = await screen.findByRole("main", { name: "Service payments-worker" });
+    expect(within(view).getByRole<HTMLInputElement>("textbox", { name: "Search logs" }).value).toBe(
+      "settling",
+    );
+
+    // Middle click closes a tab.
+    fireEvent.mouseDown(within(tabs).getByRole("tab", { name: "payments-worker" }), { button: 1 });
+    await screen.findByRole("main", { name: "Service orders-api" });
+    fireEvent.click(screen.getByRole("button", { name: "Close orders-api" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("tablist", { name: "Open services" })).toBeNull(),
+    );
+  });
+
+  it("exports the matches of a search", async () => {
+    const { view } = await openPaymentsLogs();
+    fireEvent.change(within(view).getByRole("textbox", { name: "Search logs" }), {
+      target: { value: "level:ERROR" },
+    });
+    const count = await within(view).findByLabelText("Match count");
+    const matches = /^(\d+) of/.exec(count.textContent ?? "")?.[1];
+
+    fireEvent.pointerDown(within(view).getByRole("button", { name: "Export" }), { button: 0 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "JSON Lines (.jsonl)" }));
+    expect(await within(view).findByText(`Exported ${matches} events`)).toBeTruthy();
+  });
+
+  it("opens the keyboard shortcuts with ?", async () => {
+    installFakeBackend();
+    render(<App />);
+    await screen.findByText("DemoReadOnly/demo.user");
+    fireEvent.keyDown(document.body, { key: "?" });
+    const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(within(dialog).getByText("Go to a service")).toBeTruthy();
+    expect(within(dialog).getByRole("region", { name: "Search" })).toBeTruthy();
+  });
+
+  it("explains a stopped live tail and retries it", async () => {
+    installFakeBackend({ liveIntervalMs: 60_000, liveFailures: 1 });
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "orders-api" })).getByRole("button"),
+    );
+    const view = await screen.findByRole("main", { name: "Service orders-api" });
+    fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
+
+    const alert = await within(view).findByRole("alert");
+    expect(alert.textContent).toContain("ExpiredToken");
+    expect(alert.textContent).toContain("Log in again");
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    expect(await within(view).findByRole("status", { name: "Live tail: Live" })).toBeTruthy();
+    expect(within(view).queryByRole("alert")).toBeNull();
+  });
+
+  it("saves a field mapping per service", async () => {
+    const { view } = await openPaymentsLogs();
+    fireEvent.click(within(view).getByRole("button", { name: "Field mapping" }));
+    const dialog = await screen.findByRole("dialog", { name: "Field mapping" });
+    fireEvent.change(within(dialog).getByRole("combobox", { name: "Message field" }), {
+      target: { value: "process.thread.name" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save and reload" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // Saved per service (the rows themselves are checked in e2e/workflow.e2e.ts: jsdom has no layout).
+    expect(Object.values(usePrefs.getState().prefs.fieldMappings)).toEqual([
+      { message: "process.thread.name", level: null, timestamp: null },
+    ]);
+    expect(within(view).getByRole("button", { name: "Field mapping" }).className).toContain(
+      "text-primary",
+    );
   });
 });

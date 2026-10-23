@@ -313,3 +313,31 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   byte offset, so errors can point at the exact place (`QueryError { start, end }`). Keys, operators and values
   are split with plain string methods (`strip_prefix`, `char_indices`).
 - **Where:** `crates/contrail-core/src/query.rs`.
+
+## Closures vs. `fn` for borrowed returns
+
+- **What:** `let key = |k: &Option<String>| k.as_deref()…` returning a `&str` fails with "lifetime may not live
+  long enough": a closure's signature gets no lifetime elision, so the compiler can't tie the returned borrow to
+  the argument. A small `fn key(name: &Option<String>) -> Option<&str>` gets the elision rule ("the output
+  borrows from the single input") for free.
+- **Where:** `key` in `crates/contrail-core/src/logs/mapping.rs`.
+
+## Generic writers and blocking I/O in async code
+
+- **What:** `write_events<W: Write>(…, out: W)` writes to anything implementing `std::io::Write` (a buffered
+  file in the app, a `Vec<u8>` in tests), like taking a `java.io.Writer`. File I/O blocks the thread, so the
+  async command runs it with `tokio::task::spawn_blocking` (tokio's pool for blocking work) instead of on an
+  async worker, and copies the rows out of the mutex first so the lock is held only briefly.
+- **Where:** `crates/contrail-core/src/logs/export.rs`, `export_view` in `app/src-tauri/src/commands/logs.rs`.
+
+## Borrowing structs (`JsonRow<'a>`)
+
+- **What:** a struct can hold references instead of owned data: `struct JsonRow<'a> { message: &'a str, … }`.
+  The lifetime parameter says the row can't outlive the event it borrows from; serializing it copies nothing.
+- **Where:** `JsonRow` in `crates/contrail-core/src/logs/export.rs`.
+
+## Builder-style `with_*` methods that take `self`
+
+- **What:** `LogView::new(…).with_mapping(mapping)` takes `mut self` by value, changes it and returns it:
+  ownership moves through the call, so no `&mut` borrow or clone is needed (Java builders return `this`).
+- **Where:** `LogView::with_mapping` in `app/src-tauri/src/state.rs`.

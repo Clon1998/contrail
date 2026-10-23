@@ -144,3 +144,22 @@ resumed (e.g. after logging in).
 - **Highlighting** marks only plain text terms in the message (not regex matches or fields).
 - **Fake backend:** the UI tests use a simplified TypeScript version of the query language; the real semantics
   are tested in Rust (unit and property tests).
+
+## 2026-10-23 — M7 workflow polish
+
+- **Tabs are services.** Selecting a service opens (or shows) its tab; each tab owns a logs store (zustand
+  vanilla store via React context) with its view, search and live tail, so switching keeps everything. At most
+  10 tabs (the least recently used closes). Background tabs pause their tail after the "background" setting.
+  Switching profile or region closes all tabs (views belong to one account/region).
+- **No Cmd/Ctrl+W:** on macOS the default app menu binds ⌘W to "Close window", so closing tabs uses the ✕ button
+  or a middle click (handled on mousedown: WebKit sends no `auxclick`). ⌘/Ctrl+1…9 and Ctrl+Tab switch tabs.
+- **Export** writes the listed rows (the matches when filtering, everything in highlight mode) as raw lines
+  (`.log`) or JSON Lines with time, level, task, stream, message, fields, error. The save dialog plugin is the
+  only file-system permission (`dialog:allow-save`); Rust writes the file.
+- **Columns** are a setting shared by all views (they were per view and reset on every open).
+- **Buffer size** is a setting (10k–500k events, default 100k), used for views opened afterwards.
+- **Field mapping** (per service): message/level/timestamp keys for JSON logs; applied in Rust as events
+  enter a view; saving reloads the view. The previously detected message stays as a `message` field.
+- **AccessDenied ≠ expired login.** It was mapped to a credentials error; it now has its own error code with a
+  hint to `docs/iam-policy.json`, and a live tail hitting it stops and waits (banner with Retry).
+- **Window state plugin** (plan §5) is deferred: not needed for v0.1.

@@ -5,7 +5,7 @@ Switch AWS SSO profiles, browse clusters → services → tasks, and jump straig
 readable logs — structured (ECS JSON) or plain — with session search.
 
 > **Status:** early development. Profiles, SSO login, ECS browsing and the log viewer with live tail work
-> (M1–M6). Tabs, export and polish come next.
+> (M1–M7). Release builds come next.
 > See [plan.md](plan.md) for scope and milestones.
 
 Contrail is strictly **read-only** towards AWS and never stores credentials.
@@ -35,6 +35,10 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Search** the loaded logs: `timeout level>=WARN trace.id:abc123 -healthcheck`, regular expressions, field
   globs and comparisons, as a filter or highlighted with next/previous (Enter, F3). Level chips hide levels;
   "Hide lines like this" builds a per-service noise list. See [docs/query-syntax.md](docs/query-syntax.md).
+- **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
+- **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
+- **Keyboard shortcuts:** press `?`.
+- **Permissions:** read-only; [docs/iam-policy.json](docs/iam-policy.json) lists exactly what Contrail calls.
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
   default log time window and timestamps in local time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in

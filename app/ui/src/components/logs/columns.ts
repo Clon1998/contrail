@@ -1,5 +1,10 @@
-import type { LogEvent } from "@/bindings";
-import type { OptionalColumn } from "@/stores/logs";
+import type { LogColumn, LogEvent } from "@/bindings";
+import { usePrefs } from "@/stores/prefs";
+
+/** The optional columns shown (a setting, the same for every view). */
+export function useLogColumns(): LogColumn[] {
+  return usePrefs((s) => s.prefs.settings.logColumns);
+}
 
 /** Field names that hold a correlation/trace ID, in order of preference. */
 const CORRELATION_FIELDS = [
@@ -9,14 +14,14 @@ const CORRELATION_FIELDS = [
   "log.correlation",
 ];
 
-export const OPTIONAL_COLUMNS: { id: OptionalColumn; label: string; width: string }[] = [
+export const OPTIONAL_COLUMNS: { id: LogColumn; label: string; width: string }[] = [
   { id: "logger", label: "Logger", width: "22ch" },
   { id: "thread", label: "Thread", width: "16ch" },
   { id: "correlation", label: "Correlation / trace ID", width: "18ch" },
 ];
 
 /** The text of an optional column for an event. */
-export function columnValue(event: LogEvent, column: OptionalColumn): string {
+export function columnValue(event: LogEvent, column: LogColumn): string {
   const field = (key: string) => event.line.fields.find((f) => f.key === key)?.value;
   const value =
     column === "logger"
@@ -28,13 +33,13 @@ export function columnValue(event: LogEvent, column: OptionalColumn): string {
 }
 
 /** The CSS grid columns of a row: time, level, [task], [optional…], message. */
-export function gridTemplate(showTask: boolean, columns: Record<OptionalColumn, boolean>): string {
+export function gridTemplate(showTask: boolean, columns: LogColumn[]): string {
   return [
     "1.2em",
     "12.5ch",
     "6ch",
     ...(showTask ? ["10.5ch"] : []),
-    ...OPTIONAL_COLUMNS.filter((c) => columns[c.id]).map((c) => c.width),
+    ...OPTIONAL_COLUMNS.filter((c) => columns.includes(c.id)).map((c) => c.width),
     "minmax(0, 1fr)",
   ].join(" ");
 }

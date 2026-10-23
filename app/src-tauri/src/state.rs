@@ -8,7 +8,7 @@ use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::EcsSource;
 use contrail_core::logs::{
-    LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter, VisibleChange,
+    FieldMapping, LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter, VisibleChange,
 };
 use contrail_core::timestamp::Timestamp;
 
@@ -76,6 +76,8 @@ pub struct LogView {
     pub live: Option<LiveHandle>,
     /// The search, if one is set (and not trivial).
     pub filter: Option<ViewFilter>,
+    /// The service's field mapping, applied to events as they arrive.
+    pub mapping: FieldMapping,
 }
 
 impl LogView {
@@ -92,11 +94,21 @@ impl LogView {
             backfilled_until,
             live: None,
             filter: None,
+            mapping: FieldMapping::default(),
         }
     }
 
+    /// Uses a field mapping for the events inserted from now on.
+    pub fn with_mapping(mut self, mapping: FieldMapping) -> Self {
+        self.mapping = mapping;
+        self
+    }
+
     /// Adds events and returns what changed in the listed rows (filtered or not).
-    pub fn insert(&mut self, events: Vec<LogEvent>) -> VisibleChange {
+    pub fn insert(&mut self, mut events: Vec<LogEvent>) -> VisibleChange {
+        if !self.mapping.is_empty() {
+            events.iter_mut().for_each(|e| self.mapping.apply(e));
+        }
         let before = self.buffer.len();
         let report = self.buffer.insert(events);
         match &mut self.filter {

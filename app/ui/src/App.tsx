@@ -7,8 +7,9 @@ import { ConnectionPanel } from "@/components/profile/ConnectionPanel";
 import { LoginOutput } from "@/components/profile/LoginOutput";
 import { ProfileBar } from "@/components/profile/ProfileBar";
 import { useAppearance } from "@/hooks/useAppearance";
-import { useEcs } from "@/stores/ecs";
+import { ctxKey, useEcs } from "@/stores/ecs";
 import { useCurrentRegion, useProfiles } from "@/stores/profiles";
+import { useTabs } from "@/stores/tabs";
 
 /** Session states change as tokens expire; re-read them (local files only) this often. */
 const STATUS_REFRESH_MS = 60_000;
@@ -22,7 +23,8 @@ export default function App() {
   const connected = useProfiles((s) => s.identity.state === "ok");
   const region = useCurrentRegion();
   const showTree = useEcs((s) => s.ctx !== null);
-  const serviceOpen = useEcs((s) => s.selected !== null);
+  const selectedService = useEcs((s) => s.selected);
+  const ctxId = useEcs((s) => (s.ctx ? ctxKey(s.ctx) : null));
 
   useEffect(() => {
     void commands.appInfo().then(setInfo);
@@ -40,13 +42,20 @@ export default function App() {
     }
   }, [selected, connected, region]);
 
+  // Tabs belong to one profile + region: switching closes them (and their live tails).
+  useEffect(() => useTabs.getState().closeAll(), [ctxId]);
+  // The selected service is shown in its tab (opened if needed).
+  useEffect(() => {
+    if (selectedService) useTabs.getState().activate(selectedService);
+  }, [selectedService]);
+
   return (
     <div className="flex h-full flex-col">
       <ProfileBar demo={info?.demo ?? false} version={info?.version} />
       <LoginOutput />
       <div className="flex min-h-0 flex-1">
         {showTree && <Sidebar />}
-        {serviceOpen ? <ServiceView /> : <ConnectionPanel />}
+        {selectedService ? <ServiceView /> : <ConnectionPanel />}
       </div>
       <ServicePalette />
     </div>

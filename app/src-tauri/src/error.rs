@@ -27,6 +27,8 @@ pub enum ErrorCode {
     CliMissing,
     LoginFailed,
     Credentials,
+    /// A missing IAM permission.
+    AccessDenied,
     Aws,
     Config,
     Io,
@@ -96,6 +98,10 @@ impl From<SourceError> for ApiError {
                 ApiError::new(ErrorCode::Credentials, message)
                     .with_hint(format!("Log in again (aws sso login --profile {profile})."))
             }
+            SourceError::AccessDenied(_) => ApiError::new(ErrorCode::AccessDenied, message)
+                .with_hint(
+                    "The role lacks a read permission Contrail needs; docs/iam-policy.json lists them all.",
+                ),
             SourceError::Aws(_) => ApiError::new(ErrorCode::Aws, message),
             SourceError::NotFound(_) => ApiError::new(ErrorCode::NotFound, message)
                 .with_hint("It may have been deleted; refresh the list."),

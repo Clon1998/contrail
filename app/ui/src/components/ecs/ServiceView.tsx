@@ -15,15 +15,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNow } from "@/hooks/useNow";
 import { formatAgo, formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { useEcs } from "@/stores/ecs";
-import { useLogs } from "@/stores/logs";
+import { LogsContext, useLogs } from "@/stores/logs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
+import { tabKey, useTabs } from "@/stores/tabs";
 import { HealthDot } from "./HealthDot";
+import { ServiceTabs } from "./ServiceTabs";
 
 /** The open service is refreshed this often (only while it is shown). */
 const REFRESH_MS = 30_000;
 
+/** The selected service, inside the logs store of its tab. */
 export function ServiceView() {
+  const selected = useEcs((s) => s.selected);
+  const tab = useTabs((s) => s.tabs.find((t) => t.key === s.activeKey));
+  // Right after selecting another service its tab is activated (an effect in App): wait for it.
+  const ready = selected && tab && tab.key === tabKey(selected);
+  return (
+    <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <ServiceTabs />
+      {ready && (
+        <LogsContext.Provider value={tab.logs}>
+          <ServicePane key={tab.key} />
+        </LogsContext.Provider>
+      )}
+    </div>
+  );
+}
+
+function ServicePane() {
   const selected = useEcs((s) => s.selected);
   const detail = useEcs((s) => s.detail);
   const refresh = useEcs((s) => s.refreshService);
@@ -41,7 +61,7 @@ export function ServiceView() {
   return (
     <main
       aria-label={`Service ${selected.serviceName}`}
-      className="flex min-w-0 flex-1 flex-col overflow-hidden"
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
     >
       <Header />
       <Tabs

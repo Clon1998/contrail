@@ -623,6 +623,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn missing_permissions_are_not_a_login_problem() {
+        use aws_sdk_ecs::error::ErrorMetadata;
+        use aws_sdk_ecs::operation::list_clusters::ListClustersError;
+        let list = mock!(Client::list_clusters).then_error(|| {
+            ListClustersError::generic(
+                ErrorMetadata::builder()
+                    .code("AccessDeniedException")
+                    .message("not authorized to perform: ecs:ListClusters")
+                    .build(),
+            )
+        });
+        let client = mock_client!(aws_sdk_ecs, [&list]);
+        assert_eq!(
+            list_clusters(&client, "dev").await,
+            Err(SourceError::AccessDenied(
+                "AccessDeniedException: not authorized to perform: ecs:ListClusters".into()
+            ))
+        );
+    }
+
+    #[tokio::test]
     async fn missing_service_is_not_found() {
         let describe = mock!(Client::describe_services)
             .then_output(|| DescribeServicesOutput::builder().build());

@@ -1,6 +1,7 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
+  FieldMapping,
   FilterResult,
   FilterSpec,
   Level,
@@ -159,6 +160,8 @@ export interface FakeBackendOptions {
   prefs?: Partial<Prefs>;
   /** How often live tails add an event (default: every second). */
   liveIntervalMs?: number;
+  /** The first this many live tail starts fail with an expired session. */
+  liveFailures?: number;
 }
 
 /** Creates the IPC handler. Each call starts from the initial demo state. */
@@ -201,8 +204,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       logFontSize: 12,
       pauseWhenHidden: true,
       autoPauseMinutes: 10,
+      bufferSize: 100_000,
+      logColumns: [],
     },
     noise: {},
+    fieldMappings: {},
     ...options.prefs,
   };
 
@@ -227,6 +233,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     number,
     { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
   >();
+
+  /** Files "saved" through the export dialog. */
+  const exports: { path: string; format?: string; count?: number }[] = [];
 
   /** Searches per view: the spec and the indices of matching events. */
   const filters = new Map<number, { spec: FilterSpec; matched: number[] }>();
@@ -262,7 +271,12 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
   }
 
   /** Sends a live update for a view: its state and counts, and which rows changed. */
-  function sendLive(viewId: number, state: LiveState, firstChanged: number | null) {
+  function sendLive(
+    viewId: number,
+    state: LiveState,
+    firstChanged: number | null,
+    message: string | null = null,
+  ) {
     const tail = tails.get(viewId);
     const events = views.get(viewId);
     if (!tail || events === undefined) return;
@@ -289,15 +303,22 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       matches: filter ? filter.matched.length : null,
       firstChanged,
       evicted: 0,
-      message: null,
+      message,
     };
     sendOnChannel(tail.channel, tail.sent++, update);
   }
 
   /** Every second, appends copies of a view's first events with fresh timestamps. */
+  let liveFailures = options.liveFailures ?? 0;
+
   function startTail(viewId: number) {
     const tail = tails.get(viewId);
     if (!tail || tail.timer) return;
+    if (liveFailures > 0) {
+      liveFailures--;
+      const message = 'no valid credentials for profile "demo-dev": ExpiredToken';
+      return sendLive(viewId, "failed", null, message);
+    }
     sendLive(viewId, "live", null);
     tail.timer = setInterval(() => {
       const events = views.get(viewId);
@@ -384,9 +405,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           `${cluster}/${service.serviceName}`
         ];
         const taskId = args?.taskId as string | null;
-        const events = (recordedService?.events ?? []).filter(
-          (e) => taskId === null || e.taskId === taskId,
-        );
+        const mapping =
+          prefs.fieldMappings[`${ctx.profile}|${service.clusterArn}|${service.serviceName}`];
+        const events = (recordedService?.events ?? [])
+          .filter((e) => taskId === null || e.taskId === taskId)
+          .map((e) => (mapping ? applyMapping(e, mapping) : e));
         const viewId = nextViewId++;
         // The high-volume demo service gets 100,000 generated events, for scrolling tests.
         const big = service.serviceName === "event-ingest";
@@ -473,6 +496,20 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!filter) return [];
         return filter.spec.mode === "highlight" ? filter.matched : filter.matched.map((_, i) => i);
       }
+      case "plugin:dialog|save": {
+        const options = args?.options as { defaultPath?: string } | undefined;
+        exports.push({ path: `/tmp/${options?.defaultPath ?? "export"}` });
+        return exports.at(-1)?.path;
+      }
+      case "export_log_view": {
+        const rows = listed(args?.viewId as number);
+        const count = Array.isArray(rows)
+          ? rows.length
+          : (bigCounts.get(args?.viewId as number) ?? BIG_VIEW);
+        const last = exports.at(-1);
+        if (last) Object.assign(last, { format: args?.format as string, count });
+        return count;
+      }
       case "close_log_view": {
         const viewId = args?.viewId as number;
         views.delete(viewId);
@@ -528,6 +565,16 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             ? prefs.favorites.filter((f) => !sameKey(f, key))
             : [...prefs.favorites, key],
         };
+        return prefs;
+      }
+      case "set_field_mapping": {
+        const service = args?.service as ServiceRef;
+        const key = `${args?.profile as string}|${service.clusterArn}|${service.serviceName}`;
+        const mapping = args?.mapping as FieldMapping;
+        const others = Object.entries(prefs.fieldMappings).filter(([k]) => k !== key);
+        const fieldMappings: Record<string, FieldMapping> = Object.fromEntries(others);
+        if (mapping.message || mapping.level || mapping.timestamp) fieldMappings[key] = mapping;
+        prefs = { ...prefs, fieldMappings };
         return prefs;
       }
       case "add_noise":
@@ -692,4 +739,28 @@ function statsOf(events: LogEvent[]): BufferStats {
     else stats[level.toLowerCase() as Lowercase<Level>]++;
   }
   return stats;
+}
+
+/** The message and level parts of the Rust field mapping (crates/contrail-core/src/logs/mapping.rs). */
+function applyMapping(event: LogEvent, mapping: FieldMapping): LogEvent {
+  const value = (key: string | null) =>
+    key ? event.line.fields.find((f) => f.key === key)?.value : undefined;
+  const message = value(mapping.message);
+  const level = value(mapping.level);
+  const parsedLevel = LEVELS.find((l) => l === String(level).toUpperCase());
+  return {
+    ...event,
+    line: {
+      ...event.line,
+      message: message === undefined ? event.line.message : String(message),
+      fields:
+        message === undefined
+          ? event.line.fields
+          : [
+              { key: "message", value: event.line.message },
+              ...event.line.fields.filter((f) => f.key !== mapping.message),
+            ],
+      level: parsedLevel ?? event.line.level,
+    },
+  };
 }

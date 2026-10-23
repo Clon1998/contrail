@@ -7,7 +7,7 @@ import { formatLogTime, stripAnsi } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { Ansi } from "./Ansi";
-import { columnValue, OPTIONAL_COLUMNS } from "./columns";
+import { columnValue, OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { LEVEL_TONE } from "./levels";
 import { LogDetails } from "./LogDetails";
 
@@ -30,7 +30,7 @@ export function LogRow({
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   const expanded = useLogs((s) => s.expanded[event.seq] ?? false);
   const toggle = useLogs((s) => s.toggleExpanded);
-  const columns = useLogs((s) => s.columns);
+  const columns = useLogColumns();
   const terms = useLogs((s) => s.highlightTerms);
   const { line } = event;
   const firstLine = line.message.split("\n", 1)[0] ?? "";
@@ -72,7 +72,7 @@ export function LogRow({
             {shortTaskId(event.taskId)}
           </span>
         )}
-        {OPTIONAL_COLUMNS.filter((c) => columns[c.id]).map((c) => (
+        {OPTIONAL_COLUMNS.filter((c) => columns.includes(c.id)).map((c) => (
           <span
             key={c.id}
             className="truncate text-muted-foreground"

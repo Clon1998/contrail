@@ -1,6 +1,7 @@
 //! Local preferences (last profile, region overrides, favorites, recent services).
 
 use contrail_core::ecs::ServiceRef;
+use contrail_core::logs::FieldMapping;
 use contrail_core::prefs::{Prefs, ServiceKey, Settings};
 use tauri::State;
 
@@ -64,6 +65,19 @@ pub fn add_noise(
 ) -> ApiResult<Prefs> {
     let key = ServiceKey::new(&profile, &service);
     Ok(state.prefs.update(|p| p.add_noise(&key, &text))?)
+}
+
+/// Sets a service's field mapping (an empty one removes it). Open views keep theirs until reopened.
+#[tauri::command]
+#[specta::specta]
+pub fn set_field_mapping(
+    state: State<'_, AppState>,
+    profile: String,
+    service: ServiceRef,
+    mapping: FieldMapping,
+) -> ApiResult<Prefs> {
+    let key = ServiceKey::new(&profile, &service);
+    Ok(state.prefs.update(|p| p.set_field_mapping(&key, mapping))?)
 }
 
 /// Removes a "hide noise" text of a service.
