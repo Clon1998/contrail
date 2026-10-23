@@ -11,6 +11,7 @@ function event(fields: Field[]): LogEvent {
     stream: "ecs/app/abc",
     taskId: "abc",
     raw: "{}",
+    status: null,
     line: {
       kind: "ecs",
       timestamp,

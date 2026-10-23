@@ -254,19 +254,20 @@ fn nested(service: &str, seed: u64, at: OffsetDateTime) -> String {
         "service": { "name": service, "version": "4.2.0", "environment": "DEMO", "node": {} },
         "message": message,
     });
-    if message.starts_with("Document status change") {
-        let state = if level == "ERROR" {
-            "FAILED"
-        } else {
-            "COMPLETED"
-        };
+    // "Document status change: [order] PUBLISHED -> CONSUMING": the status fields say the same.
+    if let Some((before, state)) = message
+        .strip_prefix("Document status change")
+        .and_then(|rest| rest.rsplit_once(" -> "))
+    {
+        let previous = before.rsplit(' ').next().unwrap_or("CONSUMING");
         event["pipeline"] = json!({
             "state": state,
-            "previousState": "CONSUMING",
+            "previousState": previous,
             "topicName": "example.orders.events.v1",
             "partition": seed % 6,
             "offset": 230_000 + seed % 10_000,
-            "correlationId": format!("{:032x}", u128::from(seed) * 7919),
+            // A handful of documents, so one document shows up in several events (and services).
+            "correlationId": format!("DE40C0DE{:08X}-{:016X}", seed % 7, (seed % 7) * 7919),
         });
     }
     event["ecs"] = json!({ "version": "8.11" });

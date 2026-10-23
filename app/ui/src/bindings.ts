@@ -127,6 +127,8 @@ export type BufferStats = {
 	error: number,
 	/**  Events without a recognisable level. */
 	unknown: number,
+	/**  Pipeline status-change events per state (`COMPLETED` → 12, …); empty for other services. */
+	states: { [key in string]: number },
 };
 
 /**  Who the credentials of a profile belong to (`sts:GetCallerIdentity`). */
@@ -349,6 +351,8 @@ export type LogEvent = {
 	line: ParsedLine,
 	/**  The original text (several lines when a stack trace was joined). */
 	raw: string,
+	/**  The pipeline framework status change this line reports, if any (see [`status`]). */
+	status: StatusChange | null,
 };
 
 /**  How a line was understood. */
@@ -612,6 +616,18 @@ export type Settings = {
 	logColumns: LogColumn[],
 	/**  Log lists show the newest event at the top (and follow new events there). */
 	newestFirst: boolean,
+};
+
+/**  What a status-change event says, for the state badge, the state chips and correlation. */
+export type StatusChange = {
+	/**  The field prefix the status came from (`""` for a plain-text JSON status line). */
+	prefix: string,
+	/**  `RECEIVED`, `PUBLISHED`, `CONSUMING`, `COMPLETED`, `FAILED`, `RETRYING`, … (as logged). */
+	state: string,
+	previousState: string | null,
+	/**  Follows one document across all services. */
+	correlationId: string | null,
+	topic: string | null,
 };
 
 export type Task = {

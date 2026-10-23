@@ -22,6 +22,17 @@ Field names are the dotted names shown when a line is expanded (`log.logger`, `p
 `service.version`, custom objects like `pipeline.state`). Values with spaces go in quotes:
 `log.logger:"com.example.Some Thing"`. Clicking a field value in an expanded line adds it to the search.
 
+**Pipeline status events** (services of a framework that logs one status event per document step, with
+`<prefix>.state` and `<prefix>.correlationId` fields, nested or dotted, or a JSON status line):
+
+| Query | Meaning |
+|---|---|
+| `state:FAILED` | status events in this state (also a plain `state` field) |
+| `correlation:DE40C0DE00000003-0000000000005CC5` | every event of that document (its correlation ID, or any `…correlationId` field) |
+
+Status events get a state badge; the state chips next to the level chips filter by state; an expanded status
+event offers "Show this document".
+
 **Options**
 
 - **Filter / Highlight:** filter lists only matching lines; highlight keeps all lines and marks matches.

@@ -42,6 +42,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   globs and comparisons (or one regular expression with `.*`), as a filter or highlighted with next/previous
   (Enter, F3). Level chips hide levels (middle click: only this level; right click: more); "Hide lines like
   this" builds a per-service noise list. See [docs/query-syntax.md](docs/query-syntax.md).
+- **Pipeline status events** (a framework logging `<prefix>.state` + `<prefix>.correlationId` per document step):
+  state badges, state chips (`state:FAILED`) and "Show this document" (`correlation:<id>`).
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
 - **Keyboard shortcuts:** press `?`, or see Settings → Shortcuts.
