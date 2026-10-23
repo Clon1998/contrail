@@ -23,7 +23,7 @@ export function ProfileBar({ demo, version }: { demo: boolean; version?: string 
         variant="ghost"
         size="icon-sm"
         aria-label="Reload profiles"
-        title="Reload profiles and sessions"
+        tooltip="Reload profiles and sessions"
         onClick={() => void load()}
         disabled={loading}
       >

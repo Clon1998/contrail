@@ -77,7 +77,7 @@ export function FieldMappingDialog() {
           variant="ghost"
           size="icon-xs"
           aria-label="Field mapping"
-          title="Field mapping"
+          tooltip="Field mapping: which JSON keys hold the message, level and time"
           className={saved ? "text-primary" : undefined}
         >
           <BracesIcon />

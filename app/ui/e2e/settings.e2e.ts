@@ -68,3 +68,15 @@ test("the settings list the keyboard shortcuts", async ({ page }) => {
   await expect(general).toContainText("Go to a service");
   await expect(dialog.getByRole("region", { name: "Logs" })).toContainText("Only this level");
 });
+
+test("controls explain themselves in tooltips", async ({ page }) => {
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
+  // Icon buttons show their label.
+  await page.getByRole("button", { name: "Reload profiles" }).hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Reload profiles and sessions");
+  // The identity shows the full ARN.
+  await page.getByText("DemoReadOnly", { exact: true }).hover();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user",
+  );
+});

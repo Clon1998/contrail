@@ -24,6 +24,7 @@ import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { noiseKey, usePrefs } from "@/stores/prefs";
 import { hiddenForAtLeast, hiddenForOnly, LEVEL_TONE, LEVELS, toggleLevel } from "./levels";
+import { Hint } from "@/components/ui/tooltip";
 
 /** Typing pauses this long before the search runs. */
 const DEBOUNCE_MS = 200;
@@ -144,30 +145,31 @@ function LevelChips() {
         const count = stats[level.toLowerCase() as Lowercase<Level>];
         return (
           <ContextMenu key={level}>
-            <ContextMenuTrigger asChild>
-              <button
-                type="button"
-                aria-pressed={shown}
-                aria-label={`${level} ${count}`}
-                title="Click: hide/show · middle click: only this · right click: more"
-                onClick={() => hide(toggleLevel(hidden, level))}
-                // Middle click on mousedown: WebKit sends no `auxclick` (see the tabs).
-                onMouseDown={(e) => {
-                  if (e.button === 1) {
-                    e.preventDefault();
-                    hide(hiddenForOnly(hidden, level));
-                  }
-                }}
-                className={cn(
-                  "rounded border px-1.5 py-0.5 tabular-nums",
-                  shown
-                    ? cn("border-border", LEVEL_TONE[level])
-                    : "border-transparent text-muted-foreground/50 line-through",
-                )}
-              >
-                {level} {count.toLocaleString()}
-              </button>
-            </ContextMenuTrigger>
+            <Hint content={"Click: hide or show\nMiddle click: only this level\nRight click: more"}>
+              <ContextMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-pressed={shown}
+                  aria-label={`${level} ${count}`}
+                  onClick={() => hide(toggleLevel(hidden, level))}
+                  // Middle click on mousedown: WebKit sends no `auxclick` (see the tabs).
+                  onMouseDown={(e) => {
+                    if (e.button === 1) {
+                      e.preventDefault();
+                      hide(hiddenForOnly(hidden, level));
+                    }
+                  }}
+                  className={cn(
+                    "rounded border px-1.5 py-0.5 tabular-nums",
+                    shown
+                      ? cn("border-border", LEVEL_TONE[level])
+                      : "border-transparent text-muted-foreground/50 line-through",
+                  )}
+                >
+                  {level} {count.toLocaleString()}
+                </button>
+              </ContextMenuTrigger>
+            </Hint>
             <ContextMenuContent>
               <ContextMenuLabel>{level}</ContextMenuLabel>
               <ContextMenuItem onSelect={() => hide(LEVELS.filter((l) => l !== level))}>
@@ -280,21 +282,22 @@ export function SearchBar() {
             </button>
           )}
         </div>
-        <button
-          type="button"
-          aria-label="Regular expression"
-          aria-pressed={search.regex}
-          title="Regular expression: the whole search is one regex (Rust syntax, any case)"
-          onClick={() => void setSearch({ regex: !search.regex })}
-          className={cn(
-            "rounded border px-1.5 py-0.5 font-mono",
-            search.regex
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border text-muted-foreground hover:text-foreground",
-          )}
-        >
-          .*
-        </button>
+        <Hint content="Regular expression: the whole search is one regex (Rust syntax, any case)">
+          <button
+            type="button"
+            aria-label="Regular expression"
+            aria-pressed={search.regex}
+            onClick={() => void setSearch({ regex: !search.regex })}
+            className={cn(
+              "rounded border px-1.5 py-0.5 font-mono",
+              search.regex
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            .*
+          </button>
+        </Hint>
         <SyntaxHelp />
         <div
           role="radiogroup"
@@ -319,16 +322,15 @@ export function SearchBar() {
             </button>
           ))}
         </div>
-        <label
-          className="flex items-center gap-1.5 text-muted-foreground"
-          title="Search all fields and the full stack trace"
-        >
-          <Checkbox
-            checked={search.raw}
-            onCheckedChange={(checked) => void setSearch({ raw: checked === true })}
-          />
-          whole line
-        </label>
+        <Hint content="Search all fields and the full stack trace, not just the message">
+          <label className="flex items-center gap-1.5 text-muted-foreground">
+            <Checkbox
+              checked={search.raw}
+              onCheckedChange={(checked) => void setSearch({ raw: checked === true })}
+            />
+            whole line
+          </label>
+        </Hint>
         {active && !queryError && (
           <span aria-label="Match count" className="text-muted-foreground tabular-nums">
             {search.mode === "highlight"

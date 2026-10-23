@@ -1,6 +1,7 @@
 import { CircleAlertIcon, Loader2Icon, UserIcon } from "lucide-react";
 import { isRejected, roleName } from "@/lib/session";
 import { useProfiles } from "@/stores/profiles";
+import { Hint } from "@/components/ui/tooltip";
 
 /** The role the credentials belong to (full ARN and account on hover), or what went wrong. */
 export function IdentityLabel() {
@@ -19,13 +20,12 @@ export function IdentityLabel() {
     case "ok": {
       const { arn, account } = identity.identity;
       return (
-        <span
-          className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
-          title={`Connected as ${arn}\nAccount ${account}`}
-        >
-          <UserIcon className="size-3 shrink-0" />
-          <span className="truncate text-foreground">{roleName(arn)}</span>
-        </span>
+        <Hint content={`Connected as ${arn}\nAccount ${account}`}>
+          <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+            <UserIcon className="size-3 shrink-0" />
+            <span className="truncate text-foreground">{roleName(arn)}</span>
+          </span>
+        </Hint>
       );
     }
     case "error":

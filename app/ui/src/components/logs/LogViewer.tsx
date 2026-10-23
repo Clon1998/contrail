@@ -37,6 +37,7 @@ import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
 import { TimeWindowPicker } from "./TimeWindowPicker";
+import { Hint } from "@/components/ui/tooltip";
 
 const LIVE_LABEL: Record<LiveState, string> = {
   connecting: "Connecting…",
@@ -66,9 +67,9 @@ function LiveControls() {
   const hasView = useLogs((s) => s.view !== null);
   if (mode === "off" && hasView) {
     return (
-      <Badge variant="outline" title="A fixed time range is not followed live.">
-        fixed range
-      </Badge>
+      <Hint content="A fixed time range is not followed live.">
+        <Badge variant="outline">fixed range</Badge>
+      </Hint>
     );
   }
   if (!live) return null;
@@ -82,22 +83,20 @@ function LiveControls() {
         : undefined);
   return (
     <span className="flex items-center gap-1.5">
-      <span
-        role="status"
-        aria-label={`Live tail: ${LIVE_LABEL[live.state]}`}
-        title={hint}
-        className="flex items-center gap-1.5 rounded-md border border-border px-1.5 py-0.5"
-      >
-        <span className={cn("size-2 rounded-full", LIVE_TONE[live.state])} />
-        {LIVE_LABEL[live.state]}
-      </span>
-      {live.sampled && (
-        <Badge
-          variant="outline"
-          title="More than 500 events per second: CloudWatch sends a sample."
+      <Hint content={hint}>
+        <span
+          role="status"
+          aria-label={`Live tail: ${LIVE_LABEL[live.state]}`}
+          className="flex items-center gap-1.5 rounded-md border border-border px-1.5 py-0.5"
         >
-          sampled
-        </Badge>
+          <span className={cn("size-2 rounded-full", LIVE_TONE[live.state])} />
+          {LIVE_LABEL[live.state]}
+        </span>
+      </Hint>
+      {live.sampled && (
+        <Hint content="More than 500 events per second: CloudWatch sends a sample.">
+          <Badge variant="outline">sampled</Badge>
+        </Hint>
       )}
       <Button
         variant="ghost"
@@ -217,6 +216,7 @@ export function LogViewer() {
           variant="ghost"
           size="icon-xs"
           aria-label="Reload logs"
+          tooltip="Reload the time window"
           disabled={loading || !ctx || !selected}
           onClick={() => ctx && selected && void open(ctx, selected, timeWindow, taskId)}
         >
@@ -231,12 +231,9 @@ export function LogViewer() {
         )}
         <span className="ml-auto" />
         {view?.truncated && (
-          <Badge
-            variant="outline"
-            title="The window holds more events than the buffer; the newest are missing."
-          >
-            truncated
-          </Badge>
+          <Hint content="The window holds more events than the buffer; the newest are missing.">
+            <Badge variant="outline">truncated</Badge>
+          </Hint>
         )}
         <FieldMappingDialog />
         <ExportMenu />

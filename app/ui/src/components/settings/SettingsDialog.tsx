@@ -22,6 +22,7 @@ import {
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { ShortcutList } from "./ShortcutsDialog";
 import { usePrefs } from "@/stores/prefs";
+import { MOD } from "@/lib/keys";
 
 type Section = "appearance" | "logs" | "shortcuts" | "about";
 
@@ -78,7 +79,7 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="Settings" title="Settings (⌘,)">
+        <Button variant="ghost" size="icon-sm" aria-label="Settings" tooltip={`Settings (${MOD},)`}>
           <SettingsIcon />
         </Button>
       </DialogTrigger>

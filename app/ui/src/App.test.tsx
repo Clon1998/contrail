@@ -38,11 +38,8 @@ describe("App", () => {
     installFakeBackend();
     render(<App />);
 
-    // Only the role is shown; the full ARN and the account are in the tooltip.
-    const role = await screen.findByText("DemoReadOnly");
-    expect(role.closest("[title]")?.getAttribute("title")).toContain(
-      "arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user",
-    );
+    // Only the role is shown (the full ARN is in its tooltip, see the Playwright tests).
+    expect(await screen.findByText("DemoReadOnly")).toBeTruthy();
     const switcher = screen.getByRole("combobox", { name: "AWS profile" });
     expect(switcher.textContent).toContain("demo-dev");
     expect(switcher.textContent).toContain("111122223333");

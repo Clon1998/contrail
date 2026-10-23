@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-/** "⌘" on macOS, "Ctrl" elsewhere. */
+/** "⌘" on macOS, "Ctrl" elsewhere (shown as separate keys here). */
 const MOD = /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl";
 
 const GROUPS: { title: string; keys: [string[], string][] }[] = [
@@ -113,7 +113,7 @@ export function ShortcutsDialog() {
           variant="ghost"
           size="icon-sm"
           aria-label="Keyboard shortcuts"
-          title="Keyboard shortcuts (?)"
+          tooltip="Keyboard shortcuts (?)"
         >
           <KeyboardIcon />
         </Button>
