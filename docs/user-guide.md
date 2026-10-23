@@ -74,6 +74,9 @@ event with the ID in one timeline.
 - With many services, "Use Logs Insights" searches up to 50 in one query (billed per GB scanned; needs the
   optional `ContrailOptionalInsightsTrace` statement of the [IAM policy](iam-policy.json)).
 
+The [tracing guide](https://clon1998.github.io/contrail/guides/tracing/) walks through it step by step, with
+screenshots.
+
 ## Settings and updates
 
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,

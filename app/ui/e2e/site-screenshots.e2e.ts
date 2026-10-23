@@ -77,20 +77,28 @@ test("search", async ({ page }) => {
   await shoot(page, "search");
 });
 
+/** One shot per step of the tracing guide (site/src/content/docs/guides/tracing.mdx). */
 test("trace across services", async ({ page }) => {
   const view = await openLogs(page, "demo-core", "orders-api");
   const list = view.getByRole("list", { name: "Log events" });
-  await view
-    .getByRole("group", { name: "Pipeline states" })
-    .getByRole("button", { name: /^FAILED / })
-    .click();
+  await view.getByRole("textbox", { name: "Search logs" }).fill("FAILED");
+  await expect(view.getByLabel("Match count")).toContainText(/^\d+ of \d+$/);
   await list.getByRole("listitem").first().getByRole("button").first().click();
+  const start = page.getByRole("button", { name: "Trace across services" });
+  await expect(start).toBeVisible();
+  await shoot(page, "trace-start");
 
-  await page.getByRole("button", { name: "Trace across services" }).click();
+  await start.click();
   const trace = page.getByRole("main", { name: /^Trace / });
-  await trace.getByRole("checkbox", { name: "payments-worker" }).click();
+  // billing-sync logs the same demo documents, so the way leads through two services.
+  await trace.getByRole("checkbox", { name: "billing-sync" }).click();
+  await shoot(page, "trace-services");
+
   await trace.getByRole("button", { name: "Search 2 services" }).click();
-  await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toBeVisible();
+  await expect(
+    trace.getByRole("list", { name: "Services on the way" }).getByRole("listitem"),
+  ).toHaveCount(2);
   // A failed event expanded, so the picture shows the error next to the way the document took.
   const events = trace.getByRole("list", { name: "Trace events" }).getByRole("listitem");
   await events.filter({ hasText: "FAILED" }).last().getByRole("button").first().click();

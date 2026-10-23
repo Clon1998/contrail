@@ -63,7 +63,9 @@ Work through the milestones in order. Do not start a milestone before the previo
   milestone. A milestone counts as done only with CI green. Don't push feature branches or open PRs unless
   Patrick asks.
 - Never rewrite published history. Never commit secrets, real account IDs, ARNs, real log content or anything from `fixtures/`.
-- Update `README.md` / `docs/` in the same change when behaviour or setup changes.
+- Update `README.md` / `docs/` in the same change when behaviour or setup changes. The hand-written site pages
+  (`site/src/content/docs/*.mdx`, e.g. the tracing guide) count too: a visible change to a feature they show means
+  updating their text and running `pnpm --dir ui screenshots`.
 
 ## Commands (keep this section current as the project evolves)
 ```bash

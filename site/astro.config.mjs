@@ -46,7 +46,11 @@ export default defineConfig({
         },
         {
           label: "Guides",
-          items: [doc("guides/user-guide"), doc("guides/teams")],
+          items: [
+            doc("guides/user-guide"),
+            { label: "Tracing across services", slug: "guides/tracing" },
+            doc("guides/teams"),
+          ],
         },
         {
           label: "Reference",

@@ -41,6 +41,9 @@ const ROW_GRID = "1rem 7.5rem minmax(6rem, 11rem) 3.5rem minmax(0, 1fr)";
 /**
  * A trace across services, in its own tab: which services logged one ID, in what order, how the
  * document ended, and every event with that ID in one timeline (expandable like log lines).
+ *
+ * The website's tracing guide (site/src/content/docs/guides/tracing.mdx) walks through this tab
+ * with screenshots: update it, and run `pnpm screenshots`, after visible changes.
  */
 export function TraceView({ tab }: { tab: TraceTab }) {
   const store = tab.trace;

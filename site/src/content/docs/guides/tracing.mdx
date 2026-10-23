@@ -1,0 +1,93 @@
+---
+title: Tracing across services
+description: Follow one request through the services of a cluster by its correlation or trace ID, and see the way it took on one timeline.
+---
+
+{/*
+  Keep this page in step with the trace tab (app/ui/src/components/logs/TraceView.tsx,
+  TraceButton.tsx): after a visible change, update the text and run `pnpm screenshots` in app/ui
+  (the "trace across services" test takes the pictures below).
+*/}
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+import Screenshot from "../../../components/Screenshot.astro";
+
+A request often passes through several services before something goes wrong. If your services log
+the same ID for it, Contrail can search all of them for that ID and put what they logged on one
+timeline: which services the request reached, in what order, and every event about it.
+
+<Aside type="tip" title="What your services need to log">
+  A correlation or trace ID in a field of its own: `correlationId` / `correlation_id` or `trace.id`
+  / `traceId` / `trace_id` (alone or under any prefix), or Spring Boot's `[traceId-spanId]` block.
+  Every service has to log the **same** ID. See [Using Contrail in a team](../teams/) for how to
+  set up your logs.
+</Aside>
+
+## Follow an ID
+
+<Steps>
+
+1. **Start from a log line.** Open a service's logs and expand a line that carries an ID (search
+   for it, or click a line you're curious about). Its actions include **Trace across services**,
+   which opens a trace tab for that ID.
+
+   <Screenshot
+     name="trace-start"
+     title="orders-api · logs"
+     alt="An expanded log line in Contrail with the Trace across services button."
+   />
+
+2. **Choose where to look.** Tick the services of the cluster the request may have passed through;
+   the one you came from is already ticked (**All** and **Only …** are shortcuts). Choose how far
+   around the event's time to search (±15 min, ±1 h or ±6 h), then press **Search**.
+
+   <Screenshot
+     name="trace-services"
+     title="orders-api · trace"
+     alt="The trace tab's service list with two services ticked and the time around the event."
+   />
+
+3. **Read the way it took.** The top line counts the events and services found. Below it, the
+   services are listed in the order the ID first showed up in them, each with its number of
+   events, and then every event with the ID, oldest first, from all services together.
+
+   <Screenshot
+     name="trace"
+     title="orders-api · trace"
+     alt="A trace across two services: the services in order and the events on one timeline, one of them expanded."
+   />
+
+</Steps>
+
+## Working with the result
+
+- **Expand an event** to see it like a log line: its fields, stack trace and raw JSON, with copy
+  buttons.
+- **Click a service** in the path to show only its events; click it again to show all.
+- **Open in …** on an expanded event opens that service's logs, filtered to the ID. The trace tab
+  stays open with its result, so you can go back.
+- The result isn't live: **Search again** repeats the search (new events included), and
+  **Services** brings back the service list to change the choice or the time.
+- Tracing the same ID again brings its tab to the front. Trace tabs count towards the 10 open tabs
+  and last until you close Contrail.
+
+## How it searches
+
+Contrail looks up each chosen service's log group in its task definition and searches it with
+CloudWatch's `FilterLogEvents` for the ID's text, across all of the service's log streams (tasks
+that have stopped included) within the chosen time. Up to four services are searched at once,
+and at most 2,000 events per service are kept. If a service had more, the result says so, and its
+newest events are the ones missing.
+
+A service that can't be searched (no log group, no permission) shows a warning above the
+timeline. The other services' results are still shown.
+
+<Aside title="Many services? Use Logs Insights">
+  CloudWatch allows only a few `FilterLogEvents` calls per second, so searching dozens of services
+  takes a while. Tick **Use Logs Insights** to search up to 50 services with one query instead.
+  It's faster, but Logs Insights is billed per GB of logs scanned and needs the optional
+  `ContrailOptionalInsightsTrace` statement of the [IAM policy](../../permissions/).
+</Aside>
+
+Tracing only reads logs, like the rest of Contrail. The default search needs nothing beyond the
+read-only permissions Contrail always uses.
