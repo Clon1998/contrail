@@ -101,6 +101,28 @@ export function fromDateTimeLocal(value: string, timeZone: TimeZone): string | n
   return date.toISOString();
 }
 
+/** `11:11` for today, `22 Oct, 08:05` for other days, in local time or UTC. */
+export function formatShortTime(timestamp: string, timeZone: TimeZone, now = Date.now()): string {
+  const zone = timeZone === "utc" ? "UTC" : undefined;
+  const day = (ms: number) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: zone, dateStyle: "short" }).format(ms);
+  const date = Date.parse(timestamp);
+  if (Number.isNaN(date)) return "";
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+  if (day(date) === day(now)) return time;
+  const dayMonth = new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    day: "numeric",
+    month: "short",
+  }).format(date);
+  return `${dayMonth}, ${time}`;
+}
+
 /** `12:34:56.789` in local time or UTC (the time zone setting). */
 export function formatLogTime(timestamp: string, timeZone: "local" | "utc"): string {
   const date = new Date(timestamp);

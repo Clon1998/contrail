@@ -318,7 +318,7 @@ export function LogViewer() {
       {!loading && view && view.stats.total > 0 && visible === 0 && (
         <div>
           <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
-          {!view.complete && <OlderMarker position="top" />}
+          {!view.complete && <OlderMarker />}
         </div>
       )}
       {!loading && view && visible > 0 && (

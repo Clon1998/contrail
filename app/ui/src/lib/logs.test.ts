@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatLogTime,
+  formatShortTime,
   fromDateTimeLocal,
   liveHint,
   liveMode,
@@ -131,5 +132,19 @@ describe("liveHint", () => {
         mode: "live",
       }),
     ).toContain("AccessDenied");
+  });
+});
+
+describe("formatShortTime", () => {
+  const now = Date.parse("2026-10-23T15:00:00Z");
+  it("drops the date for today", () => {
+    expect(formatShortTime("2026-10-23T11:11:04Z", "utc", now)).toBe("11:11");
+  });
+  it("shows nothing for a timestamp it can't read", () => {
+    expect(formatShortTime("", "utc", now)).toBe("");
+  });
+
+  it("adds day and month for other days", () => {
+    expect(formatShortTime("2026-10-22T08:05:00Z", "utc", now)).toBe("22 Oct, 08:05");
   });
 });

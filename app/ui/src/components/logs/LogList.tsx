@@ -155,7 +155,7 @@ export function LogList({
         }}
         className="absolute inset-0 overflow-auto font-mono text-(length:--log-font-size) leading-[1.6]"
       >
-        {!newestFirst && <OlderMarker position="top" />}
+        {!newestFirst && <OlderMarker />}
         <div
           role="list"
           aria-label="Log events"
@@ -196,7 +196,7 @@ export function LogList({
             );
           })}
         </div>
-        {newestFirst && <OlderMarker position="bottom" />}
+        {newestFirst && <OlderMarker />}
       </div>
       {!atNewest && total > 0 && (
         <Button

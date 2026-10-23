@@ -321,7 +321,7 @@ test("with a search, the end of the list says the matches end there", async ({ p
     el.scrollTop = 0;
   });
   await expect(page.getByRole("status", { name: "Older events" })).toContainText(
-    "No older matches in the time window",
+    "No older matches · window starts",
   );
 });
 

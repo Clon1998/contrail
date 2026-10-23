@@ -280,6 +280,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return typeof rows === "function" ? rows(first, 500) : rows.slice(first, first + 500);
   }
 
+  /** The start of each view's time window (`load_older` loads up to it). */
+  const windowStarts = new Map<number, string>();
+
   /** Events a view holds back until `load_older` (long windows start with the newest). */
   const olderPending = new Map<number, LogEvent[]>();
 
@@ -485,6 +488,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           timeWindow.kind === "range"
             ? timeWindow.from
             : new Date(Date.now() - timeWindow.minutes * 60_000).toISOString();
+        windowStarts.set(viewId, from);
         const info: LogViewInfo = {
           viewId,
           location: recordedService?.location ?? {
@@ -536,7 +540,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           visible,
           matches: filters.get(viewId)?.matched.length ?? null,
           stats: Array.isArray(now) ? statsOf(now) : bigStats(bigVisible(viewId)),
-          loadedFrom: Array.isArray(now) ? (now[0]?.cwTimestamp ?? "") : "",
+          loadedFrom: windowStarts.get(viewId) ?? new Date().toISOString(),
           complete: true,
           full: false,
           rowsFrom,
