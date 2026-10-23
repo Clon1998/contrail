@@ -11,9 +11,17 @@ const DOT: Record<SessionView["tone"], string> = {
 };
 
 /** A coloured dot for a session state (used in the switcher trigger). */
-export function SessionDot({ status, className }: { status?: SessionStatus; className?: string }) {
+export function SessionDot({
+  status,
+  rejected,
+  className,
+}: {
+  status?: SessionStatus;
+  rejected?: boolean;
+  className?: string;
+}) {
   const now = useNow();
-  const { tone, label } = describeSession(status, now);
+  const { tone, label } = describeSession(status, now, rejected);
   return (
     <span
       aria-label={label}
@@ -23,9 +31,9 @@ export function SessionDot({ status, className }: { status?: SessionStatus; clas
 }
 
 /** Dot plus label, e.g. "valid · 6h 59m" or "expired 2h 00m ago". */
-export function SessionBadge({ status }: { status?: SessionStatus }) {
+export function SessionBadge({ status, rejected }: { status?: SessionStatus; rejected?: boolean }) {
   const now = useNow();
-  const { tone, label } = describeSession(status, now);
+  const { tone, label } = describeSession(status, now, rejected);
   return (
     <span
       data-tone={tone}

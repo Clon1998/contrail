@@ -1,6 +1,5 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { installFakeBackend } from "@/e2e/fakeBackend";
+import { installFakeBackend, uninstallFakeBackend } from "@/e2e/fakeBackend";
 import { EMPTY_PREFS, usePrefs } from "./prefs";
 import { useEcs } from "./ecs";
 
@@ -15,7 +14,7 @@ beforeEach(() => {
   installFakeBackend();
 });
 
-afterEach(() => clearMocks());
+afterEach(() => uninstallFakeBackend());
 
 describe("ecs store", () => {
   it("loads clusters, then services when a cluster is expanded", async () => {

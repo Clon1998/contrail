@@ -8,9 +8,9 @@ use aws_sdk_ecs::Client;
 use aws_sdk_ecs::types::DesiredStatus;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{
-    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, ServiceDetail,
-    ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo, image_tag, name_from_arn,
-    sort_tasks, task_definition_label,
+    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, EnvVar,
+    SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo,
+    image_tag, name_from_arn, sort_tasks, task_definition_label,
 };
 use contrail_core::error::SourceError;
 use contrail_core::timestamp::Timestamp;
@@ -320,6 +320,31 @@ async fn describe_task_definition(
                     .and_then(|l| l.options())
                     .map(|o| o.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
                     .unwrap_or_default(),
+                environment: {
+                    let mut vars: Vec<EnvVar> = c
+                        .environment()
+                        .iter()
+                        .map(|kv| EnvVar {
+                            name: text(kv.name()),
+                            value: text(kv.value()),
+                        })
+                        .collect();
+                    vars.sort_by(|a, b| a.name.cmp(&b.name));
+                    vars
+                },
+                secrets: c
+                    .secrets()
+                    .iter()
+                    .map(|s| SecretRef {
+                        name: s.name().to_owned(),
+                        value_from: s.value_from().to_owned(),
+                    })
+                    .collect(),
+                environment_files: c
+                    .environment_files()
+                    .iter()
+                    .map(|f| f.value().to_owned())
+                    .collect(),
             })
             .collect(),
     })
@@ -418,8 +443,9 @@ mod tests {
     use aws_sdk_ecs::operation::list_services::ListServicesOutput;
     use aws_sdk_ecs::operation::list_tasks::ListTasksOutput;
     use aws_sdk_ecs::types::{
-        Cluster, Container, ContainerDefinition, DeploymentRolloutState, HealthStatus, LaunchType,
-        LogConfiguration, LogDriver, Service, TaskStopCode,
+        Cluster, Container, ContainerDefinition, DeploymentRolloutState, EnvironmentFile,
+        EnvironmentFileType, HealthStatus, KeyValuePair, LaunchType, LogConfiguration, LogDriver,
+        Secret, Service, TaskStopCode,
     };
     use aws_smithy_mocks::{RuleMode, mock, mock_client};
     use aws_smithy_types::DateTime;
@@ -586,6 +612,27 @@ mod tests {
                                         .build()
                                         .unwrap(),
                                 )
+                                .environment(
+                                    KeyValuePair::builder()
+                                        .name("SPRING_PROFILES_ACTIVE")
+                                        .value("prod")
+                                        .build(),
+                                )
+                                .environment(KeyValuePair::builder().name("EMPTY").build())
+                                .secrets(
+                                    Secret::builder()
+                                        .name("DB_PASSWORD")
+                                        .value_from("arn:aws:ssm:eu-central-1:111122223333:parameter/orders/db")
+                                        .build()
+                                        .unwrap(),
+                                )
+                                .environment_files(
+                                    EnvironmentFile::builder()
+                                        .value("arn:aws:s3:::example-config/orders.env")
+                                        .r#type(EnvironmentFileType::S3)
+                                        .build()
+                                        .unwrap(),
+                                )
                                 .build(),
                         )
                         .build(),
@@ -619,6 +666,31 @@ mod tests {
         assert_eq!(
             info.containers[0].log_options["awslogs-group"],
             "/ecs/orders"
+        );
+        let container = &info.containers[0];
+        assert_eq!(
+            container.environment,
+            vec![
+                EnvVar {
+                    name: "EMPTY".into(),
+                    value: String::new()
+                },
+                EnvVar {
+                    name: "SPRING_PROFILES_ACTIVE".into(),
+                    value: "prod".into()
+                },
+            ],
+            "sorted by name"
+        );
+        assert_eq!(container.secrets[0].name, "DB_PASSWORD");
+        assert!(
+            container.secrets[0]
+                .value_from
+                .ends_with("parameter/orders/db")
+        );
+        assert_eq!(
+            container.environment_files,
+            vec!["arn:aws:s3:::example-config/orders.env".to_owned()]
         );
     }
 

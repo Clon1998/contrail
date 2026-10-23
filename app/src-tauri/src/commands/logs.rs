@@ -6,17 +6,17 @@ use std::sync::atomic::Ordering;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::{
-    BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeRange,
-    ViewFilter, process, resolve_log_location, write_events,
+    BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeWindow,
+    ViewFilter, backfill_newest, process, resolve_log_location, write_events,
 };
 use contrail_core::prefs::ServiceKey;
-use contrail_core::query::{MatchOptions, QueryError, parse_query};
+use contrail_core::query::{MatchOptions, QueryError, parse_query, parse_regex_query};
 use contrail_core::timestamp::Timestamp;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::State;
 use tauri::ipc::Channel;
-use time::{Duration, OffsetDateTime};
+use time::OffsetDateTime;
 
 use crate::error::{ApiError, ApiResult, ErrorCode};
 use crate::live::{self, Control, LiveTask, LiveUpdate};
@@ -31,13 +31,25 @@ pub struct LogViewInfo {
     /// How many task streams were read (running and recently stopped tasks).
     pub streams: u32,
     pub stats: BufferStats,
-    /// The backfill hit the buffer size before reaching the newest events.
+    /// A slice held more events than the buffer has room for: some are missing.
     pub truncated: bool,
+    /// The view's time window.
     pub from: Timestamp,
     pub to: Timestamp,
+    /// How far back events are loaded so far (newest first; `load_older` goes further back).
+    pub loaded_from: Timestamp,
+    /// The whole window is loaded.
+    pub complete: bool,
 }
 
-/// Opens a service's logs: backfills the last `minutes` into a new view. Without `task_id` the
+/// How many events a view loads at first (the newest); scrolling up loads older ones.
+const INITIAL_EVENTS: usize = 2_000;
+/// How many older events one `load_older` adds (at least, unless the window ends first).
+const OLDER_EVENTS: usize = 5_000;
+/// Listed rows on each side of the old first row that `load_older` returns along.
+const BOUNDARY_ROWS: usize = 300;
+
+/// Opens a service's logs: backfills the time `window` into a new view. Without `task_id` the
 /// view merges all tasks of the service (running and recently stopped); with it, only that
 /// task's stream (the task view).
 #[tauri::command]
@@ -46,20 +58,22 @@ pub async fn open_service_logs(
     state: State<'_, AppState>,
     ctx: AwsCtx,
     service: ServiceRef,
-    minutes: u32,
+    window: TimeWindow,
     task_id: Option<String>,
 ) -> ApiResult<LogViewInfo> {
     // `State` derefs to `&AppState`; the logic lives in a plain function so tests can call it.
-    open_logs(&state, ctx, service, minutes, task_id).await
+    open_logs(&state, ctx, service, window, task_id).await
 }
 
 async fn open_logs(
     state: &AppState,
     ctx: AwsCtx,
     service: ServiceRef,
-    minutes: u32,
+    window: TimeWindow,
     task_id: Option<String>,
 ) -> ApiResult<LogViewInfo> {
+    // Check the window before calling AWS.
+    let range = window.range(OffsetDateTime::now_utc())?;
     let detail = state.ecs.describe_service(&ctx, &service).await?;
     let task_definition = detail.task_definition.ok_or_else(|| {
         ApiError::new(
@@ -83,18 +97,20 @@ async fn open_logs(
     let account_id = service.cluster_arn.split(':').nth(4).map(str::to_owned);
     let selection = location.selection(&tasks, account_id, task_id.is_none());
 
-    let now = OffsetDateTime::now_utc();
-    let range = TimeRange {
-        start: Timestamp(now - Duration::minutes(i64::from(minutes))),
-        end: Timestamp(now),
-    };
     let prefs = state.prefs.get();
     let capacity = prefs.settings.buffer_capacity();
     let mapping = prefs.field_mapping(&ServiceKey::new(&ctx.profile, &service));
-    let backfill = state
-        .logs
-        .backfill(&ctx, &selection, range, capacity)
-        .await?;
+    // `&*state.logs`: from `Arc<dyn LogSource>` to the `&dyn LogSource` the function takes.
+    let backfill = backfill_newest(
+        &*state.logs,
+        &ctx,
+        &selection,
+        range.end,
+        range.start,
+        INITIAL_EVENTS,
+        capacity,
+    )
+    .await?;
 
     let mut events = process(backfill.events);
     if !mapping.is_empty() {
@@ -110,12 +126,99 @@ async fn open_logs(
         truncated: backfill.truncated,
         from: range.start,
         to: range.end,
+        loaded_from: backfill.from,
+        complete: backfill.complete,
     };
     state.views.lock().expect("views lock poisoned").insert(
         info.view_id,
-        LogView::new(buffer, ctx, selection, range.end).with_mapping(mapping),
+        LogView::new(buffer, ctx, selection, range.end)
+            .with_mapping(mapping)
+            .with_loaded(range.start, backfill.from),
     );
     Ok(info)
+}
+
+/// What `load_older` added to a view.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OlderEvents {
+    /// Listed rows added in front of the previous first row (every listed index moved by this).
+    pub added: u32,
+    pub visible: u32,
+    pub matches: Option<u32>,
+    pub stats: BufferStats,
+    pub loaded_from: Timestamp,
+    pub complete: bool,
+    /// The buffer is full: no older events can be added.
+    pub full: bool,
+    /// The listed rows from `rows_from` on, around the previous first row, so the rows on screen
+    /// don't have to be fetched again.
+    pub rows_from: u32,
+    pub rows: Vec<LogEvent>,
+}
+
+/// Loads the next older events of a view's window (newest first, in slices).
+#[tauri::command]
+#[specta::specta]
+pub async fn load_older(state: State<'_, AppState>, view_id: u32) -> ApiResult<OlderEvents> {
+    load_older_events(&state, view_id).await
+}
+
+async fn load_older_events(state: &AppState, view_id: u32) -> ApiResult<OlderEvents> {
+    // Copy what the read needs and release the lock: it can't be held across an `.await`.
+    let (ctx, selection, from, window_start, room) = {
+        let views = state.views.lock().expect("views lock poisoned");
+        let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+        let room = view.buffer.capacity().saturating_sub(view.buffer.len());
+        (
+            view.ctx.clone(),
+            view.selection.clone(),
+            view.loaded_from,
+            view.window_start,
+            room,
+        )
+    };
+    let slices = if from > window_start && room > 0 {
+        let slices = backfill_newest(
+            &*state.logs,
+            &ctx,
+            &selection,
+            from,
+            window_start,
+            OLDER_EVENTS,
+            room,
+        )
+        .await?;
+        Some(slices)
+    } else {
+        None
+    };
+
+    let mut views = state.views.lock().expect("views lock poisoned");
+    let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
+    let before = view.visible_len();
+    // A second request for the same slices may have finished first: then these are already in.
+    if let Some(slices) = slices
+        && view.loaded_from == from
+    {
+        view.insert(process(slices.events));
+        view.loaded_from = slices.from;
+    }
+    let visible = view.visible_len();
+    let added = visible.saturating_sub(before);
+    let rows_from = added.saturating_sub(BOUNDARY_ROWS);
+    let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
+    Ok(OlderEvents {
+        added: count(added),
+        visible: count(visible),
+        matches: view.match_count().map(count),
+        stats: view.buffer.stats(),
+        loaded_from: view.loaded_from,
+        complete: view.complete(),
+        full: view.buffer.len() >= view.buffer.capacity(),
+        rows_from: count(rows_from),
+        rows: view.window(rows_from, added - rows_from + BOUNDARY_ROWS),
+    })
 }
 
 /// Up to `limit` events of a view from `offset` (oldest first).
@@ -144,6 +247,8 @@ pub struct FilterSpec {
     pub hidden_levels: Vec<Level>,
     /// Search the whole raw line, not just the message.
     pub search_raw: bool,
+    /// The query is one regular expression (the search box's regex mode), not query syntax.
+    pub regex: bool,
     /// The service's "hide noise" texts, when hiding noise is on.
     pub noise: Vec<String>,
 }
@@ -180,7 +285,12 @@ pub fn set_log_filter(
 }
 
 fn apply_filter(state: &AppState, view_id: u32, spec: FilterSpec) -> ApiResult<FilterResult> {
-    let query = match parse_query(&spec.query) {
+    let parsed = if spec.regex {
+        parse_regex_query(&spec.query)
+    } else {
+        parse_query(&spec.query)
+    };
+    let query = match parsed {
         Ok(query) => query,
         Err(error) => return Ok(FilterResult::Invalid { error }),
     };
@@ -281,6 +391,7 @@ pub async fn start_live(
     state: State<'_, AppState>,
     view_id: u32,
     on_update: Channel<LiveUpdate>,
+    paused: bool,
 ) -> ApiResult<()> {
     let mut views = state.views.lock().expect("views lock poisoned");
     let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
@@ -298,7 +409,8 @@ pub async fn start_live(
         }),
     };
     // Replacing a running tail drops (and stops) the old one.
-    view.live = Some(live::spawn(task));
+    let initial = if paused { Control::Pause } else { Control::Run };
+    view.live = Some(live::spawn(task, initial));
     Ok(())
 }
 
@@ -333,6 +445,8 @@ fn closed(view_id: u32) -> ApiError {
 mod tests {
     use super::*;
 
+    const LAST_15: TimeWindow = TimeWindow::Last { minutes: 15 };
+
     fn demo_service(cluster: &str, name: &str) -> (AwsCtx, ServiceRef) {
         (
             AwsCtx {
@@ -351,7 +465,9 @@ mod tests {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
 
-        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
 
         assert_eq!(info.location.log_group, "/ecs/legacy-gateway");
         assert_eq!(info.streams, 2);
@@ -367,12 +483,15 @@ mod tests {
     async fn exports_the_listed_rows() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
-        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
         let spec = FilterSpec {
             query: "level:ERROR".into(),
             mode: FilterMode::Filter,
             hidden_levels: vec![],
             search_raw: false,
+            regex: false,
             noise: vec![],
         };
         apply_filter(&state, info.view_id, spec).unwrap();
@@ -397,7 +516,9 @@ mod tests {
             profile: "demo-prod".into(),
             region: None,
         };
-        let error = open_logs(&state, ctx, service, 15, None).await.unwrap_err();
+        let error = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap_err();
         assert_eq!(error.code, ErrorCode::Credentials);
     }
 
@@ -412,7 +533,7 @@ mod tests {
             &state,
             ctx.clone(),
             service.clone(),
-            15,
+            LAST_15,
             Some(task_id.clone()),
         )
         .await
@@ -427,7 +548,7 @@ mod tests {
             assert!(rows.iter().all(|e| e.task_id == task_id));
         }
 
-        let unknown = open_logs(&state, ctx, service, 15, Some("gone".into()))
+        let unknown = open_logs(&state, ctx, service, LAST_15, Some("gone".into()))
             .await
             .unwrap_err();
         assert_eq!(unknown.code, ErrorCode::NotFound);
@@ -437,7 +558,9 @@ mod tests {
     async fn a_demo_view_goes_live_and_grows() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "event-ingest");
-        let info = open_logs(&state, ctx, service, 1, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, TimeWindow::Last { minutes: 1 }, None)
+            .await
+            .unwrap();
 
         let updates: Arc<std::sync::Mutex<Vec<LiveUpdate>>> = Arc::default();
         let recorder = updates.clone();
@@ -454,7 +577,7 @@ mod tests {
                 sink: Arc::new(move |u| recorder.lock().unwrap().push(u)),
             }
         };
-        let _handle = live::spawn(task);
+        let _handle = live::spawn(task, Control::Run);
 
         // The demo source delivers once a second; event-ingest logs every 200 ms per task.
         tokio::time::sleep(std::time::Duration::from_millis(2_300)).await;
@@ -473,15 +596,83 @@ mod tests {
             mode: FilterMode::Filter,
             hidden_levels: Vec::new(),
             search_raw: false,
+            regex: false,
             noise: Vec::new(),
         }
+    }
+
+    #[tokio::test]
+    async fn a_long_window_opens_with_the_newest_events_and_loads_older_ones() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "orders-api");
+        let six_hours = TimeWindow::Last { minutes: 360 };
+        let info = open_logs(&state, ctx, service, six_hours, None)
+            .await
+            .unwrap();
+        assert!(!info.complete, "only the newest part of 6 hours is loaded");
+        assert!(info.loaded_from > info.from);
+        let mut total = info.stats.total;
+        let mut loaded_from = info.loaded_from;
+        for _ in 0..50 {
+            let older = load_older_events(&state, info.view_id).await.unwrap();
+            assert!(older.loaded_from <= loaded_from, "goes back in time");
+            assert_eq!(older.stats.total, total + older.added);
+            // The returned rows end right after the previous first row's neighbourhood.
+            assert_eq!(
+                older.rows.len() as u32 + older.rows_from,
+                (older.added + 300).min(older.visible)
+            );
+            total = older.stats.total;
+            loaded_from = older.loaded_from;
+            if older.complete || older.full {
+                break;
+            }
+        }
+        let views = state.views.lock().unwrap();
+        let view = &views[&info.view_id];
+        assert!(view.complete());
+        let rows = view.window(0, usize::MAX);
+        assert_eq!(rows.len() as u32, total, "no duplicates");
+        assert!(
+            rows.windows(2)
+                .all(|w| w[0].cw_timestamp <= w[1].cw_timestamp),
+            "in order"
+        );
+        assert!(rows[0].cw_timestamp >= info.from);
+    }
+
+    #[tokio::test]
+    async fn regex_mode_reads_the_query_as_one_expression() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "payments-worker");
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
+        let regex = |query: &str| FilterSpec {
+            regex: true,
+            ..spec(query)
+        };
+
+        // `level:ERROR` is query syntax; as a regex it is just text no message contains.
+        let FilterResult::Applied { visible, .. } =
+            apply_filter(&state, info.view_id, regex("level:ERROR")).unwrap()
+        else {
+            panic!("regex should compile");
+        };
+        assert_eq!(visible, 0);
+        assert!(matches!(
+            apply_filter(&state, info.view_id, regex("time(out")).unwrap(),
+            FilterResult::Invalid { .. }
+        ));
     }
 
     #[tokio::test]
     async fn filtering_a_view_lists_only_matches() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-core", "payments-worker");
-        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
 
         let FilterResult::Applied {
             visible, matches, ..

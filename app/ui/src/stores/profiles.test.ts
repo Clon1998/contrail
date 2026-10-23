@@ -1,6 +1,5 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { installFakeBackend } from "@/e2e/fakeBackend";
+import { installFakeBackend, uninstallFakeBackend } from "@/e2e/fakeBackend";
 import { EMPTY_PREFS, usePrefs } from "./prefs";
 import { currentRegion, useProfiles } from "./profiles";
 
@@ -12,7 +11,7 @@ beforeEach(() => {
   usePrefs.setState({ prefs: EMPTY_PREFS });
 });
 
-afterEach(() => clearMocks());
+afterEach(() => uninstallFakeBackend());
 
 describe("profiles store", () => {
   it("loads profiles with their session states and checks the first usable one", async () => {

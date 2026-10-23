@@ -10,11 +10,21 @@ import {
 import { cn } from "cn";
 import type { Level } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { noiseKey, usePrefs } from "@/stores/prefs";
-import { LEVEL_TONE, LEVELS } from "./levels";
+import { hiddenForAtLeast, hiddenForOnly, LEVEL_TONE, LEVELS, toggleLevel } from "./levels";
+import { Hint } from "@/components/ui/tooltip";
 
 /** Typing pauses this long before the search runs. */
 const DEBOUNCE_MS = 200;
@@ -50,7 +60,8 @@ function SyntaxHelp() {
           ))}
         </dl>
         <p className="mt-2 text-muted-foreground">
-          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous.
+          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous. With
+          <span className="font-mono"> .*</span> on, the whole search is one regular expression.
         </p>
       </PopoverContent>
     </Popover>
@@ -83,10 +94,9 @@ function NoiseMenu() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 space-y-2 text-xs">
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={hideNoise}
-            onChange={(e) => void setSearch({ hideNoise: e.target.checked })}
+            onCheckedChange={(checked) => void setSearch({ hideNoise: checked === true })}
           />
           Hide lines containing these texts
         </label>
@@ -118,36 +128,63 @@ function NoiseMenu() {
   );
 }
 
-/** Level chips: counts per level; clicking hides or shows a level. */
+/**
+ * Level chips with counts per level. Click hides or shows a level, middle click shows only that
+ * level (again: all), right click opens a menu with all options.
+ */
 function LevelChips() {
   const stats = useLogs((s) => s.view?.stats);
   const hidden = useLogs((s) => s.search.hiddenLevels);
   const setSearch = useLogs((s) => s.setSearch);
   if (!stats) return null;
-  const toggle = (level: Level) =>
-    void setSearch({
-      hiddenLevels: hidden.includes(level) ? hidden.filter((l) => l !== level) : [...hidden, level],
-    });
+  const hide = (hiddenLevels: Level[]) => void setSearch({ hiddenLevels });
   return (
     <span className="flex items-center gap-1" role="group" aria-label="Levels">
       {LEVELS.map((level) => {
         const shown = !hidden.includes(level);
+        const count = stats[level.toLowerCase() as Lowercase<Level>];
         return (
-          <button
-            key={level}
-            type="button"
-            aria-pressed={shown}
-            aria-label={`${level} ${stats[level.toLowerCase() as Lowercase<Level>]}`}
-            onClick={() => toggle(level)}
-            className={cn(
-              "rounded border px-1.5 py-0.5 tabular-nums",
-              shown
-                ? cn("border-border", LEVEL_TONE[level])
-                : "border-transparent text-muted-foreground/50 line-through",
-            )}
-          >
-            {level} {stats[level.toLowerCase() as Lowercase<Level>].toLocaleString()}
-          </button>
+          <ContextMenu key={level}>
+            <Hint content={"Click: hide or show\nMiddle click: only this level\nRight click: more"}>
+              <ContextMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-pressed={shown}
+                  aria-label={`${level} ${count}`}
+                  onClick={() => hide(toggleLevel(hidden, level))}
+                  // Middle click on mousedown: WebKit sends no `auxclick` (see the tabs).
+                  onMouseDown={(e) => {
+                    if (e.button === 1) {
+                      e.preventDefault();
+                      hide(hiddenForOnly(hidden, level));
+                    }
+                  }}
+                  className={cn(
+                    "rounded border px-1.5 py-0.5 tabular-nums",
+                    shown
+                      ? cn("border-border", LEVEL_TONE[level])
+                      : "border-transparent text-muted-foreground/50 line-through",
+                  )}
+                >
+                  {level} {count.toLocaleString()}
+                </button>
+              </ContextMenuTrigger>
+            </Hint>
+            <ContextMenuContent>
+              <ContextMenuLabel>{level}</ContextMenuLabel>
+              <ContextMenuItem onSelect={() => hide(LEVELS.filter((l) => l !== level))}>
+                Only {level}
+              </ContextMenuItem>
+              <ContextMenuItem onSelect={() => hide(hiddenForAtLeast(level))}>
+                {level} and above
+              </ContextMenuItem>
+              <ContextMenuItem onSelect={() => hide(toggleLevel(hidden, level))}>
+                {shown ? `Hide ${level}` : `Show ${level}`}
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              <ContextMenuItem onSelect={() => hide([])}>Show all levels</ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         );
       })}
     </span>
@@ -219,7 +256,13 @@ export function SearchBar() {
             ref={input}
             aria-label="Search logs"
             aria-invalid={queryError !== null}
-            placeholder={selected ? "Search: timeout level>=WARN trace.id:abc -health …" : "Search"}
+            placeholder={
+              !selected
+                ? "Search"
+                : search.regex
+                  ? "Regular expression: order \\d+ (failed|timed out)"
+                  : "Search: timeout level>=WARN trace.id:abc -health …"
+            }
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -239,6 +282,22 @@ export function SearchBar() {
             </button>
           )}
         </div>
+        <Hint content="Regular expression: the whole search is one regex (Rust syntax, any case)">
+          <button
+            type="button"
+            aria-label="Regular expression"
+            aria-pressed={search.regex}
+            onClick={() => void setSearch({ regex: !search.regex })}
+            className={cn(
+              "rounded border px-1.5 py-0.5 font-mono",
+              search.regex
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:text-foreground",
+            )}
+          >
+            .*
+          </button>
+        </Hint>
         <SyntaxHelp />
         <div
           role="radiogroup"
@@ -263,17 +322,15 @@ export function SearchBar() {
             </button>
           ))}
         </div>
-        <label
-          className="flex items-center gap-1 text-muted-foreground"
-          title="Search all fields and the full stack trace"
-        >
-          <input
-            type="checkbox"
-            checked={search.raw}
-            onChange={(e) => void setSearch({ raw: e.target.checked })}
-          />
-          whole line
-        </label>
+        <Hint content="Search all fields and the full stack trace, not just the message">
+          <label className="flex items-center gap-1.5 text-muted-foreground">
+            <Checkbox
+              checked={search.raw}
+              onCheckedChange={(checked) => void setSearch({ raw: checked === true })}
+            />
+            whole line
+          </label>
+        </Hint>
         {active && !queryError && (
           <span aria-label="Match count" className="text-muted-foreground tabular-nums">
             {search.mode === "highlight"

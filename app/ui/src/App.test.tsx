@@ -1,8 +1,7 @@
-import { clearMocks } from "@tauri-apps/api/mocks";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
-import { installFakeBackend } from "@/e2e/fakeBackend";
+import { installFakeBackend, uninstallFakeBackend } from "@/e2e/fakeBackend";
 import { useEcs } from "@/stores/ecs";
 import { useTabs } from "@/stores/tabs";
 import { EMPTY_PREFS, usePrefs } from "@/stores/prefs";
@@ -25,7 +24,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  clearMocks();
+  uninstallFakeBackend();
 });
 
 async function openSwitcherAndPick(name: string) {
@@ -39,7 +38,8 @@ describe("App", () => {
     installFakeBackend();
     render(<App />);
 
-    expect(await screen.findByText("DemoReadOnly/demo.user")).toBeTruthy();
+    // Only the role is shown (the full ARN is in its tooltip, see the Playwright tests).
+    expect(await screen.findByText("DemoReadOnly")).toBeTruthy();
     const switcher = screen.getByRole("combobox", { name: "AWS profile" });
     expect(switcher.textContent).toContain("demo-dev");
     expect(switcher.textContent).toContain("111122223333");
@@ -49,7 +49,7 @@ describe("App", () => {
   it("lists every profile with its session state", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     fireEvent.click(screen.getByRole("combobox", { name: "AWS profile" }));
     const list = await screen.findByRole("listbox");
@@ -63,24 +63,59 @@ describe("App", () => {
   it("logs in to an expired profile and connects", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     await openSwitcherAndPick("demo-prod");
     expect(await screen.findByText("Log in to demo-prod")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+    fireEvent.click(within(screen.getByRole("banner")).getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByText("Connected to demo-prod")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Log in" })).toBeNull();
   });
 
+  it("offers a login when AWS rejects a session that looks valid", async () => {
+    installFakeBackend({ rejectedSessions: ["demo-dev"] });
+    render(<App />);
+
+    expect(await screen.findByText("Log in to demo-dev")).toBeTruthy();
+    // The reason is shown once (in the main panel), not repeated in the header.
+    expect(screen.getAllByText(/Session token not found or invalid/)).toHaveLength(1);
+    const switcher = screen.getByRole("combobox", { name: "AWS profile" });
+    expect(within(switcher).getByLabelText("session rejected")).toBeTruthy();
+
+    fireEvent.click(within(screen.getByRole("banner")).getByRole("button", { name: "Log in" }));
+    expect(await screen.findByText("Connected to demo-dev")).toBeTruthy();
+  });
+
+  it("filters the service tree by name across clusters", async () => {
+    installFakeBackend();
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    await within(tree).findByRole("treeitem", { name: "demo-edge" });
+
+    const filter = screen.getByRole("searchbox", { name: "Filter services" });
+    fireEvent.change(filter, { target: { value: "GATE" } });
+
+    // Collapsed clusters open to show matches; clusters without a match are hidden.
+    expect(await within(tree).findByRole("treeitem", { name: "legacy-gateway" })).toBeTruthy();
+    expect(within(tree).queryByRole("treeitem", { name: "orders-api" })).toBeNull();
+    expect(within(tree).queryByRole("treeitem", { name: "demo-core" })).toBeNull();
+
+    fireEvent.keyDown(filter, { key: "Escape" });
+    expect((filter as HTMLInputElement).value).toBe("");
+    expect(await within(tree).findByRole("treeitem", { name: "demo-core" })).toBeTruthy();
+  });
+
   it("explains a missing AWS CLI", async () => {
     installFakeBackend({ cliMissing: true });
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     await openSwitcherAndPick("demo-sandbox");
-    fireEvent.click(await screen.findByRole("button", { name: "Log in" }));
+    fireEvent.click(
+      await within(screen.getByRole("banner")).findByRole("button", { name: "Log in" }),
+    );
 
     const output = await screen.findByRole("region", { name: "Login output" });
     expect(within(output).getByText(/AWS CLI \(`aws`\) was not found/)).toBeTruthy();
@@ -90,7 +125,7 @@ describe("App", () => {
   it("shows why a misconfigured profile can't be used", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
 
     await openSwitcherAndPick("demo-broken");
 
@@ -173,7 +208,7 @@ describe("App", () => {
   it("changes theme, accent, sizes and time zone in the settings dialog", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
 
     fireEvent.keyDown(window, { key: ",", metaKey: true });
@@ -234,10 +269,11 @@ describe("App", () => {
     if (!logsButton) throw new Error("no task logs button");
     fireEvent.click(logsButton);
 
-    expect(await within(view).findByText(/^task [0-9a-f]{8}$/)).toBeTruthy();
     expect(await within(view).findByText("/ecs/legacy-gateway · 1 stream")).toBeTruthy();
-    fireEvent.click(within(view).getByRole("button", { name: "Show all tasks" }));
-    expect(await within(view).findByText("/ecs/legacy-gateway · 2 streams")).toBeTruthy();
+    // The toolbar's task picker shows the task (switching back is covered in Playwright).
+    expect(within(view).getByRole("combobox", { name: "Task" }).textContent).toMatch(
+      /task [0-9a-f]{8}/,
+    );
   });
 
   it("follows a view live, and pausing stops new rows", async () => {
@@ -385,7 +421,7 @@ describe("App", () => {
   it("opens the keyboard shortcuts with ?", async () => {
     installFakeBackend();
     render(<App />);
-    await screen.findByText("DemoReadOnly/demo.user");
+    await screen.findByText("DemoReadOnly");
     fireEvent.keyDown(document.body, { key: "?" });
     const dialog = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     expect(within(dialog).getByText("Go to a service")).toBeTruthy();

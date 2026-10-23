@@ -1,5 +1,6 @@
 import { CircleAlertIcon, PlugZapIcon } from "lucide-react";
-import { needsLogin } from "@/lib/session";
+import { canLogin, isRejected, needsLogin } from "@/lib/session";
+import { LoginButton } from "./LoginButton";
 import { useProfiles } from "@/stores/profiles";
 
 /** The main area until ECS browsing exists: what to do next for the selected profile. */
@@ -14,6 +15,7 @@ export function ConnectionPanel() {
   let title: string;
   let detail: string | null = null;
   let problem = false;
+  let login = false;
 
   if (loadError) {
     [title, detail, problem] = [loadError.message, loadError.hint, true];
@@ -34,6 +36,11 @@ export function ConnectionPanel() {
   } else if (needsLogin(status)) {
     title = `Log in to ${profile.name}`;
     detail = "The SSO session has expired. “Log in” runs aws sso login and opens your browser.";
+    login = true;
+  } else if (identity.state === "error" && isRejected(identity)) {
+    title = `Log in to ${profile.name}`;
+    detail = `AWS rejected the SSO session (${identity.error.message}). “Log in” runs aws sso login and opens your browser.`;
+    login = true;
   } else if (identity.state === "error") {
     [title, detail, problem] = [identity.error.message, identity.error.hint, true];
   } else if (identity.state === "ok") {
@@ -49,6 +56,7 @@ export function ConnectionPanel() {
       <Icon className={problem ? "size-6 text-destructive" : "size-6 text-muted-foreground"} />
       <h1 className="text-base font-medium">{title}</h1>
       {detail && <p className="max-w-md text-sm text-muted-foreground">{detail}</p>}
+      {login && canLogin(profile) && <LoginButton />}
     </main>
   );
 }

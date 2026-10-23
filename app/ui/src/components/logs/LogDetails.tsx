@@ -120,7 +120,7 @@ export function LogDetails({ event }: { event: LogEvent }) {
           <Button
             variant="outline"
             size="xs"
-            title={`Hide lines containing “${noiseText}” in this service`}
+            tooltip={`Hide lines containing “${noiseText}” in this service`}
             onClick={() => void addNoise(profile, service, noiseText).then(applySearch)}
           >
             <EyeOffIcon /> Hide lines like this

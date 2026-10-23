@@ -13,8 +13,8 @@ test("a day in the life", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+Shift+P");
   await page.keyboard.type("prod");
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page.getByText("connected as")).toBeVisible({ timeout: 10_000 });
+  await page.getByRole("banner").getByRole("button", { name: "Log in" }).click();
+  await expect(page.getByText("Connected to demo-prod")).toBeVisible({ timeout: 10_000 });
 
   // Back to dev, where the alert is: jump to the service with the palette.
   await page.keyboard.press("ControlOrMeta+Shift+P");

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("DemoReadOnly/demo.user")).toBeVisible();
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
 });
 
 test("starts connected on the first usable profile", async ({ page }) => {
@@ -21,10 +21,12 @@ test("keyboard: open the switcher, search and log in to an expired profile", asy
   await page.keyboard.press("Enter");
 
   await expect(page.getByText("Log in to demo-prod")).toBeVisible();
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Log in" }).click();
 
   // While the CLI waits for the browser, its output is shown.
-  await expect(page.getByRole("button", { name: "Waiting for browser…" })).toBeDisabled();
+  await expect(
+    page.getByRole("banner").getByRole("button", { name: "Waiting for browser…" }),
+  ).toBeDisabled();
   await expect(page.getByRole("region", { name: "Login output" })).toContainText(
     "open the SSO authorization page",
   );

@@ -39,6 +39,45 @@ test("a rollout in progress shows both deployments", async ({ page }) => {
   await expect(deployments).toContainText("billing-sync:7");
 });
 
+test("a long task definition fits: cut at the front, revision visible", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  const view = await openTreeService(page, "demo-edge", "event-ingest");
+  const name = "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5";
+  const deployments = view.getByRole("region", { name: "Deployments" });
+  await expect(deployments.getByTitle(name)).toBeVisible();
+
+  // Nothing in the overview scrolls sideways.
+  const overview = view.getByRole("tabpanel", { name: "Overview" });
+  const overflow = await overview.evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  // The name is cut at the front: its right edge (the revision) is inside the cell.
+  const cell = deployments.getByTitle(name);
+  const clipped = await cell.evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(clipped).toBe(true);
+});
+
+test("the overview lists environment variables, masking secret-looking values", async ({
+  page,
+}) => {
+  const view = await openTreeService(page, "demo-core", "orders-api");
+  const env = view.getByRole("region", { name: "Environment" });
+  await expect(env.getByRole("row", { name: /SPRING_PROFILES_ACTIVE/ })).toContainText("demo");
+
+  const password = env.getByRole("row", { name: /DB_PASSWORD/ });
+  await expect(password).not.toContainText("demo-not-a-secret");
+  await password.getByRole("button", { name: "Show value" }).click();
+  await expect(password).toContainText("demo-not-a-secret");
+
+  // Secrets show only where they come from.
+  await expect(env.getByRole("row", { name: /API_TOKEN/ })).toContainText(
+    "parameter/demo/orders-api",
+  );
+
+  await env.getByRole("searchbox", { name: "Filter variables" }).fill("server");
+  await expect(env.getByRole("row", { name: /SERVER_PORT/ })).toBeVisible();
+  await expect(env.getByRole("row", { name: /SPRING_PROFILES_ACTIVE/ })).toHaveCount(0);
+});
+
 test("⌘K jumps to a service in a collapsed cluster", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+K");
   const palette = page.getByRole("dialog", { name: "Go to service" });
@@ -91,7 +130,7 @@ test("an expired profile gets its tree after logging in", async ({ page }) => {
   await page.getByRole("option", { name: /demo-prod/ }).click();
   await expect(page.getByRole("tree", { name: "Clusters" })).toBeHidden();
 
-  await page.getByRole("button", { name: "Log in" }).click();
+  await page.getByRole("banner").getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("tree", { name: "Clusters" })).toBeVisible();
   await expect(page.getByRole("treeitem", { name: "demo-core" })).toBeVisible();
 });

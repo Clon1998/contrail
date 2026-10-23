@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Profile, SessionStatus } from "@/bindings";
-import { describeSession, formatDuration, initialProfile, needsLogin } from "./session";
+import {
+  describeSession,
+  formatDuration,
+  initialProfile,
+  isRejected,
+  needsLogin,
+  roleName,
+} from "./session";
 
 const NOW = Date.parse("2026-10-22T12:00:00Z");
 
@@ -55,6 +62,25 @@ describe("needsLogin", () => {
   });
 });
 
+describe("rejected sessions", () => {
+  const valid: SessionStatus = { state: "valid", expiresAt: "2026-10-23T12:00:00Z" };
+
+  it("override a session that looks valid locally", () => {
+    expect(describeSession(valid, 0, true)).toEqual({ label: "session rejected", tone: "bad" });
+    expect(needsLogin(valid, true)).toBe(true);
+  });
+
+  it("are credentials errors only", () => {
+    const error = (code: "credentials" | "accessDenied") => ({
+      state: "error",
+      error: { code, message: "x", hint: null },
+    });
+    expect(isRejected(error("credentials"))).toBe(true);
+    expect(isRejected(error("accessDenied"))).toBe(false);
+    expect(isRejected({ state: "checking" })).toBe(false);
+  });
+});
+
 describe("initialProfile", () => {
   it("prefers default, then the first usable session, then the first profile", () => {
     const profiles = [sso("a"), sso("b"), sso("c")];
@@ -67,5 +93,26 @@ describe("initialProfile", () => {
     ).toBe("b");
     expect(initialProfile(profiles, { a: { state: "loggedOut" } })).toBe("a");
     expect(initialProfile([], {})).toBeNull();
+  });
+});
+
+describe("roleName", () => {
+  it("shortens SSO role ARNs to the permission set", () => {
+    expect(
+      roleName(
+        "arn:aws:sts::111122223333:assumed-role/AWSReservedSSO_AdministratorAccess_0a1b2c3d4e5f6a7b/someone@example.com",
+      ),
+    ).toBe("AdministratorAccess");
+    expect(
+      roleName("arn:aws:sts::111122223333:assumed-role/AWSReservedSSO_Read_Only_0a1b2c3d/x"),
+    ).toBe("Read_Only");
+  });
+
+  it("keeps other roles and users readable", () => {
+    expect(roleName("arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user")).toBe(
+      "DemoReadOnly",
+    );
+    expect(roleName("arn:aws:iam::111122223333:user/ci-bot")).toBe("ci-bot");
+    expect(roleName("arn:aws:iam::111122223333:root")).toBe("root");
   });
 });

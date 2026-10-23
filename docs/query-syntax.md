@@ -25,9 +25,12 @@ Field names are the dotted names shown when a line is expanded (`log.logger`, `p
 **Options**
 
 - **Filter / Highlight:** filter lists only matching lines; highlight keeps all lines and marks matches.
+- **`.*` (regex mode):** the whole search is one regular expression (any case): no query syntax, so spaces,
+  quotes and slashes need no escaping, e.g. `order \d+ (failed|timed out)`.
 - **whole line:** text and regular expressions search the whole raw line (all JSON fields, the full stack
   trace) instead of just the message.
-- **Level chips:** click a level to hide or show it (combined with the search).
+- **Level chips:** click a level to hide or show it (combined with the search); middle click shows only that
+  level (again: all levels); right click offers "only", "and above" and "show all".
 - **Noise:** "Hide lines like this" in an expanded line hides every line of that service whose message
   contains the same text; the Noise menu lists and removes them (saved per service).
 

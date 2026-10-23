@@ -48,6 +48,8 @@ const OVERLAP: Duration = Duration::seconds(5);
 const POLL_EVERY: StdDuration = StdDuration::from_secs(2);
 /// How often held-back plain-text events (possible stack trace starts) are released.
 const FLUSH_EVERY: StdDuration = StdDuration::from_millis(500);
+/// At most this many changed rows travel inside a live update (more are fetched as usual).
+const MAX_INLINE_ROWS: usize = 500;
 /// The longest wait between retries after errors.
 const MAX_BACKOFF: StdDuration = StdDuration::from_secs(30);
 
@@ -82,6 +84,10 @@ pub struct LiveUpdate {
     pub first_changed: Option<u32>,
     /// Listed rows dropped at the top because the buffer was full (all indices shifted).
     pub evicted: u32,
+    /// The listed rows from `first_changed` to the end, when they are at most
+    /// [`MAX_INLINE_ROWS`] (the usual case: a few new events). The UI shows them right away
+    /// instead of fetching them, so new rows never appear as placeholders first. Empty otherwise.
+    pub rows: Vec<LogEvent>,
     /// Why the state is what it is, when there's something to say (polling, errors).
     pub message: Option<String>,
 }
@@ -128,9 +134,10 @@ pub struct LiveTask {
     pub sink: Sink,
 }
 
-/// Starts the task on the tokio runtime and returns its handle.
-pub fn spawn(task: LiveTask) -> LiveHandle {
-    let (control, receiver) = watch::channel(Control::Run);
+/// Starts the task on the tokio runtime and returns its handle. With `Control::Pause` it waits
+/// for a resume before connecting (views of long time windows start that way).
+pub fn spawn(task: LiveTask, initial: Control) -> LiveHandle {
+    let (control, receiver) = watch::channel(initial);
     let task = tokio::spawn(task.run(receiver));
     LiveHandle { control, task }
 }
@@ -374,12 +381,20 @@ impl LiveTask {
         change: Option<VisibleChange>,
         message: Option<String>,
     ) -> bool {
-        let (stats, visible, matches) = {
+        let first_changed = change.and_then(|c| c.first_changed);
+        let (stats, visible, matches, rows) = {
             let views = self.views.lock().expect("views lock poisoned");
-            match views.get(&self.view_id) {
-                Some(view) => (view.buffer.stats(), view.visible_len(), view.match_count()),
-                None => return false,
-            }
+            let Some(view) = views.get(&self.view_id) else {
+                return false;
+            };
+            let visible = view.visible_len();
+            let rows = match first_changed {
+                Some(first) if visible.saturating_sub(first) <= MAX_INLINE_ROWS => {
+                    view.window(first, MAX_INLINE_ROWS)
+                }
+                _ => Vec::new(),
+            };
+            (view.buffer.stats(), visible, view.match_count(), rows)
         };
         let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
         (self.sink)(LiveUpdate {
@@ -388,8 +403,9 @@ impl LiveTask {
             stats,
             visible: count(visible),
             matches: matches.map(count),
-            first_changed: change.and_then(|c| c.first_changed).map(count),
+            first_changed: first_changed.map(count),
             evicted: change.map_or(0, |c| count(c.evicted)),
+            rows,
             message,
         });
         true
@@ -531,19 +547,26 @@ mod tests {
         }
 
         fn spawn(&self) -> LiveHandle {
+            self.spawn_with(Control::Run)
+        }
+
+        fn spawn_with(&self, initial: Control) -> LiveHandle {
             let updates = self.updates.clone();
-            spawn(LiveTask {
-                source: self.source.clone(),
-                ctx: AwsCtx {
-                    profile: "dev".into(),
-                    region: None,
+            spawn(
+                LiveTask {
+                    source: self.source.clone(),
+                    ctx: AwsCtx {
+                        profile: "dev".into(),
+                        region: None,
+                    },
+                    selection: selection(),
+                    views: self.views.clone(),
+                    view_id: 1,
+                    last_seen: at(0),
+                    sink: Arc::new(move |u| updates.lock().unwrap().push(u)),
                 },
-                selection: selection(),
-                views: self.views.clone(),
-                view_id: 1,
-                last_seen: at(0),
-                sink: Arc::new(move |u| updates.lock().unwrap().push(u)),
-            })
+                initial,
+            )
         }
 
         fn messages(&self) -> Vec<String> {
@@ -608,6 +631,18 @@ mod tests {
         assert!(states.contains(&LiveState::Live));
         let last = harness.updates.lock().unwrap().last().cloned().unwrap();
         assert_eq!(last.stats.total, 2);
+        // The update that added the rows carries them, so the UI shows them without a fetch.
+        let added = harness
+            .updates
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|u| u.first_changed.is_some())
+            .cloned()
+            .unwrap();
+        let messages: Vec<_> = added.rows.iter().map(|e| e.line.message.clone()).collect();
+        assert_eq!(added.first_changed, Some(0));
+        assert_eq!(messages, ["one", "two"]);
     }
 
     #[tokio::test(start_paused = true)]
@@ -738,6 +773,19 @@ mod tests {
         tokio::time::sleep(StdDuration::from_secs(60)).await;
 
         assert_eq!(harness.states().last(), Some(&LiveState::Failed));
+        assert_eq!(harness.source.backfill_ranges.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_task_started_paused_reads_nothing_until_resumed() {
+        let harness = Harness::new(Scripted::default());
+        let handle = harness.spawn_with(Control::Pause);
+        settle().await;
+        assert_eq!(harness.states(), vec![LiveState::Paused]);
+        assert!(harness.source.backfill_ranges.lock().unwrap().is_empty());
+
+        handle.set(Control::Run);
+        settle().await;
         assert_eq!(harness.source.backfill_ranges.lock().unwrap().len(), 1);
     }
 

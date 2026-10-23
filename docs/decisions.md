@@ -163,3 +163,30 @@ resumed (e.g. after logging in).
 - **AccessDenied ≠ expired login.** It was mapped to a credentials error; it now has its own error code with a
   hint to `docs/iam-policy.json`, and a live tail hitting it stops and waits (banner with Retry).
 - **Window state plugin** (plan §5) is deferred: not needed for v0.1.
+
+## 2026-10-23 — Real-account feedback: a "valid" session can still be rejected
+
+Patrick's first real-account test started with a session the token cache called valid/refreshable, but the SSO
+portal answered `UnauthorizedException: Session token not found or invalid` (the session had ended server-side).
+The earlier assumption ("refreshable ⇒ show as valid") holds for the local view only. **Decision:** the local
+state stays a first guess; a credentials error from the identity check overrides it ("session rejected", login
+offered in the main panel). Credential errors show only their root cause; the SDK chain goes to the debug log.
+`aws sso login` runs without a console window on Windows.
+
+## 2026-10-23 — Custom time windows; only short windows follow live by default
+
+Patrick's feedback: looking at the last hours rarely needs a live tail (billed per minute). **Decision:** the
+window is a `TimeWindow` (`last N minutes` or a fixed `from–to` range). Windows up to 15 minutes follow live
+right away; longer relative windows open with the tail paused (▶ resumes with a catch-up); a fixed range is
+never followed. `start_live` takes the initial pause state, so a paused view never opens a Live Tail session.
+
+## 2026-10-23 — Views load the newest events first, older ones on demand
+
+M3 backfilled the whole window oldest first up to the buffer size, so a long window on a busy service was cut
+off before its **newest** events, and every open read the full window (slow, and mostly unread). Patrick
+suggested loading on demand. **Decision:** a view reads its window backwards in slices (2 min, then 4× longer,
+`backfill_newest`) until it has ~2,000 events; scrolling near the oldest loaded row (or "Load older" / "Load
+all") reads the next ~5,000. Loading stops when the buffer is full (inserting older events would evict them
+again). Search and export cover the loaded events; the toolbar says how far back that is. CloudWatch can't
+read across streams newest first, hence the time slices. Live updates now also carry up to 500 changed rows,
+and evictions shift the UI's row cache instead of clearing it, so new rows don't flash.

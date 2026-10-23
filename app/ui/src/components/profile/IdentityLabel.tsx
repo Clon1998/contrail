@@ -1,7 +1,9 @@
-import { CircleAlertIcon, Loader2Icon } from "lucide-react";
+import { CircleAlertIcon, Loader2Icon, UserIcon } from "lucide-react";
+import { isRejected, roleName } from "@/lib/session";
 import { useProfiles } from "@/stores/profiles";
+import { Hint } from "@/components/ui/tooltip";
 
-/** "connected as ReadOnly/someone · 111122223333", or what went wrong. */
+/** The role the credentials belong to (full ARN and account on hover), or what went wrong. */
 export function IdentityLabel() {
   const identity = useProfiles((s) => s.identity);
 
@@ -16,19 +18,19 @@ export function IdentityLabel() {
         </span>
       );
     case "ok": {
-      // `arn:aws:sts::123:assumed-role/Role/user` → `Role/user`
-      const who = identity.identity.arn
-        .split(":")
-        .at(-1)
-        ?.replace(/^assumed-role\//, "");
+      const { arn, account } = identity.identity;
       return (
-        <span className="truncate text-xs text-muted-foreground" title={identity.identity.arn}>
-          connected as <span className="text-foreground">{who}</span> ·{" "}
-          <span className="font-mono">{identity.identity.account}</span>
-        </span>
+        <Hint content={`Connected as ${arn}\nAccount ${account}`}>
+          <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+            <UserIcon className="size-3 shrink-0" />
+            <span className="truncate text-foreground">{roleName(arn)}</span>
+          </span>
+        </Hint>
       );
     }
     case "error":
+      // A rejected session is shown by the session dot, the Log in button and the main panel.
+      if (isRejected(identity)) return null;
       return (
         <span
           className="flex min-w-0 items-center gap-1.5 text-xs text-destructive"

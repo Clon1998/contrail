@@ -96,6 +96,11 @@ impl LogBuffer {
         }
     }
 
+    /// How many events the buffer keeps at most.
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
+
     /// Adds events (in any order), skipping duplicates and evicting the oldest beyond capacity.
     pub fn insert(&mut self, events: impl IntoIterator<Item = LogEvent>) -> InsertReport {
         let mut report = InsertReport::default();

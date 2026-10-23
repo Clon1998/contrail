@@ -6,10 +6,9 @@ import {
   PauseIcon,
   PlayIcon,
   RefreshCwIcon,
-  XIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import type { LiveState, LogColumn } from "@/bindings";
+import type { LiveState, LogColumn, ServiceRef } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +18,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { shortTaskId } from "@/lib/ecs";
-import { BACKFILL_WINDOWS } from "@/lib/logs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatDateTime, shortTaskId } from "@/lib/ecs";
+import { formatLogTime, liveMode } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -29,6 +36,8 @@ import { ExportMenu } from "./ExportMenu";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
+import { TimeWindowPicker } from "./TimeWindowPicker";
+import { Hint } from "@/components/ui/tooltip";
 
 const LIVE_LABEL: Record<LiveState, string> = {
   connecting: "Connecting…",
@@ -54,31 +63,40 @@ function LiveControls() {
   const userPaused = useLogs((s) => s.pauseReasons.user);
   const autoPaused = useLogs((s) => s.pauseReasons.hidden || s.pauseReasons.background);
   const setPaused = useLogs((s) => s.setPaused);
+  const mode = useLogs((s) => liveMode(s.timeWindow));
+  const hasView = useLogs((s) => s.view !== null);
+  if (mode === "off" && hasView) {
+    return (
+      <Hint content="A fixed time range is not followed live.">
+        <Badge variant="outline">fixed range</Badge>
+      </Hint>
+    );
+  }
   if (!live) return null;
 
   const hint =
     live.message ??
     (live.state === "paused" && !userPaused && autoPaused
       ? "Paused automatically (see the live tail settings); resumes when you're back."
-      : undefined);
+      : live.state === "paused" && userPaused && mode === "paused"
+        ? "Longer time windows open paused; ▶ follows new events."
+        : undefined);
   return (
     <span className="flex items-center gap-1.5">
-      <span
-        role="status"
-        aria-label={`Live tail: ${LIVE_LABEL[live.state]}`}
-        title={hint}
-        className="flex items-center gap-1.5 rounded-md border border-border px-1.5 py-0.5"
-      >
-        <span className={cn("size-2 rounded-full", LIVE_TONE[live.state])} />
-        {LIVE_LABEL[live.state]}
-      </span>
-      {live.sampled && (
-        <Badge
-          variant="outline"
-          title="More than 500 events per second: CloudWatch sends a sample."
+      <Hint content={hint}>
+        <span
+          role="status"
+          aria-label={`Live tail: ${LIVE_LABEL[live.state]}`}
+          className="flex items-center gap-1.5 rounded-md border border-border px-1.5 py-0.5"
         >
-          sampled
-        </Badge>
+          <span className={cn("size-2 rounded-full", LIVE_TONE[live.state])} />
+          {LIVE_LABEL[live.state]}
+        </span>
+      </Hint>
+      {live.sampled && (
+        <Hint content="More than 500 events per second: CloudWatch sends a sample.">
+          <Badge variant="outline">sampled</Badge>
+        </Hint>
       )}
       <Button
         variant="ghost"
@@ -88,6 +106,54 @@ function LiveControls() {
       >
         {userPaused ? <PlayIcon /> : <PauseIcon />}
       </Button>
+    </span>
+  );
+}
+
+/**
+ * How much of the window is loaded (views start with the newest events), and buttons to load
+ * older ones; scrolling to the oldest row loads them too.
+ */
+function OlderControls() {
+  const view = useLogs((s) => s.view);
+  const older = useLogs((s) => s.older);
+  const loadOlder = useLogs((s) => s.loadOlder);
+  const loadAll = useLogs((s) => s.loadAll);
+  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  if (!view || view.complete) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
+      <Hint
+        content={`Loaded from ${formatDateTime(view.loadedFrom, timeZone)}. Search and export cover the loaded events; scroll to the oldest row or press "Load all" for the whole window.`}
+      >
+        <span>since {formatLogTime(view.loadedFrom, timeZone).slice(0, 5)}</span>
+      </Hint>
+      {older.loading ? (
+        <Loader2Icon aria-label="Loading older events" className="size-3.5 animate-spin" />
+      ) : older.full ? (
+        <Hint content="The buffer is full (see the buffer size setting): older events can't be added.">
+          <Badge variant="outline">buffer full</Badge>
+        </Hint>
+      ) : (
+        <>
+          <Button variant="ghost" size="xs" onClick={() => void loadOlder()}>
+            Load older
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            tooltip="Load the whole time window (needed to search or export all of it)"
+            onClick={() => void loadAll()}
+          >
+            Load all
+          </Button>
+        </>
+      )}
+      {older.error && (
+        <Hint content={older.error.hint ?? older.error.message}>
+          <CircleAlertIcon aria-label={older.error.message} className="size-3.5 text-destructive" />
+        </Hint>
+      )}
     </span>
   );
 }
@@ -119,6 +185,50 @@ function LiveFailure() {
   );
 }
 
+/** Radix Select can't use "" as a value, so "all tasks" gets a sentinel. */
+const ALL_TASKS = "__all__";
+
+/** All tasks of the service, or one of them (running tasks first). */
+function TaskPicker({ service, taskId }: { service: ServiceRef; taskId: string | null }) {
+  const tasks = useEcs((s) => s.tasks);
+  const showTask = useLogs((s) => s.showTask);
+  const list = "data" in tasks ? (tasks.data ?? []) : [];
+  const sorted = [...list].sort(
+    (a, b) => Number(b.lastStatus === "RUNNING") - Number(a.lastStatus === "RUNNING"),
+  );
+  // The chosen task may have dropped out of the list (e.g. stopped tasks hidden).
+  const missing = taskId !== null && !list.some((t) => t.id === taskId);
+
+  return (
+    <Select
+      value={taskId ?? ALL_TASKS}
+      onValueChange={(value) => showTask(service, value === ALL_TASKS ? null : value)}
+    >
+      <SelectTrigger size="sm" aria-label="Task" className="h-6 font-mono text-xs">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL_TASKS}>All tasks</SelectItem>
+        {(sorted.length > 0 || missing) && <SelectSeparator />}
+        {missing && <SelectItem value={taskId}>task {shortTaskId(taskId)}</SelectItem>}
+        {sorted.map((task) => (
+          <SelectItem key={task.id} value={task.id} className="font-mono text-xs">
+            task {shortTaskId(task.id)}
+            <span
+              className={cn(
+                "text-muted-foreground",
+                task.lastStatus === "RUNNING" && "text-success",
+              )}
+            >
+              {task.lastStatus}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 /** The Logs tab: a service's (or one task's) events, backfilled and then followed live. */
 export function LogViewer() {
   const ctx = useEcs((s) => s.ctx);
@@ -128,10 +238,9 @@ export function LogViewer() {
   const error = useLogs((s) => s.error);
   const open = useLogs((s) => s.open);
   const ensureOpen = useLogs((s) => s.ensureOpen);
-  const minutes = useLogs((s) => s.minutes);
-  const setMinutes = useLogs((s) => s.setMinutes);
+  const timeWindow = useLogs((s) => s.timeWindow);
+  const setWindow = useLogs((s) => s.setWindow);
   const taskFilter = useLogs((s) => s.taskFilter);
-  const showTask = useLogs((s) => s.showTask);
   const columns = useLogColumns();
   const updateSettings = usePrefs((s) => s.updateSettings);
   const setColumn = (column: LogColumn, shown: boolean) =>
@@ -144,71 +253,36 @@ export function LogViewer() {
 
   // The view stays open while its service tab exists (it's closed with the tab).
   useEffect(() => {
-    if (ctx && selected) void ensureOpen(ctx, selected, minutes, taskId);
-  }, [ctx, selected, minutes, taskId, ensureOpen]);
+    if (ctx && selected) void ensureOpen(ctx, selected, timeWindow, taskId);
+  }, [ctx, selected, timeWindow, taskId, ensureOpen]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-1.5 text-xs">
-        <div
-          role="radiogroup"
-          aria-label="Time window"
-          className="flex rounded-md border border-border p-0.5"
-        >
-          {BACKFILL_WINDOWS.map((w) => (
-            <button
-              key={w.minutes}
-              type="button"
-              role="radio"
-              aria-checked={w.minutes === minutes}
-              onClick={() => setMinutes(w.minutes)}
-              className={cn(
-                "rounded px-2 py-0.5",
-                w.minutes === minutes
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {w.label}
-            </button>
-          ))}
-        </div>
+        <TimeWindowPicker value={timeWindow} onChange={setWindow} />
         <Button
           variant="ghost"
           size="icon-xs"
           aria-label="Reload logs"
+          tooltip="Reload the time window"
           disabled={loading || !ctx || !selected}
-          onClick={() => ctx && selected && void open(ctx, selected, minutes, taskId)}
+          onClick={() => ctx && selected && void open(ctx, selected, timeWindow, taskId)}
         >
           <RefreshCwIcon className={loading ? "animate-spin" : undefined} />
         </Button>
-        {taskId && selected && (
-          <Badge variant="secondary" className="gap-1 font-mono">
-            task {shortTaskId(taskId)}
-            <button
-              type="button"
-              aria-label="Show all tasks"
-              onClick={() => showTask(selected, null)}
-              className="rounded hover:text-foreground"
-            >
-              <XIcon className="size-3" />
-            </button>
-          </Badge>
-        )}
+        {selected && <TaskPicker service={selected} taskId={taskId} />}
         <LiveControls />
         {view && (
           <span className="truncate text-muted-foreground" title={view.location.logGroup}>
             {`${view.location.logGroup} · ${view.streams} ${view.streams === 1 ? "stream" : "streams"}`}
           </span>
         )}
+        <OlderControls />
         <span className="ml-auto" />
         {view?.truncated && (
-          <Badge
-            variant="outline"
-            title="The window holds more events than the buffer; the newest are missing."
-          >
-            truncated
-          </Badge>
+          <Hint content="More events than the buffer holds: some are missing (see the buffer size setting).">
+            <Badge variant="outline">truncated</Badge>
+          </Hint>
         )}
         <FieldMappingDialog />
         <ExportMenu />

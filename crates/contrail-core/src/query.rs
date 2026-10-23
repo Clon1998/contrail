@@ -226,22 +226,51 @@ pub fn parse_query(input: &str) -> Result<Query, QueryError> {
     Ok(Query { terms })
 }
 
+/// Parses the search box in regex mode: the whole input is one case-insensitive regular
+/// expression (no query syntax, so spaces, quotes and slashes need no escaping).
+pub fn parse_regex_query(input: &str) -> Result<Query, QueryError> {
+    if input.is_empty() {
+        return Ok(Query::default());
+    }
+    let condition = regex_condition(input, 0, input.len(), "time(out|d out)")?;
+    Ok(Query {
+        terms: vec![Term {
+            negated: false,
+            condition,
+            start: 0,
+            end: input.len(),
+        }],
+    })
+}
+
+/// A case-insensitive regex term; errors point at `start..end` and show `example` as a hint.
+fn regex_condition(
+    pattern: &str,
+    start: usize,
+    end: usize,
+    example: &str,
+) -> Result<Condition, QueryError> {
+    RegexBuilder::new(pattern)
+        .case_insensitive(true)
+        .build()
+        .map(Condition::Regex)
+        .map_err(|e| {
+            error(
+                format!("invalid regular expression: {}", first_line(&e.to_string())),
+                start,
+                end,
+                Some(&format!(
+                    "Regular expressions use Rust syntax, e.g. {example}"
+                )),
+            )
+        })
+}
+
 fn parse_term(body: &str, start: usize, end: usize) -> Result<Condition, QueryError> {
     if let Some(pattern) = body.strip_prefix('/').and_then(|b| b.strip_suffix('/'))
         && body.len() >= 2
     {
-        return RegexBuilder::new(pattern)
-            .case_insensitive(true)
-            .build()
-            .map(Condition::Regex)
-            .map_err(|e| {
-                error(
-                    format!("invalid regular expression: {}", first_line(&e.to_string())),
-                    start,
-                    end,
-                    Some("Regular expressions use Rust syntax, e.g. /time(out|d out)/"),
-                )
-            });
+        return regex_condition(pattern, start, end, "/time(out|d out)/");
     }
     if body.starts_with('"') {
         return Ok(Condition::Text(unquote(body).to_lowercase()));
@@ -461,6 +490,25 @@ mod tests {
         assert!(matches("/time(out|d out)/", &e));
         assert!(!matches("/^timed/", &e));
         assert!(matches("/^REQUEST/", &e), "case-insensitive");
+    }
+
+    #[test]
+    fn regex_mode_takes_the_whole_input_as_one_expression() {
+        let e = ecs("INFO", "order 42 failed: read timed out");
+        let regex = |input: &str| {
+            parse_regex_query(input)
+                .unwrap()
+                .matches(&e, MatchOptions::default())
+        };
+        // Spaces, slashes and quotes are part of the expression, not query syntax.
+        assert!(regex("order \\d+ failed"));
+        assert!(regex("FAILED: read"), "case-insensitive");
+        assert!(!regex("-timed"));
+        assert!(parse_regex_query("").unwrap().is_empty());
+
+        let error = parse_regex_query("time(out").unwrap_err();
+        assert!(error.message.starts_with("invalid regular expression"));
+        assert_eq!((error.start, error.end), (0, 8));
     }
 
     #[test]

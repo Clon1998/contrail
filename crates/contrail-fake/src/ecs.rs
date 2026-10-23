@@ -12,8 +12,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{
-    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, ServiceDetail,
-    ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo, sort_tasks,
+    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, EnvVar,
+    SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo,
+    sort_tasks,
 };
 use contrail_core::error::SourceError;
 use contrail_core::timestamp::Timestamp;
@@ -36,6 +37,9 @@ struct StoppedSpec {
 struct ServiceSpec {
     cluster: &'static str,
     name: &'static str,
+    /// The task definition family when it differs from the service name. CDK generates long
+    /// ones like this, which the UI must fit.
+    family: Option<&'static str>,
     revision: u32,
     image_tag: &'static str,
     launch_type: &'static str,
@@ -51,10 +55,22 @@ struct ServiceSpec {
     events: &'static [&'static str],
 }
 
+impl ServiceSpec {
+    fn family(&self) -> &'static str {
+        self.family.unwrap_or(self.name)
+    }
+
+    /// `family:revision`, how ECS names a task definition revision.
+    fn task_definition(&self, revision: u32) -> String {
+        format!("{}:{revision}", self.family())
+    }
+}
+
 const SERVICES: &[ServiceSpec] = &[
     ServiceSpec {
         cluster: "demo-core",
         name: "orders-api",
+        family: None,
         revision: 42,
         image_tag: "1.14.2",
         launch_type: "FARGATE",
@@ -76,6 +92,7 @@ const SERVICES: &[ServiceSpec] = &[
     ServiceSpec {
         cluster: "demo-core",
         name: "payments-worker",
+        family: None,
         revision: 17,
         image_tag: "2.3.0",
         launch_type: "FARGATE",
@@ -117,6 +134,7 @@ const SERVICES: &[ServiceSpec] = &[
     ServiceSpec {
         cluster: "demo-core",
         name: "billing-sync",
+        family: None,
         revision: 8,
         image_tag: "0.9.0",
         launch_type: "FARGATE",
@@ -135,6 +153,7 @@ const SERVICES: &[ServiceSpec] = &[
     ServiceSpec {
         cluster: "demo-edge",
         name: "legacy-gateway",
+        family: None,
         revision: 113,
         image_tag: "2021.11",
         launch_type: "EC2",
@@ -150,6 +169,7 @@ const SERVICES: &[ServiceSpec] = &[
     ServiceSpec {
         cluster: "demo-edge",
         name: "event-ingest",
+        family: Some("EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E"),
         revision: 5,
         image_tag: "3.0.1",
         launch_type: "FARGATE",
@@ -167,6 +187,39 @@ const SERVICES: &[ServiceSpec] = &[
 ];
 
 const CLUSTERS: &[&str] = &["demo-batch", "demo-core", "demo-edge"];
+
+/// Demo environment variables: a few common ones, a secret-looking one (the UI masks it), and
+/// routing config in Spring's relaxed-binding form for `event-ingest`.
+fn environment(spec: &ServiceSpec) -> Vec<EnvVar> {
+    let mut vars = vec![
+        ("SPRING_APPLICATION_NAME", spec.name.to_owned()),
+        ("SPRING_PROFILES_ACTIVE", "demo".to_owned()),
+        ("SERVER_PORT", "8080".to_owned()),
+        ("LOGGING_STRUCTURED_FORMAT_CONSOLE", "ecs".to_owned()),
+        ("DB_PASSWORD", "demo-not-a-secret".to_owned()),
+    ];
+    if spec.name == "event-ingest" {
+        vars.extend([
+            ("ACME_ROUTES_0_TOPIC", "demo.events".to_owned()),
+            ("ACME_ROUTES_0_INPUT_TYPE", "sftp".to_owned()),
+            ("ACME_ROUTES_0_INPUT_SYSTEM", "Example Partner".to_owned()),
+            (
+                "ACME_ROUTES_0_INPUT_PROPERTIES_HOST",
+                "sftp.example.com".to_owned(),
+            ),
+            ("ACME_ROUTES_0_INPUT_PROPERTIES_PATH", "outbox".to_owned()),
+        ]);
+    }
+    let mut vars: Vec<EnvVar> = vars
+        .into_iter()
+        .map(|(name, value)| EnvVar {
+            name: name.to_owned(),
+            value,
+        })
+        .collect();
+    vars.sort_by(|a, b| a.name.cmp(&b.name));
+    vars
+}
 
 /// Demo ECS data. Shares the session state of [`FakeAuth`]: an expired demo profile can't list
 /// anything until it has "logged in", just like with real AWS.
@@ -248,7 +301,7 @@ fn summary(spec: &ServiceSpec, region: &str, account: &str) -> ServiceSummary {
         running: spec.running.len() as u32 + previous_running,
         pending: spec.pending,
         launch_type: Some(spec.launch_type.to_owned()),
-        task_definition: format!("{}:{}", spec.name, spec.revision),
+        task_definition: spec.task_definition(spec.revision),
     }
 }
 
@@ -308,7 +361,7 @@ impl EcsSource for FakeEcs {
     ) -> Result<ServiceDetail, SourceError> {
         let (account, region) = self.account(ctx)?;
         let spec = find_service(service)?;
-        let task_definition = format!("{}:{}", spec.name, spec.revision);
+        let task_definition = spec.task_definition(spec.revision);
 
         let in_progress = spec.previous.is_some();
         let mut deployments = vec![Deployment {
@@ -343,7 +396,7 @@ impl EcsSource for FakeEcs {
             updated_at: self.ago(if in_progress { 1 } else { 3 * 24 * 60 - 5 }),
         }];
         if let Some((revision, running)) = spec.previous {
-            let previous = format!("{}:{revision}", spec.name);
+            let previous = spec.task_definition(revision);
             deployments.push(Deployment {
                 id: format!("ecs-svc/{}", &hex_id(&previous)[..19]),
                 status: "ACTIVE".to_owned(),
@@ -376,7 +429,7 @@ impl EcsSource for FakeEcs {
             platform_version: (spec.launch_type == "FARGATE").then(|| "1.4.0".to_owned()),
             deployments,
             task_definition: Some(TaskDefinitionInfo {
-                family: spec.name.to_owned(),
+                family: spec.family().to_owned(),
                 revision: spec.revision,
                 cpu: Some(spec.cpu.to_owned()),
                 memory: Some(spec.memory.to_owned()),
@@ -393,6 +446,15 @@ impl EcsSource for FakeEcs {
                     .into_iter()
                     .map(|(k, v)| (k.to_owned(), v))
                     .collect(),
+                    environment: environment(spec),
+                    secrets: vec![SecretRef {
+                        name: "API_TOKEN".to_owned(),
+                        value_from: format!(
+                            "arn:aws:ssm:{region}:{account}:parameter/demo/{}/api-token",
+                            spec.name
+                        ),
+                    }],
+                    environment_files: Vec::new(),
                 }],
             }),
             events,
@@ -423,7 +485,7 @@ impl EcsSource for FakeEcs {
                 stop_code: None,
                 stopped_reason: None,
                 availability_zone: Some(zones[id.len() % 3].clone()),
-                task_definition: format!("{}:{revision}", spec.name),
+                task_definition: spec.task_definition(revision),
                 launch_type: Some(spec.launch_type.to_owned()),
                 containers: vec![ContainerState {
                     name: spec.name.to_owned(),

@@ -75,7 +75,7 @@
         "running": 6,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "event-ingest:5"
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/legacy-gateway",
@@ -148,7 +148,36 @@
               "awslogs-group": "/ecs/billing-sync",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "billing-sync"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/billing-sync/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -209,7 +238,36 @@
               "awslogs-group": "/ecs/orders-api",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "orders-api"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/orders-api/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -265,7 +323,36 @@
               "awslogs-group": "/ecs/payments-worker",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "payments-worker"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/payments-worker/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -297,17 +384,17 @@
         "running": 6,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "event-ingest:5"
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
       "deployments": [
         {
-          "id": "ecs-svc/1fb8fe897dffc40dbd6",
+          "id": "ecs-svc/2fad4e533f6c6aad9ed",
           "status": "PRIMARY",
           "rolloutState": "COMPLETED",
           "rolloutReason": "ECS deployment ecs-svc completed.",
-          "taskDefinition": "event-ingest:5",
+          "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
           "desired": 6,
           "running": 6,
           "pending": 0,
@@ -317,7 +404,7 @@
         }
       ],
       "taskDefinition": {
-        "family": "event-ingest",
+        "family": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E",
         "revision": 5,
         "cpu": "2048",
         "memory": "4096",
@@ -331,7 +418,56 @@
               "awslogs-group": "/ecs/event-ingest",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "ACME_ROUTES_0_INPUT_PROPERTIES_HOST",
+                "value": "sftp.example.com"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_PROPERTIES_PATH",
+                "value": "outbox"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_SYSTEM",
+                "value": "Example Partner"
+              },
+              {
+                "name": "ACME_ROUTES_0_INPUT_TYPE",
+                "value": "sftp"
+              },
+              {
+                "name": "ACME_ROUTES_0_TOPIC",
+                "value": "demo.events"
+              },
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "event-ingest"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/event-ingest/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -387,7 +523,36 @@
               "awslogs-group": "/ecs/legacy-gateway",
               "awslogs-region": "eu-central-1",
               "awslogs-stream-prefix": "ecs"
-            }
+            },
+            "environment": [
+              {
+                "name": "DB_PASSWORD",
+                "value": "demo-not-a-secret"
+              },
+              {
+                "name": "LOGGING_STRUCTURED_FORMAT_CONSOLE",
+                "value": "ecs"
+              },
+              {
+                "name": "SERVER_PORT",
+                "value": "8080"
+              },
+              {
+                "name": "SPRING_APPLICATION_NAME",
+                "value": "legacy-gateway"
+              },
+              {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "demo"
+              }
+            ],
+            "secrets": [
+              {
+                "name": "API_TOKEN",
+                "valueFrom": "arn:aws:ssm:eu-central-1:111122223333:parameter/demo/legacy-gateway/api-token"
+              }
+            ],
+            "environmentFiles": []
           }
         ]
       },
@@ -745,7 +910,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1a",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -770,7 +935,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1b",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -795,7 +960,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1c",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -820,7 +985,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1a",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -845,7 +1010,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1b",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {
@@ -870,7 +1035,7 @@
         "stopCode": null,
         "stoppedReason": null,
         "availabilityZone": "eu-central-1c",
-        "taskDefinition": "event-ingest:5",
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
         "launchType": "FARGATE",
         "containers": [
           {

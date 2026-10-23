@@ -134,6 +134,8 @@ pub struct Settings {
     pub buffer_size: u32,
     /// The optional columns shown in log lists.
     pub log_columns: Vec<LogColumn>,
+    /// Log lists show the newest event at the top (and follow new events there).
+    pub newest_first: bool,
 }
 
 /// Written by hand (instead of derived) because the numbers don't default to 0.
@@ -150,6 +152,7 @@ impl Default for Settings {
             auto_pause_minutes: DEFAULT_AUTO_PAUSE_MINUTES,
             buffer_size: DEFAULT_BUFFER_SIZE,
             log_columns: Vec::new(),
+            newest_first: false,
         }
     }
 }
@@ -181,6 +184,7 @@ impl Settings {
         read(value, "autoPauseMinutes", &mut settings.auto_pause_minutes);
         read(value, "bufferSize", &mut settings.buffer_size);
         read(value, "logColumns", &mut settings.log_columns);
+        read(value, "newestFirst", &mut settings.newest_first);
         settings
     }
 
@@ -447,7 +451,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[]}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false}"#
         );
     }
 

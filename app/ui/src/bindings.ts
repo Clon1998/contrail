@@ -29,11 +29,11 @@ export const commands = {
 	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
 	listTasks: (ctx: AwsCtx, service: ServiceRef, includeStopped: boolean) => typedError<Task[], ApiError>(__TAURI_INVOKE("list_tasks", { ctx, service, includeStopped })),
 	/**
-	 *  Opens a service's logs: backfills the last `minutes` into a new view. Without `task_id` the
+	 *  Opens a service's logs: backfills the time `window` into a new view. Without `task_id` the
 	 *  view merges all tasks of the service (running and recently stopped); with it, only that
 	 *  task's stream (the task view).
 	 */
-	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, minutes, taskId })),
+	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, window: TimeWindow, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, window, taskId })),
 	/**  Up to `limit` events of a view from `offset` (oldest first). */
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**  Frees a view's buffer and stops its live tail. */
@@ -52,7 +52,9 @@ export const commands = {
 	 * 
 	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
 	 */
-	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate })),
+	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>, paused: boolean) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate, paused })),
+	/**  Loads the next older events of a view's window (newest first, in slices). */
+	loadOlder: (viewId: number) => typedError<OlderEvents, ApiError>(__TAURI_INVOKE("load_older", { viewId })),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
@@ -150,6 +152,15 @@ export type ContainerDefinitionInfo = {
 	logDriver: string | null,
 	/**  The log driver's options (`awslogs-group`, `awslogs-stream-prefix`, `awslogs-region`, …). */
 	logOptions: { [key in string]: string },
+	/**  Plain environment variables, sorted by name. */
+	environment: EnvVar[],
+	/**
+	 *  Variables filled from Secrets Manager or SSM at start: only their references (Contrail
+	 *  never reads secret values).
+	 */
+	secrets: SecretRef[],
+	/**  `.env` files loaded from S3 (their ARNs). */
+	environmentFiles: string[],
 };
 
 export type ContainerState = {
@@ -178,12 +189,20 @@ export type Deployment = {
 	updatedAt: Timestamp | null,
 };
 
+/**  An environment variable of a container definition. */
+export type EnvVar = {
+	name: string,
+	value: string,
+};
+
 /**  Lets the UI react to specific failures (e.g. offer "Log in" on `credentials`). */
 export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing" | "loginFailed" | "credentials" | 
 /**  A missing IAM permission. */
 "accessDenied" | "aws" | "config" | "io" | 
 /**  The service's logs can't be found in CloudWatch (other log driver, missing settings). */
-"logsUnavailable";
+"logsUnavailable" | 
+/**  The UI sent something unusable, e.g. an empty time window. */
+"invalidInput";
 
 export type ExportFormat = 
 /**  The original lines, as CloudWatch delivered them (stack traces joined). */
@@ -240,6 +259,8 @@ export type FilterSpec = {
 	hiddenLevels: Level[],
 	/**  Search the whole raw line, not just the message. */
 	searchRaw: boolean,
+	/**  The query is one regular expression (the search box's regex mode), not query syntax. */
+	regex: boolean,
 	/**  The service's "hide noise" texts, when hiding noise is on. */
 	noise: string[],
 };
@@ -273,6 +294,12 @@ export type LiveUpdate = {
 	firstChanged: number | null,
 	/**  Listed rows dropped at the top because the buffer was full (all indices shifted). */
 	evicted: number,
+	/**
+	 *  The listed rows from `first_changed` to the end, when they are at most
+	 *  [`MAX_INLINE_ROWS`] (the usual case: a few new events). The UI shows them right away
+	 *  instead of fetching them, so new rows never appear as placeholders first. Empty otherwise.
+	 */
+	rows: LogEvent[],
 	/**  Why the state is what it is, when there's something to say (polling, errors). */
 	message: string | null,
 };
@@ -330,10 +357,15 @@ export type LogViewInfo = {
 	/**  How many task streams were read (running and recently stopped tasks). */
 	streams: number,
 	stats: BufferStats,
-	/**  The backfill hit the buffer size before reaching the newest events. */
+	/**  A slice held more events than the buffer has room for: some are missing. */
 	truncated: boolean,
+	/**  The view's time window. */
 	from: Timestamp,
 	to: Timestamp,
+	/**  How far back events are loaded so far (newest first; `load_older` goes further back). */
+	loadedFrom: Timestamp,
+	/**  The whole window is loaded. */
+	complete: boolean,
 };
 
 /**  Progress of a running `aws sso login`, streamed to the UI. */
@@ -343,6 +375,25 @@ export type LoginProgress =
  *  browser doesn't open by itself).
  */
 { kind: "output"; line: string };
+
+/**  What `load_older` added to a view. */
+export type OlderEvents = {
+	/**  Listed rows added in front of the previous first row (every listed index moved by this). */
+	added: number,
+	visible: number,
+	matches: number | null,
+	stats: BufferStats,
+	loadedFrom: Timestamp,
+	complete: boolean,
+	/**  The buffer is full: no older events can be added. */
+	full: boolean,
+	/**
+	 *  The listed rows from `rows_from` on, around the previous first row, so the rows on screen
+	 *  don't have to be fetched again.
+	 */
+	rowsFrom: number,
+	rows: LogEvent[],
+};
 
 /**  What the parser gets out of one raw log line. */
 export type ParsedLine = {
@@ -423,6 +474,13 @@ export type QueryError = {
 	start: number,
 	end: number,
 	hint: string | null,
+};
+
+/**  A variable whose value comes from Secrets Manager or SSM Parameter Store. */
+export type SecretRef = {
+	name: string,
+	/**  The secret's or parameter's ARN (or name). */
+	valueFrom: string,
 };
 
 /**  Everything the service overview shows. */
@@ -515,6 +573,8 @@ export type Settings = {
 	bufferSize: number,
 	/**  The optional columns shown in log lists. */
 	logColumns: LogColumn[],
+	/**  Log lists show the newest event at the top (and follow new events there). */
+	newestFirst: boolean,
 };
 
 export type Task = {
@@ -548,6 +608,13 @@ export type TaskDefinitionInfo = {
 	memory: string | null,
 	containers: ContainerDefinitionInfo[],
 };
+
+/**  The time window a log view is opened for, as the UI picks it. */
+export type TimeWindow = 
+/**  The last `minutes` until now (presets and custom "last 2 days"). */
+{ kind: "last"; minutes: number } | 
+/**  A fixed range in the past (custom from–to). */
+{ kind: "range"; from: Timestamp; to: Timestamp };
 
 /**  How absolute timestamps are shown. */
 export type TimeZone = "local" | "utc";

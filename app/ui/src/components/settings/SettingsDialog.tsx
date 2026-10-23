@@ -20,13 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
+import { ShortcutList } from "./ShortcutsDialog";
 import { usePrefs } from "@/stores/prefs";
+import { MOD } from "@/lib/keys";
 
-type Section = "appearance" | "logs" | "about";
+type Section = "appearance" | "logs" | "shortcuts" | "about";
 
 const SECTIONS: { value: Section; label: string }[] = [
   { value: "appearance", label: "Appearance" },
   { value: "logs", label: "Logs" },
+  { value: "shortcuts", label: "Shortcuts" },
   { value: "about", label: "About" },
 ];
 
@@ -76,7 +79,7 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="Settings" title="Settings (⌘,)">
+        <Button variant="ghost" size="icon-sm" aria-label="Settings" tooltip={`Settings (${MOD},)`}>
           <SettingsIcon />
         </Button>
       </DialogTrigger>
@@ -191,6 +194,15 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     ))}
                   </div>
                 </Row>
+                <Row label="Order" hint="Where the newest events are; following sticks to them.">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.newestFirst}
+                      onCheckedChange={(checked) => void update({ newestFirst: checked === true })}
+                    />
+                    Newest first
+                  </label>
+                </Row>
                 <Row
                   label="Live tail"
                   hint="CloudWatch bills Live Tail per session minute. Paused tails catch up when they resume."
@@ -242,6 +254,15 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                   </div>
                 </Row>
               </Rows>
+            )}
+
+            {section === "shortcuts" && (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Also shown with <kbd className="font-mono">?</kbd>. Changing them comes later.
+                </p>
+                <ShortcutList />
+              </div>
             )}
 
             {section === "about" && (

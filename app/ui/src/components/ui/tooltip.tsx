@@ -2,8 +2,11 @@ import * as React from "react";
 import { cn } from "cn";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 
+/** How long the pointer rests on a control before its tooltip shows. */
+const TOOLTIP_DELAY_MS = 300;
+
 function TooltipProvider({
-  delayDuration = 0,
+  delayDuration = TOOLTIP_DELAY_MS,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
   return (
@@ -15,8 +18,13 @@ function TooltipProvider({
   );
 }
 
+/** Brings its own provider (as current shadcn does), so no app-wide provider is needed. */
 function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+  return (
+    <TooltipProvider>
+      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+    </TooltipProvider>
+  );
 }
 
 function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
@@ -47,4 +55,25 @@ function TooltipContent({
   );
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+/** A tooltip on any element (the child must accept a ref, e.g. a DOM element or `Button`). */
+function Hint({
+  content,
+  side,
+  children,
+}: {
+  content: React.ReactNode;
+  side?: React.ComponentProps<typeof TooltipPrimitive.Content>["side"];
+  children: React.ReactNode;
+}) {
+  if (!content) return children;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side} className="max-w-80 whitespace-pre-line">
+        {content}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export { Hint, Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };

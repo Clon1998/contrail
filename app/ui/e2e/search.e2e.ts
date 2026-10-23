@@ -86,6 +86,38 @@ test("level chips hide levels", async ({ page }) => {
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
 });
 
+test("level chips: middle click shows only that level, right click offers more", async ({
+  page,
+}) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = await rowCount(page);
+  const levels = page.getByRole("group", { name: "Levels" });
+  const warn = levels.getByRole("button", { name: /^WARN / });
+
+  await warn.click({ button: "middle" });
+  await expect(warn).toHaveAttribute("aria-pressed", "true");
+  await expect(levels.getByRole("button", { name: /^INFO / })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+
+  await levels.getByRole("button", { name: /^INFO / }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "INFO and above" }).click();
+  await expect(levels.getByRole("button", { name: /^ERROR / })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(levels.getByRole("button", { name: /^DEBUG / })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+
+  await warn.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Show all levels" }).click();
+  await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
+});
+
 test("hide noise from a line and show it again", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "legacy-gateway");
   const all = await rowCount(page);
@@ -99,4 +131,29 @@ test("hide noise from a line and show it again", async ({ page }) => {
   await page.getByRole("button", { name: "Noise" }).click();
   await page.getByRole("button", { name: /Show lines like GET \/actuator\/health/ }).click();
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(all);
+});
+
+test("regex mode reads the whole search as one expression", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = await rowCount(page);
+  await page.getByRole("button", { name: "Regular expression" }).click();
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  await search.fill("(");
+  await expect(search).toHaveAttribute("aria-invalid", "true");
+  // Spaces are part of the expression, not separate terms.
+  await search.fill("GET /\\S+ ");
+  await expect(search).toHaveAttribute("aria-invalid", "false");
+  await expect.poll(() => rowCount(page)).toBeLessThan(all);
+  await expect.poll(() => rowCount(page)).toBeGreaterThan(0);
+});
+
+test("the search options use the app's checkboxes", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  const wholeLine = page.getByRole("checkbox", { name: "whole line" });
+  await wholeLine.click();
+  await expect(wholeLine).toHaveAttribute("data-state", "checked");
+
+  await page.getByRole("button", { name: "Noise" }).click();
+  const hide = page.getByRole("checkbox", { name: "Hide lines containing these texts" });
+  await expect(hide).toHaveAttribute("data-state", "checked");
 });

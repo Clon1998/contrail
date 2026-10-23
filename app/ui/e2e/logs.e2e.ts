@@ -68,8 +68,24 @@ test("a task's logs from the task list, and back to all tasks", async ({ page })
 
   await expect(page.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("/ecs/legacy-gateway · 1 stream")).toBeVisible();
-  await page.getByRole("button", { name: "Show all tasks" }).click();
+  const picker = page.getByRole("combobox", { name: "Task" });
+  await expect(picker).toContainText("task ");
+  await picker.click();
+  await page.getByRole("option", { name: "All tasks" }).click();
   await expect(page.getByText("/ecs/legacy-gateway · 2 streams")).toBeVisible();
+});
+
+test("pick one task in the logs toolbar", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  await expect(page.getByText("/ecs/legacy-gateway · 2 streams")).toBeVisible();
+
+  await page.getByRole("combobox", { name: "Task" }).click();
+  // Running tasks first, with their status.
+  await page
+    .getByRole("option", { name: /RUNNING/ })
+    .first()
+    .click();
+  await expect(page.getByText("/ecs/legacy-gateway · 1 stream")).toBeVisible();
 });
 
 test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", async ({ page }) => {
@@ -127,4 +143,148 @@ test("live: following stops when scrolled up and resumes with Jump to latest", a
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
   await page.getByRole("button", { name: "Jump to latest" }).click();
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+});
+
+test("time windows: longer ones open paused, a fixed range isn't followed", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const windows = page.getByRole("radiogroup", { name: "Time window" });
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+
+  await windows.getByRole("radio", { name: "1 h" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
+  await page.getByRole("button", { name: "Resume live tail" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+
+  // Custom: the last 2 days.
+  await windows.getByRole("radio", { name: "Custom" }).click();
+  const relative = page.getByRole("form", { name: "Relative time window" });
+  await relative.getByLabel("Amount").fill("2");
+  await relative.getByRole("radio", { name: "d" }).click();
+  await relative.getByRole("button", { name: "Apply" }).click();
+  await expect(windows.getByRole("radio", { name: "2 d" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
+
+  // Custom: a fixed range.
+  await windows.getByRole("radio", { name: "2 d" }).click();
+  const range = page.getByRole("form", { name: "Fixed time range" });
+  await range.getByLabel("From").fill("2026-01-15T09:00");
+  await range.getByLabel("To").fill("2026-01-15T10:00");
+  await range.getByRole("button", { name: "Apply" }).click();
+  await expect(windows.getByRole("radio", { name: "01-15 09:00 – 01-15 10:00" })).toBeVisible();
+  await expect(page.getByText("fixed range", { exact: true })).toBeVisible();
+  await expect(page.getByRole("status", { name: /^Live tail/ })).toHaveCount(0);
+});
+
+test("newest first: the newest event on top, new events arrive there", async ({ page }) => {
+  // The shortcut works once the app is up.
+  await expect(page.getByRole("tree", { name: "Clusters" })).toBeVisible();
+  await page.keyboard.press("ControlOrMeta+,");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("button", { name: "Logs" }).click();
+  await dialog.getByRole("checkbox", { name: "Newest first" }).click();
+  await page.keyboard.press("Escape");
+
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  const top = list.locator('[aria-posinset="1"]');
+  await expect(top).toContainText("Ingested event #100000 ");
+  // Live events (the generated view grows) appear at the top while following.
+  await expect(top).not.toContainText("Ingested event #100000 ", { timeout: 5_000 });
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+
+  // Scrolled away, rows added on top don't move what's being read.
+  const scroller = list.locator("..");
+  await scroller.evaluate((el) => {
+    el.scrollTop = 2_000;
+  });
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  const readLine = () =>
+    scroller.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return document.elementFromPoint(box.left + box.width / 2, box.top + 100)?.textContent ?? "";
+    });
+  const before = await readLine();
+  const rows = Number(await list.getAttribute("aria-rowcount"));
+  await expect
+    .poll(async () => Number(await list.getAttribute("aria-rowcount")), { timeout: 5_000 })
+    .toBeGreaterThan(rows);
+  expect(await readLine()).toBe(before);
+});
+
+test("rows near the viewport are loaded before they scroll into view", async ({ page }) => {
+  // Row fetches take 300 ms here, like a slow IPC round trip.
+  await page.goto("/?rowsDelay=300");
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page.waitForTimeout(800); // the prefetch around the newest rows arrives
+
+  const rowHeight = await list
+    .locator('[role="listitem"]')
+    .first()
+    .evaluate((el) => el.clientHeight);
+  await list.locator("..").evaluate((el, by) => {
+    el.scrollTop -= by;
+  }, 300 * rowHeight);
+  // Right after the jump (well within the 300 ms fetch delay), no placeholder is on screen.
+  await expect(list.getByText("Ingested event #99700 ")).toBeVisible({ timeout: 100 });
+});
+
+test("live: new rows appear without a placeholder flash", async ({ page }) => {
+  // Row fetches take 300 ms: a new row that had to be fetched would show "…" first.
+  await page.goto("/?rowsDelay=300");
+  await openLogs(page, "demo-core", "orders-api");
+  await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
+  await page.waitForTimeout(1_000); // the initial rows are loaded
+
+  const placeholderFrames = await page.evaluate(async () => {
+    const scroller = document.querySelector('[aria-label="Log events"]')?.parentElement;
+    if (!scroller) return -1;
+    let frames = 0;
+    const end = performance.now() + 2_500; // the fake adds an event per second
+    while (performance.now() < end) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const box = scroller.getBoundingClientRect();
+      const placeholder = [...scroller.querySelectorAll('[role="listitem"]')].some((row) => {
+        const rect = row.getBoundingClientRect();
+        return rect.bottom > box.top && rect.top < box.bottom && row.textContent === "…";
+      });
+      if (placeholder) frames++;
+    }
+    return frames;
+  });
+  expect(placeholderFrames).toBe(0);
+});
+
+test("a long window starts with the newest events; scrolling up loads older ones", async ({
+  page,
+}) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list).toHaveAttribute("aria-rowcount", /^10000\d$/); // 15 min: everything
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  // 1 h opens paused (the count stays put) with only the newest half loaded.
+  await expect(list).toHaveAttribute("aria-rowcount", "50000");
+  await expect(page.getByRole("button", { name: "Load older" })).toBeVisible();
+
+  // At the top, the older half comes in and the line on screen stays put.
+  const scroller = list.locator("..");
+  await scroller.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await expect(list).toHaveAttribute("aria-rowcount", "100000");
+  await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
+  await expect(list.getByText("Ingested event #50001 ")).toBeVisible();
+});
+
+test("a long window that fits on screen loads its older events right away", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "legacy-gateway");
+  const all = Number(await list.getAttribute("aria-rowcount"));
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  await expect(list).toHaveAttribute("aria-rowcount", String(all));
+  await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
 });

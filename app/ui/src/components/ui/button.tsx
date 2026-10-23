@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
+import { Hint } from "@/components/ui/tooltip";
 import { Slot } from "radix-ui";
 
 const buttonVariants = cva(
@@ -35,19 +36,24 @@ const buttonVariants = cva(
   },
 );
 
+/**
+ * A button. `tooltip` shows a styled tooltip on hover and focus; icon-only buttons (`size="icon…"`)
+ * show their `aria-label` when no tooltip is given, so every icon button explains itself.
+ */
 function Button({
   className,
   variant = "default",
   size = "default",
   asChild = false,
+  tooltip,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    tooltip?: React.ReactNode;
   }) {
   const Comp = asChild ? Slot.Root : "button";
-
-  return (
+  const button = (
     <Comp
       data-slot="button"
       data-variant={variant}
@@ -56,6 +62,8 @@ function Button({
       {...props}
     />
   );
+  const hint = tooltip ?? (size?.startsWith("icon") ? props["aria-label"] : undefined);
+  return <Hint content={hint}>{button}</Hint>;
 }
 
 export { Button, buttonVariants };

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("DemoReadOnly/demo.user")).toBeVisible();
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
 });
 
 test("theme and accent apply immediately and stay selected", async ({ page }) => {
@@ -58,4 +58,29 @@ test("the default log window is a log setting", async ({ page }) => {
   const window = dialog.getByRole("group", { name: "Default time window" });
   await window.getByRole("button", { name: "1 h" }).click();
   await expect(window.getByRole("button", { name: "1 h" })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the settings list the keyboard shortcuts", async ({ page }) => {
+  await page.keyboard.press("ControlOrMeta+,");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("button", { name: "Shortcuts" }).click();
+  const general = dialog.getByRole("region", { name: "General" });
+  await expect(general).toContainText("Go to a service");
+  await expect(dialog.getByRole("region", { name: "Logs" })).toContainText("Only this level");
+});
+
+test("controls explain themselves in tooltips", async ({ page }) => {
+  await expect(page.getByText("DemoReadOnly", { exact: true })).toBeVisible();
+  // Icon buttons show their label.
+  await page.getByRole("button", { name: "Reload profiles" }).hover();
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "Reload profiles and sessions" }),
+  ).toHaveCount(1);
+  // The identity shows the full ARN (the previous tooltip may still be closing: filter by text).
+  await page.getByText("DemoReadOnly", { exact: true }).hover();
+  await expect(
+    page.getByRole("tooltip").filter({
+      hasText: "arn:aws:sts::111122223333:assumed-role/DemoReadOnly/demo.user",
+    }),
+  ).toHaveCount(1);
 });

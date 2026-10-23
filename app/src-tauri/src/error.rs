@@ -2,7 +2,7 @@
 
 use contrail_core::auth::AuthError;
 use contrail_core::error::SourceError;
-use contrail_core::logs::LocationError;
+use contrail_core::logs::{InvalidWindow, LocationError};
 use serde::Serialize;
 use specta::Type;
 
@@ -34,6 +34,8 @@ pub enum ErrorCode {
     Io,
     /// The service's logs can't be found in CloudWatch (other log driver, missing settings).
     LogsUnavailable,
+    /// The UI sent something unusable, e.g. an empty time window.
+    InvalidInput,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
@@ -81,6 +83,13 @@ impl From<LocationError> for ApiError {
         ApiError::new(ErrorCode::LogsUnavailable, error.to_string()).with_hint(
             "Contrail reads logs that ECS sends to CloudWatch with the awslogs driver and a stream prefix.",
         )
+    }
+}
+
+impl From<InvalidWindow> for ApiError {
+    fn from(error: InvalidWindow) -> Self {
+        ApiError::new(ErrorCode::InvalidInput, error.to_string())
+            .with_hint("Pick a time window that ends after it starts and isn't in the future.")
     }
 }
 

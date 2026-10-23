@@ -1,4 +1,4 @@
-import type { Profile, SessionStatus } from "@/bindings";
+import type { ApiError, Profile, SessionStatus } from "@/bindings";
 
 /** How a session state is shown: a short label and a colour tone. */
 export interface SessionView {
@@ -16,8 +16,16 @@ export function formatDuration(ms: number): string {
   return hours > 0 ? `${hours}h ${String(rest).padStart(2, "0")}m` : `${rest}m`;
 }
 
-/** The label and tone of a session state at time `now` (milliseconds since the epoch). */
-export function describeSession(status: SessionStatus | undefined, now: number): SessionView {
+/**
+ * The label and tone of a session state at time `now` (milliseconds since the epoch).
+ * `rejected`: AWS turned the session down although the local token cache looks fine.
+ */
+export function describeSession(
+  status: SessionStatus | undefined,
+  now: number,
+  rejected = false,
+): SessionView {
+  if (rejected) return { label: "session rejected", tone: "bad" };
   if (!status) return { label: "…", tone: "muted" };
   switch (status.state) {
     case "valid":
@@ -42,8 +50,16 @@ export function describeSession(status: SessionStatus | undefined, now: number):
 }
 
 /** Whether `aws sso login` is needed before AWS calls can work. */
-export function needsLogin(status: SessionStatus | undefined): boolean {
-  return status?.state === "expired" || status?.state === "loggedOut";
+export function needsLogin(status: SessionStatus | undefined, rejected = false): boolean {
+  return rejected || status?.state === "expired" || status?.state === "loggedOut";
+}
+
+/**
+ * Whether AWS rejected the selected profile's credentials. The token cache can look valid (or
+ * refreshable) while the session has ended on the AWS side; only a real call tells.
+ */
+export function isRejected(identity: { state: string; error?: ApiError }): boolean {
+  return identity.state === "error" && identity.error?.code === "credentials";
 }
 
 /** Whether Contrail can log in for this profile (only SSO profiles). */
@@ -70,4 +86,18 @@ export function initialProfile(
     return state === "valid" || state === "expiringSoon" || state === "refreshable";
   });
   return (usable ?? profiles[0])?.name ?? null;
+}
+
+/**
+ * A short name for who the credentials belong to: the role (for SSO the permission set, without
+ * the `AWSReservedSSO_` prefix and the hash suffix) or the IAM user.
+ */
+export function roleName(arn: string): string {
+  const resource = arn.split(":").slice(5).join(":");
+  const [kind, name = kind] = resource.split("/");
+  if (kind === "assumed-role" || kind === "user") {
+    const sso = /^AWSReservedSSO_(.+)_[0-9a-f]+$/.exec(name ?? "");
+    return sso?.[1] ?? name ?? resource;
+  }
+  return resource;
 }

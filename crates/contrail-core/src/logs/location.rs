@@ -120,6 +120,9 @@ mod tests {
                 .iter()
                 .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
+            environment: Vec::new(),
+            secrets: Vec::new(),
+            environment_files: Vec::new(),
         }
     }
 

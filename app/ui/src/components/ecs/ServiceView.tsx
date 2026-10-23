@@ -19,6 +19,7 @@ import { LogsContext, useLogs } from "@/stores/logs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 import { tabKey, useTabs } from "@/stores/tabs";
+import { Environment } from "./Environment";
 import { HealthDot } from "./HealthDot";
 import { ServiceTabs } from "./ServiceTabs";
 
@@ -96,6 +97,7 @@ function ServicePane() {
               <Deployments deployments={data.deployments} />
               <Tasks />
               <Events detail={data} />
+              {data.taskDefinition && <Environment containers={data.taskDefinition.containers} />}
             </div>
           )}
         </TabsContent>
@@ -149,6 +151,21 @@ function Header() {
   );
 }
 
+/**
+ * A long name cut at the front ("…TaskDefinition4F2A9C1E:5"), so its end, e.g. a task definition's
+ * revision, stays visible. The full name shows on hover.
+ *
+ * A right-to-left box puts the ellipsis at the start; the inner `dir="ltr"` keeps the text itself
+ * in normal order (otherwise ":5" would be moved to the front).
+ */
+function StartTruncated({ text }: { text: string }) {
+  return (
+    <span title={text} dir="rtl" className="block truncate text-left">
+      <span dir="ltr">{text}</span>
+    </span>
+  );
+}
+
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0 rounded-md border border-border px-3 py-2">
@@ -174,7 +191,9 @@ function Facts({ detail }: { detail: ServiceDetail }) {
         {summary.running} / {summary.desired}
         {summary.pending > 0 && <span className="text-warning"> · {summary.pending} pending</span>}
       </Fact>
-      <Fact label="Task definition">{summary.taskDefinition}</Fact>
+      <Fact label="Task definition">
+        <StartTruncated text={summary.taskDefinition} />
+      </Fact>
       <Fact label="Image">{container ? container.imageTag : "—"}</Fact>
       <Fact label="CPU / memory">
         {taskDefinition ? formatResources(taskDefinition.cpu, taskDefinition.memory) : "—"}
@@ -217,8 +236,8 @@ function Section({
   );
 }
 
-const TH = "px-2 py-1 text-left font-normal text-muted-foreground";
-const TD = "px-2 py-1 align-top";
+const TH = "px-2 py-1 text-left font-normal whitespace-nowrap text-muted-foreground";
+const TD = "px-2 py-1 align-top whitespace-nowrap";
 
 /** The time zone setting, for absolute times in tooltips. */
 function useTimeZone() {
@@ -252,7 +271,10 @@ function Deployments({ deployments }: { deployments: Deployment[] }) {
               >
                 {d.rolloutState ?? "—"}
               </td>
-              <td className={cn(TD, "font-mono")}>{d.taskDefinition}</td>
+              {/* `w-full max-w-0`: this column takes the remaining width and never more. */}
+              <td className={cn(TD, "w-full max-w-0 font-mono")}>
+                <StartTruncated text={d.taskDefinition} />
+              </td>
               <td className={cn(TD, "font-mono")}>
                 {d.running} / {d.desired}
               </td>
@@ -352,7 +374,8 @@ function Tasks() {
                   </td>
                   <td className={cn(TD, "font-mono text-xs")}>{task.availabilityZone ?? "—"}</td>
                   <td className={cn(TD, "font-mono")}>{task.taskDefinition.split(":").at(-1)}</td>
-                  <td className={TD}>
+                  {/* Stop reasons can be long: this column wraps and takes the remaining width. */}
+                  <td className={cn(TD, "w-full whitespace-normal")}>
                     {task.lastStatus === "STOPPED" ? (
                       <div className="space-y-0.5">
                         <div title={formatDateTime(task.stoppedAt, timeZone)}>
@@ -412,7 +435,7 @@ function Events({ detail }: { detail: ServiceDetail }) {
         {detail.events.map((event) => (
           <li key={event.id} className="flex gap-3">
             <span
-              className="w-20 shrink-0 text-muted-foreground"
+              className="w-24 shrink-0 whitespace-nowrap text-muted-foreground"
               title={formatDateTime(event.createdAt, timeZone)}
             >
               {formatAgo(event.createdAt, now)}

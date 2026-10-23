@@ -13,7 +13,9 @@ import {
   type LogViewInfo,
   type QueryError,
   type ServiceRef,
+  type TimeWindow,
 } from "@/bindings";
+import { liveMode } from "@/lib/logs";
 import { noiseKey, usePrefs } from "./prefs";
 
 /** Why a live tail is paused; it runs only while none applies. */
@@ -28,6 +30,8 @@ export interface Search {
   mode: FilterMode;
   /** Search the whole raw line, not just the message. */
   raw: boolean;
+  /** The query is one regular expression, not query syntax. */
+  regex: boolean;
   hiddenLevels: Level[];
   /** Hide lines matching the service's noise list. */
   hideNoise: boolean;
@@ -37,6 +41,7 @@ export const EMPTY_SEARCH: Search = {
   query: "",
   mode: "filter",
   raw: false,
+  regex: false,
   hiddenLevels: [],
   hideNoise: true,
 };
@@ -70,25 +75,37 @@ export interface LogsState {
   currentMatch: number;
   /** A row the list should scroll to (`nonce` makes repeated jumps to the same row work). */
   scrollTarget: { index: number; nonce: number } | null;
-  /** The time window (minutes back) the view was opened with. */
-  minutes: number;
+  /** The time window the view was opened with. */
+  timeWindow: TimeWindow;
   /** Which tab of the service view is shown. */
   tab: "overview" | "logs";
   /** A task to show alone, set from the task list ("Logs" on a task row). */
   taskFilter: { service: ServiceRef; taskId: string } | null;
   /** Expanded rows, by sequence number. */
   expanded: Record<number, boolean>;
+  /** Loading older events of the window (the view starts with the newest). */
+  older: { loading: boolean; full: boolean; error: ApiError | null };
+  /** Rows just put in front of the list (`nonce` makes each load count), for keeping the scroll. */
+  prepended: { count: number; nonce: number } | null;
 
-  /** Opens the logs of `service` (or one task of it) for the last `minutes`, then goes live. */
-  open: (ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) => Promise<void>;
+  /**
+   * Opens the logs of `service` (or one task of it) for `timeWindow`, then follows new events (live,
+   * paused or not at all, see `liveMode`).
+   */
+  open: (
+    ctx: AwsCtx,
+    service: ServiceRef,
+    timeWindow: TimeWindow,
+    taskId: string | null,
+  ) => Promise<void>;
   /** Like `open`, unless the view is already open (or opening) with exactly these arguments. */
   ensureOpen: (
     ctx: AwsCtx,
     service: ServiceRef,
-    minutes: number,
+    timeWindow: TimeWindow,
     taskId: string | null,
   ) => Promise<void>;
-  setMinutes: (minutes: number) => void;
+  setWindow: (timeWindow: TimeWindow) => void;
   close: () => Promise<void>;
   /** Makes sure the rows `from..=to` are (being) loaded. */
   fetchRows: (from: number, to: number) => void;
@@ -105,29 +122,87 @@ export interface LogsState {
   /** Shows only `taskId`'s logs, or all tasks again with `null`. */
   showTask: (service: ServiceRef, taskId: string | null) => void;
   toggleExpanded: (seq: number) => void;
+  /** Loads the next older events of the window, unless all are loaded or the buffer is full. */
+  loadOlder: () => Promise<void>;
+  /** Loads older events until the whole window is loaded (or the buffer is full). */
+  loadAll: () => Promise<void>;
 }
 
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
+const NO_OLDER = { loading: false, full: false, error: null };
 
 /**
- * The cached rows still valid after a live update: rows from `firstChanged` on moved or are new.
- * The page holding `firstChanged` keeps its rows before it, so rows on screen stay rendered (and
- * an expanded row stays open) until the page is fetched again.
+ * The cached rows after a live update. Evicted rows shift every index down (the cached rows move
+ * along instead of being dropped); rows from `firstChanged` on moved or are new: the rows that came
+ * with the update take their place, so new rows show without a fetch (no placeholder flash), and
+ * the page holding `firstChanged` keeps its rows before it (an expanded row stays open). Anything
+ * that doesn't fit contiguously is left for the list to fetch.
  */
-export function keepValidPages(
+export function applyLiveRows(
   pages: Map<number, LogEvent[]>,
-  update: Pick<LiveUpdate, "firstChanged" | "evicted">,
+  update: Pick<LiveUpdate, "firstChanged" | "evicted" | "rows">,
 ): Map<number, LogEvent[]> {
-  if (update.evicted > 0) return new Map();
+  const current = update.evicted > 0 ? shiftPages(pages, update.evicted) : pages;
   const first = update.firstChanged;
-  if (first === null) return pages;
-  const kept = new Map<number, LogEvent[]>();
-  for (const [page, rows] of pages) {
+  if (first === null) return current;
+  const next = new Map<number, LogEvent[]>();
+  for (const [page, rows] of current) {
     const start = page * PAGE_SIZE;
-    if (start + rows.length <= first) kept.set(page, rows);
-    else if (start < first) kept.set(page, rows.slice(0, first - start));
+    // The page that new rows continue gets a copy: `appendRow` extends it.
+    if (start + rows.length <= first)
+      next.set(page, start + PAGE_SIZE > first ? rows.slice() : rows);
+    else if (start < first) next.set(page, rows.slice(0, first - start));
   }
-  return kept;
+  update.rows.forEach((event, i) => appendRow(next, first + i, event));
+  return next;
+}
+
+/**
+ * The cached rows after `load_older` put `added` rows in front: every cached row moves back by
+ * `added`, and the rows that came along (listed rows from `rowsFrom`, around the previous first
+ * row) are placed, so the rows on screen stay rendered.
+ */
+export function placeOlderRows(
+  pages: Map<number, LogEvent[]>,
+  older: { added: number; rowsFrom: number; rows: LogEvent[] },
+): Map<number, LogEvent[]> {
+  const next = shiftPages(pages, -older.added);
+  older.rows.forEach((event, i) => putRow(next, older.rowsFrom + i, event));
+  return next;
+}
+
+/** Like `appendRow`, but also replaces a row already cached at `index`. */
+function putRow(pages: Map<number, LogEvent[]>, index: number, event: LogEvent) {
+  const rows = pages.get(Math.floor(index / PAGE_SIZE));
+  const offset = index % PAGE_SIZE;
+  if (rows && offset < rows.length) rows[offset] = event;
+  else appendRow(pages, index, event);
+}
+
+/** The cached rows with every index lowered by `by` (rows below 0 are gone; `by` < 0 raises). */
+function shiftPages(pages: Map<number, LogEvent[]>, by: number): Map<number, LogEvent[]> {
+  const next = new Map<number, LogEvent[]>();
+  const ordered = [...pages].sort(([a], [b]) => a - b);
+  for (const [page, rows] of ordered) {
+    rows.forEach((event, i) => {
+      const index = page * PAGE_SIZE + i - by;
+      if (index >= 0) appendRow(next, index, event);
+    });
+  }
+  return next;
+}
+
+/**
+ * Puts `event` at list position `index` if that continues its page's rows (pages hold rows from
+ * their start without gaps); the arrays in `pages` must be fresh copies, they are extended.
+ */
+function appendRow(pages: Map<number, LogEvent[]>, index: number, event: LogEvent) {
+  const page = Math.floor(index / PAGE_SIZE);
+  const offset = index % PAGE_SIZE;
+  const rows = pages.get(page) ?? (offset === 0 ? [] : undefined);
+  if (rows === undefined || rows.length !== offset) return;
+  if (!pages.has(page)) pages.set(page, rows);
+  rows.push(event);
 }
 
 /** Whether a cached page holds all of its rows (the last page only has the rest). */
@@ -144,7 +219,7 @@ export function isPageComplete(
  * zustand "vanilla" store, i.e. not bound to a React hook); components read the store of the
  * tab they render in through `LogsContext` with `useLogs`.
  */
-export function createLogsStore(minutes: number): StoreApi<LogsState> {
+export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
   /** Counts each `open` call, so an older, slower one can't overwrite a newer one. */
   let generation = 0;
   /** What the view was last opened with (see `ensureOpen`). */
@@ -173,14 +248,16 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     matchPositions: [],
     currentMatch: -1,
     scrollTarget: null,
-    minutes,
+    timeWindow,
     tab: "overview",
     taskFilter: null,
     expanded: {},
+    older: NO_OLDER,
+    prepended: null,
 
-    open: async (ctx, service, minutes, taskId) => {
+    open: async (ctx, service, timeWindow, taskId) => {
       const mine = ++generation;
-      openedWith = openKey(ctx, service, minutes, taskId);
+      openedWith = openKey(ctx, service, timeWindow, taskId);
       const previous = get().view;
       set({
         service,
@@ -193,11 +270,13 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
         pages: new Map(),
         matchPositions: [],
         currentMatch: -1,
+        older: NO_OLDER,
+        prepended: null,
         pauseReasons: { ...get().pauseReasons, user: false },
       });
       if (previous) void commands.closeLogView(previous.viewId);
 
-      const opened = await commands.openServiceLogs(ctx, service, minutes, taskId);
+      const opened = await commands.openServiceLogs(ctx, service, timeWindow, taskId);
       if (mine !== generation) {
         if (opened.status === "ok") void commands.closeLogView(opened.data.viewId);
         return;
@@ -211,6 +290,10 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
       // The search carries over to the new view.
       await get().applySearch();
 
+      const mode = liveMode(timeWindow);
+      if (mode === "off") return;
+      if (mode === "paused") set({ pauseReasons: { ...get().pauseReasons, user: true } });
+
       // Live updates for this view: new state and counts, and which cached rows are stale.
       const channel = new Channel<LiveUpdate>((update) => {
         const current = get().view;
@@ -220,26 +303,28 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
           view: { ...current, stats: update.stats },
           visible: update.visible,
           matches: update.matches,
-          pages: keepValidPages(get().pages, update),
+          pages: applyLiveRows(get().pages, update),
         });
         if (update.firstChanged !== null || update.evicted > 0) epoch++;
         if (get().search.mode === "highlight" && update.firstChanged !== null) {
           scheduleMatchRefresh();
         }
       });
-      await commands.startLive(view.viewId, channel);
-      // Auto-pause may already apply (e.g. opened while hidden).
-      if (Object.values(get().pauseReasons).some(Boolean)) {
-        void commands.pauseLive(view.viewId);
-      }
+      // Starts paused when a pause applies already (long window, window hidden, background tab),
+      // so no Live Tail session is opened for nothing.
+      await commands.startLive(
+        view.viewId,
+        channel,
+        Object.values(get().pauseReasons).some(Boolean),
+      );
     },
 
-    ensureOpen: async (ctx, service, minutes, taskId) => {
-      if (openedWith === openKey(ctx, service, minutes, taskId)) return;
-      await get().open(ctx, service, minutes, taskId);
+    ensureOpen: async (ctx, service, timeWindow, taskId) => {
+      if (openedWith === openKey(ctx, service, timeWindow, taskId)) return;
+      await get().open(ctx, service, timeWindow, taskId);
     },
 
-    setMinutes: (minutes) => set({ minutes }),
+    setWindow: (timeWindow) => set({ timeWindow }),
 
     close: async () => {
       generation++;
@@ -312,6 +397,7 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
         mode: search.mode,
         hiddenLevels: search.hiddenLevels,
         searchRaw: search.raw,
+        regex: search.regex,
         noise,
       });
       if (get().view?.viewId !== view.viewId || result.status !== "ok") return;
@@ -361,6 +447,47 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     showTask: (service, taskId) =>
       set({ taskFilter: taskId ? { service, taskId } : null, tab: "logs" }),
     toggleExpanded: (seq) => set((s) => ({ expanded: { ...s.expanded, [seq]: !s.expanded[seq] } })),
+
+    loadOlder: async () => {
+      const { view, older } = get();
+      if (!view || view.complete || older.loading || older.full) return;
+      set({ older: { ...older, loading: true, error: null } });
+      const result = await commands.loadOlder(view.viewId);
+      const current = get().view;
+      if (current?.viewId !== view.viewId) return;
+      if (result.status === "error") {
+        set({ older: { loading: false, full: false, error: result.error } });
+        return;
+      }
+      const loaded = result.data;
+      epoch++; // row fetches that started before are stale (indices moved)
+      set({
+        view: {
+          ...current,
+          stats: loaded.stats,
+          loadedFrom: loaded.loadedFrom,
+          complete: loaded.complete,
+        },
+        visible: loaded.visible,
+        matches: loaded.matches,
+        pages: placeOlderRows(get().pages, loaded),
+        older: { loading: false, full: loaded.full, error: null },
+        prepended:
+          loaded.added > 0
+            ? { count: loaded.added, nonce: (get().prepended?.nonce ?? 0) + 1 }
+            : get().prepended,
+      });
+      if (get().search.mode === "highlight") scheduleMatchRefresh();
+    },
+
+    loadAll: async () => {
+      const viewId = get().view?.viewId;
+      while (viewId !== undefined && get().view?.viewId === viewId) {
+        const { view, older } = get();
+        if (!view || view.complete || older.full || older.error) return;
+        await get().loadOlder();
+      }
+    },
   }));
 
   /** Fetches the rows that match (highlight mode) for marking and navigation. */
@@ -385,8 +512,10 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
   return store;
 }
 
-function openKey(ctx: AwsCtx, service: ServiceRef, minutes: number, taskId: string | null) {
-  return [ctx.profile, ctx.region, service.clusterArn, service.serviceName, minutes, taskId].join(
+function openKey(ctx: AwsCtx, service: ServiceRef, timeWindow: TimeWindow, taskId: string | null) {
+  const range =
+    timeWindow.kind === "last" ? timeWindow.minutes : `${timeWindow.from}/${timeWindow.to}`;
+  return [ctx.profile, ctx.region, service.clusterArn, service.serviceName, range, taskId].join(
     "|",
   );
 }

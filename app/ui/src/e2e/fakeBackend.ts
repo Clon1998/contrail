@@ -1,5 +1,5 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
-import { mockIPC } from "@tauri-apps/api/mocks";
+import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import type {
   FieldMapping,
   FilterResult,
@@ -24,6 +24,8 @@ import type {
   ServiceSummary,
   SessionStatus,
   Task,
+  TimeWindow,
+  OlderEvents,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -162,9 +164,16 @@ export interface FakeBackendOptions {
   liveIntervalMs?: number;
   /** The first this many live tail starts fail with an expired session. */
   liveFailures?: number;
+  /** Profiles whose session looks valid locally but is rejected by AWS until the next login. */
+  rejectedSessions?: string[];
+  /** Delay of row fetches, like the real IPC round trip (default: none). */
+  rowsDelayMs?: number;
 }
 
-/** Creates the IPC handler. Each call starts from the initial demo state. */
+/**
+ * Creates the IPC handler. Each call starts from the initial demo state. `stop()` ends all live
+ * tails.
+ */
 export function createFakeBackend(options: FakeBackendOptions = {}) {
   const now = Date.now();
   const iso = (ms: number) => new Date(ms).toISOString();
@@ -206,11 +215,14 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       autoPauseMinutes: 10,
       bufferSize: 100_000,
       logColumns: [],
+      newestFirst: false,
     },
     noise: {},
     fieldMappings: {},
     ...options.prefs,
   };
+
+  const rejected = new Set(options.rejectedSessions);
 
   /** What an AWS call would see: the account ID, or the error for unusable credentials. */
   function checkCredentials(ctx: AwsCtx): string {
@@ -218,10 +230,10 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     if (!profile) throw apiError("config", `profile "${ctx.profile}" not found`);
     if (profile.auth.kind === "misconfigured") throw apiError("config", profile.auth.problem);
     const state = status(ctx.profile).state;
-    if (state === "expired" || state === "loggedOut") {
+    if (state === "expired" || state === "loggedOut" || rejected.has(ctx.profile)) {
       throw apiError(
         "credentials",
-        `no valid credentials for profile "${ctx.profile}"`,
+        `no valid credentials for profile "${ctx.profile}": Session token not found or invalid`,
         `Log in again (aws sso login --profile ${ctx.profile}).`,
       );
     }
@@ -259,6 +271,31 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return filter.matched.map((i) => events[i]).filter((e): e is LogEvent => e !== undefined);
   }
 
+  /** The listed rows of a view from `first` on (at most 500). */
+  function changedRows(viewId: number, first: number): LogEvent[] {
+    const rows = listed(viewId);
+    if (rows === undefined) return [];
+    return typeof rows === "function" ? rows(first, 500) : rows.slice(first, first + 500);
+  }
+
+  /** Events a view holds back until `load_older` (long windows start with the newest). */
+  const olderPending = new Map<number, LogEvent[]>();
+
+  /** How many rows a view lists (all events, or the matches when filtering). */
+  function listedCount(viewId: number): number {
+    const rows = listed(viewId);
+    if (Array.isArray(rows)) return rows.length;
+    return bigVisible(viewId);
+  }
+
+  /** Generated views of long windows hide their older half until `load_older`. */
+  const bigHidden = new Map<number, number>();
+
+  /** How many rows a generated view lists. */
+  function bigVisible(viewId: number): number {
+    return (bigCounts.get(viewId) ?? BIG_VIEW) - (bigHidden.get(viewId) ?? 0);
+  }
+
   /** Current size of generated views (they grow while live). */
   const bigCounts = new Map<number, number>();
 
@@ -289,8 +326,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     const tail = tails.get(viewId);
     const events = views.get(viewId);
     if (!tail || events === undefined) return;
-    const total =
-      typeof events === "function" ? (bigCounts.get(viewId) ?? BIG_VIEW) : events.length;
+    const total = typeof events === "function" ? bigVisible(viewId) : events.length;
     const filter = filters.get(viewId);
     if (filter && Array.isArray(events)) {
       // Check the events added since the search was set (or last checked).
@@ -309,6 +345,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       matches: filter ? filter.matched.length : null,
       firstChanged,
       evicted: 0,
+      // Like the Rust side: a few changed rows travel with the update.
+      rows:
+        firstChanged !== null && visible - firstChanged <= 500
+          ? changedRows(viewId, firstChanged)
+          : [],
       message,
     };
     sendOnChannel(tail.channel, tail.sent++, update);
@@ -329,9 +370,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     tail.timer = setInterval(() => {
       const events = views.get(viewId);
       if (typeof events === "function") {
-        const count = bigCounts.get(viewId) ?? BIG_VIEW;
-        bigCounts.set(viewId, count + 1);
-        return sendLive(viewId, "live", count);
+        bigCounts.set(viewId, (bigCounts.get(viewId) ?? BIG_VIEW) + 1);
+        return sendLive(viewId, "live", bigVisible(viewId) - 1);
       }
       if (!events || events.length === 0) return sendLive(viewId, "live", null);
       const template = events[events.length % Math.min(events.length, 25)] ?? events[0];
@@ -349,7 +389,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     }, options.liveIntervalMs ?? 1_000);
   }
 
-  return async (cmd: string, payload?: InvokeArgs): Promise<unknown> => {
+  const handler = async (cmd: string, payload?: InvokeArgs): Promise<unknown> => {
     const args = payload as Record<string, unknown> | undefined;
     switch (cmd) {
       case "app_info":
@@ -382,6 +422,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         });
         await new Promise((resolve) => setTimeout(resolve, options.loginDelayMs ?? 0));
         expiry[name] = Date.now() + 8 * HOUR;
+        rejected.delete(name);
         sendProgress(channel, 1, {
           kind: "output",
           line: "Successfully logged into Start URL: https://demo-corp.awsapps.com/start",
@@ -417,16 +458,31 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           .filter((e) => taskId === null || e.taskId === taskId)
           .map((e) => (mapping ? applyMapping(e, mapping) : e));
         const viewId = nextViewId++;
+        const timeWindow = args?.window as TimeWindow;
         // The high-volume demo service gets 100,000 generated events, for scrolling tests.
         const big = service.serviceName === "event-ingest";
         if (big) bigCounts.set(viewId, BIG_VIEW);
+        // Like the Rust side, long windows start with the newest events: here the newer half,
+        // the older half comes with `load_older`.
+        const long = timeWindow.kind === "range" || timeWindow.minutes > 15;
+        const half = long ? Math.floor((big ? BIG_VIEW : events.length) / 2) : 0;
+        if (half > 0 && big) bigHidden.set(viewId, half);
+        else if (half > 0) olderPending.set(viewId, events.slice(0, half));
         views.set(
           viewId,
           big
-            ? generatedRows(service.serviceName, () => bigCounts.get(viewId) ?? BIG_VIEW)
-            : events,
+            ? generatedRows(
+                service.serviceName,
+                () => bigCounts.get(viewId) ?? BIG_VIEW,
+                () => bigHidden.get(viewId) ?? 0,
+              )
+            : events.slice(half),
         );
-        const minutes = args?.minutes as number;
+        const to = timeWindow.kind === "range" ? timeWindow.to : new Date().toISOString();
+        const from =
+          timeWindow.kind === "range"
+            ? timeWindow.from
+            : new Date(Date.now() - timeWindow.minutes * 60_000).toISOString();
         const info: LogViewInfo = {
           viewId,
           location: recordedService?.location ?? {
@@ -444,14 +500,55 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
                 info: BIG_VIEW - BIG_VIEW / 50,
                 warn: BIG_VIEW / 50,
               }
-            : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
+            : half > 0 && !big
+              ? statsOf(events.slice(half))
+              : { ...(recordedService?.stats ?? emptyStats()), total: events.length },
           truncated: big || (recordedService?.truncated ?? false),
-          from: new Date(Date.now() - minutes * 60_000).toISOString(),
-          to: new Date().toISOString(),
+          from,
+          to,
+          loadedFrom: half > 0 ? (events[half]?.cwTimestamp ?? from) : from,
+          complete: half === 0,
         };
         return info;
       }
+      case "load_older": {
+        const viewId = args?.viewId as number;
+        const events = views.get(viewId);
+        if (!events) throw apiError("notFound", "log view is closed");
+        const before = listedCount(viewId);
+        const older = olderPending.get(viewId) ?? [];
+        olderPending.delete(viewId);
+        bigHidden.delete(viewId);
+        if (Array.isArray(events) && older.length > 0) {
+          const all = [...older, ...events];
+          views.set(viewId, all);
+          const filter = filters.get(viewId);
+          if (filter) {
+            filter.matched = all.flatMap((e, i) => (filter.accepts(e) ? [i] : []));
+            filter.checked = all.length;
+          }
+        }
+        const visible = listedCount(viewId);
+        const added = visible - before;
+        const rowsFrom = Math.max(0, added - 300);
+        const rows = listed(viewId);
+        const now = views.get(viewId);
+        return {
+          added,
+          visible,
+          matches: filters.get(viewId)?.matched.length ?? null,
+          stats: Array.isArray(now) ? statsOf(now) : emptyStats(),
+          loadedFrom: Array.isArray(now) ? (now[0]?.cwTimestamp ?? "") : "",
+          complete: true,
+          full: false,
+          rowsFrom,
+          rows: Array.isArray(rows)
+            ? rows.slice(rowsFrom, added + 300)
+            : (rows?.(rowsFrom, added + 300 - rowsFrom) ?? []),
+        } satisfies OlderEvents;
+      }
       case "get_log_rows": {
+        if (options.rowsDelayMs) await new Promise((r) => setTimeout(r, options.rowsDelayMs));
         const events = views.get(args?.viewId as number);
         if (!events) throw apiError("notFound", "log view is closed");
         const offset = args?.offset as number;
@@ -465,7 +562,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       case "set_log_filter": {
         const viewId = args?.viewId as number;
         const spec = args?.spec as FilterSpec;
-        const compiled = compileQuery(spec.query);
+        const compiled = spec.regex ? compileRegex(spec.query) : compileQuery(spec.query);
         if ("error" in compiled) {
           return { kind: "invalid", error: compiled.error } satisfies FilterResult;
         }
@@ -474,9 +571,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           spec.query.trim() === "" && spec.hiddenLevels.length === 0 && spec.noise.length === 0;
         if (trivial || !Array.isArray(events)) {
           filters.delete(viewId);
-          const visible = Array.isArray(events)
-            ? events.length
-            : (bigCounts.get(viewId) ?? BIG_VIEW);
+          const visible = Array.isArray(events) ? events.length : bigVisible(viewId);
           return {
             kind: "applied",
             visible,
@@ -509,9 +604,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       }
       case "export_log_view": {
         const rows = listed(args?.viewId as number);
-        const count = Array.isArray(rows)
-          ? rows.length
-          : (bigCounts.get(args?.viewId as number) ?? BIG_VIEW);
+        const count = Array.isArray(rows) ? rows.length : bigVisible(args?.viewId as number);
         const last = exports.at(-1);
         if (last) Object.assign(last, { format: args?.format as string, count });
         return count;
@@ -529,7 +622,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const viewId = args?.viewId as number;
         const tail = { channel: args?.onUpdate as { id: number }, sent: 0 };
         tails.set(viewId, tail);
-        startTail(viewId);
+        if (args?.paused) sendLive(viewId, "paused", null);
+        else startTail(viewId);
         return null;
       }
       case "pause_live": {
@@ -608,11 +702,28 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         throw new Error(`fake backend: unknown command ${cmd}`);
     }
   };
+  const stop = () => tails.forEach((tail) => clearInterval(tail.timer));
+  return Object.assign(handler, { stop });
 }
+
+/** Stops the installed backend's live tail timers (see `uninstallFakeBackend`). */
+let stopInstalled: (() => void) | null = null;
 
 /** Routes all `invoke` calls to a fresh fake backend. */
 export function installFakeBackend(options?: FakeBackendOptions) {
-  mockIPC(createFakeBackend(options));
+  const backend = createFakeBackend(options);
+  stopInstalled = backend.stop;
+  mockIPC(backend);
+}
+
+/**
+ * Removes the mocked IPC after a test. Live tails still running (a test may end with a view
+ * open) are stopped first: their timers would otherwise fire into the next test without IPC.
+ */
+export function uninstallFakeBackend() {
+  stopInstalled?.();
+  stopInstalled = null;
+  clearMocks();
 }
 
 function emptyStats(): BufferStats {
@@ -623,11 +734,12 @@ function emptyStats(): BufferStats {
 const BIG_VIEW = 100_000;
 
 /** Simple events (100,000 at first), made only for the rows that are asked for. */
-function generatedRows(service: string, count: () => number) {
+function generatedRows(service: string, count: () => number, hidden: () => number = () => 0) {
   const start = Date.now() - BIG_VIEW * 9;
   return (offset: number, limit: number): LogEvent[] => {
     const rows: LogEvent[] = [];
-    for (let i = offset; i < Math.min(offset + limit, count()); i++) {
+    // Listed row `j` is event `j + hidden()` (the hidden ones are the oldest).
+    for (let i = offset + hidden(); i < Math.min(offset + hidden() + limit, count()); i++) {
       const timestamp = new Date(start + i * 9).toISOString();
       const warn = i % 50 === 0;
       rows.push({
@@ -670,6 +782,18 @@ type FakeTest = (e: LogEvent, raw: boolean) => boolean;
  * A simplified version of the Rust query language (crates/contrail-core/src/query.rs) for the
  * UI tests: text, "phrases", level:X / level>=X, field:value (* globs), -negation.
  */
+/** Regex mode: the whole query is one case-insensitive JavaScript regex (close enough here). */
+function compileRegex(query: string): ReturnType<typeof compileQuery> {
+  try {
+    const regex = new RegExp(query, "i");
+    return { test: (e, raw) => regex.test(raw ? e.raw : e.line.message), terms: [] };
+  } catch {
+    return {
+      error: { message: "invalid regular expression", start: 0, end: query.length, hint: null },
+    };
+  }
+}
+
 function compileQuery(
   query: string,
 ):

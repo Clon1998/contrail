@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { matchWords } from "@/lib/search";
-import { accountId } from "@/lib/session";
+import { accountId, isRejected } from "@/lib/session";
 import { useProfiles } from "@/stores/profiles";
 import { SessionBadge, SessionDot } from "./SessionBadge";
 
@@ -21,6 +21,7 @@ export function ProfileSwitcher() {
   const statuses = useProfiles((s) => s.statuses);
   const selected = useProfiles((s) => s.selected);
   const select = useProfiles((s) => s.select);
+  const rejected = useProfiles((s) => isRejected(s.identity));
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export function ProfileSwitcher() {
           <span className="flex min-w-0 items-center gap-2">
             {current ? (
               <>
-                <SessionDot status={statuses[current.name]} />
+                <SessionDot status={statuses[current.name]} rejected={rejected} />
                 <span className="truncate font-medium">{current.name}</span>
                 {accountId(current) && (
                   <span className="font-mono text-xs text-muted-foreground">
@@ -92,7 +93,10 @@ export function ProfileSwitcher() {
                   {profile.auth.kind === "misconfigured" ? (
                     <span className="text-xs text-destructive">misconfigured</span>
                   ) : (
-                    <SessionBadge status={statuses[profile.name]} />
+                    <SessionBadge
+                      status={statuses[profile.name]}
+                      rejected={rejected && profile.name === selected}
+                    />
                   )}
                 </CommandItem>
               ))}
