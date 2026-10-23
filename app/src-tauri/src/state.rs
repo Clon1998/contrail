@@ -1,8 +1,8 @@
 //! Process-wide app state, managed by Tauri and injected into commands as `State<AppState>`.
 
 use std::path::Path;
-use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
+use std::sync::{Arc, Mutex};
 
 use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
@@ -33,6 +33,10 @@ pub struct AppState {
     /// The next view ID. An atomic integer needs no lock (like Java's `AtomicInteger`).
     pub next_view_id: AtomicU32,
     pub demo: bool,
+    /// The update found by the last check, ready to install.
+    pub update: Mutex<Option<tauri_plugin_updater::Update>>,
+    /// Stops the running update download (see `commands::update`).
+    pub update_cancel: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 impl AppState {
@@ -50,6 +54,8 @@ impl AppState {
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::in_memory(),
             demo: true,
+            update: Mutex::default(),
+            update_cancel: Mutex::default(),
         }
     }
 
@@ -65,6 +71,8 @@ impl AppState {
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::load(data_dir.join("prefs.json")),
             demo: false,
+            update: Mutex::default(),
+            update_cancel: Mutex::default(),
         })
     }
 }

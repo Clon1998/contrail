@@ -136,6 +136,8 @@ pub struct Settings {
     pub log_columns: Vec<LogColumn>,
     /// Log lists show the newest event at the top (and follow new events there).
     pub newest_first: bool,
+    /// Look for a new Contrail version on start (at most once a day).
+    pub check_for_updates: bool,
 }
 
 /// Written by hand (instead of derived) because the numbers don't default to 0.
@@ -153,6 +155,7 @@ impl Default for Settings {
             buffer_size: DEFAULT_BUFFER_SIZE,
             log_columns: Vec::new(),
             newest_first: false,
+            check_for_updates: true,
         }
     }
 }
@@ -185,6 +188,7 @@ impl Settings {
         read(value, "bufferSize", &mut settings.buffer_size);
         read(value, "logColumns", &mut settings.log_columns);
         read(value, "newestFirst", &mut settings.newest_first);
+        read(value, "checkForUpdates", &mut settings.check_for_updates);
         settings
     }
 
@@ -212,6 +216,8 @@ pub struct Prefs {
     pub noise: BTreeMap<String, Vec<String>>,
     /// Field mappings per service (by [`ServiceKey::storage_key`]).
     pub field_mappings: BTreeMap<String, FieldMapping>,
+    /// When the automatic update check last ran (Unix seconds).
+    pub last_update_check: Option<u32>,
 }
 
 impl Prefs {
@@ -231,6 +237,7 @@ impl Prefs {
             settings: Settings,
             noise: BTreeMap<String, Vec<String>>,
             field_mappings: BTreeMap<String, FieldMapping>,
+            last_update_check: Option<u32>,
         }
 
         /// Settings are read leniently (see [`Settings::from_saved`]), so an unknown value never
@@ -252,7 +259,18 @@ impl Prefs {
             settings: stored.settings,
             noise: stored.noise,
             field_mappings: stored.field_mappings,
+            last_update_check: stored.last_update_check,
         })
+    }
+
+    /// Whether the automatic update check should run at `now` (Unix seconds): switched on, and
+    /// not in the last 24 hours (or the clock went backwards since).
+    pub fn update_check_due(&self, now: u32) -> bool {
+        const DAY: u32 = 24 * 60 * 60;
+        self.settings.check_for_updates
+            && self
+                .last_update_check
+                .is_none_or(|last| now < last || now - last >= DAY)
     }
 
     pub fn set_region_override(&mut self, profile: &str, region: Option<String>) {
@@ -451,7 +469,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"checkForUpdates":true}"#
         );
     }
 
@@ -470,6 +488,19 @@ mod tests {
                 ..Settings::default()
             }
         );
+    }
+
+    #[test]
+    fn the_update_check_runs_at_most_once_a_day_when_switched_on() {
+        let day = 24 * 60 * 60;
+        let mut prefs = Prefs::default();
+        assert!(prefs.update_check_due(1_000), "never checked");
+        prefs.last_update_check = Some(1_000);
+        assert!(!prefs.update_check_due(1_000 + day - 1));
+        assert!(prefs.update_check_due(1_000 + day));
+        assert!(prefs.update_check_due(10), "the clock went backwards");
+        prefs.settings.check_for_updates = false;
+        assert!(!prefs.update_check_due(1_000 + 2 * day));
     }
 
     #[test]

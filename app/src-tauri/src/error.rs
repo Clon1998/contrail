@@ -36,6 +36,10 @@ pub enum ErrorCode {
     LogsUnavailable,
     /// The UI sent something unusable, e.g. an empty time window.
     InvalidInput,
+    /// Checking for, downloading or installing an update failed.
+    Update,
+    /// The user cancelled (e.g. an update download).
+    Cancelled,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;

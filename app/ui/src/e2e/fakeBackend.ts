@@ -32,6 +32,7 @@ import type {
   Trace,
   TopicLink,
   TraceHit,
+  UpdateInfo,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -176,6 +177,8 @@ export interface FakeBackendOptions {
   rowsDelayMs?: number;
   /** Delay of `load_older` (default: none). */
   olderDelayMs?: number;
+  /** A newer version the update check finds (default: none, up to date). */
+  update?: string;
 }
 
 /**
@@ -224,9 +227,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       bufferSize: 100_000,
       logColumns: [],
       newestFirst: false,
+      checkForUpdates: true,
     },
     noise: {},
     fieldMappings: {},
+    lastUpdateCheck: null,
     ...options.prefs,
   };
 
@@ -489,6 +494,26 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         }
         return links;
       }
+      case "check_for_update": {
+        if (!options.update) return null;
+        return {
+          version: options.update,
+          currentVersion: "0.1.0",
+          notes: "### Features\n- Something new",
+          date: new Date().toISOString(),
+          installBlocker: null,
+        } satisfies UpdateInfo;
+      }
+      case "install_update": {
+        // Progress in two steps, then "restart" (nothing happens in the browser).
+        const channel = args?.onProgress as { id: number };
+        sendOnChannel(channel, 0, { downloaded: 512_000, total: 1_024_000 });
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        sendOnChannel(channel, 1, { downloaded: 1_024_000, total: 1_024_000 });
+        return null;
+      }
+      case "cancel_update":
+        return null;
       case "reveal_secret": {
         checkCredentials(args?.ctx as AwsCtx);
         const name = (args?.valueFrom as string).split("/").at(-1);
