@@ -63,6 +63,8 @@ export const commands = {
 	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
 	 */
 	revealSecret: (ctx: AwsCtx, valueFrom: string) => typedError<string, ApiError>(__TAURI_INVOKE("reveal_secret", { ctx, valueFrom })),
+	/**  Searches `services` for `id` in `window` and merges what they logged about it. */
+	traceId: (ctx: AwsCtx, services: ServiceRef[], id: string, window: TimeWindow) => typedError<Trace, ApiError>(__TAURI_INVOKE("trace_id", { ctx, services, id, window })),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */
@@ -573,6 +575,16 @@ export type ServiceSummary = {
 	taskDefinition: string,
 };
 
+/**  What the trace shows of one service. */
+export type ServiceTrace = {
+	service: string,
+	events: number,
+	first: Timestamp,
+	last: Timestamp,
+	/**  The state of the service's last status event, if it logged any. */
+	lastState: string | null,
+};
+
 /**  The state of a profile's SSO session, as shown in the profile switcher. */
 export type SessionStatus = 
 /**  The access token is valid until `expires_at`. */
@@ -680,6 +692,38 @@ export type TimeZone = "local" | "utc";
  *  `#[specta(transparent)]` + `type = String` tell the bindings generator it is a plain string.
  */
 export type Timestamp = string;
+
+export type Trace = {
+	/**  Oldest first. */
+	hits: TraceHit[],
+	/**  In the order the services were first reached. */
+	services: ServiceTrace[],
+	outcome: TraceOutcome,
+	/**  A service had more matching events than `limit`: its newest are missing. */
+	truncated: boolean,
+	failures: TraceFailure[],
+};
+
+/**  A search that failed for one service; the others still count. */
+export type TraceFailure = {
+	service: string,
+	message: string,
+};
+
+/**  An event of the trace and the service that logged it. */
+export type TraceHit = {
+	service: string,
+	event: LogEvent,
+};
+
+/**  Whether the document finished everywhere it went. */
+export type TraceOutcome = 
+/**  Some service's last state is FAILED. */
+"failed" | 
+/**  Every service with status events ended in COMPLETED. */
+"completed" | 
+/**  A service is still in an earlier state (or there are no status events). */
+"open";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

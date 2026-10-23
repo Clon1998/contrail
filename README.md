@@ -44,6 +44,9 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   this" builds a per-service noise list. See [docs/query-syntax.md](docs/query-syntax.md).
 - **Pipeline status events** (a framework logging `<prefix>.state` + `<prefix>.correlationId` per document step):
   state badges, state chips (`state:FAILED`) and "Show this document" (`correlation:<id>`).
+- **Trace across services:** an expanded line with a correlation or trace ID searches the chosen services of
+  the cluster for it (FilterLogEvents, a time span around the line) and shows the way it took: services in
+  order with their last state, every event on a timeline, and whether the document completed or failed.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
 - **Keyboard shortcuts:** press `?`, or see Settings → Shortcuts.

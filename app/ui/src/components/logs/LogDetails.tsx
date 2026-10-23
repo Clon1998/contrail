@@ -16,6 +16,8 @@ import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { CopyButton } from "@/components/CopyButton";
 import { Ansi } from "./Ansi";
+import { columnValue } from "./columns";
+import { TraceDialog } from "./TraceDialog";
 import { StateBadge } from "./StateBadge";
 
 /** Stack traces longer than this start collapsed. */
@@ -113,6 +115,7 @@ function StatusSummary({ event }: { event: LogEvent }) {
           >
             <FileSearchIcon /> Show this document
           </Button>
+          <TraceDialog id={id} term={`correlation:${id}`} at={event.timestamp} />
         </>
       )}
     </div>
@@ -133,6 +136,8 @@ export function LogDetails({ event }: { event: LogEvent }) {
   const embedded = splitEmbeddedJson(line.message, line.jsonSpan);
   const embeddedPretty = embedded ? prettyJson(embedded.json) : null;
   const rawPretty = line.kind === "ecs" || line.kind === "json" ? prettyJson(event.raw) : null;
+  // A correlation or trace ID (e.g. an API's `traceId`) can be followed across services.
+  const traceId = columnValue(event, "correlation");
 
   return (
     <div className="space-y-3 border-l-2 border-primary/60 bg-muted/30 py-2 pr-4 pl-4">
@@ -149,6 +154,9 @@ export function LogDetails({ event }: { event: LogEvent }) {
           >
             <EyeOffIcon /> Hide lines like this
           </Button>
+        )}
+        {!event.status?.correlationId && traceId && (
+          <TraceDialog id={traceId} term={`"${traceId}"`} at={event.timestamp} />
         )}
       </div>
 

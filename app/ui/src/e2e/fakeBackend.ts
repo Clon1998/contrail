@@ -28,6 +28,9 @@ import type {
   OlderEvents,
   RowBlock,
   RowWindow,
+  ServiceTrace,
+  Trace,
+  TraceHit,
 } from "@/bindings";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -464,6 +467,52 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         checkCredentials(args?.ctx as AwsCtx);
         const name = (args?.valueFrom as string).split("/").at(-1);
         return `demo-${name}-not-a-real-secret`;
+      }
+      case "trace_id": {
+        const ctx = args?.ctx as AwsCtx;
+        const account = checkCredentials(ctx);
+        const id = args?.id as string;
+        const recorded = logsData(account, ctx.region ?? "eu-central-1").services;
+        const hits: TraceHit[] = [];
+        const failures: { service: string; message: string }[] = [];
+        for (const service of args?.services as ServiceRef[]) {
+          const cluster = service.clusterArn.split("/").at(-1);
+          const data = recorded[`${cluster}/${service.serviceName}`];
+          if (!data) {
+            failures.push({ service: service.serviceName, message: "no demo logs" });
+            continue;
+          }
+          for (const event of data.events) {
+            if (event.raw.includes(id)) hits.push({ service: service.serviceName, event });
+          }
+        }
+        hits.sort((a, b) => a.event.timestamp.localeCompare(b.event.timestamp));
+        // The summary like the Rust side (crates/contrail-core/src/logs/trace.rs).
+        const services: ServiceTrace[] = [];
+        for (const hit of hits) {
+          const found = services.find((s) => s.service === hit.service);
+          const state = hit.event.status?.state ?? null;
+          if (found) {
+            found.events++;
+            found.last = hit.event.timestamp;
+            if (state) found.lastState = state;
+          } else {
+            services.push({
+              service: hit.service,
+              events: 1,
+              first: hit.event.timestamp,
+              last: hit.event.timestamp,
+              lastState: state,
+            });
+          }
+        }
+        const states = services.flatMap((s) => (s.lastState ? [s.lastState] : []));
+        const outcome = states.includes("FAILED")
+          ? "failed"
+          : states.length > 0 && states.every((s) => s === "COMPLETED")
+            ? "completed"
+            : "open";
+        return { hits, services, outcome, truncated: false, failures } satisfies Trace;
       }
       case "describe_service":
         return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;

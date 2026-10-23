@@ -94,8 +94,15 @@ impl LogSource for FakeLogs {
         let Some((format, interval, service)) = profile_of(&selection.log_group) else {
             return Ok(Backfill::default());
         };
-        let mut events: Vec<RawEvent> = selection
-            .streams
+        // A whole-service search (a trace) gives only the stream prefix: invent two task streams.
+        let prefixed: Vec<String> = match (&selection.stream_prefix, selection.streams.is_empty()) {
+            (Some(prefix), true) => ["0a1b2c3d4e5f", "6a7b8c9d0e1f"]
+                .iter()
+                .map(|task| format!("{prefix}{task}"))
+                .collect(),
+            _ => selection.streams.clone(),
+        };
+        let mut events: Vec<RawEvent> = prefixed
             .iter()
             .flat_map(|stream| generate(stream, service, format, interval, range))
             .collect();
