@@ -10,7 +10,7 @@ pub mod parse;
 pub mod source;
 mod spring;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::timestamp::Timestamp;
@@ -26,7 +26,9 @@ pub use source::{
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
 /// `Level::Warn > Level::Info` works for "WARN and above" filters).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Type)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Level {
     Trace,

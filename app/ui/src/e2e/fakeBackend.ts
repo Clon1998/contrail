@@ -255,6 +255,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       state,
       sampled: false,
       stats: { ...emptyStats(), total, info: total },
+      visible: total,
+      matches: null,
       firstChanged,
       evicted: 0,
       message: null,
