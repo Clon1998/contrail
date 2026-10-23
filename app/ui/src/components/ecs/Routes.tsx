@@ -20,12 +20,12 @@ import {
 } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { buildRouteGraph, type RouteGraph, type RouteNode } from "@/lib/routes";
+import { buildRouteGraph, pathThrough, type RouteGraph, type RouteNode } from "@/lib/routes";
 import { useEcs } from "@/stores/ecs";
 import { SecretValue, Value } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
 
-const COLUMN_TITLES = ["From", "Topics", "To"] as const;
+const COLUMN_TITLES = ["Their sources", "From", "Topics", "To", "Their targets"] as const;
 
 /**
  * The routes of a routing-framework service (rebuilt from its environment in Rust), drawn as a
@@ -92,9 +92,15 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
           No other service of the cluster uses these topics.
         </p>
       )}
+      {graph.ownGroup && (
+        <p className="mb-2 text-xs text-muted-foreground">
+          Reads its topics as consumer group{" "}
+          <span className="font-mono text-foreground">{graph.ownGroup}</span>
+        </p>
+      )}
       <GraphView graph={graph} focus={focus} onFocus={(id) => setFocus(focus === id ? null : id)} />
       {focused ? (
-        <NodeDetails node={focused} routes={routes} onClose={() => setFocus(null)} />
+        <NodeDetails node={focused} graph={graph} routes={routes} onClose={() => setFocus(null)} />
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
           Click a topic or system for its settings.
@@ -108,9 +114,6 @@ interface Path {
   id: string;
   d: string;
 }
-
-/** Whether two lists of route indexes share one. */
-const shares = (a: number[], b: number[]) => a.some((r) => b.includes(r));
 
 /**
  * The three columns of nodes as HTML, and the lines between them as an SVG drawn over them. The
@@ -162,9 +165,10 @@ function GraphView({
     return () => observer.disconnect();
   }, [graph]);
 
-  // The routes to highlight: those through the hovered node, else through the selected one.
-  const active = graph.nodes.find((n) => n.id === (hovered ?? focus));
-  const columns = ([0, 1, 2] as const)
+  // What to highlight: the paths through the hovered node, else through the selected one.
+  const activeId = hovered ?? focus;
+  const active = activeId ? pathThrough(graph, activeId) : null;
+  const columns = ([0, 1, 2, 3, 4] as const)
     .map((column) => ({ column, nodes: graph.nodes.filter((n) => n.column === column) }))
     .filter((c) => c.nodes.length > 0);
 
@@ -173,14 +177,14 @@ function GraphView({
       ref={container}
       role="group"
       aria-label="Route graph"
-      className="relative grid gap-x-12 py-1"
+      className={cn("relative grid py-1", columns.length > 3 ? "gap-x-8" : "gap-x-12")}
       style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}
     >
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible">
         {paths.map((path) => {
           const edge = graph.edges.find((e) => e.id === path.id);
           if (!edge) return null;
-          const lit = active ? shares(edge.routes, active.routes) : false;
+          const lit = active?.edges.has(edge.id) ?? false;
           return (
             <path
               key={path.id}
@@ -212,7 +216,7 @@ function GraphView({
                   else nodeElements.current.delete(node.id);
                 }}
                 selected={focus === node.id}
-                dimmed={active ? !shares(node.routes, active.routes) : false}
+                dimmed={active ? !active.nodes.has(node.id) : false}
                 onClick={() => onFocus(node.id)}
                 onHover={(on) => setHovered(on ? node.id : null)}
               />
@@ -276,7 +280,7 @@ function GraphNode({
         </span>
         {(node.detail ?? node.disabled) && (
           <span className="truncate text-[11px] text-muted-foreground">
-            {node.kind === "topic" && node.detail ? `group ${node.detail}` : node.detail}
+            {node.detail}
             {node.disabled && <span className="text-warning"> disabled</span>}
           </span>
         )}
@@ -285,19 +289,33 @@ function GraphNode({
   );
 }
 
-/** The settings of the routes through the selected node. */
+/**
+ * The settings of this service's routes through the selected node. Another service, or a system
+ * only another service uses, links to that service instead (its settings are in its overview).
+ */
 function NodeDetails({
   node,
+  graph,
   routes,
   onClose,
 }: {
   node: RouteNode;
+  graph: RouteGraph;
   routes: Route[];
   onClose: () => void;
 }) {
   const selected = useEcs((s) => s.selected);
   const openService = useEcs((s) => s.openService);
   const through = routes.filter((r) => node.routes.includes(r.index));
+  const own = node.kind !== "service" && node.column >= 1 && node.column <= 3;
+  // The other services this node belongs to: itself, or the services next to it.
+  const services =
+    node.kind === "service"
+      ? [node]
+      : graph.edges
+          .flatMap((e) => (e.from === node.id ? [e.to] : e.to === node.id ? [e.from] : []))
+          .map((id) => graph.nodes.find((n) => n.id === id))
+          .filter((n): n is RouteNode => n?.kind === "service");
   return (
     <section
       aria-label="Route details"
@@ -305,20 +323,25 @@ function NodeDetails({
     >
       <div className="flex items-center gap-2">
         <span className="font-medium">{node.label}</span>
-        <span className="text-muted-foreground">
-          {through.length} {through.length === 1 ? "route" : "routes"}
-        </span>
-        {node.kind === "service" && selected && (
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() =>
-              void openService({ clusterArn: selected.clusterArn, serviceName: node.label })
-            }
-          >
-            <SquareArrowOutUpRightIcon /> Open {node.label}
-          </Button>
+        {own && (
+          <span className="text-muted-foreground">
+            {through.length} {through.length === 1 ? "route" : "routes"}
+          </span>
         )}
+        {!own &&
+          selected &&
+          services.map((service) => (
+            <Button
+              key={service.id}
+              variant="outline"
+              size="xs"
+              onClick={() =>
+                void openService({ clusterArn: selected.clusterArn, serviceName: service.label })
+              }
+            >
+              <SquareArrowOutUpRightIcon /> Open {service.label}
+            </Button>
+          ))}
         <Button
           variant="ghost"
           size="icon-xs"
@@ -329,11 +352,17 @@ function NodeDetails({
           <XIcon />
         </Button>
       </div>
-      {node.kind === "system" ? (
-        <SystemDetails node={node} routes={through} />
-      ) : (
-        through.map((route) => <RouteDetails key={route.index} route={route} />)
+      {!own && (
+        <p className="text-muted-foreground">
+          {node.kind === "service"
+            ? `${node.detail ? `Reads as ${node.detail}. ` : ""}Its routes and settings are in its own overview.`
+            : `Used by ${services.map((s) => s.label).join(", ")}: the settings are in that service's overview.`}
+        </p>
       )}
+      {own && node.kind === "system" && <SystemDetails node={node} routes={through} />}
+      {own &&
+        node.kind === "topic" &&
+        through.map((route) => <RouteDetails key={route.index} route={route} />)}
     </section>
   );
 }

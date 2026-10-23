@@ -22,22 +22,26 @@ import { OverviewCard } from "./OverviewCard";
 import { Routes } from "./Routes";
 
 /**
- * The Overview tab: tasks, deployments and the environment in the main column; the service's
- * details and its recent events in a side column (one column on narrow windows).
+ * The Overview tab: tasks and deployments in the main column, the service's details and its
+ * recent events in a side column (one column on narrow windows); routes and environment below,
+ * over the full width.
  */
 export function Overview({ detail }: { detail: ServiceDetail }) {
   return (
-    <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <Tasks />
-        <Deployments deployments={detail.deployments} />
-        {detail.taskDefinition && <Routes containers={detail.taskDefinition.containers} />}
-        {detail.taskDefinition && <Environment containers={detail.taskDefinition.containers} />}
+    <div className="flex flex-col gap-4 p-4">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Tasks />
+          <Deployments deployments={detail.deployments} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          <Details detail={detail} />
+          <Events detail={detail} />
+        </div>
       </div>
-      <div className="flex min-w-0 flex-col gap-4">
-        <Details detail={detail} />
-        <Events detail={detail} />
-      </div>
+      {/* Full width: the route graph needs the room for up to five columns. */}
+      {detail.taskDefinition && <Routes containers={detail.taskDefinition.containers} />}
+      {detail.taskDefinition && <Environment containers={detail.taskDefinition.containers} />}
     </div>
   );
 }

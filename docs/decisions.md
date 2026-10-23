@@ -258,3 +258,13 @@ found rows too table-like): sources → topics → targets in three columns, eac
 between ordinary HTML nodes (no graph library: three columns need no layout engine or pan and zoom). Disabled
 routes and targets are dashed; settings open on click, a system's shared settings once.
 Settings filled from Secrets Manager or SSM (a route's password) are now part of the route, with Reveal.
+
+## 2026-10-24 — Consumer groups and one more step in the route graph
+
+Patrick pointed out that every output service has its own consumer group, so a group belongs to the reader,
+not to the topic. **Decision:** a service's own group is shown once above its graph (on the topics only when its
+routes use different groups); "Find connected services" also returns the other services' groups, whether their
+route is on, and their endpoints (type and system, no settings), so the graph shows each reader with its group
+and where it sends the data (and where writers get theirs), in up to five columns. Hover highlights the paths
+through a node rather than the routes sharing it. The overview puts routes and environment below the tasks over
+the full width, so the graph has room. The demo cluster `demo-edge` gets a second reader, `audit-archiver`.

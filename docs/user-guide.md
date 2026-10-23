@@ -23,10 +23,12 @@ page has the details.
   needs the optional `ContrailOptionalRevealSecrets` statement of the [IAM policy](iam-policy.json).
 - **Routes** of routing-framework services (configured as `<PREFIX>_ROUTES_<n>_…` environment variables) are drawn
   as a graph: where data comes from → the topics → where it goes, each system once (several routes to one system
-  meet there). Disabled routes and targets are dashed. Hover a node to highlight its routes; click it for their
-  settings: a system shows what its routes share once (connection, user, password from Secrets Manager or SSM
-  with **Reveal**) and what differs per route (a queue, a path). "Find connected services" adds the services on
-  the other side of each topic; click one to open it.
+  meet there). The service's consumer group is shown once above it. Disabled routes and targets are dashed.
+  "Find connected services" adds the other services on each topic, with their consumer group, and one step
+  further: where the services upstream get their data and where those downstream send it. Hover a node to
+  highlight the paths through it; click it for the settings: a system of this service shows what its routes
+  share once (connection, user, password from Secrets Manager or SSM with **Reveal**) and what differs per route
+  (a queue, a path); another service opens from there.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile. Star a
   service to pin it to the sidebar.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).

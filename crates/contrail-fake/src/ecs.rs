@@ -2,7 +2,8 @@
 //!
 //! - `demo-core`: `orders-api` (healthy), `payments-worker` (crash-looping, stopped tasks),
 //!   `billing-sync` (deployment in progress)
-//! - `demo-edge`: `legacy-gateway` (EC2, plain-text logs), `event-ingest` (high volume)
+//! - `demo-edge`: `legacy-gateway` (EC2, plain-text logs), `event-ingest` (high volume),
+//!   `audit-archiver` (a second reader of `event-ingest`'s topic, with its own group and targets)
 //! - `demo-batch`: no services
 //!
 //! All names, IDs and ARNs are invented. Times are relative to "now".
@@ -185,6 +186,22 @@ const SERVICES: &[ServiceSpec] = &[
         stopped: &[],
         events: &["has reached a steady state."],
     },
+    ServiceSpec {
+        cluster: "demo-edge",
+        name: "audit-archiver",
+        family: None,
+        revision: 12,
+        image_tag: "1.4.0",
+        launch_type: "FARGATE",
+        cpu: "256",
+        memory: "512",
+        desired: 1,
+        running: &["HEALTHY"],
+        pending: 0,
+        previous: None,
+        stopped: &[],
+        events: &["has reached a steady state."],
+    },
 ];
 
 const CLUSTERS: &[&str] = &["demo-batch", "demo-core", "demo-edge"];
@@ -222,6 +239,24 @@ fn environment(spec: &ServiceSpec) -> Vec<EnvVar> {
             (
                 "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_PASSWORD",
                 "demo-not-a-secret".to_owned(),
+            ),
+        ]);
+    }
+    if spec.name == "audit-archiver" {
+        vars.extend([
+            ("ACME_ROUTES_0_TOPIC", "demo.events".to_owned()),
+            ("ACME_ROUTES_0_GROUP", "audit-archiver".to_owned()),
+            ("ACME_ROUTES_0_OUTPUTS_0_TYPE", "s3".to_owned()),
+            ("ACME_ROUTES_0_OUTPUTS_0_SYSTEM", "Audit Archive".to_owned()),
+            (
+                "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN",
+                "demo-audit".to_owned(),
+            ),
+            ("ACME_ROUTES_0_OUTPUTS_1_TYPE", "http".to_owned()),
+            ("ACME_ROUTES_0_OUTPUTS_1_SYSTEM", "Search Index".to_owned()),
+            (
+                "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
+                "https://search.example.com/ingest".to_owned(),
             ),
         ]);
     }
