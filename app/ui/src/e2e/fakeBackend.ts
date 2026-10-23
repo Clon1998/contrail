@@ -165,6 +165,8 @@ export interface FakeBackendOptions {
   liveFailures?: number;
   /** Profiles whose session looks valid locally but is rejected by AWS until the next login. */
   rejectedSessions?: string[];
+  /** Delay of row fetches, like the real IPC round trip (default: none). */
+  rowsDelayMs?: number;
 }
 
 /**
@@ -466,6 +468,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         return info;
       }
       case "get_log_rows": {
+        if (options.rowsDelayMs) await new Promise((r) => setTimeout(r, options.rowsDelayMs));
         const events = views.get(args?.viewId as number);
         if (!events) throw apiError("notFound", "log view is closed");
         const offset = args?.offset as number;

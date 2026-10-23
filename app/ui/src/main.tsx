@@ -11,7 +11,13 @@ if (!root) throw new Error("Missing #root element");
 // branch and never bundles the fake.
 const ready =
   import.meta.env.VITE_E2E === "1"
-    ? import("./e2e/fakeBackend").then((m) => m.installFakeBackend({ loginDelayMs: 600 }))
+    ? import("./e2e/fakeBackend").then((m) =>
+        m.installFakeBackend({
+          loginDelayMs: 600,
+          // `?rowsDelay=30` simulates the IPC latency of row fetches (scrolling checks).
+          rowsDelayMs: Number(new URLSearchParams(location.search).get("rowsDelay") ?? 0),
+        }),
+      )
     : Promise.resolve();
 
 void ready.then(() =>

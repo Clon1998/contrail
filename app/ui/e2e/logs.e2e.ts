@@ -209,3 +209,22 @@ test("newest first: the newest event on top, new events arrive there", async ({ 
     .toBeGreaterThan(rows);
   expect(await readLine()).toBe(before);
 });
+
+test("rows near the viewport are loaded before they scroll into view", async ({ page }) => {
+  // Row fetches take 300 ms here, like a slow IPC round trip.
+  await page.goto("/?rowsDelay=300");
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page.waitForTimeout(800); // the prefetch around the newest rows arrives
+
+  const rowHeight = await list
+    .locator('[role="listitem"]')
+    .first()
+    .evaluate((el) => el.clientHeight);
+  await list.locator("..").evaluate((el, by) => {
+    el.scrollTop -= by;
+  }, 300 * rowHeight);
+  // Right after the jump (well within the 300 ms fetch delay), no placeholder is on screen.
+  await expect(list.getByText("Ingested event #99700 ")).toBeVisible({ timeout: 100 });
+});

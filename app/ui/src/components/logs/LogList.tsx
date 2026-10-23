@@ -8,6 +8,9 @@ import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
 import { LogRow } from "./LogRow";
 
+/** Rows fetched beyond the visible ones in each direction, so scrolling finds them loaded. */
+const PREFETCH_ROWS = 400;
+
 /** How close to the newest end counts as "at the newest event" (follow mode), in pixels. */
 const EDGE_SLACK = 8;
 
@@ -69,10 +72,14 @@ export function LogList({
       ? virtualizer.scrollToIndex(0, { align: "start" })
       : virtualizer.scrollToIndex(total - 1, { align: "end" });
 
-  // Load what's on screen (again, after live updates made cached pages stale).
+  // Load what's on screen plus a margin on both sides (again, after live updates made cached
+  // pages stale). Each fetch is an IPC round trip; without the margin, fast scrolling shows
+  // placeholder rows until the page arrives.
   const [dataFrom, dataTo] = newestFirst ? [toData(last), toData(first)] : [first, last];
   useEffect(() => {
-    if (total > 0) fetchRows(dataFrom, dataTo);
+    if (total > 0) {
+      fetchRows(Math.max(0, dataFrom - PREFETCH_ROWS), Math.min(total - 1, dataTo + PREFETCH_ROWS));
+    }
   }, [dataFrom, dataTo, total, pages, fetchRows]);
 
   // A new view (or font size, or order) starts at the newest event.
