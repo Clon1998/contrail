@@ -18,18 +18,18 @@ import Features from "../../components/Features.astro";
 import Screenshot from "../../components/Screenshot.astro";
 import Showcase from "../../components/Showcase.astro";
 
-<div class="pillars not-content">
+<div class="stats not-content">
   <div>
-    <strong>Straight to the logs</strong>
-    <p>From profile to a service's live logs in a few keystrokes. No console tabs, no log group hunting: Contrail finds the group in the task definition.</p>
+    <strong>100<span>,</span>000</strong>
+    <p>log lines scroll smoothly. Parsing, buffering and search run natively in Rust.</p>
   </div>
   <div>
-    <strong>Read-only by design</strong>
-    <p>Contrail never changes anything in AWS and never stores credentials. Your SSO session and the AWS SDK do the authentication.</p>
+    <strong>0<span> writes</span></strong>
+    <p>to AWS, ever. Contrail is read-only and never stores credentials.</p>
   </div>
   <div>
-    <strong>Fast and small</strong>
-    <p>Built with Rust and Tauri. Parsing, buffering and search run natively, so 100,000 lines scroll smoothly.</p>
+    <strong>⌘K<span> → logs</span></strong>
+    <p>From profile to a service's live logs in a few keystrokes. No console tabs, no log group hunting.</p>
   </div>
 </div>
 
@@ -45,7 +45,7 @@ import Showcase from "../../components/Showcase.astro";
     <li>Refreshes every 30 seconds.</li>
   </ul>
   <div slot="media">
-    <Screenshot name="overview" alt="A service's overview in Contrail: tasks, deployments and the task definition." />
+    <Screenshot name="overview" title="payments-worker · overview" alt="A service's overview in Contrail: tasks, deployments and the task definition." />
   </div>
 </Showcase>
 
@@ -59,7 +59,7 @@ import Showcase from "../../components/Showcase.astro";
     <code>timeout level&gt;=WARN trace.id:abc123 -healthcheck</code>
   </p>
   <div slot="media">
-    <Screenshot name="search" alt="Contrail's log view filtered with a search, the matching words marked." />
+    <Screenshot name="search" title="legacy-gateway · logs" alt="Contrail's log view filtered with a search, the matching words marked." />
   </div>
 </Showcase>
 
@@ -71,11 +71,12 @@ import Showcase from "../../components/Showcase.astro";
   </p>
   <p>Each entry opens that service's logs, filtered to the same ID.</p>
   <div slot="media">
-    <Screenshot name="trace" alt="A trace across two services in Contrail, with the events on a timeline." />
+    <Screenshot name="trace" title="orders-api · trace" alt="A trace across two services in Contrail, with the events on a timeline." />
   </div>
 </Showcase>
 
 <div class="landing-heading not-content">
+  <p class="eyebrow">features</p>
   <h2>Built for the on-call morning</h2>
   <p>Dark first, dense and keyboard friendly, with light mode and your choice of accent color.</p>
 </div>
@@ -83,6 +84,7 @@ import Showcase from "../../components/Showcase.astro";
 <Features />
 
 <div class="landing-heading not-content" id="download">
+  <p class="eyebrow">download</p>
   <h2>Download Contrail</h2>
   <p>Free and open source (MIT), for macOS, Windows and Linux.</p>
 </div>
@@ -90,6 +92,7 @@ import Showcase from "../../components/Showcase.astro";
 <Downloads />
 
 <div class="closing not-content">
+  <p class="prompt"><span>$</span> aws sso login --profile dev &amp;&amp; open -a Contrail</p>
   <h2>Ready to read some logs?</h2>
   <p>All you need is an AWS SSO profile and the AWS CLI. Or try it without AWS in demo mode.</p>
   <div class="buttons">

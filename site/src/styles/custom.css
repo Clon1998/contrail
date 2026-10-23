@@ -1,42 +1,97 @@
-/* Starlight theme: the sky blue of the app icon (assets/icon.svg) as the accent color.
-   Dark mode is Starlight's default (`:root`), light mode overrides it. */
+/* Contrail's look: a night sky over a log terminal. Navy-tinted grays, the sky blue of the app
+   icon (assets/icon.svg) as the accent, the log levels' amber as a second color, sharp corners
+   and a monospace voice for labels. Dark mode is Starlight's default (`:root`), light mode
+   overrides it. The fonts are self-hosted (@fontsource-variable, imported in astro.config.mjs). */
 :root {
-  --sl-color-accent-low: #082f49;
-  --sl-color-accent: #0ea5e9;
+  --sl-font: "Schibsted Grotesk Variable", system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --sl-color-accent-low: #07263a;
+  --sl-color-accent: #38bdf8;
   --sl-color-accent-high: #bae6fd;
+  --sl-color-white: #f1f6fb;
+  --sl-color-gray-1: #dbe5ef;
+  --sl-color-gray-2: #a9b8c8;
+  --sl-color-gray-3: #7b8ca0;
+  --sl-color-gray-4: #4a5a6e;
+  --sl-color-gray-5: #2a3748;
+  --sl-color-gray-6: #121c2a;
+  --sl-color-black: #070b13;
+
+  /* Log level colors, used as decoration on the landing page. */
+  --ct-warn: #fbbf24;
+  --ct-error: #f87171;
+  --ct-ok: #34d399;
+  --ct-radius: 0.375rem;
 }
 :root[data-theme="light"] {
-  --sl-color-accent-low: #e0f2fe;
+  --sl-color-accent-low: #dff2fd;
   --sl-color-accent: #0284c7;
-  --sl-color-accent-high: #0c4a6e;
+  --sl-color-accent-high: #0b4466;
+  --sl-color-white: #0a1422;
+  --sl-color-gray-1: #1b2a3c;
+  --sl-color-gray-2: #3a4b60;
+  --sl-color-gray-3: #5d6f85;
+  --sl-color-gray-4: #8c9bb0;
+  --sl-color-gray-5: #c9d4e1;
+  --sl-color-gray-6: #eaf0f6;
+  --sl-color-gray-7: #f5f8fb;
+  --sl-color-black: #ffffff;
+  --ct-warn: #b45309;
+  --ct-error: #dc2626;
+  --ct-ok: #047857;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.025em;
 }
 
 /* --- Landing page (src/content/docs/index.mdx) --- */
 
-/* A soft glow behind the hero, in the accent color. */
-[data-has-hero] .main-frame {
-  background: radial-gradient(
-      ellipse 80rem 32rem at 50% -8rem,
-      color-mix(in srgb, var(--sl-color-accent) 22%, transparent),
-      transparent 70%
-    )
-    no-repeat;
-}
-
 /* The landing page uses the whole width, not the docs' reading width. */
 [data-has-hero] {
-  --sl-content-width: 72rem;
+  --sl-content-width: 76rem;
+}
+
+/* A faint grid behind the landing page, like graph paper on a flight chart. The hero's
+   contrails reach past the content's edges; `clip` keeps them from scrolling the page. */
+[data-has-hero] .main-frame {
+  overflow-x: clip;
+  background-image:
+    linear-gradient(to bottom, transparent, var(--sl-color-black) 48rem),
+    linear-gradient(var(--sl-color-hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--sl-color-hairline) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    3rem 3rem,
+    3rem 3rem;
+}
+
+/* A monospace label like a log field: `// services`. */
+.eyebrow {
+  margin: 0 0 0.75rem;
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--sl-color-text-accent);
+}
+.eyebrow::before {
+  content: "// ";
+  color: var(--sl-color-gray-4);
 }
 
 .landing-heading {
-  margin: 4rem auto 1.5rem;
-  max-width: 40rem;
-  text-align: center;
+  margin: 6rem 0 2rem;
+  max-width: 44rem;
 }
 .landing-heading h2 {
   margin: 0;
-  font-size: var(--sl-text-3xl);
-  letter-spacing: -0.02em;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.1;
   color: var(--sl-color-white);
 }
 .landing-heading p {
@@ -44,48 +99,80 @@
   color: var(--sl-color-gray-2);
 }
 
-.pillars {
+/* Three numbers in a row, in the log font. */
+.stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-  gap: 1.5rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   margin-top: 4rem;
-  padding: 1.5rem 0;
-  border-block: 1px solid var(--sl-color-hairline);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--ct-radius);
+  background: var(--sl-color-black);
 }
-.pillars strong {
+.stats > div {
+  padding: 1.5rem;
+}
+.stats > div + div {
+  border-left: 1px solid var(--sl-color-hairline);
+}
+@media (max-width: 50rem) {
+  .stats > div + div {
+    border-left: 0;
+    border-top: 1px solid var(--sl-color-hairline);
+  }
+}
+.stats strong {
   display: block;
-  margin-bottom: 0.25rem;
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-3xl);
+  font-weight: 600;
+  letter-spacing: -0.04em;
   color: var(--sl-color-white);
 }
-.pillars p {
-  margin: 0;
+.stats strong span {
+  color: var(--sl-color-text-accent);
+}
+.stats p {
+  margin: 0.4rem 0 0;
   font-size: var(--sl-text-sm);
   color: var(--sl-color-gray-2);
 }
 
+/* The closing call to action: a terminal prompt. */
 .closing {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin: 5rem 0 2rem;
-  padding: 3rem 1.5rem;
-  border-radius: 1rem;
-  text-align: center;
-  background: var(--sl-color-accent-low);
+  position: relative;
+  display: grid;
+  gap: 1.25rem;
+  margin: 6rem 0 2rem;
+  padding: 3rem clamp(1.5rem, 5vw, 4rem);
+  overflow: hidden;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--ct-radius);
+  background:
+    radial-gradient(ellipse 40rem 20rem at 100% 0%, var(--sl-color-accent-low), transparent 70%),
+    var(--sl-color-black);
+}
+.closing .prompt {
+  margin: 0;
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+}
+.closing .prompt span {
+  color: var(--ct-ok);
 }
 .closing h2 {
   margin: 0;
-  font-size: var(--sl-text-3xl);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.1;
   color: var(--sl-color-white);
 }
 .closing p {
   margin: 0;
+  max-width: 36rem;
   color: var(--sl-color-gray-2);
 }
 .closing .buttons {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.75rem 1rem;
 }
