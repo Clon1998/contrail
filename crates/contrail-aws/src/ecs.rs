@@ -13,6 +13,7 @@ use contrail_core::ecs::{
     image_tag, name_from_arn, sort_tasks, task_definition_label,
 };
 use contrail_core::error::SourceError;
+use contrail_core::routes::parse_routes;
 use contrail_core::timestamp::Timestamp;
 use futures::future::try_join_all;
 use time::OffsetDateTime;
@@ -345,6 +346,11 @@ async fn describe_task_definition(
                     .iter()
                     .map(|f| f.value().to_owned())
                     .collect(),
+                routes: None,
+            })
+            .map(|mut container| {
+                container.routes = parse_routes(&container.environment);
+                container
             })
             .collect(),
     })

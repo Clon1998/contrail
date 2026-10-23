@@ -124,6 +124,7 @@ mod tests {
             environment: Vec::new(),
             secrets: Vec::new(),
             environment_files: Vec::new(),
+            routes: None,
         }
     }
 
