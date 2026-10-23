@@ -8,7 +8,8 @@ use aws_sdk_cloudwatchlogs::types::error::StartLiveTailResponseStreamError;
 use contrail_core::auth::AwsCtx;
 use contrail_core::error::SourceError;
 use contrail_core::logs::{
-    Backfill, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection, TimeRange,
+    Backfill, GroupEvent, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection,
+    TimeRange,
 };
 use contrail_core::timestamp::Timestamp;
 use futures::StreamExt;
@@ -16,6 +17,10 @@ use time::OffsetDateTime;
 
 use crate::clients::ClientCache;
 use crate::error::map_sdk_error;
+
+/// How often a Logs Insights query is polled, and for how long at most.
+const INSIGHTS_POLL: std::time::Duration = std::time::Duration::from_secs(1);
+const INSIGHTS_MAX_POLLS: u32 = 120;
 
 /// `FilterLogEvents` and `StartLiveTail` accept at most this many stream names per request.
 const MAX_STREAMS_PER_REQUEST: usize = 100;
@@ -34,6 +39,32 @@ impl AwsLogs {
 
 #[async_trait]
 impl LogSource for AwsLogs {
+    async fn insights_find(
+        &self,
+        ctx: &AwsCtx,
+        region: Option<String>,
+        log_groups: &[String],
+        text: &str,
+        range: TimeRange,
+        limit: usize,
+    ) -> Result<Vec<GroupEvent>, SourceError> {
+        let log_ctx = AwsCtx {
+            profile: ctx.profile.clone(),
+            region: region.or_else(|| ctx.region.clone()),
+        };
+        let client = self.clients.get(&log_ctx, Client::new).await;
+        insights_find(
+            &client,
+            &ctx.profile,
+            log_groups,
+            text,
+            range,
+            limit,
+            INSIGHTS_POLL,
+        )
+        .await
+    }
+
     async fn backfill(
         &self,
         ctx: &AwsCtx,
@@ -173,6 +204,93 @@ fn from_millis(millis: i64) -> Option<Timestamp> {
     OffsetDateTime::from_unix_timestamp_nanos(i128::from(millis) * 1_000_000)
         .ok()
         .map(Timestamp)
+}
+
+/// Runs a Logs Insights query for `text` over `log_groups` and waits for its results.
+async fn insights_find(
+    client: &Client,
+    profile: &str,
+    log_groups: &[String],
+    text: &str,
+    range: TimeRange,
+    limit: usize,
+    poll: std::time::Duration,
+) -> Result<Vec<GroupEvent>, SourceError> {
+    // The text goes into a quoted string of the query language: drop quotes and backslashes.
+    let text: String = text.chars().filter(|c| !matches!(c, '"' | '\\')).collect();
+    let query = format!(
+        "fields @timestamp, @message, @logStream, @log \
+         | filter @message like \"{text}\" | sort @timestamp asc | limit {limit}"
+    );
+    let started = client
+        .start_query()
+        .set_log_group_identifiers(Some(log_groups.to_vec()))
+        .start_time(range.start.0.unix_timestamp())
+        .end_time(range.end.0.unix_timestamp())
+        .query_string(query)
+        .send()
+        .await
+        .map_err(|err| map_sdk_error(profile, err))?;
+    let id = started
+        .query_id()
+        .ok_or_else(|| SourceError::Aws("Logs Insights returned no query ID".to_owned()))?;
+
+    for _ in 0..INSIGHTS_MAX_POLLS {
+        let output = client
+            .get_query_results()
+            .query_id(id)
+            .send()
+            .await
+            .map_err(|err| map_sdk_error(profile, err))?;
+        use aws_sdk_cloudwatchlogs::types::QueryStatus;
+        match output.status() {
+            Some(QueryStatus::Complete) => {
+                return Ok(output
+                    .results()
+                    .iter()
+                    .filter_map(|row| insights_row(row))
+                    .collect());
+            }
+            Some(QueryStatus::Failed | QueryStatus::Cancelled | QueryStatus::Timeout) => {
+                return Err(SourceError::Aws(format!(
+                    "the Logs Insights query ended as {}",
+                    output.status().map(|s| s.as_str()).unwrap_or("unknown")
+                )));
+            }
+            _ => tokio::time::sleep(poll).await,
+        }
+    }
+    Err(SourceError::Aws(
+        "the Logs Insights query took longer than two minutes".to_owned(),
+    ))
+}
+
+/// One result row: `@log` is `<account>:<log group>`, `@timestamp` is `2026-10-23 12:00:01.123` (UTC).
+fn insights_row(row: &[aws_sdk_cloudwatchlogs::types::ResultField]) -> Option<GroupEvent> {
+    let field = |name: &str| {
+        row.iter()
+            .find(|f| f.field() == Some(name))
+            .and_then(|f| f.value())
+    };
+    let group = field("@log")?;
+    let log_group = group
+        .split_once(':')
+        .map_or(group, |(_, name)| name)
+        .to_owned();
+    let format = time::macros::format_description!(
+        "[year]-[month]-[day] [hour]:[minute]:[second].[subsecond]"
+    );
+    let timestamp = time::PrimitiveDateTime::parse(field("@timestamp")?, format)
+        .ok()?
+        .assume_utc();
+    Some(GroupEvent {
+        log_group,
+        event: RawEvent {
+            stream: field("@logStream")?.to_owned(),
+            timestamp: Timestamp(timestamp),
+            message: field("@message")?.to_owned(),
+        },
+    })
 }
 
 async fn backfill(
@@ -471,5 +589,63 @@ mod tests {
 
         backfill(&client, "dev", &sel, range(), 100).await.unwrap();
         assert_eq!(rule.num_calls(), 1);
+    }
+
+    #[tokio::test]
+    async fn insights_queries_poll_until_complete_and_name_the_log_group() {
+        use aws_sdk_cloudwatchlogs::operation::get_query_results::GetQueryResultsOutput;
+        use aws_sdk_cloudwatchlogs::operation::start_query::StartQueryOutput;
+        use aws_sdk_cloudwatchlogs::types::{QueryStatus, ResultField};
+
+        let start = mock!(Client::start_query)
+            .match_requests(|req| {
+                req.log_group_identifiers() == ["/ecs/input", "/ecs/output"]
+                    && req
+                        .query_string()
+                        .is_some_and(|q| q.contains(r#"like "DOC-1""#))
+            })
+            .then_output(|| StartQueryOutput::builder().query_id("q-1").build());
+        let field =
+            |name: &str, value: &str| ResultField::builder().field(name).value(value).build();
+        let results = mock!(Client::get_query_results)
+            .sequence()
+            .output(|| {
+                GetQueryResultsOutput::builder()
+                    .status(QueryStatus::Running)
+                    .build()
+            })
+            .output(move || {
+                GetQueryResultsOutput::builder()
+                    .status(QueryStatus::Complete)
+                    .results(vec![
+                        field("@timestamp", "2026-10-23 12:00:01.123"),
+                        field("@message", "status DOC-1"),
+                        field("@logStream", "ecs/output/abc"),
+                        field("@log", "111122223333:/ecs/output"),
+                    ])
+                    .build()
+            })
+            .build();
+        let client = mock_client!(
+            aws_sdk_cloudwatchlogs,
+            RuleMode::MatchAny,
+            [&start, &results]
+        );
+
+        let found = insights_find(
+            &client,
+            "dev",
+            &["/ecs/input".into(), "/ecs/output".into()],
+            "DOC-1",
+            range(),
+            100,
+            std::time::Duration::ZERO,
+        )
+        .await
+        .unwrap();
+        assert_eq!(results.num_calls(), 2, "polled until complete");
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].log_group, "/ecs/output");
+        assert_eq!(found[0].event.stream, "ecs/output/abc");
     }
 }

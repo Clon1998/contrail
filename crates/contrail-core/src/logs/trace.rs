@@ -115,6 +115,80 @@ pub async fn trace(
             }),
         }
     }
+    assemble(hits, failures, truncated)
+}
+
+/// Logs Insights can query this many log groups at once.
+const INSIGHTS_GROUPS: usize = 50;
+
+/// Like [`trace`], but with Logs Insights: one query per region and 50 log groups instead of a
+/// search per service (faster for many services; billed per GB scanned). `limit` applies per
+/// query.
+pub async fn trace_insights(
+    source: &dyn LogSource,
+    ctx: &AwsCtx,
+    targets: Vec<TraceTarget>,
+    id: &str,
+    range: TimeRange,
+    limit: usize,
+) -> Trace {
+    // Log groups per region (a group's region comes from the service's awslogs settings).
+    let mut by_region: Vec<(Option<String>, Vec<String>)> = Vec::new();
+    for target in &targets {
+        let region = target.selection.region.clone();
+        let group = target.selection.log_group.clone();
+        match by_region.iter_mut().find(|(r, _)| *r == region) {
+            Some((_, groups)) if !groups.contains(&group) => groups.push(group),
+            Some(_) => {}
+            None => by_region.push((region, vec![group])),
+        }
+    }
+
+    let mut hits = Vec::new();
+    let mut failures = Vec::new();
+    let mut truncated = false;
+    for (region, groups) in by_region {
+        for chunk in groups.chunks(INSIGHTS_GROUPS) {
+            match source
+                .insights_find(ctx, region.clone(), chunk, id, range, limit)
+                .await
+            {
+                Ok(found) => {
+                    truncated |= found.len() >= limit;
+                    for (raw, group) in found.into_iter().map(|g| (g.event, g.log_group)) {
+                        // Several services can share a log group: their stream prefix tells.
+                        let owner = targets.iter().find(|t| {
+                            t.selection.log_group == group
+                                && t.selection
+                                    .stream_prefix
+                                    .as_deref()
+                                    .is_none_or(|prefix| raw.stream.starts_with(prefix))
+                        });
+                        if let Some(target) = owner {
+                            hits.extend(process(vec![raw]).into_iter().map(|event| TraceHit {
+                                service: target.service.clone(),
+                                event,
+                            }));
+                        }
+                    }
+                }
+                Err(error) => failures.extend(
+                    targets
+                        .iter()
+                        .filter(|t| chunk.contains(&t.selection.log_group))
+                        .map(|t| TraceFailure {
+                            service: t.service.clone(),
+                            message: error.to_string(),
+                        }),
+                ),
+            }
+        }
+    }
+    assemble(hits, failures, truncated)
+}
+
+/// Orders the hits and failures and adds the per-service summary and the outcome.
+fn assemble(mut hits: Vec<TraceHit>, mut failures: Vec<TraceFailure>, truncated: bool) -> Trace {
     hits.sort_by_key(|h| (h.event.timestamp, h.event.cw_timestamp));
     failures.sort_by(|a, b| a.service.cmp(&b.service));
     let services = summarize(&hits);
@@ -226,7 +300,7 @@ mod tests {
                 region: None,
                 account_id: None,
                 streams: vec![],
-                stream_prefix: Some("ecs/x/".into()),
+                stream_prefix: Some(format!("ecs/{name}/")),
                 filter_pattern: None,
             },
         }
@@ -304,6 +378,87 @@ mod tests {
         assert_eq!(trace.hits.len(), 2);
         assert_eq!(trace.failures.len(), 1);
         assert_eq!(trace.failures[0].service, "denied");
+    }
+
+    /// Answers Insights queries from the same groups (and counts the queries).
+    struct Insights(Groups, std::sync::Mutex<Vec<Vec<String>>>);
+
+    #[async_trait]
+    impl LogSource for Insights {
+        async fn backfill(
+            &self,
+            ctx: &AwsCtx,
+            selection: &StreamSelection,
+            range: TimeRange,
+            limit: usize,
+        ) -> Result<Backfill, SourceError> {
+            self.0.backfill(ctx, selection, range, limit).await
+        }
+
+        async fn insights_find(
+            &self,
+            ctx: &AwsCtx,
+            _region: Option<String>,
+            log_groups: &[String],
+            text: &str,
+            range: TimeRange,
+            limit: usize,
+        ) -> Result<Vec<crate::logs::GroupEvent>, SourceError> {
+            self.1.lock().unwrap().push(log_groups.to_vec());
+            let mut found = Vec::new();
+            for group in log_groups {
+                let mut selection = target(group).selection;
+                selection.filter_pattern = Some(text.to_owned());
+                let backfill = self.0.backfill(ctx, &selection, range, limit).await?;
+                found.extend(
+                    backfill
+                        .events
+                        .into_iter()
+                        .map(|event| crate::logs::GroupEvent {
+                            log_group: group.clone(),
+                            event,
+                        }),
+                );
+            }
+            Ok(found)
+        }
+    }
+
+    #[test]
+    fn insights_queries_many_groups_at_once() {
+        let source = Insights(
+            Groups(HashMap::from([
+                ("input", Ok(vec![(1, status("RECEIVED", "DOC-1"))])),
+                ("output", Ok(vec![(5, status("COMPLETED", "DOC-1"))])),
+            ])),
+            std::sync::Mutex::default(),
+        );
+        let ctx = AwsCtx {
+            profile: "dev".into(),
+            region: None,
+        };
+        let range = TimeRange {
+            start: Timestamp(datetime!(2026-10-23 11:00 UTC)),
+            end: Timestamp(datetime!(2026-10-23 13:00 UTC)),
+        };
+        let mut output = target("output");
+        // The stream prefix decides which service a hit belongs to.
+        output.selection.stream_prefix = Some("ecs/output/".into());
+        let trace = block_on(trace_insights(
+            &source,
+            &ctx,
+            vec![target("input"), output],
+            "DOC-1",
+            range,
+            100,
+        ));
+        assert_eq!(
+            source.1.lock().unwrap().len(),
+            1,
+            "one query for both groups"
+        );
+        let services: Vec<_> = trace.services.iter().map(|s| s.service.as_str()).collect();
+        assert_eq!(services, ["input", "output"]);
     }
 
     #[test]

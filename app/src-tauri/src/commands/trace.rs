@@ -3,7 +3,7 @@
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::resolve_log_location;
-use contrail_core::logs::trace::{Trace, TraceFailure, TraceTarget, trace};
+use contrail_core::logs::trace::{Trace, TraceFailure, TraceTarget, trace, trace_insights};
 use contrail_core::logs::{TimeRange, TimeWindow};
 use futures::future::join_all;
 use tauri::State;
@@ -15,7 +15,8 @@ use crate::state::AppState;
 /// At most this many events per service (a document's trace is short; a busy trace ID isn't).
 const EVENTS_PER_SERVICE: usize = 2_000;
 
-/// Searches `services` for `id` in `window` and merges what they logged about it.
+/// Searches `services` for `id` in `window` and merges what they logged about it. With
+/// `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 #[tauri::command]
 #[specta::specta]
 pub async fn trace_id(
@@ -24,8 +25,9 @@ pub async fn trace_id(
     services: Vec<ServiceRef>,
     id: String,
     window: TimeWindow,
+    insights: bool,
 ) -> ApiResult<Trace> {
-    trace_services(&state, ctx, services, id, window).await
+    trace_services(&state, ctx, services, id, window, insights).await
 }
 
 async fn trace_services(
@@ -34,6 +36,7 @@ async fn trace_services(
     services: Vec<ServiceRef>,
     id: String,
     window: TimeWindow,
+    insights: bool,
 ) -> ApiResult<Trace> {
     let range: TimeRange = window.range(OffsetDateTime::now_utc())?;
     // Where each service logs: its task definition's awslogs settings, the whole stream prefix.
@@ -67,7 +70,11 @@ async fn trace_services(
             }),
         }
     }
-    let mut result = trace(&*state.logs, &ctx, targets, &id, range, EVENTS_PER_SERVICE).await;
+    let mut result = if insights {
+        trace_insights(&*state.logs, &ctx, targets, &id, range, EVENTS_PER_SERVICE).await
+    } else {
+        trace(&*state.logs, &ctx, targets, &id, range, EVENTS_PER_SERVICE).await
+    };
     result.failures.extend(failures);
     result.failures.sort_by(|a, b| a.service.cmp(&b.service));
     Ok(result)
@@ -102,6 +109,7 @@ mod tests {
             ],
             id.into(),
             TimeWindow::Last { minutes: 60 },
+            false,
         )
         .await
         .unwrap();
@@ -117,5 +125,30 @@ mod tests {
         );
         assert_eq!(result.failures.len(), 1);
         assert_eq!(result.failures[0].service, "missing");
+    }
+
+    #[tokio::test]
+    async fn insights_finds_the_same_demo_document() {
+        let state = AppState::demo();
+        let ctx = AwsCtx {
+            profile: "demo-dev".into(),
+            region: None,
+        };
+        let id = "DE40C0DE00000001";
+        let search = |insights| {
+            trace_services(
+                &state,
+                ctx.clone(),
+                vec![demo("demo-core", "orders-api")],
+                id.into(),
+                TimeWindow::Last { minutes: 60 },
+                insights,
+            )
+        };
+        let filtered = search(false).await.unwrap();
+        let insights = search(true).await.unwrap();
+        assert!(!insights.hits.is_empty());
+        assert_eq!(insights.hits.len(), filtered.hits.len());
+        assert_eq!(insights.services[0].service, "orders-api");
     }
 }

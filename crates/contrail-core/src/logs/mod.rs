@@ -29,8 +29,8 @@ pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
 pub use slices::{Slices, backfill_newest};
 pub use source::{
-    Backfill, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource, StreamSelection,
-    TimeRange, TimeWindow,
+    Backfill, GroupEvent, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource,
+    StreamSelection, TimeRange, TimeWindow,
 };
 pub use status::{StatusChange, correlation_id, status_change};
 

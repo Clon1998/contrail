@@ -63,8 +63,11 @@ export const commands = {
 	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
 	 */
 	revealSecret: (ctx: AwsCtx, valueFrom: string) => typedError<string, ApiError>(__TAURI_INVOKE("reveal_secret", { ctx, valueFrom })),
-	/**  Searches `services` for `id` in `window` and merges what they logged about it. */
-	traceId: (ctx: AwsCtx, services: ServiceRef[], id: string, window: TimeWindow) => typedError<Trace, ApiError>(__TAURI_INVOKE("trace_id", { ctx, services, id, window })),
+	/**
+	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
+	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
+	 */
+	traceId: (ctx: AwsCtx, services: ServiceRef[], id: string, window: TimeWindow, insights: boolean) => typedError<Trace, ApiError>(__TAURI_INVOKE("trace_id", { ctx, services, id, window, insights })),
 	/**  Pauses a view's live tail (the UI's pause button, or auto-pause when hidden). */
 	pauseLive: (viewId: number) => typedError<null, ApiError>(__TAURI_INVOKE("pause_live", { viewId })),
 	/**  Resumes a paused live tail; it first catches up on what was logged meanwhile. */

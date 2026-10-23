@@ -47,6 +47,8 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Trace across services:** an expanded line with a correlation or trace ID searches the chosen services of
   the cluster for it (FilterLogEvents, a time span around the line) and shows the way it took: services in
   order with their last state, every event on a timeline, and whether the document completed or failed.
+  With many services, "Use Logs Insights" searches up to 50 in one query (billed per GB scanned; needs the
+  optional `ContrailOptionalInsightsTrace` statement of the IAM policy).
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
 - **Export** the listed lines as `.log` or `.jsonl`; **field mapping** for JSON logs with other field names.
 - **Keyboard shortcuts:** press `?`, or see Settings → Shortcuts.

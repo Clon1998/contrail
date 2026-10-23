@@ -207,3 +207,12 @@ mirror stalled the job for 20+ minutes (normally ~1 minute). **Decision:** the U
 `mcr.microsoft.com/playwright:v<version>-noble`, which has the browsers and libraries preinstalled (no apt, no
 browser download), with a 30-minute timeout. The image tag must equal `@playwright/test`'s version; a CI step
 fails when they drift, so a Playwright upgrade also updates the tag.
+
+## 2026-10-23 — Cross-service tracing: FilterLogEvents, Logs Insights opt-in
+
+Patrick chose: tracing searches each chosen service's log group with `FilterLogEvents` and the ID as a quoted
+filter pattern (no extra permission, no scan cost; up to 4 services at a time because of CloudWatch's request
+rate). A checkbox switches to **Logs Insights** (one query per region and 50 log groups, billed per GB scanned,
+optional `logs:StartQuery`/`logs:GetQueryResults`). The trace key is whatever ID the line carries: the
+pipeline framework's correlation ID, or an API's trace ID. A chain is *completed* when every service's last
+status is COMPLETED, *failed* when any is FAILED, otherwise *open*.

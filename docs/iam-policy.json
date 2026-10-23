@@ -30,6 +30,15 @@
         "kms:Decrypt"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "ContrailOptionalInsightsTrace",
+      "Effect": "Allow",
+      "Action": [
+        "logs:StartQuery",
+        "logs:GetQueryResults"
+      ],
+      "Resource": "*"
     }
   ]
 }

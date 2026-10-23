@@ -89,6 +89,7 @@ function TraceBody({
   const [chosen, setChosen] = useState<string[]>(current ? [current.serviceName] : []);
   const [filter, setFilter] = useState("");
   const [span, setSpan] = useState(60);
+  const [insights, setInsights] = useState(false);
   const [state, setState] = useState<
     | { kind: "idle" }
     | { kind: "loading" }
@@ -117,6 +118,7 @@ function TraceBody({
         from: new Date(time - span * 60_000).toISOString(),
         to: new Date(time + span * 60_000).toISOString(),
       },
+      insights,
     );
     setState(
       result.status === "ok"
@@ -192,6 +194,17 @@ function TraceBody({
             </Button>
           ))}
         </div>
+        <label className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Checkbox
+            className="mt-0.5"
+            checked={insights}
+            onCheckedChange={(on) => setInsights(on === true)}
+          />
+          <span>
+            Use Logs Insights: one query for up to 50 services (faster with many; billed per GB
+            scanned, needs logs:StartQuery)
+          </span>
+        </label>
         <Button
           size="sm"
           disabled={chosen.length === 0 || state.kind === "loading"}
@@ -200,7 +213,7 @@ function TraceBody({
           {state.kind === "loading" && <Loader2Icon className="animate-spin" />}
           Search {chosen.length} {chosen.length === 1 ? "service" : "services"}
         </Button>
-        {chosen.length > 20 && (
+        {chosen.length > 20 && !insights && (
           <p className="text-xs text-muted-foreground">
             Many services: CloudWatch allows only a few searches per second, so this can take a
             while.
