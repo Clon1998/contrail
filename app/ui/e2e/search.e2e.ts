@@ -97,7 +97,9 @@ test("level chips: middle click shows only that level, right click offers more",
   const levels = page.getByRole("group", { name: "Levels" });
   const warn = levels.getByRole("button", { name: /^WARN / });
 
-  await warn.click({ button: "middle" });
+  // A middle-button mousedown (what Contrail reacts to): Playwright's real middle click is
+  // unreliable in WebKit.
+  await warn.dispatchEvent("mousedown", { button: 1 });
   await expect(warn).toHaveAttribute("aria-pressed", "true");
   await expect(levels.getByRole("button", { name: /^INFO / })).toHaveAttribute(
     "aria-pressed",
