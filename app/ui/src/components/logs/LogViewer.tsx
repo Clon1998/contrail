@@ -90,6 +90,33 @@ function LiveControls() {
   );
 }
 
+/** Why the live tail stopped, and a way to try again. */
+function LiveFailure() {
+  const live = useLogs((s) => s.live);
+  const retry = useLogs((s) => s.retryLive);
+  if (live?.state !== "failed") return null;
+  const login = /credentials|token/i.test(live.message ?? "");
+  return (
+    <div
+      role="alert"
+      className="flex items-start gap-2 border-b border-destructive/40 bg-destructive/5 px-4 py-1.5 text-xs"
+    >
+      <CircleAlertIcon className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+      <span className="min-w-0 flex-1">
+        Live tail stopped: {live.message}
+        <span className="block text-muted-foreground">
+          {login
+            ? "Log in again with the button in the top bar, then retry."
+            : "The role lacks a permission (docs/iam-policy.json lists them). Retry once it's fixed."}
+        </span>
+      </span>
+      <Button variant="outline" size="xs" onClick={retry}>
+        <RefreshCwIcon /> Retry
+      </Button>
+    </div>
+  );
+}
+
 /** The Logs tab: a service's (or one task's) events, backfilled and then followed live. */
 export function LogViewer() {
   const ctx = useEcs((s) => s.ctx);
@@ -199,6 +226,7 @@ export function LogViewer() {
         </DropdownMenu>
       </div>
 
+      <LiveFailure />
       {view && <SearchBar />}
       {error && (
         <p className="mx-4 mt-3 flex items-start gap-2 text-sm text-destructive">

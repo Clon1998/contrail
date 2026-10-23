@@ -159,6 +159,8 @@ export interface FakeBackendOptions {
   prefs?: Partial<Prefs>;
   /** How often live tails add an event (default: every second). */
   liveIntervalMs?: number;
+  /** The first this many live tail starts fail with an expired session. */
+  liveFailures?: number;
 }
 
 /** Creates the IPC handler. Each call starts from the initial demo state. */
@@ -265,7 +267,12 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
   }
 
   /** Sends a live update for a view: its state and counts, and which rows changed. */
-  function sendLive(viewId: number, state: LiveState, firstChanged: number | null) {
+  function sendLive(
+    viewId: number,
+    state: LiveState,
+    firstChanged: number | null,
+    message: string | null = null,
+  ) {
     const tail = tails.get(viewId);
     const events = views.get(viewId);
     if (!tail || events === undefined) return;
@@ -292,15 +299,22 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       matches: filter ? filter.matched.length : null,
       firstChanged,
       evicted: 0,
-      message: null,
+      message,
     };
     sendOnChannel(tail.channel, tail.sent++, update);
   }
 
   /** Every second, appends copies of a view's first events with fresh timestamps. */
+  let liveFailures = options.liveFailures ?? 0;
+
   function startTail(viewId: number) {
     const tail = tails.get(viewId);
     if (!tail || tail.timer) return;
+    if (liveFailures > 0) {
+      liveFailures--;
+      const message = 'no valid credentials for profile "demo-dev": ExpiredToken';
+      return sendLive(viewId, "failed", null, message);
+    }
     sendLive(viewId, "live", null);
     tail.timer = setInterval(() => {
       const events = views.get(viewId);

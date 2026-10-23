@@ -390,4 +390,25 @@ describe("App", () => {
     expect(within(dialog).getByText("Go to a service")).toBeTruthy();
     expect(within(dialog).getByRole("region", { name: "Search" })).toBeTruthy();
   });
+
+  it("explains a stopped live tail and retries it", async () => {
+    installFakeBackend({ liveIntervalMs: 60_000, liveFailures: 1 });
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "orders-api" })).getByRole("button"),
+    );
+    const view = await screen.findByRole("main", { name: "Service orders-api" });
+    fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
+
+    const alert = await within(view).findByRole("alert");
+    expect(alert.textContent).toContain("ExpiredToken");
+    expect(alert.textContent).toContain("Log in again");
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    expect(await within(view).findByRole("status", { name: "Live tail: Live" })).toBeTruthy();
+    expect(within(view).queryByRole("alert")).toBeNull();
+  });
 });

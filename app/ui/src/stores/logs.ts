@@ -95,6 +95,8 @@ export interface LogsState {
   /** Makes sure the rows `from..=to` are (being) loaded. */
   fetchRows: (from: number, to: number) => void;
   setPaused: (reason: PauseReason, paused: boolean) => void;
+  /** Tries a stopped live tail again (e.g. after logging in). */
+  retryLive: () => void;
   /** Changes the search and applies it to the open view. */
   setSearch: (change: Partial<Search>) => Promise<void>;
   /** Applies the current search to the open view (e.g. after the noise list changed). */
@@ -259,6 +261,11 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
       const view = get().view;
       if (!view || before === after) return;
       void (after ? commands.pauseLive(view.viewId) : commands.resumeLive(view.viewId));
+    },
+
+    retryLive: () => {
+      const view = get().view;
+      if (view) void commands.resumeLive(view.viewId);
     },
 
     setSearch: async (change) => {
