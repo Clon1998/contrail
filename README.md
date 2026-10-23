@@ -61,6 +61,9 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
 - **Secrets:** variables filled from Secrets Manager or SSM show their reference; **Reveal** reads the value
   on that click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored
   or logged.
+- **Updates:** Contrail checks the GitHub releases on start (once a day, can be switched off) and installs a
+  newer version on request (Settings → About → Updates). Setup for maintainers:
+  [docs/updates-and-public-release.md](docs/updates-and-public-release.md).
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
   default log time window, newest-first order and timestamps in local time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in

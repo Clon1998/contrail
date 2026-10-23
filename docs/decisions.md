@@ -216,3 +216,13 @@ rate). A checkbox switches to **Logs Insights** (one query per region and 50 log
 optional `logs:StartQuery`/`logs:GetQueryResults`). The trace key is whatever ID the line carries: the
 pipeline framework's correlation ID, or an API's trace ID. A chain is *completed* when every service's last
 status is COMPLETED, *failed* when any is FAILED, otherwise *open*.
+
+## 2026-10-23 — In-app updates; Contrail to become public
+
+Patrick wants Frida-style in-app updates. GitHub serves `releases/latest/download/latest.json` without a token
+only for public repositories, and a token inside the app would leak, so **Contrail will become public**
+(Patrick switches the visibility himself after the history audit in `docs/updates-and-public-release.md`).
+The app uses `tauri-plugin-updater` (check on start at most once a day, a setting; "Check now"; install with
+progress and cancel); release builds sign updater artifacts and tauri-action uploads `latest.json` when the
+signing-key secret exists. The public key in `tauri.conf.json` stays empty until Patrick generates the key;
+until then installing explains why it can't.
