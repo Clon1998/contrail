@@ -409,6 +409,28 @@ Ship as `docs/iam-policy.json` so teammates without admin can request exactly th
 - **Emulator maturity** — keep emulator tests optional so they never block progress.
 
 ## 10. Later / v2 ideas
+- **Pipeline framework support** (Patrick's in-house Camel/Kafka framework; details only in the gitignored
+  `fixtures/docs/`, never in tracked files). Its services log one *status-change event* per document step
+  (`RECEIVED → PUBLISHED`, `CONSUMING → COMPLETED | FAILED | RETRYING`) with the status fields under one
+  prefix (`fw.*`: state, previousState, message, correlationId, topicName, partition, offset, consumerGroup,
+  routeId, objectName), nested or dotted; in plain-text mode the same status follows as a JSON line.
+  - *In a view:* a state badge per status event, filter chips by state, "show this document" (filter by its
+    correlation ID). The correlation column already finds any `…correlationId` field.
+  - *Across services (tracing):* the correlation ID is created by the first producer and reused by every
+    consumer/producer downstream, so one ID links all hops. Trace view: search the ID in the log groups of
+    related services, group by service/topic, order by time, show each hop's state, mark the chain complete
+    when every branch ends in COMPLETED/FAILED, highlight FAILED/RETRYING and dead-letter lines (record tag
+    `<partition>#<offset>` links them). Data source: `FilterLogEvents` with the ID as filter pattern across
+    chosen log groups (no extra permission, no scan cost); Logs Insights as an opt-in for wide searches
+    (billed per GB, needs `logs:StartQuery`/`GetQueryResults`). Related services can be suggested from the
+    topics they consume/produce.
+- **Route view for routing-framework services** (one image runs configurable routes). Routes come from task
+  definition env vars in Spring relaxed binding: `<PREFIX>_ROUTES_<n>_TOPIC`, `…_ENABLED`, `…_GROUP`,
+  `…_INPUT_TYPE|SYSTEM|PROPERTIES_<KEY>`, `…_OUTPUTS_<m>_TYPE|SYSTEM|ENABLED|PROPERTIES_<KEY>` (prefix varies,
+  order arbitrary). Rebuild the route list generically (any `_ROUTES_<n>_` prefix; no fixed endpoint types)
+  and draw source → topic → targets per route (input and output instances are separate services linked by
+  topic, so a service-to-service graph by topic follows). Detect such services by image repository name (a
+  setting). Mask credential-looking properties as in the environment list.
 - Multi-container tasks / sidecars (container selector; model already carries `container`).
 - Cross-service trace view: follow one `trace.id` across several services.
 - Saved filters / query history; split view; Lambda log groups; CloudWatch Logs Insights quick queries.
