@@ -2,11 +2,13 @@
 /**
  * Replaces Starlight's hero (astro.config.mjs → `components.Hero`); only the landing page has
  * `hero` in its front matter. Custom, so the links can use the base path and the download
- * button can name the visitor's OS.
+ * button can name the visitor's OS. Next to the text: a small live tail (LiveTail.astro);
+ * behind it: the two contrails of the app icon.
  */
 import { LinkButton } from "@astrojs/starlight/components";
 import { REPO } from "../../site.config.mjs";
 import { latestRelease } from "../lib/release";
+import LiveTail from "./LiveTail.astro";
 import Screenshot from "./Screenshot.astro";
 
 const base = import.meta.env.BASE_URL;
@@ -14,36 +16,55 @@ const release = await latestRelease();
 ---
 
 <div class="hero not-content">
-  <div class="copy">
-    <a class="badge" href={release.pageUrl}>
-      {release.version ? `v${release.version}` : "Early development"}
-      <span>Free & open source (MIT) · macOS · Windows · Linux</span>
-    </a>
-    <h1 id="_top" data-page-title>
-      Your ECS logs,<br /><span class="accent">live and readable.</span>
-    </h1>
-    <p class="tagline">
-      Contrail is a fast desktop log viewer for AWS ECS. Pick an SSO profile, jump to a service and
-      follow its logs live, parsed into fields and searchable, without clicking through the console.
-    </p>
-    <div class="actions">
-      <LinkButton href={`${base}download/`} icon="download" iconPlacement="start" data-download>
-        Download
-      </LinkButton>
-      <LinkButton href={`${base}quick-start/`} variant="secondary" icon="right-arrow">
-        Quick start
-      </LinkButton>
-      <LinkButton href={REPO} variant="minimal" icon="github" iconPlacement="start">
-        GitHub
-      </LinkButton>
+  <svg class="trails" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="trail" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" style="stop-color: var(--sl-color-accent); stop-opacity: 0"></stop>
+        <stop offset="1" style="stop-color: var(--sl-color-accent); stop-opacity: 0.55"></stop>
+      </linearGradient>
+    </defs>
+    <path d="M-40 560 C 300 470, 640 300, 1240 40"></path>
+    <path d="M-40 600 C 320 510, 660 340, 1240 92"></path>
+  </svg>
+
+  <div class="top">
+    <div class="copy">
+      <a class="badge" href={release.pageUrl}>
+        <span class="dot" aria-hidden="true"></span>
+        {release.version ? `v${release.version}` : "early development"}
+        <span class="rest">· MIT · macOS · Windows · Linux</span>
+      </a>
+      <h1 id="_top" data-page-title>
+        Your ECS logs, <span class="accent">live and&nbsp;readable.</span>
+      </h1>
+      <p class="tagline">
+        Contrail is a fast desktop log viewer for AWS ECS. Pick an SSO profile, jump to a service
+        and follow its logs live, parsed into fields and searchable, without clicking through the
+        console.
+      </p>
+      <div class="actions">
+        <LinkButton href={`${base}download/`} icon="download" iconPlacement="start" data-download>
+          Download
+        </LinkButton>
+        <LinkButton href={`${base}quick-start/`} variant="secondary" icon="right-arrow">
+          Quick start
+        </LinkButton>
+        <LinkButton href={REPO} variant="minimal" icon="github" iconPlacement="start">
+          GitHub
+        </LinkButton>
+      </div>
     </div>
+    <LiveTail />
   </div>
+
   <Screenshot
     name="logs"
-    alt="Contrail following a service's logs live, with level chips, a search and an expanded line."
+    alt="Contrail showing a service's logs, with pipeline state and level chips and a search box."
+    title="orders-api · demo-core"
     eager
   />
 </div>
+
 <script>
   // Names the visitor's OS on the download button and jumps to its section.
   const ua = navigator.userAgent;
@@ -57,62 +78,96 @@ const release = await latestRelease();
 
 <style>
   .hero {
+    position: relative;
+    display: grid;
+    gap: 4rem;
+    padding-block: 2.5rem 1rem;
+  }
+  .trails {
+    position: absolute;
+    inset: -4rem -50vw auto;
+    width: calc(100% + 100vw);
+    height: 40rem;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .trails path {
+    fill: none;
+    stroke: url(#trail);
+    stroke-width: 10;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .trails path + path {
+    opacity: 0.6;
+  }
+  .top {
     display: grid;
     gap: 3rem;
-    padding-block: 2rem 1rem;
+    align-items: center;
+  }
+  @media (min-width: 64rem) {
+    .top {
+      grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    }
   }
   .copy {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 1.25rem;
-    max-width: 46rem;
-    margin-inline: auto;
+    align-items: flex-start;
+    gap: 1.5rem;
   }
   .badge {
     display: inline-flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    align-items: center;
     gap: 0.5rem;
-    padding: 0.3rem 0.9rem;
-    border: 1px solid var(--sl-color-accent);
-    border-radius: 999px;
-    background: var(--sl-color-accent-low);
-    color: var(--sl-color-accent-high);
-    font-size: var(--sl-text-sm);
-    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: var(--ct-radius);
+    background: var(--sl-color-black);
+    font-family: var(--sl-font-mono);
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-white);
     text-decoration: none;
   }
-  .badge span {
-    font-weight: 400;
-    color: var(--sl-color-gray-2);
+  .badge:hover {
+    border-color: var(--sl-color-accent);
+  }
+  .dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--ct-ok);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ct-ok) 25%, transparent);
+  }
+  .rest {
+    color: var(--sl-color-gray-3);
   }
   @media (max-width: 30rem) {
-    .badge span {
+    .rest {
       display: none;
     }
   }
   h1 {
     margin: 0;
-    font-size: clamp(2.25rem, 6vw, 3.75rem);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    font-weight: 800;
+    font-size: clamp(2.5rem, 6.5vw, 4.5rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    font-weight: 700;
     color: var(--sl-color-white);
   }
   .accent {
-    color: var(--sl-color-accent-high);
+    color: var(--sl-color-text-accent);
   }
   .tagline {
     margin: 0;
-    font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+    max-width: 36rem;
+    font-size: clamp(1.05rem, 2.2vw, 1.2rem);
     color: var(--sl-color-gray-2);
   }
   .actions {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: 0.75rem 1rem;
   }
 </style>

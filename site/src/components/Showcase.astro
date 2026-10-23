@@ -1,6 +1,7 @@
 ---
 /**
- * A landing page section: text on one side, a picture or code (the `media` slot) on the other.
+ * A landing page section: text on one side (under a `// eyebrow` label, see custom.css), a
+ * picture or code (the `media` slot) on the other.
  * Stacks on narrow screens; `flip` puts the media first on wide ones.
  */
 interface Props {
@@ -28,7 +29,10 @@ const { eyebrow, title, flip = false } = Astro.props;
     grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
     align-items: center;
-    padding-block: 3rem;
+    padding-block: 4rem;
+  }
+  .showcase + .showcase {
+    border-top: 1px solid var(--sl-color-hairline);
   }
   @media (min-width: 64rem) {
     .showcase {
@@ -42,19 +46,10 @@ const { eyebrow, title, flip = false } = Astro.props;
       order: 2;
     }
   }
-  .eyebrow {
-    margin: 0 0 0.5rem;
-    font-size: var(--sl-text-sm);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--sl-color-text-accent);
-  }
   h2 {
     margin: 0 0 1rem;
-    font-size: var(--sl-text-3xl);
-    line-height: 1.15;
-    letter-spacing: -0.02em;
+    font-size: clamp(1.6rem, 3.5vw, 2.25rem);
+    line-height: 1.1;
     color: var(--sl-color-white);
   }
   .text :global(p) {
@@ -63,8 +58,14 @@ const { eyebrow, title, flip = false } = Astro.props;
   }
   .text :global(ul) {
     margin: 0;
-    padding-inline-start: 1.25rem;
+    padding: 0;
+    list-style: none;
     color: var(--sl-color-gray-2);
+  }
+  .text :global(li)::before {
+    content: "→ ";
+    font-family: var(--sl-font-mono);
+    color: var(--sl-color-text-accent);
   }
   .text :global(li + li) {
     margin-top: 0.4rem;

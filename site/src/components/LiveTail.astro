@@ -1,0 +1,195 @@
+---
+/**
+ * A small, decorative live tail next to the hero text: invented log lines scroll in one by one,
+ * the way Contrail follows a service. Static (the first lines) without JavaScript or with
+ * reduced motion.
+ */
+type Level = "INFO" | "WARN" | "ERROR" | "DEBUG";
+
+/** [level, message]; `*word*` is shown as a search match. */
+const LINES: [Level, string][] = [
+  ["INFO", "POST /api/v1/orders -> 202 Accepted"],
+  ["DEBUG", "Refreshed 1212 catalog entries"],
+  ["INFO", "Received 3 records from example.orders.v1"],
+  ["WARN", "Retrying after 503 from *payments*-api"],
+  ["INFO", "Document status: PUBLISHED -> CONSUMING"],
+  ["ERROR", "*payments* call failed: read timed out"],
+  ["INFO", "Document status: CONSUMING -> COMPLETED"],
+  ["DEBUG", "Connection pool: 7 active, 3 idle"],
+  ["INFO", "GET /api/v1/orders/4711 -> 200 OK"],
+  ["WARN", "Slow query on orders_by_customer (812 ms)"],
+  ["INFO", "Published order.created for 4711"],
+  ["INFO", "Health check passed"],
+];
+const VISIBLE = 7;
+---
+
+<figure class="tail not-content" aria-hidden="true">
+  <div class="bar">
+    <span class="live"><span class="pulse"></span>live</span>
+    <span class="name">orders-api</span>
+    <span class="streams">3 tasks</span>
+  </div>
+  <div class="search"><span>›</span> payments<em>highlight</em></div>
+  <ol data-lines={JSON.stringify(LINES)}>
+    {
+      LINES.slice(0, VISIBLE).map(([level, message], i) => (
+        <li>
+          <time>{`09:41:${String(10 + i * 3).padStart(2, "0")}.${String(100 + i * 137).slice(0, 3)}`}</time>
+          <b class={level.toLowerCase()}>{level}</b>
+          <span set:html={message.replace(/\*(.+?)\*/g, "<mark>$1</mark>")} />
+        </li>
+      ))
+    }
+  </ol>
+</figure>
+
+<script>
+  // Appends the next invented line every ~1.6 s and drops the oldest one.
+  const list = document.querySelector<HTMLOListElement>(".tail ol");
+  if (list && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const lines = JSON.parse(list.dataset.lines ?? "[]") as [string, string][];
+    let next = list.children.length;
+    let seconds = 31;
+    setInterval(() => {
+      const [level, message] = lines[next++ % lines.length];
+      seconds = (seconds + 1 + Math.floor(Math.random() * 3)) % 60;
+      const ms = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+      const li = document.createElement("li");
+      li.className = "new";
+      const time = document.createElement("time");
+      time.textContent = `09:42:${String(seconds).padStart(2, "0")}.${ms}`;
+      const tag = document.createElement("b");
+      tag.className = level.toLowerCase();
+      tag.textContent = level;
+      const text = document.createElement("span");
+      // Only our own constant strings end up here.
+      text.innerHTML = message.replace(/\*(.+?)\*/g, "<mark>$1</mark>");
+      li.append(time, tag, text);
+      list.append(li);
+      list.firstElementChild?.remove();
+    }, 1600);
+  }
+</script>
+
+<!-- Global (but all under .tail): the script adds lines, which scoped styles wouldn't reach. -->
+<style is:global>
+  .tail {
+    margin: 0;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: var(--ct-radius);
+    background: color-mix(in srgb, var(--sl-color-black) 92%, transparent);
+    backdrop-filter: blur(6px);
+    font-family: var(--sl-font-mono);
+    font-size: 0.75rem;
+    box-shadow: 0 30px 80px -30px color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+    overflow: hidden;
+  }
+  .tail .bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--sl-color-gray-5);
+    color: var(--sl-color-gray-3);
+  }
+  .tail .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ct-ok);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.68rem;
+  }
+  .tail .pulse {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: var(--ct-ok);
+    animation: ct-pulse 1.6s ease-in-out infinite;
+  }
+  .tail .name {
+    color: var(--sl-color-white);
+  }
+  .tail .streams {
+    margin-left: auto;
+  }
+  .tail .search {
+    margin: 0.7rem 0.9rem 0.3rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.25rem;
+    color: var(--sl-color-gray-1);
+  }
+  .tail .search {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .tail .search span {
+    color: var(--sl-color-text-accent);
+  }
+  .tail .search em {
+    margin-left: auto;
+    font-style: normal;
+    color: var(--sl-color-gray-3);
+  }
+  .tail ol {
+    margin: 0;
+    padding: 0.4rem 0 0.7rem;
+    list-style: none;
+  }
+  .tail li {
+    display: grid;
+    grid-template-columns: auto 3.4rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.22rem 0.9rem;
+    white-space: nowrap;
+  }
+  .tail li span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--sl-color-gray-1);
+  }
+  .tail li.new {
+    animation: ct-arrive 0.9s ease-out;
+  }
+  .tail time {
+    color: var(--sl-color-gray-3);
+  }
+  .tail b {
+    font-weight: 600;
+  }
+  .tail .info {
+    color: var(--sl-color-white);
+  }
+  .tail .debug {
+    color: var(--sl-color-gray-3);
+  }
+  .tail .warn {
+    color: var(--ct-warn);
+  }
+  .tail .error {
+    color: var(--ct-error);
+  }
+  .tail li:has(.error) {
+    background: color-mix(in srgb, var(--ct-error) 10%, transparent);
+  }
+  .tail li mark {
+    padding: 0 0.15em;
+    border-radius: 0.15rem;
+    background: color-mix(in srgb, var(--ct-warn) 30%, transparent);
+    color: inherit;
+  }
+  @keyframes ct-arrive {
+    from {
+      background: color-mix(in srgb, var(--sl-color-accent) 22%, transparent);
+    }
+  }
+  @keyframes ct-pulse {
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+</style>

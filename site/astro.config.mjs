@@ -29,7 +29,11 @@ export default defineConfig({
       ],
       social: [{ icon: "github", label: "GitHub", href: REPO }],
       editLink: { baseUrl: `${REPO}/edit/main/site/` },
-      customCss: ["./src/styles/custom.css"],
+      customCss: [
+        "@fontsource-variable/schibsted-grotesk",
+        "@fontsource-variable/jetbrains-mono",
+        "./src/styles/custom.css",
+      ],
       // The landing page's hero, see the comment in the component.
       components: { Hero: "./src/components/Hero.astro" },
       sidebar: [
