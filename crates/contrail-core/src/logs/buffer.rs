@@ -150,6 +150,15 @@ impl LogBuffer {
         self.stats.clone()
     }
 
+    pub fn get(&self, index: usize) -> Option<&LogEvent> {
+        self.events.get(index)
+    }
+
+    /// All events, oldest first.
+    pub fn iter(&self) -> impl Iterator<Item = &LogEvent> {
+        self.events.iter()
+    }
+
     /// Up to `limit` events starting at `offset` (oldest first), for the UI's visible window.
     pub fn window(&self, offset: usize, limit: usize) -> Vec<LogEvent> {
         self.events

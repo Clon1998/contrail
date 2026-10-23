@@ -2,6 +2,7 @@
 //! in-memory buffer the log views read from.
 
 pub mod buffer;
+pub mod filter;
 mod json;
 pub mod location;
 pub mod multiline;
@@ -15,6 +16,7 @@ use specta::Type;
 use crate::timestamp::Timestamp;
 
 pub use buffer::{BufferStats, LogBuffer};
+pub use filter::{FilterMode, ViewFilter, VisibleChange};
 pub use location::{LocationError, LogLocation, resolve_log_location};
 pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
