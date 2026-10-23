@@ -135,6 +135,8 @@ mod tests {
         StreamSelection {
             log_group: "/ecs/orders-api".into(),
             region: None,
+            account_id: None,
+            stream_prefix: None,
             streams: (0..streams)
                 .map(|i| format!("ecs/orders-api/task{i:03}"))
                 .collect(),

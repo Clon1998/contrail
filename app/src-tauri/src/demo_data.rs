@@ -94,7 +94,7 @@ async fn record_logs() -> Value {
         let detail = ecs.describe_service(&ctx, &service).await.unwrap();
         let location = resolve_log_location(&detail.task_definition.unwrap()).unwrap();
         let tasks = ecs.list_tasks(&ctx, &service, true).await.unwrap();
-        let selection = location.selection(&tasks);
+        let selection = location.selection(&tasks, None, true);
         let backfill = logs
             .backfill(&ctx, &selection, range, 100_000)
             .await

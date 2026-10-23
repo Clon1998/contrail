@@ -1044,6 +1044,7 @@ name = "contrail-core"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "futures",
  "insta",
  "regex",
  "serde",

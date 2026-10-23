@@ -18,7 +18,9 @@ pub use buffer::{BufferStats, LogBuffer};
 pub use location::{LocationError, LogLocation, resolve_log_location};
 pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
-pub use source::{Backfill, LogSource, StreamSelection, TimeRange};
+pub use source::{
+    Backfill, LiveError, LiveItem, LiveStream, LogSource, StreamSelection, TimeRange,
+};
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
 /// `Level::Warn > Level::Info` works for "WARN and above" filters).

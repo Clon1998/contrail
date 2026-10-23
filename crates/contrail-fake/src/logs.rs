@@ -337,7 +337,9 @@ mod tests {
         StreamSelection {
             log_group: format!("/ecs/{service}"),
             region: None,
+            account_id: None,
             streams: tasks.iter().map(|t| format!("ecs/{service}/{t}")).collect(),
+            stream_prefix: None,
         }
     }
 

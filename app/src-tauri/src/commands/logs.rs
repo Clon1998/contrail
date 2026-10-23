@@ -74,7 +74,9 @@ async fn open_logs(
             .with_hint("ECS forgets stopped tasks after about an hour."));
         }
     }
-    let selection = location.selection(&tasks);
+    // `arn:aws:ecs:<region>:<account>:cluster/<name>`: the account is needed for log group ARNs.
+    let account_id = service.cluster_arn.split(':').nth(4).map(str::to_owned);
+    let selection = location.selection(&tasks, account_id, task_id.is_none());
 
     let now = OffsetDateTime::now_utc();
     let range = TimeRange {
