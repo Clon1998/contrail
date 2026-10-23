@@ -1,4 +1,4 @@
-import type { TimeWindow, TimeZone } from "@/bindings";
+import type { LiveState, TimeWindow, TimeZone } from "@/bindings";
 
 /** Backfill windows offered for log views, in minutes. */
 export const BACKFILL_WINDOWS: { minutes: number; label: string }[] = [
@@ -19,6 +19,40 @@ export const LIVE_BY_DEFAULT_MINUTES = 15;
 export function liveMode(timeWindow: TimeWindow): "live" | "paused" | "off" {
   if (timeWindow.kind === "range") return "off";
   return timeWindow.minutes <= LIVE_BY_DEFAULT_MINUTES ? "live" : "paused";
+}
+
+/**
+ * The tooltip of the live tail's state chip: what is happening and what the user can do. The
+ * backend's message (e.g. why it polls) wins when there is one.
+ */
+export function liveHint(live: {
+  state: LiveState;
+  message: string | null;
+  userPaused: boolean;
+  autoPaused: boolean;
+  mode: "live" | "paused" | "off";
+}): string {
+  if (live.message) return live.message;
+  switch (live.state) {
+    case "connecting":
+      return "Connecting to CloudWatch Live Tail; new events follow in a moment.";
+    case "live":
+      return "Following new events (CloudWatch Live Tail, billed per session minute). Pause stops the session.";
+    case "polling":
+      return "Live Tail isn't available: checking for new events every 2 seconds instead.";
+    case "reconnecting":
+      return "The Live Tail session ended: reconnecting and catching up on what was logged meanwhile.";
+    case "failed":
+      return "The live tail stopped. Retry to start it again.";
+    case "paused":
+      if (live.autoPaused && !live.userPaused) {
+        return "Paused while Contrail is hidden or the tab is in the background (see the live tail settings). It resumes when you're back.";
+      }
+      if (live.mode === "paused") {
+        return `Paused. Time windows longer than ${LIVE_BY_DEFAULT_MINUTES} minutes start paused; Resume catches up and follows new events.`;
+      }
+      return "Paused. Resume catches up and follows new events.";
+  }
 }
 
 export function sameWindow(a: TimeWindow, b: TimeWindow): boolean {

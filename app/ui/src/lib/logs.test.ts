@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatLogTime,
   fromDateTimeLocal,
+  liveHint,
   liveMode,
   stripAnsi,
   toDateTimeLocal,
@@ -86,5 +87,49 @@ describe("time windows", () => {
     expect(local).toBe(new Date(2026, 9, 22, 8, 15).toISOString());
     expect(toDateTimeLocal(local ?? "", "local")).toBe("2026-10-22T08:15");
     expect(fromDateTimeLocal("", "utc")).toBeNull();
+  });
+});
+
+describe("liveHint", () => {
+  const states = ["connecting", "live", "polling", "reconnecting", "paused", "failed"] as const;
+
+  it("explains every state in plain words", () => {
+    for (const state of states) {
+      const hint = liveHint({
+        state,
+        message: null,
+        userPaused: false,
+        autoPaused: false,
+        mode: "live",
+      });
+      expect(hint.length, state).toBeGreaterThan(20);
+      // No symbols that render as emoji on Windows.
+      expect(hint, state).not.toMatch(/[←-⯿\u{1F000}-\u{1FFFF}]/u);
+    }
+  });
+
+  it("says why a view is paused", () => {
+    const paused = { state: "paused", message: null } as const;
+    expect(liveHint({ ...paused, userPaused: true, autoPaused: false, mode: "paused" })).toMatch(
+      /longer than 15 minutes start paused/,
+    );
+    expect(liveHint({ ...paused, userPaused: false, autoPaused: true, mode: "live" })).toMatch(
+      /hidden or the tab is in the background/,
+    );
+    expect(liveHint({ ...paused, userPaused: true, autoPaused: false, mode: "live" })).toMatch(
+      /^Paused\. Resume/,
+    );
+  });
+
+  it("keeps the backend's reason when there is one", () => {
+    expect(
+      liveHint({
+        state: "polling",
+        message: "AccessDenied; checking every 2 seconds instead",
+        userPaused: false,
+        autoPaused: false,
+        mode: "live",
+      }),
+    ).toContain("AccessDenied");
   });
 });

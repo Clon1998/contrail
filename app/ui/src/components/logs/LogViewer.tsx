@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDateTime, shortTaskId } from "@/lib/ecs";
-import { formatLogTime, liveMode } from "@/lib/logs";
+import { formatLogTime, liveHint, liveMode } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -75,13 +75,7 @@ function LiveControls() {
   }
   if (!live) return null;
 
-  const hint =
-    live.message ??
-    (live.state === "paused" && !userPaused && autoPaused
-      ? "Paused automatically (see the live tail settings); resumes when you're back."
-      : live.state === "paused" && userPaused && mode === "paused"
-        ? "Longer time windows open paused; ▶ follows new events."
-        : undefined);
+  const hint = liveHint({ state: live.state, message: live.message, userPaused, autoPaused, mode });
   return (
     <span className="flex items-center gap-1.5">
       <Hint content={hint}>

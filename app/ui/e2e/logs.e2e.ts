@@ -324,3 +324,22 @@ test("with a search, the end of the list says the matches end there", async ({ p
     "No older matches in the time window",
   );
 });
+
+test("the live tail state explains itself in a tooltip", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const live = page.getByRole("status", { name: "Live tail: Live" });
+  await live.hover();
+  await expect(page.getByRole("tooltip").filter({ hasText: "Following new events" })).toHaveCount(
+    1,
+  );
+
+  await page
+    .getByRole("radiogroup", { name: "Time window" })
+    .getByRole("radio", { name: "1 h" })
+    .click();
+  await page.mouse.move(0, 0);
+  await page.getByRole("status", { name: "Live tail: Paused" }).hover();
+  await expect(
+    page.getByRole("tooltip").filter({ hasText: "longer than 15 minutes start paused" }),
+  ).toHaveCount(1);
+});
