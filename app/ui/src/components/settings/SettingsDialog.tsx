@@ -3,6 +3,7 @@ import { CheckIcon, SettingsIcon } from "lucide-react";
 import { cn } from "cn";
 import type { Accent, ColorMode, TimeZone } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -189,6 +190,29 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                       </Button>
                     ))}
                   </div>
+                </Row>
+                <Row
+                  label="Live tail"
+                  hint="CloudWatch bills Live Tail per session minute. Paused tails catch up when they resume."
+                >
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.pauseWhenHidden}
+                      onCheckedChange={(checked) =>
+                        void update({ pauseWhenHidden: checked === true })
+                      }
+                    />
+                    Pause while Contrail is hidden or minimized
+                  </label>
+                </Row>
+                <Row label="Pause views in the background after">
+                  <NumberSelect
+                    label="Pause views in the background after"
+                    value={settings.autoPauseMinutes}
+                    options={[0, 5, 10, 15, 30, 60]}
+                    format={(n) => (n === 0 ? "Never" : `${n} min`)}
+                    onChange={(autoPauseMinutes) => void update({ autoPauseMinutes })}
+                  />
                 </Row>
                 <Row label="Timestamps" hint="Log times and dates in tooltips.">
                   <div className="flex gap-1">

@@ -197,6 +197,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       backfillMinutes: 15,
       uiScale: 100,
       logFontSize: 12,
+      pauseWhenHidden: true,
+      autoPauseMinutes: 10,
     },
     ...options.prefs,
   };

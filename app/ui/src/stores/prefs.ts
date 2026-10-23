@@ -20,6 +20,8 @@ export const DEFAULT_SETTINGS: Settings = {
   backfillMinutes: 15,
   uiScale: 100,
   logFontSize: 12,
+  pauseWhenHidden: true,
+  autoPauseMinutes: 10,
 };
 
 export const EMPTY_PREFS: Prefs = {

@@ -421,6 +421,13 @@ export type Settings = {
 	uiScale: number,
 	/**  The font size of log lines, in pixels. */
 	logFontSize: number,
+	/**
+	 *  Pause live tails while Contrail's window is hidden or minimized (Live Tail is billed per
+	 *  session minute).
+	 */
+	pauseWhenHidden: boolean,
+	/**  Pause live tails of views that aren't shown after this many minutes; 0 = never. */
+	autoPauseMinutes: number,
 };
 
 export type Task = {
