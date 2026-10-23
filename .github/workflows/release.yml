@@ -2,6 +2,12 @@ name: Release
 
 # Pushing a tag like v0.1.0 builds unsigned installers for macOS (Apple silicon and Intel),
 # Windows and Linux and publishes them as a GitHub Release with notes from the changelog.
+#
+# In-app updates need the secrets TAURI_SIGNING_PRIVATE_KEY (the content of the key from
+# `pnpm tauri signer generate`) and TAURI_SIGNING_PRIVATE_KEY_PASSWORD; the matching public key is
+# `plugins.updater.pubkey` in tauri.conf.json (docs/updates-and-public-release.md). With them, each
+# installer gets a `.sig` and tauri-action adds a `latest.json`, which installed apps read once the
+# release is published. Without them, releases still build, just without updater files.
 on:
   push:
     tags: ['v*']
@@ -65,6 +71,8 @@ jobs:
             args: ''
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    env:
+      HAS_UPDATER_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
     steps:
       - uses: actions/checkout@v7
       - name: Install Tauri system dependencies
@@ -91,15 +99,24 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
+      - name: Enable updater artifacts
+        if: env.HAS_UPDATER_KEY == 'true'
+        shell: bash
+        run: echo "UPDATER_CONFIG=--config src-tauri/tauri.updater.conf.json" >> "$GITHUB_ENV"
       - name: Build and upload to the release
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Signs the updater artifacts (Tauri's own signature; installers stay unsigned).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: app
           tauriScript: pnpm tauri
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} ${{ env.UPDATER_CONFIG }}
           releaseId: ${{ needs.draft.outputs.release_id }}
+          # latest.json for in-app updates (each build adds its platform).
+          uploadUpdaterJson: ${{ env.HAS_UPDATER_KEY == 'true' }}
 
   publish:
     name: Publish the release
