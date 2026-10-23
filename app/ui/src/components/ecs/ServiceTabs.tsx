@@ -40,7 +40,13 @@ function TabItem({ tab, active }: { tab: ServiceTab; active: boolean }) {
       title={`${tab.service.serviceName} · ${nameFromArn(tab.service.clusterArn)}`}
       tabIndex={active ? 0 : -1}
       onClick={() => show(tab)}
-      onAuxClick={(e) => e.button === 1 && closeTab(tab.key)}
+      // Middle click closes (on mousedown: WebKit sends no auxclick, and it stops autoscroll).
+      onMouseDown={(e) => {
+        if (e.button === 1) {
+          e.preventDefault();
+          closeTab(tab.key);
+        }
+      }}
       onKeyDown={(e) => e.key === "Enter" && show(tab)}
       className={cn(
         "group flex max-w-48 shrink-0 cursor-default items-center gap-1.5 border-r border-border px-3 py-1.5 text-xs",
