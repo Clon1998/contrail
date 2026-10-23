@@ -4,7 +4,7 @@ import { ArrowDownToLineIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
-import { gridTemplate } from "./columns";
+import { gridTemplate, useLogColumns } from "./columns";
 import { LogRow } from "./LogRow";
 
 /** How close to the end counts as "at the bottom" (follow mode), in pixels. */
@@ -26,7 +26,7 @@ export function LogList({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fontSize = usePrefs((s) => s.prefs.settings.logFontSize);
-  const columns = useLogs((s) => s.columns);
+  const columns = useLogColumns();
   const pages = useLogs((s) => s.pages);
   const scrollTarget = useLogs((s) => s.scrollTarget);
   const highlightMode = useLogs((s) => s.search.mode === "highlight");

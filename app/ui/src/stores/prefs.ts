@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS: Settings = {
   logFontSize: 12,
   pauseWhenHidden: true,
   autoPauseMinutes: 10,
+  bufferSize: 100_000,
+  logColumns: [],
 };
 
 export const EMPTY_PREFS: Prefs = {

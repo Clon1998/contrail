@@ -268,6 +268,9 @@ export type LiveUpdate = {
 	message: string | null,
 };
 
+/**  Optional columns of the log list (time, level, task and message are always shown). */
+export type LogColumn = "logger" | "thread" | "correlation";
+
 /**  An exception attached to an event (ECS `error.*`, or a joined plain-text stack trace). */
 export type LogError = {
 	errorType: string | null,
@@ -497,6 +500,10 @@ export type Settings = {
 	pauseWhenHidden: boolean,
 	/**  Pause live tails of views that aren't shown after this many minutes; 0 = never. */
 	autoPauseMinutes: number,
+	/**  How many events a log view keeps (the oldest are dropped beyond that). */
+	bufferSize: number,
+	/**  The optional columns shown in log lists. */
+	logColumns: LogColumn[],
 };
 
 export type Task = {

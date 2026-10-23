@@ -9,7 +9,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import type { LiveState } from "@/bindings";
+import type { LiveState, LogColumn } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +23,8 @@ import { shortTaskId } from "@/lib/ecs";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
-import { OPTIONAL_COLUMNS } from "./columns";
+import { usePrefs } from "@/stores/prefs";
+import { OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { ExportMenu } from "./ExportMenu";
 import { LogList } from "./LogList";
 import { SearchBar } from "./SearchBar";
@@ -130,8 +131,12 @@ export function LogViewer() {
   const setMinutes = useLogs((s) => s.setMinutes);
   const taskFilter = useLogs((s) => s.taskFilter);
   const showTask = useLogs((s) => s.showTask);
-  const columns = useLogs((s) => s.columns);
-  const setColumn = useLogs((s) => s.setColumn);
+  const columns = useLogColumns();
+  const updateSettings = usePrefs((s) => s.updateSettings);
+  const setColumn = (column: LogColumn, shown: boolean) =>
+    void updateSettings({
+      logColumns: shown ? [...columns, column] : columns.filter((c) => c !== column),
+    });
   const visible = useLogs((s) => s.visible);
   // The task filter only applies to the service it was set for.
   const taskId = taskFilter && sameService(taskFilter.service, selected) ? taskFilter.taskId : null;
@@ -216,7 +221,7 @@ export function LogViewer() {
             {OPTIONAL_COLUMNS.map((column) => (
               <DropdownMenuCheckboxItem
                 key={column.id}
-                checked={columns[column.id]}
+                checked={columns.includes(column.id)}
                 onCheckedChange={(checked) => setColumn(column.id, checked === true)}
               >
                 {column.label}

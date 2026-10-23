@@ -88,6 +88,20 @@ pub enum TimeZone {
     Utc,
 }
 
+/// Optional columns of the log list (time, level, task and message are always shown).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum LogColumn {
+    Logger,
+    Thread,
+    Correlation,
+}
+
+/// The default number of events a log view keeps.
+pub const DEFAULT_BUFFER_SIZE: u32 = 100_000;
+/// The buffer size is kept within these bounds (memory vs. usefulness).
+pub const BUFFER_SIZE_RANGE: std::ops::RangeInclusive<u32> = 10_000..=500_000;
+
 /// The default backfill window of a log view, in minutes.
 pub const DEFAULT_BACKFILL_MINUTES: u32 = 15;
 /// The default UI size, in percent.
@@ -115,6 +129,10 @@ pub struct Settings {
     pub pause_when_hidden: bool,
     /// Pause live tails of views that aren't shown after this many minutes; 0 = never.
     pub auto_pause_minutes: u32,
+    /// How many events a log view keeps (the oldest are dropped beyond that).
+    pub buffer_size: u32,
+    /// The optional columns shown in log lists.
+    pub log_columns: Vec<LogColumn>,
 }
 
 /// Written by hand (instead of derived) because the numbers don't default to 0.
@@ -129,6 +147,8 @@ impl Default for Settings {
             log_font_size: DEFAULT_LOG_FONT_SIZE,
             pause_when_hidden: true,
             auto_pause_minutes: DEFAULT_AUTO_PAUSE_MINUTES,
+            buffer_size: DEFAULT_BUFFER_SIZE,
+            log_columns: Vec::new(),
         }
     }
 }
@@ -158,7 +178,15 @@ impl Settings {
         read(value, "logFontSize", &mut settings.log_font_size);
         read(value, "pauseWhenHidden", &mut settings.pause_when_hidden);
         read(value, "autoPauseMinutes", &mut settings.auto_pause_minutes);
+        read(value, "bufferSize", &mut settings.buffer_size);
+        read(value, "logColumns", &mut settings.log_columns);
         settings
+    }
+
+    /// The buffer size, kept within [`BUFFER_SIZE_RANGE`].
+    pub fn buffer_capacity(&self) -> usize {
+        self.buffer_size
+            .clamp(*BUFFER_SIZE_RANGE.start(), *BUFFER_SIZE_RANGE.end()) as usize
     }
 }
 
@@ -318,6 +346,20 @@ mod tests {
     }
 
     #[test]
+    fn buffer_size_and_columns_are_saved_and_bounded() {
+        let json = r#"{"settings":{"bufferSize":5,"logColumns":["thread","logger"]}}"#;
+        let settings = Prefs::from_json(json).unwrap().settings;
+        assert_eq!(settings.log_columns, [LogColumn::Thread, LogColumn::Logger]);
+        assert_eq!(settings.buffer_capacity(), 10_000);
+        assert_eq!(Settings::default().buffer_capacity(), 100_000);
+        // An unknown column (from a newer version) falls back to the default list.
+        let json = r#"{"settings":{"logColumns":["future"],"bufferSize":200000}}"#;
+        let settings = Prefs::from_json(json).unwrap().settings;
+        assert!(settings.log_columns.is_empty());
+        assert_eq!(settings.buffer_capacity(), 200_000);
+    }
+
+    #[test]
     fn noise_lists_per_service() {
         let mut prefs = Prefs::default();
         let orders = key("dev", "orders");
@@ -364,7 +406,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[]}"#
         );
     }
 

@@ -214,6 +214,18 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     onChange={(autoPauseMinutes) => void update({ autoPauseMinutes })}
                   />
                 </Row>
+                <Row
+                  label="Buffer size"
+                  hint="Events kept per open view (about 1–2 KB each); the oldest are dropped. Applies to views opened from now on."
+                >
+                  <NumberSelect
+                    label="Buffer size"
+                    value={settings.bufferSize}
+                    options={[25_000, 50_000, 100_000, 200_000, 500_000]}
+                    format={(n) => `${n / 1000}k events`}
+                    onChange={(bufferSize) => void update({ bufferSize })}
+                  />
+                </Row>
                 <Row label="Timestamps" hint="Log times and dates in tooltips.">
                   <div className="flex gap-1">
                     {TIME_ZONES.map((tz) => (

@@ -16,9 +16,6 @@ import {
 } from "@/bindings";
 import { noiseKey, usePrefs } from "./prefs";
 
-/** Optional columns of the log list (time, level, task and message are always shown). */
-export type OptionalColumn = "logger" | "thread" | "correlation";
-
 /** Why a live tail is paused; it runs only while none applies. */
 export type PauseReason = "user" | "hidden" | "background";
 
@@ -77,7 +74,6 @@ export interface LogsState {
   tab: "overview" | "logs";
   /** A task to show alone, set from the task list ("Logs" on a task row). */
   taskFilter: { service: ServiceRef; taskId: string } | null;
-  columns: Record<OptionalColumn, boolean>;
   /** Expanded rows, by sequence number. */
   expanded: Record<number, boolean>;
 
@@ -106,7 +102,6 @@ export interface LogsState {
   setTab: (tab: "overview" | "logs") => void;
   /** Shows only `taskId`'s logs, or all tasks again with `null`. */
   showTask: (service: ServiceRef, taskId: string | null) => void;
-  setColumn: (column: OptionalColumn, shown: boolean) => void;
   toggleExpanded: (seq: number) => void;
 }
 
@@ -157,7 +152,6 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     minutes,
     tab: "overview",
     taskFilter: null,
-    columns: { logger: false, thread: false, correlation: false },
     expanded: {},
 
     open: async (ctx, service, minutes, taskId) => {
@@ -333,7 +327,6 @@ export function createLogsStore(minutes: number): StoreApi<LogsState> {
     setTab: (tab) => set({ tab }),
     showTask: (service, taskId) =>
       set({ taskFilter: taskId ? { service, taskId } : null, tab: "logs" }),
-    setColumn: (column, shown) => set((s) => ({ columns: { ...s.columns, [column]: shown } })),
     toggleExpanded: (seq) => set((s) => ({ expanded: { ...s.expanded, [seq]: !s.expanded[seq] } })),
   }));
 

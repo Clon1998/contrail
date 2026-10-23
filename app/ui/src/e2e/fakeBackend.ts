@@ -203,6 +203,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       logFontSize: 12,
       pauseWhenHidden: true,
       autoPauseMinutes: 10,
+      bufferSize: 100_000,
+      logColumns: [],
     },
     noise: {},
     ...options.prefs,

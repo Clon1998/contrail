@@ -5,7 +5,6 @@ use std::sync::atomic::Ordering;
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
-use contrail_core::logs::buffer::DEFAULT_CAPACITY;
 use contrail_core::logs::{
     BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeRange,
     ViewFilter, process, resolve_log_location, write_events,
@@ -88,12 +87,13 @@ async fn open_logs(
         start: Timestamp(now - Duration::minutes(i64::from(minutes))),
         end: Timestamp(now),
     };
+    let capacity = state.prefs.get().settings.buffer_capacity();
     let backfill = state
         .logs
-        .backfill(&ctx, &selection, range, DEFAULT_CAPACITY)
+        .backfill(&ctx, &selection, range, capacity)
         .await?;
 
-    let mut buffer = LogBuffer::new(DEFAULT_CAPACITY);
+    let mut buffer = LogBuffer::new(capacity);
     buffer.insert(process(backfill.events));
     let info = LogViewInfo {
         view_id: state.next_view_id.fetch_add(1, Ordering::Relaxed),
