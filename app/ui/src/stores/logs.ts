@@ -204,6 +204,15 @@ export function mergeFetchedRows(
   return next;
 }
 
+/** A page cache holding the rows of `blocks` (rows not starting a page are left for a fetch). */
+export function pagesFromBlocks(blocks: { offset: number; rows: LogEvent[] }[]) {
+  const pages = new Map<number, LogEvent[]>();
+  for (const block of blocks) {
+    block.rows.forEach((event, i) => putRow(pages, block.offset + i, event));
+  }
+  return pages;
+}
+
 /** Like `appendRow`, but also replaces a row already cached at `index`. */
 function putRow(pages: Map<number, LogEvent[]>, index: number, event: LogEvent) {
   const rows = pages.get(Math.floor(index / PAGE_SIZE));
@@ -264,6 +273,8 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
    * slower round trip, nothing would ever load).
    */
   const inFlight = new Map<string, FetchDrift>();
+  /** The rows the list asked for last (on screen plus its prefetch margin). */
+  let lastRange = { from: 0, to: PAGE_SIZE - 1 };
   /** Records a change for the fetches in flight: `shift` rows dropped in front, rows from `from` changed. */
   function rowsMoved(shift: number, from: number | null) {
     for (const drift of inFlight.values()) {
@@ -389,6 +400,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     fetchRows: (from, to) => {
       const view = get().view;
       if (!view) return;
+      lastRange = { from, to };
       for (let page = Math.floor(from / PAGE_SIZE); page <= Math.floor(to / PAGE_SIZE); page++) {
         const key = `${view.viewId}:${page}`;
         if (isPageComplete(get().pages.get(page), page, get().visible) || inFlight.has(key))
@@ -431,14 +443,25 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         search.hideNoise && profile
           ? (usePrefs.getState().prefs.noise[noiseKey(profile, service)] ?? [])
           : [];
-      const result = await commands.setLogFilter(view.viewId, {
-        query: search.query,
-        mode: search.mode,
-        hiddenLevels: search.hiddenLevels,
-        searchRaw: search.raw,
-        regex: search.regex,
-        noise,
-      });
+      // The rows the list showed last (same positions), and the newest (where following stays):
+      // they come back with the result, so the list switches to the new rows in one step.
+      const from = Math.floor(lastRange.from / PAGE_SIZE) * PAGE_SIZE;
+      const span = Math.min(1000, lastRange.to - from + 1);
+      const result = await commands.setLogFilter(
+        view.viewId,
+        {
+          query: search.query,
+          mode: search.mode,
+          hiddenLevels: search.hiddenLevels,
+          searchRaw: search.raw,
+          regex: search.regex,
+          noise,
+        },
+        [
+          { offset: from, limit: span, fromEnd: false },
+          { offset: 0, limit: span, fromEnd: true },
+        ],
+      );
       if (get().view?.viewId !== view.viewId || result.status !== "ok") return;
       const outcome = result.data;
       if (outcome.kind === "invalid") {
@@ -451,8 +474,8 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         visible: outcome.visible,
         matches: outcome.matches,
         highlightTerms: outcome.highlightTerms,
-        // Every listed row may be different now.
-        pages: new Map(),
+        // Every listed row may be different now: only the rows that came along are known.
+        pages: pagesFromBlocks(outcome.rows),
         expanded: {},
         currentMatch: -1,
         matchPositions: [],
