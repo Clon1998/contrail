@@ -269,10 +269,11 @@ describe("App", () => {
     if (!logsButton) throw new Error("no task logs button");
     fireEvent.click(logsButton);
 
-    expect(await within(view).findByText(/^task [0-9a-f]{8}$/)).toBeTruthy();
     expect(await within(view).findByText("/ecs/legacy-gateway · 1 stream")).toBeTruthy();
-    fireEvent.click(within(view).getByRole("button", { name: "Show all tasks" }));
-    expect(await within(view).findByText("/ecs/legacy-gateway · 2 streams")).toBeTruthy();
+    // The toolbar's task picker shows the task (switching back is covered in Playwright).
+    expect(within(view).getByRole("combobox", { name: "Task" }).textContent).toMatch(
+      /task [0-9a-f]{8}/,
+    );
   });
 
   it("follows a view live, and pausing stops new rows", async () => {

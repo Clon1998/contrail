@@ -68,8 +68,24 @@ test("a task's logs from the task list, and back to all tasks", async ({ page })
 
   await expect(page.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("/ecs/legacy-gateway · 1 stream")).toBeVisible();
-  await page.getByRole("button", { name: "Show all tasks" }).click();
+  const picker = page.getByRole("combobox", { name: "Task" });
+  await expect(picker).toContainText("task ");
+  await picker.click();
+  await page.getByRole("option", { name: "All tasks" }).click();
   await expect(page.getByText("/ecs/legacy-gateway · 2 streams")).toBeVisible();
+});
+
+test("pick one task in the logs toolbar", async ({ page }) => {
+  await openLogs(page, "demo-edge", "legacy-gateway");
+  await expect(page.getByText("/ecs/legacy-gateway · 2 streams")).toBeVisible();
+
+  await page.getByRole("combobox", { name: "Task" }).click();
+  // Running tasks first, with their status.
+  await page
+    .getByRole("option", { name: /RUNNING/ })
+    .first()
+    .click();
+  await expect(page.getByText("/ecs/legacy-gateway · 1 stream")).toBeVisible();
 });
 
 test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", async ({ page }) => {

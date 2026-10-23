@@ -6,10 +6,9 @@ import {
   PauseIcon,
   PlayIcon,
   RefreshCwIcon,
-  XIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import type { LiveState, LogColumn } from "@/bindings";
+import type { LiveState, LogColumn, ServiceRef } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +18,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { shortTaskId } from "@/lib/ecs";
 import { BACKFILL_WINDOWS } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
@@ -119,6 +126,50 @@ function LiveFailure() {
   );
 }
 
+/** Radix Select can't use "" as a value, so "all tasks" gets a sentinel. */
+const ALL_TASKS = "__all__";
+
+/** All tasks of the service, or one of them (running tasks first). */
+function TaskPicker({ service, taskId }: { service: ServiceRef; taskId: string | null }) {
+  const tasks = useEcs((s) => s.tasks);
+  const showTask = useLogs((s) => s.showTask);
+  const list = "data" in tasks ? (tasks.data ?? []) : [];
+  const sorted = [...list].sort(
+    (a, b) => Number(b.lastStatus === "RUNNING") - Number(a.lastStatus === "RUNNING"),
+  );
+  // The chosen task may have dropped out of the list (e.g. stopped tasks hidden).
+  const missing = taskId !== null && !list.some((t) => t.id === taskId);
+
+  return (
+    <Select
+      value={taskId ?? ALL_TASKS}
+      onValueChange={(value) => showTask(service, value === ALL_TASKS ? null : value)}
+    >
+      <SelectTrigger size="sm" aria-label="Task" className="h-6 font-mono text-xs">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL_TASKS}>All tasks</SelectItem>
+        {(sorted.length > 0 || missing) && <SelectSeparator />}
+        {missing && <SelectItem value={taskId}>task {shortTaskId(taskId)}</SelectItem>}
+        {sorted.map((task) => (
+          <SelectItem key={task.id} value={task.id} className="font-mono text-xs">
+            task {shortTaskId(task.id)}
+            <span
+              className={cn(
+                "text-muted-foreground",
+                task.lastStatus === "RUNNING" && "text-success",
+              )}
+            >
+              {task.lastStatus}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 /** The Logs tab: a service's (or one task's) events, backfilled and then followed live. */
 export function LogViewer() {
   const ctx = useEcs((s) => s.ctx);
@@ -131,7 +182,6 @@ export function LogViewer() {
   const minutes = useLogs((s) => s.minutes);
   const setMinutes = useLogs((s) => s.setMinutes);
   const taskFilter = useLogs((s) => s.taskFilter);
-  const showTask = useLogs((s) => s.showTask);
   const columns = useLogColumns();
   const updateSettings = usePrefs((s) => s.updateSettings);
   const setColumn = (column: LogColumn, shown: boolean) =>
@@ -182,19 +232,7 @@ export function LogViewer() {
         >
           <RefreshCwIcon className={loading ? "animate-spin" : undefined} />
         </Button>
-        {taskId && selected && (
-          <Badge variant="secondary" className="gap-1 font-mono">
-            task {shortTaskId(taskId)}
-            <button
-              type="button"
-              aria-label="Show all tasks"
-              onClick={() => showTask(selected, null)}
-              className="rounded hover:text-foreground"
-            >
-              <XIcon className="size-3" />
-            </button>
-          </Badge>
-        )}
+        {selected && <TaskPicker service={selected} taskId={taskId} />}
         <LiveControls />
         {view && (
           <span className="truncate text-muted-foreground" title={view.location.logGroup}>
