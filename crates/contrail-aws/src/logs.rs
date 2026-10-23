@@ -137,7 +137,7 @@ fn live_item(message: StartLiveTailResponseStream) -> LiveItem {
 }
 
 /// Errors starting a session: some mean "Live Tail isn't possible here, poll instead".
-fn start_error<R: std::fmt::Debug>(
+fn start_error<R: std::fmt::Debug + 'static>(
     profile: &str,
     err: aws_sdk_cloudwatchlogs::error::SdkError<StartLiveTailError, R>,
 ) -> LiveError {
@@ -152,7 +152,7 @@ fn start_error<R: std::fmt::Debug>(
 }
 
 /// Errors on a running session: timeouts (3 hours) and streaming problems mean "reconnect".
-fn stream_error<R: std::fmt::Debug>(
+fn stream_error<R: std::fmt::Debug + 'static>(
     profile: &str,
     err: aws_sdk_cloudwatchlogs::error::SdkError<StartLiveTailResponseStreamError, R>,
 ) -> LiveError {

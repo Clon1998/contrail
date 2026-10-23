@@ -23,7 +23,7 @@ const ACCESS_DENIED_CODES: &[&str] = &["AccessDeniedException", "AccessDenied"];
 pub(crate) fn map_sdk_error<E, R>(profile: &str, err: SdkError<E, R>) -> SourceError
 where
     E: ProvideErrorMetadata + std::error::Error + Send + Sync + 'static,
-    R: std::fmt::Debug,
+    R: std::fmt::Debug + 'static,
 {
     let credentials = |message: String| SourceError::Credentials {
         profile: profile.to_owned(),
@@ -46,10 +46,70 @@ where
         }
         // Resolving credentials happens before the request is sent; when that fails (expired
         // SSO session, unknown profile, …) the SDK reports a dispatch failure that is neither an
-        // I/O error nor a timeout.
+        // I/O error nor a timeout. The full chain (with debug dumps of HTTP responses) is only
+        // useful in the log; the user sees the innermost cause, e.g. "Session token not found".
         SdkError::DispatchFailure(failure) if !failure.is_io() && !failure.is_timeout() => {
-            credentials(DisplayErrorContext(&err).to_string())
+            tracing::debug!(profile, error = %DisplayErrorContext(&err), "credentials failed");
+            credentials(root_cause(&err))
         }
         _ => SourceError::Aws(DisplayErrorContext(&err).to_string()),
+    }
+}
+
+/// The `Display` text of the last error in the `source()` chain (the most specific one).
+///
+/// `std::error::Error::source()` is Rust's counterpart of Java's `Throwable.getCause()`;
+/// `successors` keeps calling it until it returns `None`, like walking `getCause()` in a loop.
+fn root_cause(err: &(dyn std::error::Error + 'static)) -> String {
+    std::iter::successors(Some(err), |e| e.source())
+        .last()
+        .map(|e| e.to_string())
+        .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aws_sdk_sts::error::ConnectorError;
+    use aws_sdk_sts::operation::get_caller_identity::GetCallerIdentityError;
+
+    /// An error with an optional cause, to build chains like the SDK's credential providers do.
+    #[derive(Debug)]
+    struct Chained(&'static str, Option<Box<Chained>>);
+
+    impl std::fmt::Display for Chained {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str(self.0)
+        }
+    }
+
+    impl std::error::Error for Chained {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            self.1.as_deref().map(|e| e as _)
+        }
+    }
+
+    #[test]
+    fn credential_failures_report_only_the_root_cause() {
+        let cause = Chained(
+            "an error occurred while loading credentials",
+            Some(Box::new(Chained(
+                "service error",
+                Some(Box::new(Chained(
+                    "UnauthorizedException: Session token not found or invalid",
+                    None,
+                ))),
+            ))),
+        );
+        let err: SdkError<GetCallerIdentityError, ()> =
+            SdkError::dispatch_failure(ConnectorError::other(Box::new(cause), None));
+
+        assert_eq!(
+            map_sdk_error("dev", err),
+            SourceError::Credentials {
+                profile: "dev".into(),
+                message: "UnauthorizedException: Session token not found or invalid".into(),
+            }
+        );
     }
 }

@@ -341,3 +341,10 @@ One short entry per pattern: what it is, why it's used here, where to find it.
 - **What:** `LogView::new(…).with_mapping(mapping)` takes `mut self` by value, changes it and returns it:
   ownership moves through the call, so no `&mut` borrow or clone is needed (Java builders return `this`).
 - **Where:** `LogView::with_mapping` in `app/src-tauri/src/state.rs`.
+
+## Walking an error's cause chain (`source()` + `iter::successors`)
+
+- **What:** `std::error::Error::source()` returns the wrapped cause, like Java's `getCause()`.
+  `std::iter::successors(Some(err), |e| e.source())` turns that into an iterator, so `.last()` gives the
+  root cause. `&(dyn Error + 'static)` is needed because `source()` returns `'static` trait objects.
+- **Where:** `root_cause` in `crates/contrail-aws/src/error.rs` (short credential messages).
