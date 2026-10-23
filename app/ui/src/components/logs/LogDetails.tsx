@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckIcon, ChevronRightIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, CopyIcon, EyeOffIcon } from "lucide-react";
 import { cn } from "cn";
 import type { LogEvent } from "@/bindings";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import {
   type JsonToken,
   type TraceLineKind,
 } from "@/lib/logs";
+import { appendTerm, fieldTerm } from "@/lib/highlight";
+import { useLogs } from "@/stores/logs";
+import { usePrefs } from "@/stores/prefs";
+import { useProfiles } from "@/stores/profiles";
 import { Ansi } from "./Ansi";
 
 /** Stack traces longer than this start collapsed. */
@@ -94,6 +98,15 @@ function StackTrace({ trace }: { trace: string }) {
 /** The expanded view of one event: message, error, fields, raw JSON and copy actions. */
 export function LogDetails({ event }: { event: LogEvent }) {
   const { line } = event;
+  const query = useLogs((s) => s.search.query);
+  const setSearch = useLogs((s) => s.setSearch);
+  const applySearch = useLogs((s) => s.applySearch);
+  const service = useLogs((s) => s.service);
+  const profile = useProfiles((s) => s.selected);
+  const addNoise = usePrefs((s) => s.addNoise);
+  const filterBy = (term: string) => void setSearch({ query: appendTerm(query, term) });
+  // The first line of the message, cut at 80 characters: specific enough, short enough to read.
+  const noiseText = (line.message.split("\n", 1)[0] ?? "").trim().slice(0, 80);
   const embedded = splitEmbeddedJson(line.message, line.jsonSpan);
   const embeddedPretty = embedded ? prettyJson(embedded.json) : null;
   const rawPretty = line.kind === "ecs" || line.kind === "json" ? prettyJson(event.raw) : null;
@@ -104,6 +117,16 @@ export function LogDetails({ event }: { event: LogEvent }) {
         <CopyButton label="Copy message" text={line.message} />
         {rawPretty && <CopyButton label="Copy JSON" text={rawPretty} />}
         <CopyButton label="Copy as single line" text={event.raw.replace(/\s*\n\s*/g, " ")} />
+        {profile && service && noiseText && (
+          <Button
+            variant="outline"
+            size="xs"
+            title={`Hide lines containing “${noiseText}” in this service`}
+            onClick={() => void addNoise(profile, service, noiseText).then(applySearch)}
+          >
+            <EyeOffIcon /> Hide lines like this
+          </Button>
+        )}
       </div>
 
       <div className="whitespace-pre-wrap break-words">
@@ -139,7 +162,16 @@ export function LogDetails({ event }: { event: LogEvent }) {
           {line.fields.map((field) => (
             <div key={field.key} className="contents">
               <dt className="text-muted-foreground">{field.key}</dt>
-              <dd className="break-all">{String(field.value)}</dd>
+              <dd className="break-all">
+                <button
+                  type="button"
+                  title="Add to the search"
+                  onClick={() => filterBy(fieldTerm(field.key, String(field.value)))}
+                  className="text-left hover:text-primary hover:underline"
+                >
+                  {String(field.value)}
+                </button>
+              </dd>
             </div>
           ))}
         </dl>

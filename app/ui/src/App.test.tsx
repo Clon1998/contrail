@@ -266,4 +266,61 @@ describe("App", () => {
     fireEvent.click(within(view).getByRole("button", { name: "Resume live tail" }));
     expect(await within(view).findByRole("status", { name: "Live tail: Live" })).toBeTruthy();
   });
+
+  async function openPaymentsLogs() {
+    installFakeBackend({ liveIntervalMs: 60_000 });
+    render(<App />);
+    const tree = await screen.findByRole("tree", { name: "Clusters" });
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+    );
+    fireEvent.click(
+      within(await within(tree).findByRole("treeitem", { name: "payments-worker" })).getByRole(
+        "button",
+      ),
+    );
+    const view = await screen.findByRole("main", { name: "Service payments-worker" });
+    fireEvent.mouseDown(within(view).getByRole("tab", { name: "Logs" }), { button: 0 });
+    const list = await within(view).findByRole("list", { name: "Log events" });
+    return { view, list };
+  }
+
+  it("filters by level and shows query errors with a hint", async () => {
+    const { view, list } = await openPaymentsLogs();
+    const search = within(view).getByRole("textbox", { name: "Search logs" });
+
+    fireEvent.change(search, { target: { value: "level:ERROR" } });
+    await waitFor(() => expect(Number(list.getAttribute("aria-rowcount"))).toBeLessThan(25));
+    expect(within(view).getByLabelText("Match count").textContent).toMatch(/^\d+ of 25$/);
+
+    fireEvent.change(search, { target: { value: "level:LOUD" } });
+    const alert = await within(view).findByRole("alert");
+    expect(alert.textContent).toContain('unknown level "LOUD"');
+    expect(alert.textContent).toContain("TRACE, DEBUG, INFO, WARN, ERROR");
+  });
+
+  it("highlight mode keeps all rows and counts matches", async () => {
+    const { view, list } = await openPaymentsLogs();
+    fireEvent.click(within(view).getByRole("radio", { name: "highlight" }));
+    fireEvent.change(within(view).getByRole("textbox", { name: "Search logs" }), {
+      target: { value: "settling" },
+    });
+    await waitFor(() =>
+      expect(within(view).getByLabelText("Match count").textContent).toMatch(/\d+ matches$/),
+    );
+    expect(list.getAttribute("aria-rowcount")).toBe("25");
+    fireEvent.click(within(view).getByRole("button", { name: "Next match" }));
+    await waitFor(() =>
+      expect(within(view).getByLabelText("Match count").textContent).toMatch(/^1 \/ \d+ matches$/),
+    );
+  });
+
+  it("level chips hide a level", async () => {
+    const { view, list } = await openPaymentsLogs();
+    const levels = within(view).getByRole("group", { name: "Levels" });
+    const info = within(levels).getByRole("button", { name: /^INFO / });
+    fireEvent.click(info);
+    await waitFor(() => expect(info.getAttribute("aria-pressed")).toBe("false"));
+    await waitFor(() => expect(Number(list.getAttribute("aria-rowcount"))).toBeLessThan(25));
+  });
 });

@@ -9,7 +9,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import type { Level, LiveState } from "@/bindings";
+import type { LiveState } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,8 +26,8 @@ import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { OPTIONAL_COLUMNS } from "./columns";
-import { LEVEL_TONE, LEVELS } from "./levels";
 import { LogList } from "./LogList";
+import { SearchBar } from "./SearchBar";
 
 const LIVE_LABEL: Record<LiveState, string> = {
   connecting: "Connecting…",
@@ -97,7 +97,8 @@ export function LogViewer() {
   const selected = useEcs((s) => s.selected);
   const defaultMinutes = usePrefs((s) => s.prefs.settings.backfillMinutes);
   const [minutes, setMinutes] = useState(defaultMinutes);
-  const { view, loading, error, open, close, taskFilter, showTask, columns, setColumn } = useLogs();
+  const { view, loading, error, open, close, taskFilter, showTask, columns, setColumn, visible } =
+    useLogs();
   // The task filter only applies to the service it was set for.
   const taskId = taskFilter && sameService(taskFilter.service, selected) ? taskFilter.taskId : null;
 
@@ -165,14 +166,7 @@ export function LogViewer() {
             {`${view.location.logGroup} · ${view.streams} ${view.streams === 1 ? "stream" : "streams"}`}
           </span>
         )}
-        <span className="ml-auto flex items-center gap-2" aria-label="Level counts">
-          {view &&
-            LEVELS.map((level) => (
-              <span key={level} className={LEVEL_TONE[level]}>
-                {level} {view.stats[level.toLowerCase() as Lowercase<Level>].toLocaleString()}
-              </span>
-            ))}
-        </span>
+        <span className="ml-auto" />
         {view?.truncated && (
           <Badge
             variant="outline"
@@ -202,6 +196,7 @@ export function LogViewer() {
         </DropdownMenu>
       </div>
 
+      {view && <SearchBar />}
       {error && (
         <p className="mx-4 mt-3 flex items-start gap-2 text-sm text-destructive">
           <CircleAlertIcon className="mt-0.5 size-4 shrink-0" />
@@ -219,8 +214,11 @@ export function LogViewer() {
       {!loading && view && view.stats.total === 0 && (
         <p className="p-4 text-sm text-muted-foreground">No log events in this time window.</p>
       )}
-      {!loading && view && view.stats.total > 0 && (
-        <LogList viewId={view.viewId} total={view.stats.total} showTask={taskId === null} />
+      {!loading && view && view.stats.total > 0 && visible === 0 && (
+        <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
+      )}
+      {!loading && view && visible > 0 && (
+        <LogList viewId={view.viewId} total={visible} showTask={taskId === null} />
       )}
     </div>
   );

@@ -4,11 +4,15 @@ import {
   commands,
   type ApiError,
   type AwsCtx,
+  type FilterMode,
+  type Level,
   type LiveUpdate,
   type LogEvent,
   type LogViewInfo,
+  type QueryError,
   type ServiceRef,
 } from "@/bindings";
+import { noiseKey, usePrefs } from "./prefs";
 
 /** Optional columns of the log list (time, level, task and message are always shown). */
 export type OptionalColumn = "logger" | "thread" | "correlation";
@@ -18,6 +22,25 @@ export type PauseReason = "user" | "hidden" | "background";
 
 /** Rows are fetched from the Rust buffer in pages of this size. */
 export const PAGE_SIZE = 100;
+
+/** The search of the log view (kept when switching services). */
+export interface Search {
+  query: string;
+  mode: FilterMode;
+  /** Search the whole raw line, not just the message. */
+  raw: boolean;
+  hiddenLevels: Level[];
+  /** Hide lines matching the service's noise list. */
+  hideNoise: boolean;
+}
+
+export const EMPTY_SEARCH: Search = {
+  query: "",
+  mode: "filter",
+  raw: false,
+  hiddenLevels: [],
+  hideNoise: true,
+};
 
 interface LogsState {
   /** The open view, or `null`. Its `stats` follow the live updates. */
@@ -32,6 +55,20 @@ interface LogsState {
   pauseReasons: Record<PauseReason, boolean>;
   /** Loaded rows by page (`index / PAGE_SIZE`). */
   pages: Map<number, LogEvent[]>;
+  /** How many rows the list shows (all events, or the matches when filtering). */
+  visible: number;
+  search: Search;
+  /** Matching events when a search is set. */
+  matches: number | null;
+  queryError: QueryError | null;
+  /** Words to highlight in messages. */
+  highlightTerms: string[];
+  /** In highlight mode: the listed rows that match, ascending. */
+  matchPositions: number[];
+  /** The match last jumped to (index into `matchPositions`), or -1. */
+  currentMatch: number;
+  /** A row the list should scroll to (`nonce` makes repeated jumps to the same row work). */
+  scrollTarget: { index: number; nonce: number } | null;
   /** Which tab of the service view is shown. */
   tab: "overview" | "logs";
   /** A task to show alone, set from the task list ("Logs" on a task row). */
@@ -46,6 +83,12 @@ interface LogsState {
   /** Makes sure the rows `from..=to` are (being) loaded. */
   fetchRows: (from: number, to: number) => void;
   setPaused: (reason: PauseReason, paused: boolean) => void;
+  /** Changes the search and applies it to the open view. */
+  setSearch: (change: Partial<Search>) => Promise<void>;
+  /** Applies the current search to the open view (e.g. after the noise list changed). */
+  applySearch: () => Promise<void>;
+  /** Jumps to the next (1) or previous (-1) match after/before `fromIndex`. */
+  gotoMatch: (direction: 1 | -1, fromIndex: number) => Promise<void>;
   setTab: (tab: "overview" | "logs") => void;
   /** Shows only `taskId`'s logs, or all tasks again with `null`. */
   showTask: (service: ServiceRef, taskId: string | null) => void;
@@ -80,6 +123,14 @@ export const useLogs = create<LogsState>((set, get) => ({
   live: null,
   pauseReasons: NO_PAUSE,
   pages: new Map(),
+  visible: 0,
+  search: EMPTY_SEARCH,
+  matches: null,
+  queryError: null,
+  highlightTerms: [],
+  matchPositions: [],
+  currentMatch: -1,
+  scrollTarget: null,
   tab: "overview",
   taskFilter: null,
   columns: { logger: false, thread: false, correlation: false },
@@ -96,6 +147,8 @@ export const useLogs = create<LogsState>((set, get) => ({
       expanded: {},
       live: null,
       pages: new Map(),
+      matchPositions: [],
+      currentMatch: -1,
       pauseReasons: { ...get().pauseReasons, user: false },
     });
     if (previous) void commands.closeLogView(previous.viewId);
@@ -110,7 +163,9 @@ export const useLogs = create<LogsState>((set, get) => ({
       return;
     }
     const view = opened.data;
-    set({ view, loading: false });
+    set({ view, loading: false, visible: view.stats.total, matches: null });
+    // The search carries over to the new view.
+    await get().applySearch();
 
     // Live updates for this view: new state and counts, and which cached rows are stale.
     const channel = new Channel<LiveUpdate>((update) => {
@@ -119,8 +174,13 @@ export const useLogs = create<LogsState>((set, get) => ({
       set({
         live: update,
         view: { ...current, stats: update.stats },
+        visible: update.visible,
+        matches: update.matches,
         pages: keepValidPages(get().pages, update),
       });
+      if (get().search.mode === "highlight" && update.firstChanged !== null) {
+        scheduleMatchRefresh();
+      }
     });
     await commands.startLive(view.viewId, channel);
     // Auto-pause may already apply (e.g. opened while hidden).
@@ -140,6 +200,7 @@ export const useLogs = create<LogsState>((set, get) => ({
       expanded: {},
       live: null,
       pages: new Map(),
+      matchPositions: [],
     });
     if (view) await commands.closeLogView(view.viewId);
   },
@@ -169,9 +230,100 @@ export const useLogs = create<LogsState>((set, get) => ({
     void (after ? commands.pauseLive(view.viewId) : commands.resumeLive(view.viewId));
   },
 
+  setSearch: async (change) => {
+    set({ search: { ...get().search, ...change } });
+    await get().applySearch();
+  },
+
+  applySearch: async () => {
+    const { view, service, search } = get();
+    if (!view || !service) return;
+    const profile = usePrefs.getState().prefs.lastProfile;
+    const noise =
+      search.hideNoise && profile
+        ? (usePrefs.getState().prefs.noise[noiseKey(profile, service)] ?? [])
+        : [];
+    const result = await commands.setLogFilter(view.viewId, {
+      query: search.query,
+      mode: search.mode,
+      hiddenLevels: search.hiddenLevels,
+      searchRaw: search.raw,
+      noise,
+    });
+    if (get().view?.viewId !== view.viewId || result.status !== "ok") return;
+    const outcome = result.data;
+    if (outcome.kind === "invalid") {
+      set({ queryError: outcome.error });
+      return;
+    }
+    set({
+      queryError: null,
+      visible: outcome.visible,
+      matches: outcome.matches,
+      highlightTerms: outcome.highlightTerms,
+      // Every listed row may be different now.
+      pages: new Map(),
+      expanded: {},
+      currentMatch: -1,
+      matchPositions: [],
+    });
+    if (search.mode === "highlight") await refreshMatchPositions();
+  },
+
+  gotoMatch: async (direction, fromIndex) => {
+    const { search, visible } = get();
+    if (search.mode === "highlight") {
+      await refreshMatchPositions();
+      const positions = get().matchPositions;
+      if (positions.length === 0) return;
+      // The first match after (or before) the given row, wrapping around.
+      let target =
+        direction === 1
+          ? positions.findIndex((p) => p > fromIndex)
+          : lastBefore(positions, fromIndex);
+      if (target === -1) target = direction === 1 ? 0 : positions.length - 1;
+      const index = positions[target] ?? 0;
+      set({ currentMatch: target, scrollTarget: { index, nonce: Date.now() } });
+      return;
+    }
+    // Filtering: every listed row is a match; step row by row.
+    if (visible === 0) return;
+    const index = Math.min(Math.max(fromIndex + direction, 0), visible - 1);
+    set({ scrollTarget: { index, nonce: Date.now() } });
+  },
+
   setTab: (tab) => set({ tab }),
   showTask: (service, taskId) =>
     set({ taskFilter: taskId ? { service, taskId } : null, tab: "logs" }),
   setColumn: (column, shown) => set((s) => ({ columns: { ...s.columns, [column]: shown } })),
   toggleExpanded: (seq) => set((s) => ({ expanded: { ...s.expanded, [seq]: !s.expanded[seq] } })),
 }));
+
+/** Fetches the rows that match (highlight mode) for marking and navigation. */
+async function refreshMatchPositions() {
+  const view = useLogs.getState().view;
+  if (!view) return;
+  const result = await commands.getMatchPositions(view.viewId);
+  if (result.status === "ok" && useLogs.getState().view?.viewId === view.viewId) {
+    useLogs.setState({ matchPositions: result.data });
+  }
+}
+
+let matchRefresh: ReturnType<typeof setTimeout> | undefined;
+
+/** Live updates arrive every second: refresh the match positions at most twice a second. */
+function scheduleMatchRefresh() {
+  if (matchRefresh) return;
+  matchRefresh = setTimeout(() => {
+    matchRefresh = undefined;
+    void refreshMatchPositions();
+  }, 500);
+}
+
+/** The index of the last position before `index`, or -1 (positions are ascending). */
+function lastBefore(positions: number[], index: number): number {
+  for (let i = positions.length - 1; i >= 0; i--) {
+    if ((positions[i] ?? Infinity) < index) return i;
+  }
+  return -1;
+}

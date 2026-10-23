@@ -1,0 +1,313 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CircleHelpIcon,
+  EyeOffIcon,
+  SearchIcon,
+  XIcon,
+} from "lucide-react";
+import { cn } from "cn";
+import type { Level } from "@/bindings";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useEcs } from "@/stores/ecs";
+import { useLogs } from "@/stores/logs";
+import { noiseKey, usePrefs } from "@/stores/prefs";
+import { useProfiles } from "@/stores/profiles";
+import { LEVEL_TONE, LEVELS } from "./levels";
+
+/** Typing pauses this long before the search runs. */
+const DEBOUNCE_MS = 200;
+
+const SYNTAX: [string, string][] = [
+  ["timeout", "text in the message (any case)"],
+  ['"read timed out"', "a phrase"],
+  ["/time(out|d out)/", "a regular expression"],
+  ["level:ERROR  level>=WARN", "the log level"],
+  ["trace.id:abc123", "a field equals"],
+  ["log.logger:*Camel*", "a field matches (* and ?)"],
+  ["pipeline.offset>=230000", "a number compared (> >= < <=)"],
+  ["task:5f2a  message:x", "task ID prefix, message"],
+  ["-healthcheck", "exclude (any term)"],
+];
+
+function SyntaxHelp() {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon-xs" aria-label="Search syntax">
+          <CircleHelpIcon />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[28rem] text-xs">
+        <p className="mb-2 font-medium">Search syntax</p>
+        <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+          {SYNTAX.map(([example, meaning]) => (
+            <div key={example} className="contents">
+              <dt className="font-mono">{example}</dt>
+              <dd className="text-muted-foreground">{meaning}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-2 text-muted-foreground">
+          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous.
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** "Hide noise": the toggle and the service's list of hidden texts. */
+function NoiseMenu() {
+  const service = useLogs((s) => s.service);
+  const hideNoise = useLogs((s) => s.search.hideNoise);
+  const setSearch = useLogs((s) => s.setSearch);
+  const applySearch = useLogs((s) => s.applySearch);
+  const profile = useProfiles((s) => s.selected);
+  const noise = usePrefs((s) => s.prefs.noise);
+  const removeNoise = usePrefs((s) => s.removeNoise);
+  if (!service || !profile) return null;
+  const list = noise[noiseKey(profile, service)] ?? [];
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="xs"
+          aria-label="Noise"
+          className={cn(list.length > 0 && hideNoise && "text-primary")}
+        >
+          <EyeOffIcon /> Noise {list.length > 0 && `(${list.length})`}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96 space-y-2 text-xs">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={hideNoise}
+            onChange={(e) => void setSearch({ hideNoise: e.target.checked })}
+          />
+          Hide lines containing these texts
+        </label>
+        {list.length === 0 ? (
+          <p className="text-muted-foreground">
+            Nothing yet. Expand a log line and choose “Hide lines like this”.
+          </p>
+        ) : (
+          <ul aria-label="Noise texts" className="space-y-1">
+            {list.map((text) => (
+              <li key={text} className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate font-mono" title={text}>
+                  {text}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Show lines like ${text} again`}
+                  onClick={() => void removeNoise(profile, service, text).then(applySearch)}
+                >
+                  <XIcon />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** Level chips: counts per level; clicking hides or shows a level. */
+function LevelChips() {
+  const stats = useLogs((s) => s.view?.stats);
+  const hidden = useLogs((s) => s.search.hiddenLevels);
+  const setSearch = useLogs((s) => s.setSearch);
+  if (!stats) return null;
+  const toggle = (level: Level) =>
+    void setSearch({
+      hiddenLevels: hidden.includes(level) ? hidden.filter((l) => l !== level) : [...hidden, level],
+    });
+  return (
+    <span className="flex items-center gap-1" role="group" aria-label="Levels">
+      {LEVELS.map((level) => {
+        const shown = !hidden.includes(level);
+        return (
+          <button
+            key={level}
+            type="button"
+            aria-pressed={shown}
+            aria-label={`${level} ${stats[level.toLowerCase() as Lowercase<Level>]}`}
+            onClick={() => toggle(level)}
+            className={cn(
+              "rounded border px-1.5 py-0.5 tabular-nums",
+              shown
+                ? cn("border-border", LEVEL_TONE[level])
+                : "border-transparent text-muted-foreground/50 line-through",
+            )}
+          >
+            {level} {stats[level.toLowerCase() as Lowercase<Level>].toLocaleString()}
+          </button>
+        );
+      })}
+    </span>
+  );
+}
+
+/** The search row of the log view. */
+export function SearchBar() {
+  const search = useLogs((s) => s.search);
+  const setSearch = useLogs((s) => s.setSearch);
+  const queryError = useLogs((s) => s.queryError);
+  const matches = useLogs((s) => s.matches);
+  const visible = useLogs((s) => s.visible);
+  const total = useLogs((s) => s.view?.stats.total ?? 0);
+  const positions = useLogs((s) => s.matchPositions);
+  const currentMatch = useLogs((s) => s.currentMatch);
+  const scrollTarget = useLogs((s) => s.scrollTarget);
+  const gotoMatch = useLogs((s) => s.gotoMatch);
+  const selected = useEcs((s) => s.selected);
+  const [text, setText] = useState(search.query);
+  const input = useRef<HTMLInputElement>(null);
+
+  // Typing → search after a short pause.
+  useEffect(() => {
+    if (text === search.query) return;
+    const timer = setTimeout(() => void setSearch({ query: text }), DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [text, search.query, setSearch]);
+
+  // Click-to-filter and similar change the query from outside: show it.
+  const [shownQuery, setShownQuery] = useState(search.query);
+  if (shownQuery !== search.query) {
+    setShownQuery(search.query);
+    setText(search.query);
+  }
+
+  const from =
+    search.mode === "highlight" ? (positions[currentMatch] ?? -1) : (scrollTarget?.index ?? -1);
+  const step = (direction: 1 | -1) => void gotoMatch(direction, from);
+
+  // F3 / Shift+F3 anywhere in the log view; ⌘F / Ctrl+F focuses the search.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "F3") {
+        event.preventDefault();
+        void gotoMatch(event.shiftKey ? -1 : 1, from);
+      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        input.current?.focus();
+        input.current?.select();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [gotoMatch, from]);
+
+  const active = search.query.trim() !== "";
+  return (
+    <div className="space-y-1 border-b border-border px-4 py-1.5 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <div
+          className={cn(
+            "flex min-w-64 flex-1 items-center gap-1.5 rounded-md border px-2",
+            queryError ? "border-destructive" : "border-input",
+          )}
+        >
+          <SearchIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          <input
+            ref={input}
+            aria-label="Search logs"
+            aria-invalid={queryError !== null}
+            placeholder={selected ? "Search: timeout level>=WARN trace.id:abc -health …" : "Search"}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void setSearch({ query: text }).then(() => step(e.shiftKey ? -1 : 1));
+              } else if (e.key === "Escape") {
+                setText("");
+                void setSearch({ query: "" });
+              }
+            }}
+            className="h-7 min-w-0 flex-1 bg-transparent font-mono outline-none"
+          />
+          {text && (
+            <button type="button" aria-label="Clear search" onClick={() => setText("")}>
+              <XIcon className="size-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+        <SyntaxHelp />
+        <div
+          role="radiogroup"
+          aria-label="Search mode"
+          className="flex rounded-md border border-border p-0.5"
+        >
+          {(["filter", "highlight"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              role="radio"
+              aria-checked={search.mode === mode}
+              onClick={() => void setSearch({ mode })}
+              className={cn(
+                "rounded px-2 py-0.5 capitalize",
+                search.mode === mode
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+        <label
+          className="flex items-center gap-1 text-muted-foreground"
+          title="Search all fields and the full stack trace"
+        >
+          <input
+            type="checkbox"
+            checked={search.raw}
+            onChange={(e) => void setSearch({ raw: e.target.checked })}
+          />
+          whole line
+        </label>
+        {active && !queryError && (
+          <span aria-label="Match count" className="text-muted-foreground tabular-nums">
+            {search.mode === "highlight"
+              ? `${positions.length > 0 && currentMatch >= 0 ? `${currentMatch + 1} / ` : ""}${(matches ?? 0).toLocaleString()} matches`
+              : `${visible.toLocaleString()} of ${total.toLocaleString()}`}
+          </span>
+        )}
+        {active && (
+          <span className="flex">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Previous match"
+              onClick={() => step(-1)}
+            >
+              <ChevronUpIcon />
+            </Button>
+            <Button variant="ghost" size="icon-xs" aria-label="Next match" onClick={() => step(1)}>
+              <ChevronDownIcon />
+            </Button>
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-2">
+          <LevelChips />
+          <NoiseMenu />
+        </span>
+      </div>
+      {queryError && (
+        <p role="alert" className="text-destructive">
+          {queryError.message}
+          {queryError.hint && <span className="text-muted-foreground"> · {queryError.hint}</span>}
+        </p>
+      )}
+    </div>
+  );
+}
