@@ -253,6 +253,12 @@ fn lines(stream: &str, service: &str, format: Format, at: OffsetDateTime) -> Vec
     }
 }
 
+/// A request's trace ID (32 hex digits, like OpenTelemetry's). A handful of them, shared by
+/// orders-api, billing-sync and payments-worker, so one request shows up in several services.
+fn trace_id(seed: u64) -> String {
+    format!("5f3c9a7e1b2d4c6e{:016x}", (seed % 7 + 1) * 0x9e37_79b9_7f4a)
+}
+
 const THREADS: &[&str] = &[
     "main",
     "scheduling-1",
@@ -316,6 +322,10 @@ fn nested(service: &str, seed: u64, at: OffsetDateTime) -> String {
             "correlationId": format!("DE40C0DE{:08X}-{:016X}", seed % 7, (seed % 7) * 7919),
         });
     }
+    // Requests and their downstream calls carry a trace ID; background jobs don't.
+    else if level != "DEBUG" {
+        event["trace"] = json!({ "id": trace_id(seed >> 24) });
+    }
     event["ecs"] = json!({ "version": "8.11" });
     event.to_string()
 }
@@ -357,6 +367,23 @@ fn dotted(service: &str, seed: u64, at: OffsetDateTime) -> String {
         "log.logger": "com.example.payments.service.SettlementService",
         "message": format!("Settled batch 2026/{:04}", seed % 10_000),
     });
+    // Payments come in over HTTP and look up their order in orders-api, with a trace ID.
+    if roll < 70 {
+        event["trace.id"] = json!(trace_id(seed >> 24));
+    }
+    if (20..45).contains(&roll) {
+        event["log.logger"] = json!("com.example.payments.web.PaymentController");
+        event["message"] = json!(format!(
+            "POST /api/v1/payments -> 201 Created ({} ms)",
+            20 + seed % 180
+        ));
+    } else if (45..70).contains(&roll) {
+        event["log.logger"] = json!("com.example.payments.client.OrdersClient");
+        event["message"] = json!(format!(
+            "GET orders-api /api/v1/orders/{} -> 200 OK",
+            100_000 + seed % 900_000
+        ));
+    }
     if roll < 20 {
         event["log.level"] = json!(if roll < 12 { "ERROR" } else { "WARN" });
         event["message"] = json!("Error while settling batch");
@@ -429,7 +456,7 @@ fn spring(service: &str, seed: u64, at: OffsetDateTime) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use contrail_core::logs::{LogKind, process};
+    use contrail_core::logs::{FieldValue, LogKind, process};
     use std::time::Duration as StdDuration;
     use time::macros::datetime;
 
@@ -498,6 +525,30 @@ mod tests {
             let events = process(raw.events);
             assert!(!events.is_empty(), "{service}");
             assert!(events.iter().all(|e| e.line.kind == kind), "{service}");
+        }
+    }
+
+    #[tokio::test]
+    async fn a_trace_id_shows_up_in_several_services() {
+        let services = ["orders-api", "billing-sync", "payments-worker"];
+        let mut events = Vec::new();
+        for service in services {
+            let raw = fake()
+                .backfill(&ctx(), &selection(service, &["t1"]), minutes(10), 10_000)
+                .await
+                .unwrap();
+            events.push(process(raw.events));
+        }
+        let id = trace_id(0);
+        for (service, events) in services.iter().zip(&events) {
+            assert!(
+                events.iter().any(|e| e
+                    .line
+                    .fields
+                    .iter()
+                    .any(|f| matches!(&f.value, FieldValue::Text(v) if *v == id))),
+                "{service} logs {id}"
+            );
         }
     }
 
