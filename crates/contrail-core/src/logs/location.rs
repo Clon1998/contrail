@@ -40,6 +40,7 @@ impl LogLocation {
             streams: tasks.iter().map(|t| self.stream_for(&t.id)).collect(),
             stream_prefix: whole_service
                 .then(|| format!("{}/{}/", self.stream_prefix, self.container)),
+            filter_pattern: None,
         }
     }
 }

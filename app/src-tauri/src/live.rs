@@ -598,6 +598,7 @@ mod tests {
             account_id: Some("111122223333".into()),
             streams: vec![STREAM.into()],
             stream_prefix: None,
+            filter_pattern: None,
         }
     }
 

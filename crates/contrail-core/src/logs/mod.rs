@@ -13,6 +13,7 @@ pub mod slices;
 pub mod source;
 mod spring;
 pub mod status;
+pub mod trace;
 
 use serde::{Deserialize, Serialize};
 use specta::Type;

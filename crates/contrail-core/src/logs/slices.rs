@@ -148,6 +148,7 @@ mod tests {
             account_id: None,
             streams: vec![],
             stream_prefix: None,
+            filter_pattern: None,
         }
     }
 

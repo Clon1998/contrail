@@ -99,6 +99,9 @@ impl LogSource for FakeLogs {
             .iter()
             .flat_map(|stream| generate(stream, service, format, interval, range))
             .collect();
+        if let Some(pattern) = &selection.filter_pattern {
+            events.retain(|e| e.message.contains(pattern.as_str()));
+        }
         events.sort_by_key(|e| e.timestamp);
         let truncated = events.len() > limit;
         events.truncate(limit);
@@ -405,6 +408,7 @@ mod tests {
             account_id: None,
             streams: tasks.iter().map(|t| format!("ecs/{service}/{t}")).collect(),
             stream_prefix: None,
+            filter_pattern: None,
         }
     }
 

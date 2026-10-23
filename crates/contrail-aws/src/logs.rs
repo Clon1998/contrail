@@ -203,6 +203,14 @@ async fn backfill(
             (None, prefix) => request.set_log_stream_name_prefix(prefix.clone()),
         };
         let mut pages = request
+            // A quoted pattern matches the exact text (IDs contain `-`, which would otherwise
+            // be read as an exclusion).
+            .set_filter_pattern(
+                selection
+                    .filter_pattern
+                    .as_ref()
+                    .map(|text| format!("\"{}\"", text.replace('"', ""))),
+            )
             .start_time(millis(range.start))
             .end_time(millis(range.end))
             .into_paginator()
@@ -271,6 +279,7 @@ mod tests {
             region: None,
             account_id: None,
             stream_prefix: None,
+            filter_pattern: None,
             streams: (0..streams)
                 .map(|i| format!("ecs/orders-api/task{i:03}"))
                 .collect(),
@@ -449,5 +458,18 @@ mod tests {
 
         assert_eq!(rule.num_calls(), 1, "one request instead of two batches");
         assert_eq!(result.events[0].stream, "ecs/orders-api/new-task");
+    }
+
+    #[tokio::test]
+    async fn a_filter_pattern_is_sent_as_a_quoted_phrase() {
+        let rule = mock!(Client::filter_log_events)
+            .match_requests(|req| req.filter_pattern() == Some("\"DE40-0001\""))
+            .then_output(|| FilterLogEventsOutput::builder().build());
+        let client = mock_client!(aws_sdk_cloudwatchlogs, [&rule]);
+        let mut sel = selection(1);
+        sel.filter_pattern = Some("DE40-0001".into());
+
+        backfill(&client, "dev", &sel, range(), 100).await.unwrap();
+        assert_eq!(rule.num_calls(), 1);
     }
 }

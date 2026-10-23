@@ -28,6 +28,9 @@ pub struct StreamSelection {
     /// Live tail and polling use it instead of `streams`, so tasks started later (deployments,
     /// restarts) are picked up automatically. `None` for a single task.
     pub stream_prefix: Option<String>,
+    /// Only events containing this text (a CloudWatch filter pattern for a quoted phrase), e.g. a
+    /// correlation ID when tracing a document; `None` reads everything.
+    pub filter_pattern: Option<String>,
 }
 
 /// A time range, start inclusive, end exclusive.
