@@ -120,3 +120,16 @@ of date, so Rust and TypeScript demo data can't drift.
   10 minutes; resume with a gap backfill. Both adjustable in the settings.
 - **Updater:** none in v0.1 (needs a signing key); installs come from the GitHub Release.
 - **App identifier:** stays `io.github.clon1998.contrail`.
+
+## 2026-10-23 — Live tail by stream prefix instead of stream-set refreshes
+
+Live Tail accepts `logStreamNamePrefixes` (and `FilterLogEvents` a `logStreamNamePrefix`). A whole-service view
+tails `<prefix>/<container>/`, so tasks started by later deployments are included automatically; the planned
+periodic stream-set refresh isn't needed. A task view uses its exact stream name. Verified against the SDK docs:
+log groups must be given as ARNs (account from the cluster ARN), at most 10 groups, stream names only with one
+group, one update per second with at most 500 events (then sampled), sessions end after 3 hours.
+
+**Fallbacks:** `AccessDenied`, `LimitExceeded` and `InvalidOperation` switch the view to polling
+`FilterLogEvents` every 2 seconds; a session timeout or streaming error reconnects after a catch-up backfill
+(from 5 s before the last event; the buffer drops the overlap). Expired credentials stop the tail until it is
+resumed (e.g. after logging in).
