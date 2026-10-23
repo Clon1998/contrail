@@ -61,7 +61,10 @@ test("a day in the life", async ({ page }) => {
   // The known settlement retries are noise today. (Filter to them first: the list keeps growing,
   // and an applied search resets expanded rows, so wait for it before expanding one.)
   await search.fill('"Error while settling batch"');
-  await expect(payments.getByLabel("Match count")).toContainText(/^[1-9]\d* of/);
+  // Applied once every row on screen is one of them (the count may still show the previous search).
+  await expect(list.getByRole("button", { name: /^(?!.*Error while settling batch)/ })).toHaveCount(
+    0,
+  );
   await list.getByText("Error while settling batch", { exact: true }).first().click();
   await list.getByRole("button", { name: "Hide lines like this" }).click();
   await expect(payments.getByText("No events match the search.")).toBeVisible();
