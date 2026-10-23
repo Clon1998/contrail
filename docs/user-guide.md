@@ -21,10 +21,12 @@ page has the details.
 - **Secrets:** variables filled from Secrets Manager or SSM show their reference; **Reveal** reads the value on that
   click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored or logged. It
   needs the optional `ContrailOptionalRevealSecrets` statement of the [IAM policy](iam-policy.json).
-- **Routes** of routing-framework services (configured as `<PREFIX>_ROUTES_<n>_…` environment variables) are shown
-  one per row: source system → topic → target systems, the consumer group, and whether a route or target is
-  disabled. Click a route for the types, properties and settings (passwords from Secrets Manager or SSM with
-  **Reveal**). "Find connected services" adds the services on the other side of each topic to the rows.
+- **Routes** of routing-framework services (configured as `<PREFIX>_ROUTES_<n>_…` environment variables) are drawn
+  as a graph: where data comes from → the topics → where it goes, each system once (several routes to one system
+  meet there). Disabled routes and targets are dashed. Hover a node to highlight its routes; click it for their
+  settings: a system shows what its routes share once (connection, user, password from Secrets Manager or SSM
+  with **Reveal**) and what differs per route (a queue, a path). "Find connected services" adds the services on
+  the other side of each topic; click one to open it.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile. Star a
   service to pin it to the sidebar.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
