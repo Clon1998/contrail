@@ -30,6 +30,7 @@ export function LogRow({
 }) {
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   const expanded = useLogs((s) => s.expanded[event.seq] ?? false);
+  const fresh = useLogs((s) => s.fresh[event.seq] ?? false);
   const toggle = useLogs((s) => s.toggleExpanded);
   const columns = useLogColumns();
   const terms = useLogs((s) => s.highlightTerms);
@@ -37,7 +38,7 @@ export function LogRow({
   const firstLine = line.message.split("\n", 1)[0] ?? "";
 
   return (
-    <div>
+    <div data-fresh={fresh || undefined} className={cn(fresh && "motion-safe:animate-row-in")}>
       <button
         type="button"
         aria-expanded={expanded}

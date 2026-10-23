@@ -85,6 +85,8 @@ export interface LogsState {
   expanded: Record<number, boolean>;
   /** Loading older events of the window (the view starts with the newest). */
   older: { loading: boolean; full: boolean; error: ApiError | null };
+  /** Rows that just arrived live (by sequence number): they fade in briefly. */
+  fresh: Record<number, true>;
   /** Rows just put in front of the list (`nonce` makes each load count), for keeping the scroll. */
   prepended: { count: number; nonce: number } | null;
 
@@ -130,6 +132,8 @@ export interface LogsState {
 
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
 const NO_OLDER = { loading: false, full: false, error: null };
+/** How long a row that just arrived live stays highlighted. */
+const FRESH_MS = 1_500;
 
 /**
  * The cached rows after a live update. Evicted rows shift every index down (the cached rows move
@@ -273,6 +277,8 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
    * slower round trip, nothing would ever load).
    */
   const inFlight = new Map<string, FetchDrift>();
+  /** The highest sequence number seen (rows above it that come live are new). */
+  let newestSeq = 0;
   /** The rows the list asked for last (on screen plus its prefetch margin). */
   let lastRange = { from: 0, to: PAGE_SIZE - 1 };
   /** Records a change for the fetches in flight: `shift` rows dropped in front, rows from `from` changed. */
@@ -308,6 +314,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     expanded: {},
     older: NO_OLDER,
     prepended: null,
+    fresh: {},
 
     open: async (ctx, service, timeWindow, taskId) => {
       const mine = ++generation;
@@ -352,6 +359,19 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
       const channel = new Channel<LiveUpdate>((update) => {
         const current = get().view;
         if (current?.viewId !== view.viewId) return;
+        // Rows newer than any seen before arrived live: mark them fresh for a moment.
+        const arrived = update.rows.filter((e) => e.seq > newestSeq).map((e) => e.seq);
+        newestSeq = Math.max(newestSeq, ...update.rows.map((e) => e.seq));
+        if (arrived.length > 0) {
+          set({
+            fresh: { ...get().fresh, ...Object.fromEntries(arrived.map((seq) => [seq, true])) },
+          });
+          setTimeout(() => {
+            const done = new Set(arrived);
+            const fresh = Object.entries(get().fresh).filter(([seq]) => !done.has(Number(seq)));
+            set({ fresh: Object.fromEntries(fresh) as Record<number, true> });
+          }, FRESH_MS);
+        }
         set({
           live: update,
           view: { ...current, stats: update.stats },
@@ -410,6 +430,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         void commands.getLogRows(view.viewId, page * PAGE_SIZE, PAGE_SIZE).then((result) => {
           inFlight.delete(key);
           if (result.status !== "ok" || get().view?.viewId !== view.viewId) return;
+          newestSeq = Math.max(newestSeq, ...result.data.map((e) => e.seq));
           // Always a new map: rows left out make the list fetch again.
           set({ pages: mergeFetchedRows(get().pages, page, result.data, drift) });
         });
@@ -522,6 +543,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         return;
       }
       const loaded = result.data;
+      newestSeq = Math.max(newestSeq, ...loaded.rows.map((e) => e.seq));
       rowsMoved(-loaded.added, null); // the rows in flight moved back by what came in front
       set({
         view: {
