@@ -157,6 +157,10 @@ test("routes of a routing-framework service as a graph, and the services on the 
   const view = await openTreeService(page, "demo-edge", "event-ingest");
   const routes = view.getByRole("region", { name: "Routes" });
   const graph = routes.getByRole("group", { name: "Route graph" });
+  // The service itself is a node, selected at first.
+  await expect(
+    graph.getByRole("button", { name: "service event-ingest (this service)" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(graph.getByRole("button", { name: "system Example Partner" })).toBeVisible();
   await expect(graph.getByRole("button", { name: "topic demo.events" })).toBeVisible();
   // Settings only on request.
@@ -168,14 +172,12 @@ test("routes of a routing-framework service as a graph, and the services on the 
 
   await expect(routes).toContainText("Input service");
   await routes.getByRole("button", { name: "Find connected services" }).click();
-  // Its readers come after the topic, each with its consumer group; another writer of the same
-  // topic is no step on the way, only a note on the topic.
+  // The readers of its topic follow with their consumer groups; another writer of the topic sits
+  // next to it.
   await expect(graph.getByRole("button", { name: "service audit-archiver" })).toContainText(
     "group audit-archiver",
   );
-  await expect(graph.getByRole("button", { name: "topic demo.events" })).toContainText(
-    "also written by partner-poller",
-  );
+  await expect(graph.getByRole("button", { name: "service partner-poller" })).toBeVisible();
   await graph.getByRole("button", { name: "service legacy-gateway" }).click();
   await routes.getByRole("button", { name: "Open legacy-gateway" }).click();
 
@@ -189,13 +191,15 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await expect(gatewayRoutes).toContainText(
     "Output service: reads Kafka topics as consumer group legacy-gateway",
   );
-  // The writers of its topics come before them; another reader is only a note on the topic.
+  // The writers of its topics come before them; another reader sits next to it.
   await gatewayRoutes.getByRole("button", { name: "Find connected services" }).click();
   await expect(gatewayGraph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
-  await expect(gatewayGraph.getByRole("button", { name: "service audit-archiver" })).toHaveCount(0);
-  await expect(gatewayGraph.getByRole("button", { name: "topic demo.events" })).toContainText(
-    "also read by audit-archiver",
+  await expect(gatewayGraph.getByRole("button", { name: "service audit-archiver" })).toContainText(
+    "group audit-archiver",
   );
+  await expect(
+    gatewayGraph.getByRole("button", { name: "service legacy-gateway (this service)" }),
+  ).toContainText("this service");
 
   // Three routes write to one system: one node, its shared connection once, the queues per route.
   await expect(gatewayGraph.getByRole("button", { name: "system Billing" })).toHaveCount(1);

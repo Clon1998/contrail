@@ -25,19 +25,15 @@ import { useEcs } from "@/stores/ecs";
 import { SecretValue, Value } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
 
-/** Column titles from the point of view of an input or an output service. */
-const COLUMN_TITLES = {
-  in: ["", "Sources", "Topics", "Read by", "Their targets"],
-  out: ["Their sources", "Written by", "Topics", "Targets", ""],
-} as const;
-
-/** How the other services on a topic in the same direction are named. */
-const SIBLINGS = { in: "also written by", out: "also read by" } as const;
+/** The same in every service's graph; the service shown is in "Written by" or "Read by". */
+const COLUMN_TITLES = ["Sources", "Written by", "Topics", "Read by", "Targets"] as const;
 
 /**
  * The routes of a routing-framework service (rebuilt from its environment in Rust), drawn as a
- * graph: where data comes from → the topics → where it goes, each system once. A click on a node
- * shows the settings of its routes. On request, the services on the other side of each topic.
+ * graph around its topics: the systems and services writing them, the services and systems
+ * reading them, each system once. The service itself is selected at first, so its paths stand
+ * out; on request the other services on its topics join in. A click on a topic or one of its
+ * systems shows the settings.
  */
 export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }) {
   const routes = useMemo(() => containers.flatMap((c) => c.routes?.routes ?? []), [containers]);
@@ -49,13 +45,16 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
     | { kind: "done"; links: TopicLink[] }
     | { kind: "error"; error: ApiError }
   >({ kind: "idle" });
-  const [focus, setFocus] = useState<string | null>(null);
+  const self = selected?.serviceName ?? "";
+  // `undefined` until the user picks a node: then the service itself is selected.
+  const [picked, setPicked] = useState<string | null | undefined>(undefined);
   const graph = useMemo(
-    () => buildRouteGraph(routes, links.kind === "done" ? links.links : []),
-    [routes, links],
+    () => buildRouteGraph(self, routes, links.kind === "done" ? links.links : []),
+    [self, routes, links],
   );
   if (routes.length === 0) return null;
   const topics = [...new Set(routes.flatMap((r) => (r.topic ? [r.topic] : [])))];
+  const focus = picked === undefined ? graph.selfId : picked;
   const focused = graph.nodes.find((n) => n.id === focus) ?? null;
 
   const find = async () => {
@@ -119,11 +118,18 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
           </>
         )}
       </p>
-      <GraphView graph={graph} focus={focus} onFocus={(id) => setFocus(focus === id ? null : id)} />
-      {focused ? (
-        <NodeDetails node={focused} graph={graph} routes={routes} onClose={() => setFocus(null)} />
+      <GraphView
+        graph={graph}
+        focus={focus}
+        onFocus={(id) => setPicked(focus === id ? null : id)}
+      />
+      {focused && !focused.self ? (
+        <NodeDetails node={focused} graph={graph} routes={routes} onClose={() => setPicked(null)} />
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
+          {focused?.self
+            ? `${self}'s paths are highlighted; click it again to show all evenly. `
+            : ""}
           Click a topic or system for its settings.
         </p>
       )}
@@ -225,14 +231,13 @@ function GraphView({
       {columns.map(({ column, nodes }) => (
         <div key={column} className="flex min-w-0 flex-col">
           <h4 className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-            {COLUMN_TITLES[graph.direction][column]}
+            {COLUMN_TITLES[column]}
           </h4>
           <div className="flex flex-1 flex-col justify-center gap-2">
             {nodes.map((node) => (
               <GraphNode
                 key={node.id}
                 node={node}
-                siblingsLabel={SIBLINGS[graph.direction]}
                 ref={(element) => {
                   if (element) nodeElements.current.set(node.id, element);
                   else nodeElements.current.delete(node.id);
@@ -254,7 +259,6 @@ const NODE_ICON = { system: PlugIcon, service: ServerIcon, topic: WavesIcon } as
 
 function GraphNode({
   node,
-  siblingsLabel,
   ref,
   selected,
   dimmed,
@@ -262,8 +266,6 @@ function GraphNode({
   onHover,
 }: {
   node: RouteNode;
-  /** "also read by" or "also written by". */
-  siblingsLabel: string;
   ref: (element: HTMLButtonElement | null) => void;
   selected: boolean;
   dimmed: boolean;
@@ -275,7 +277,7 @@ function GraphNode({
     <button
       ref={ref}
       type="button"
-      aria-label={`${node.kind} ${node.label}${node.disabled ? " (disabled)" : ""}`}
+      aria-label={`${node.kind} ${node.label}${node.self ? " (this service)" : ""}${node.disabled ? " (disabled)" : ""}`}
       aria-pressed={selected}
       title={node.label}
       onClick={onClick}
@@ -286,7 +288,9 @@ function GraphNode({
       className={cn(
         "relative flex min-w-0 items-start gap-2 border bg-card px-2.5 py-1.5 text-left text-xs transition-opacity duration-150 hover:bg-accent",
         node.kind === "topic" ? "rounded-full border-primary/40 bg-primary/5" : "rounded-md",
-        node.kind === "service" ? "border-dashed border-border" : "border-border",
+        node.kind === "service" && !node.self && "border-dashed border-border",
+        node.kind === "system" && "border-border",
+        node.self && "border-primary/60 bg-primary/10",
         node.disabled && "border-dashed opacity-60",
         selected && "ring-2 ring-primary",
         dimmed && "opacity-40",
@@ -303,19 +307,11 @@ function GraphNode({
         >
           {node.label}
         </span>
-        {(node.detail ?? node.disabled) && (
+        {(node.detail !== null || node.disabled || node.self) && (
           <span className="truncate text-[11px] text-muted-foreground">
-            {node.detail}
+            {/* Its own group is in the line above the graph. */}
+            {node.self ? <span className="text-primary">this service</span> : node.detail}
             {node.disabled && <span className="text-warning"> disabled</span>}
-          </span>
-        )}
-        {node.siblings.length > 0 && (
-          <span
-            className="truncate text-[11px] text-muted-foreground"
-            title={`${siblingsLabel} ${node.siblings.map((x) => x.service).join(", ")}`}
-          >
-            {siblingsLabel} {node.siblings[0]?.service}
-            {node.siblings.length > 1 && ` +${node.siblings.length - 1}`}
           </span>
         )}
       </span>
@@ -341,7 +337,15 @@ function NodeDetails({
   const selected = useEcs((s) => s.selected);
   const openService = useEcs((s) => s.openService);
   const through = routes.filter((r) => node.routes.includes(r.index));
-  const own = node.kind !== "service" && node.column >= 1 && node.column <= 3;
+  // This service's topic or one of its systems: their settings are shown here.
+  const own =
+    node.kind === "topic" ||
+    (node.kind === "system" &&
+      graph.edges.some(
+        (e) =>
+          (e.from === node.id && e.to === graph.selfId) ||
+          (e.to === node.id && e.from === graph.selfId),
+      ));
   // The other services this node belongs to: itself, or the services next to it.
   const services =
     node.kind === "service"
@@ -394,39 +398,6 @@ function NodeDetails({
         </p>
       )}
       {own && node.kind === "system" && <SystemDetails node={node} routes={through} />}
-      {own && node.kind === "topic" && node.siblings.length > 0 && (
-        <section aria-label="Other services on this topic">
-          <h5 className="mb-1 font-medium text-muted-foreground">
-            {graph.direction === "out"
-              ? "Also read by (each with its own consumer group)"
-              : "Also written by"}
-          </h5>
-          <ul className="flex flex-wrap gap-1.5">
-            {node.siblings.map((sibling) => (
-              <li key={sibling.service}>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className={cn(sibling.disabled && "opacity-60")}
-                  onClick={() =>
-                    selected &&
-                    void openService({
-                      clusterArn: selected.clusterArn,
-                      serviceName: sibling.service,
-                    })
-                  }
-                >
-                  <ServerIcon /> {sibling.service}
-                  {sibling.group && (
-                    <span className="text-muted-foreground">group {sibling.group}</span>
-                  )}
-                  {sibling.disabled && <span className="text-warning">disabled</span>}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {own &&
         node.kind === "topic" &&
         through.map((route) => <RouteDetails key={route.index} route={route} />)}
