@@ -63,6 +63,10 @@ fn is_executable(path: &Path) -> bool {
     }
 }
 
+/// Win32 process creation flag: start a console program without a console window.
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 /// Runs `<aws> sso login --profile <profile>` and streams its output lines to `progress`.
 ///
 /// The CLI opens the browser and waits until the user has approved the login (or gives up
@@ -72,17 +76,22 @@ pub async fn sso_login(
     profile: &str,
     progress: &(dyn Fn(LoginProgress) + Send + Sync),
 ) -> Result<(), AuthError> {
-    let mut child = Command::new(aws)
+    let mut command = Command::new(aws);
+    command
         .args(["sso", "login", "--profile", profile])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()
-        .map_err(|err| match err.kind() {
-            std::io::ErrorKind::NotFound => AuthError::CliMissing,
-            _ => AuthError::Config(format!("can't start {}: {err}", aws.display())),
-        })?;
+        .kill_on_drop(true);
+    // A GUI app on Windows has no console, so Windows opens a new console window for a console
+    // program like `aws.exe`. The output is piped into the app anyway: don't show that window.
+    // `#[cfg(windows)]` compiles this statement only for Windows (`creation_flags` only exists there).
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    let mut child = command.spawn().map_err(|err| match err.kind() {
+        std::io::ErrorKind::NotFound => AuthError::CliMissing,
+        _ => AuthError::Config(format!("can't start {}: {err}", aws.display())),
+    })?;
 
     // `take()` moves the pipes out of `child`, so they can be read while we wait on `child`.
     let stdout = child.stdout.take().expect("stdout is piped");
