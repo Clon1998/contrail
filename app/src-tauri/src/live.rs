@@ -20,11 +20,11 @@ use std::time::Duration as StdDuration;
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::error::SourceError;
-use contrail_core::logs::buffer::{DEFAULT_CAPACITY, InsertReport};
+use contrail_core::logs::buffer::DEFAULT_CAPACITY;
 use contrail_core::logs::multiline::DEFAULT_WINDOW;
 use contrail_core::logs::{
     BufferStats, LiveError, LiveItem, LogEvent, LogSource, MultilineJoiner, RawEvent,
-    StreamSelection, TimeRange, process,
+    StreamSelection, TimeRange, VisibleChange, process,
 };
 use contrail_core::timestamp::Timestamp;
 use futures::StreamExt;
@@ -74,9 +74,13 @@ pub struct LiveUpdate {
     /// CloudWatch sampled the last update (more than 500 events per second).
     pub sampled: bool,
     pub stats: BufferStats,
-    /// The first row index that changed (new or moved rows); `None` if no rows changed.
+    /// How many rows the list shows (all events, or the matches when filtering).
+    pub visible: u32,
+    /// How many events match the search, when there is one.
+    pub matches: Option<u32>,
+    /// The first listed row that changed (new or moved rows); `None` if no rows changed.
     pub first_changed: Option<u32>,
-    /// Rows dropped at the top because the buffer was full (all indices shifted by this).
+    /// Listed rows dropped at the top because the buffer was full (all indices shifted).
     pub evicted: u32,
     /// Why the state is what it is, when there's something to say (polling, errors).
     pub message: Option<String>,
@@ -306,9 +310,9 @@ impl LiveTask {
             .await?;
         self.note_seen(&backfill.events);
         match self.insert(process(backfill.events)) {
-            Some(report) => {
-                if report.added > 0 {
-                    self.report(LiveState::Connecting, false, Some(report), None);
+            Some(change) => {
+                if change.first_changed.is_some() || change.evicted > 0 {
+                    self.report(LiveState::Connecting, false, Some(change), None);
                 }
                 Ok(true)
             }
@@ -351,11 +355,11 @@ impl LiveTask {
         }
     }
 
-    /// Inserts events into the view's buffer; `None` if the view was closed meanwhile.
-    fn insert(&self, events: Vec<LogEvent>) -> Option<InsertReport> {
+    /// Inserts events into the view; `None` if the view was closed meanwhile.
+    fn insert(&self, events: Vec<LogEvent>) -> Option<VisibleChange> {
         let mut views = self.views.lock().expect("views lock poisoned");
         let view = views.get_mut(&self.view_id)?;
-        Some(view.buffer.insert(events))
+        Some(view.insert(events))
     }
 
     /// Sends an update; `false` if the view was closed.
@@ -363,24 +367,25 @@ impl LiveTask {
         &self,
         state: LiveState,
         sampled: bool,
-        change: Option<InsertReport>,
+        change: Option<VisibleChange>,
         message: Option<String>,
     ) -> bool {
-        let stats = {
+        let (stats, visible, matches) = {
             let views = self.views.lock().expect("views lock poisoned");
             match views.get(&self.view_id) {
-                Some(view) => view.buffer.stats(),
+                Some(view) => (view.buffer.stats(), view.visible_len(), view.match_count()),
                 None => return false,
             }
         };
+        let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
         (self.sink)(LiveUpdate {
             state,
             sampled,
             stats,
-            first_changed: change
-                .and_then(|c| c.first_index)
-                .map(|i| u32::try_from(i).unwrap_or(u32::MAX)),
-            evicted: change.map_or(0, |c| u32::try_from(c.evicted).unwrap_or(u32::MAX)),
+            visible: count(visible),
+            matches: matches.map(count),
+            first_changed: change.and_then(|c| c.first_changed).map(count),
+            evicted: change.map_or(0, |c| count(c.evicted)),
             message,
         });
         true

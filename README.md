@@ -5,7 +5,7 @@ Switch AWS SSO profiles, browse clusters → services → tasks, and jump straig
 readable logs — structured (ECS JSON) or plain — with session search.
 
 > **Status:** early development. Profiles, SSO login, ECS browsing and the log viewer with live tail work
-> (M1–M5). Search comes next.
+> (M1–M6). Tabs, export and polish come next.
 > See [plan.md](plan.md) for scope and milestones.
 
 Contrail is strictly **read-only** towards AWS and never stores credentials.
@@ -32,6 +32,9 @@ Contrail is strictly **read-only** towards AWS and never stores credentials.
   CloudWatch: ECS JSON (nested or dotted), Spring Boot's console pattern and plain text are parsed, and Java
   stack traces that CloudWatch split into one event per line are joined again. The log group comes from the
   task definition (`awslogs` driver with a stream prefix).
+- **Search** the loaded logs: `timeout level>=WARN trace.id:abc123 -healthcheck`, regular expressions, field
+  globs and comparisons, as a filter or highlighted with next/previous (Enter, F3). Level chips hide levels;
+  "Hide lines like this" builds a per-service noise list. See [docs/query-syntax.md](docs/query-syntax.md).
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
   default log time window and timestamps in local time or UTC.
 - Contrail only reads from AWS. Teammates without admin rights need the permissions in

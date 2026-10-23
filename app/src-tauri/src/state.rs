@@ -7,7 +7,9 @@ use std::sync::atomic::AtomicU32;
 use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::EcsSource;
-use contrail_core::logs::{LogBuffer, LogSource, StreamSelection};
+use contrail_core::logs::{
+    LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter, VisibleChange,
+};
 use contrail_core::timestamp::Timestamp;
 
 use crate::live::{LiveHandle, Views};
@@ -72,6 +74,8 @@ pub struct LogView {
     pub backfilled_until: Timestamp,
     /// The running live tail, if any. Dropping it (view closed) stops the task.
     pub live: Option<LiveHandle>,
+    /// The search, if one is set (and not trivial).
+    pub filter: Option<ViewFilter>,
 }
 
 impl LogView {
@@ -87,6 +91,48 @@ impl LogView {
             selection,
             backfilled_until,
             live: None,
+            filter: None,
+        }
+    }
+
+    /// Adds events and returns what changed in the listed rows (filtered or not).
+    pub fn insert(&mut self, events: Vec<LogEvent>) -> VisibleChange {
+        let before = self.buffer.len();
+        let report = self.buffer.insert(events);
+        match &mut self.filter {
+            Some(filter) => filter.after_insert(&self.buffer, report, before),
+            None => VisibleChange {
+                first_changed: report.first_index,
+                evicted: report.evicted,
+            },
+        }
+    }
+
+    /// Sets (or with `None` clears) the search and evaluates it over all events.
+    pub fn set_filter(&mut self, filter: Option<ViewFilter>) {
+        self.filter = filter.filter(|f| !f.is_trivial()).map(|mut f| {
+            f.rebuild(&self.buffer);
+            f
+        });
+    }
+
+    /// How many rows the list shows.
+    pub fn visible_len(&self) -> usize {
+        match &self.filter {
+            Some(filter) => filter.visible_len(&self.buffer),
+            None => self.buffer.len(),
+        }
+    }
+
+    pub fn match_count(&self) -> Option<usize> {
+        self.filter.as_ref().map(ViewFilter::match_count)
+    }
+
+    /// The listed rows `offset..offset + limit`.
+    pub fn window(&self, offset: usize, limit: usize) -> Vec<LogEvent> {
+        match &self.filter {
+            Some(filter) => filter.window(&self.buffer, offset, limit),
+            None => self.buffer.window(offset, limit),
         }
     }
 }

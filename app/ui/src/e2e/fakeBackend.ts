@@ -1,6 +1,9 @@
 import type { InvokeArgs } from "@tauri-apps/api/core";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import type {
+  FilterResult,
+  FilterSpec,
+  Level,
   AppInfo,
   LiveState,
   LiveUpdate,
@@ -199,6 +202,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       pauseWhenHidden: true,
       autoPauseMinutes: 10,
     },
+    noise: {},
     ...options.prefs,
   };
 
@@ -223,6 +227,19 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     number,
     { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
   >();
+
+  /** Searches per view: the spec and the indices of matching events. */
+  const filters = new Map<number, { spec: FilterSpec; matched: number[] }>();
+
+  /** The events a view lists: the matches when filtering, all otherwise. */
+  function listed(
+    viewId: number,
+  ): LogEvent[] | ((offset: number, limit: number) => LogEvent[]) | undefined {
+    const events = views.get(viewId);
+    const filter = filters.get(viewId);
+    if (!Array.isArray(events) || !filter || filter.spec.mode !== "filter") return events;
+    return filter.matched.map((i) => events[i]).filter((e): e is LogEvent => e !== undefined);
+  }
 
   /** Current size of generated views (they grow while live). */
   const bigCounts = new Map<number, number>();
@@ -251,10 +268,25 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     if (!tail || events === undefined) return;
     const total =
       typeof events === "function" ? (bigCounts.get(viewId) ?? BIG_VIEW) : events.length;
+    const filter = filters.get(viewId);
+    if (filter && Array.isArray(events)) {
+      // Check the events added since the search was set (or last checked).
+      const compiled = compileQuery(filter.spec.query);
+      const from = (filter.matched.at(-1) ?? -1) + 1;
+      for (let i = from; i < events.length; i++) {
+        const e = events[i];
+        if (e && "test" in compiled && compiled.test(e, filter.spec.searchRaw)) {
+          filter.matched.push(i);
+        }
+      }
+    }
+    const visible = filter?.spec.mode === "filter" ? filter.matched.length : total;
     const update: LiveUpdate = {
       state,
       sampled: false,
-      stats: { ...emptyStats(), total, info: total },
+      stats: Array.isArray(events) ? statsOf(events) : { ...emptyStats(), total, info: total },
+      visible,
+      matches: filter ? filter.matched.length : null,
       firstChanged,
       evicted: 0,
       message: null,
@@ -395,13 +427,56 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!events) throw apiError("notFound", "log view is closed");
         const offset = args?.offset as number;
         const limit = args?.limit as number;
+        const rows = listed(args?.viewId as number);
+        if (Array.isArray(rows)) return rows.slice(offset, offset + limit);
         return typeof events === "function"
           ? events(offset, limit)
           : events.slice(offset, offset + limit);
       }
+      case "set_log_filter": {
+        const viewId = args?.viewId as number;
+        const spec = args?.spec as FilterSpec;
+        const compiled = compileQuery(spec.query);
+        if ("error" in compiled) {
+          return { kind: "invalid", error: compiled.error } satisfies FilterResult;
+        }
+        const events = views.get(viewId);
+        const trivial =
+          spec.query.trim() === "" && spec.hiddenLevels.length === 0 && spec.noise.length === 0;
+        if (trivial || !Array.isArray(events)) {
+          filters.delete(viewId);
+          const visible = Array.isArray(events)
+            ? events.length
+            : (bigCounts.get(viewId) ?? BIG_VIEW);
+          return {
+            kind: "applied",
+            visible,
+            matches: null,
+            highlightTerms: [],
+          } satisfies FilterResult;
+        }
+        const accepts = (e: LogEvent) =>
+          !(e.line.level && spec.hiddenLevels.includes(e.line.level)) &&
+          !spec.noise.some((n) => e.line.message.toLowerCase().includes(n.toLowerCase())) &&
+          compiled.test(e, spec.searchRaw);
+        const matched = events.flatMap((e, i) => (accepts(e) ? [i] : []));
+        filters.set(viewId, { spec, matched });
+        return {
+          kind: "applied",
+          visible: spec.mode === "filter" ? matched.length : events.length,
+          matches: matched.length,
+          highlightTerms: compiled.terms,
+        } satisfies FilterResult;
+      }
+      case "get_match_positions": {
+        const filter = filters.get(args?.viewId as number);
+        if (!filter) return [];
+        return filter.spec.mode === "highlight" ? filter.matched : filter.matched.map((_, i) => i);
+      }
       case "close_log_view": {
         const viewId = args?.viewId as number;
         views.delete(viewId);
+        filters.delete(viewId);
         bigCounts.delete(viewId);
         clearInterval(tails.get(viewId)?.timer);
         tails.delete(viewId);
@@ -453,6 +528,19 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             ? prefs.favorites.filter((f) => !sameKey(f, key))
             : [...prefs.favorites, key],
         };
+        return prefs;
+      }
+      case "add_noise":
+      case "remove_noise": {
+        const service = args?.service as ServiceRef;
+        const key = `${args?.profile as string}|${service.clusterArn}|${service.serviceName}`;
+        const text = (args?.text as string).trim();
+        const list = (prefs.noise[key] ?? []).filter((n) => n !== text);
+        if (cmd === "add_noise" && text) list.push(text);
+        const others = Object.entries(prefs.noise).filter(([k]) => k !== key);
+        const noise: Record<string, string[]> = Object.fromEntries(others);
+        if (list.length > 0) noise[key] = list;
+        prefs = { ...prefs, noise };
         return prefs;
       }
       case "add_recent": {
@@ -519,4 +607,89 @@ function sendOnChannel(channel: { id: number }, index: number, message: unknown)
     }
   ).__TAURI_INTERNALS__;
   internals.runCallback(channel.id, { index, message });
+}
+
+const LEVELS: Level[] = ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"];
+
+type FakeTest = (e: LogEvent, raw: boolean) => boolean;
+
+/**
+ * A simplified version of the Rust query language (crates/contrail-core/src/query.rs) for the
+ * UI tests: text, "phrases", level:X / level>=X, field:value (* globs), -negation.
+ */
+function compileQuery(
+  query: string,
+):
+  | { test: FakeTest; terms: string[] }
+  | { error: { message: string; start: number; end: number; hint: string | null } } {
+  const tests: FakeTest[] = [];
+  const terms: string[] = [];
+  for (const match of query.matchAll(/(-?)("[^"]*"?|\S+)/g)) {
+    const negation = match[1] ?? "";
+    const rawToken = match[2] ?? "";
+    const start = match.index;
+    if (rawToken.startsWith('"') && (rawToken.length === 1 || !rawToken.endsWith('"'))) {
+      return {
+        error: {
+          message: "unterminated quote",
+          start,
+          end: query.length,
+          hint: 'Close the phrase with "',
+        },
+      };
+    }
+    const token = rawToken.replace(/^"|"$/g, "");
+    let test: FakeTest;
+    const level = /^level(:|>=|<=|>|<)(\w+)$/i.exec(rawToken);
+    const field = /^([A-Za-z@][\w.@-]*):(.+)$/.exec(rawToken);
+    if (level) {
+      const op = level[1] ?? ":";
+      const wanted = LEVELS.indexOf((level[2] ?? "").toUpperCase() as Level);
+      if (wanted === -1) {
+        return {
+          error: {
+            message: `unknown level "${level[2]}"`,
+            start: start + negation.length + 5 + op.length,
+            end: start + match[0].length,
+            hint: "Levels: TRACE, DEBUG, INFO, WARN, ERROR",
+          },
+        };
+      }
+      test = (e) => {
+        if (!e.line.level) return false;
+        const actual = LEVELS.indexOf(e.line.level);
+        if (op === ":") return actual === wanted;
+        if (op === ">=") return actual >= wanted;
+        if (op === ">") return actual > wanted;
+        if (op === "<=") return actual <= wanted;
+        return actual < wanted;
+      };
+    } else if (field) {
+      const key = field[1] ?? "";
+      const value = field[2] ?? "";
+      const escaped = value.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+      const pattern = new RegExp(`^${escaped.replaceAll("*", ".*").replaceAll("?", ".")}$`, "i");
+      test = (e) => {
+        const found = e.line.fields.find((f) => f.key === key)?.value;
+        return found !== undefined && found !== null && pattern.test(String(found));
+      };
+    } else {
+      const needle = token.toLowerCase();
+      if (!negation) terms.push(needle);
+      test = (e, raw) => (raw ? e.raw : e.line.message).toLowerCase().includes(needle);
+    }
+    tests.push(negation ? (e, raw) => !test(e, raw) : test);
+  }
+  return { test: (e, raw) => tests.every((t) => t(e, raw)), terms };
+}
+
+/** Level counts of a list of events, as the Rust buffer reports them. */
+function statsOf(events: LogEvent[]): BufferStats {
+  const stats = { ...emptyStats(), total: events.length };
+  for (const e of events) {
+    const level = e.line.level;
+    if (level === null) stats.unknown++;
+    else stats[level.toLowerCase() as Lowercase<Level>]++;
+  }
+  return stats;
 }

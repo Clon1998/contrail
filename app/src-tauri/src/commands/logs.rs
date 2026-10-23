@@ -7,10 +7,12 @@ use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::buffer::DEFAULT_CAPACITY;
 use contrail_core::logs::{
-    BufferStats, LogBuffer, LogEvent, LogLocation, TimeRange, process, resolve_log_location,
+    BufferStats, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeRange, ViewFilter,
+    process, resolve_log_location,
 };
+use contrail_core::query::{MatchOptions, QueryError, parse_query};
 use contrail_core::timestamp::Timestamp;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri::State;
 use tauri::ipc::Channel;
@@ -122,7 +124,96 @@ pub fn get_log_rows(
     let view = views.get(&view_id).ok_or_else(|| {
         ApiError::new(ErrorCode::NotFound, format!("log view {view_id} is closed"))
     })?;
-    Ok(view.buffer.window(offset as usize, limit as usize))
+    Ok(view.window(offset as usize, limit as usize))
+}
+
+/// A search as the UI sends it.
+#[derive(Debug, Clone, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FilterSpec {
+    pub query: String,
+    pub mode: FilterMode,
+    /// Levels switched off with the level chips.
+    pub hidden_levels: Vec<Level>,
+    /// Search the whole raw line, not just the message.
+    pub search_raw: bool,
+    /// The service's "hide noise" texts, when hiding noise is on.
+    pub noise: Vec<String>,
+}
+
+/// The outcome of setting a search.
+#[derive(Debug, Clone, Serialize, Type)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum FilterResult {
+    Applied {
+        /// Rows the list shows now.
+        visible: u32,
+        /// Matching events (`None` without a search).
+        matches: Option<u32>,
+        /// Words to highlight in messages.
+        highlight_terms: Vec<String>,
+    },
+    /// The query can't be parsed; the previous search stays in effect.
+    Invalid { error: QueryError },
+}
+
+/// Sets the search of a view (or clears it with an empty spec).
+#[tauri::command]
+#[specta::specta]
+pub fn set_log_filter(
+    state: State<'_, AppState>,
+    view_id: u32,
+    spec: FilterSpec,
+) -> ApiResult<FilterResult> {
+    apply_filter(&state, view_id, spec)
+}
+
+fn apply_filter(state: &AppState, view_id: u32, spec: FilterSpec) -> ApiResult<FilterResult> {
+    let query = match parse_query(&spec.query) {
+        Ok(query) => query,
+        Err(error) => return Ok(FilterResult::Invalid { error }),
+    };
+    let highlight_terms = query.highlight_terms();
+    let filter = ViewFilter::new(
+        query,
+        MatchOptions {
+            raw: spec.search_raw,
+        },
+        spec.hidden_levels,
+        &spec.noise,
+        spec.mode,
+    );
+    let mut views = state.views.lock().expect("views lock poisoned");
+    let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
+    view.set_filter(Some(filter));
+    let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
+    Ok(FilterResult::Applied {
+        visible: count(view.visible_len()),
+        matches: view.match_count().map(count),
+        highlight_terms,
+    })
+}
+
+/// The listed rows that match the search (for stepping through matches in highlight mode).
+#[tauri::command]
+#[specta::specta]
+pub fn get_match_positions(state: State<'_, AppState>, view_id: u32) -> ApiResult<Vec<u32>> {
+    let views = state.views.lock().expect("views lock poisoned");
+    let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+    let positions = match &view.filter {
+        Some(filter) if filter.mode == FilterMode::Highlight => filter.matched().to_vec(),
+        // When filtering, every listed row matches.
+        Some(filter) => (0..filter.match_count()).collect(),
+        None => Vec::new(),
+    };
+    Ok(positions
+        .into_iter()
+        .map(|i| u32::try_from(i).unwrap_or(u32::MAX))
+        .collect())
 }
 
 /// Frees a view's buffer and stops its live tail.
@@ -304,5 +395,46 @@ mod tests {
             last.stats.total > info.stats.total,
             "the view grew while live"
         );
+    }
+
+    fn spec(query: &str) -> FilterSpec {
+        FilterSpec {
+            query: query.into(),
+            mode: FilterMode::Filter,
+            hidden_levels: Vec::new(),
+            search_raw: false,
+            noise: Vec::new(),
+        }
+    }
+
+    #[tokio::test]
+    async fn filtering_a_view_lists_only_matches() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "payments-worker");
+        let info = open_logs(&state, ctx, service, 15, None).await.unwrap();
+
+        let FilterResult::Applied {
+            visible, matches, ..
+        } = apply_filter(&state, info.view_id, spec("level:ERROR")).unwrap()
+        else {
+            panic!("query should parse");
+        };
+        assert_eq!(Some(visible), matches);
+        assert!(visible > 0 && visible < info.stats.total);
+        {
+            let views = state.views.lock().unwrap();
+            let rows = views[&info.view_id].window(0, usize::MAX);
+            assert!(rows.iter().all(|e| e.line.level == Some(Level::Error)));
+        }
+
+        // An invalid query keeps the previous search and says where the problem is.
+        let FilterResult::Invalid { error } =
+            apply_filter(&state, info.view_id, spec("level:LOUD")).unwrap()
+        else {
+            panic!("query should be invalid");
+        };
+        assert_eq!(error.start, 6);
+        let views = state.views.lock().unwrap();
+        assert_eq!(views[&info.view_id].visible_len() as u32, visible);
     }
 }

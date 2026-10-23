@@ -2,6 +2,7 @@
 //! in-memory buffer the log views read from.
 
 pub mod buffer;
+pub mod filter;
 mod json;
 pub mod location;
 pub mod multiline;
@@ -9,12 +10,13 @@ pub mod parse;
 pub mod source;
 mod spring;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::timestamp::Timestamp;
 
 pub use buffer::{BufferStats, LogBuffer};
+pub use filter::{FilterMode, ViewFilter, VisibleChange};
 pub use location::{LocationError, LogLocation, resolve_log_location};
 pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
@@ -24,7 +26,9 @@ pub use source::{
 
 /// Log levels, from least to most severe (the derived `Ord` follows declaration order, so
 /// `Level::Warn > Level::Info` works for "WARN and above" filters).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Type)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Level {
     Trace,

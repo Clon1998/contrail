@@ -28,6 +28,11 @@ export function LogList({
   const fontSize = usePrefs((s) => s.prefs.settings.logFontSize);
   const columns = useLogs((s) => s.columns);
   const pages = useLogs((s) => s.pages);
+  const scrollTarget = useLogs((s) => s.scrollTarget);
+  const highlightMode = useLogs((s) => s.search.mode === "highlight");
+  const positions = useLogs((s) => s.matchPositions);
+  const current = useLogs((s) => s.matchPositions[s.currentMatch]);
+  const matchSet = highlightMode ? new Set(positions) : null;
   const fetchRows = useLogs((s) => s.fetchRows);
   const row = (index: number) => pages.get(Math.floor(index / PAGE_SIZE))?.[index % PAGE_SIZE];
   const [atBottom, setAtBottom] = useState(true);
@@ -60,6 +65,14 @@ export function LogList({
     // Only on a new view or font: new rows must not pull the user back down.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewId, fontSize, virtualizer]);
+
+  // Jumping to a match (search navigation).
+  useEffect(() => {
+    if (scrollTarget) {
+      virtualizer.scrollToIndex(scrollTarget.index, { align: "center" });
+      setAtBottom(false);
+    }
+  }, [scrollTarget, virtualizer]);
 
   // Follow mode: new rows keep the list at the newest event while the user is at the bottom.
   useEffect(() => {
@@ -105,7 +118,13 @@ export function LogList({
                 }}
               >
                 {event ? (
-                  <LogRow event={event} grid={grid} showTask={showTask} />
+                  <LogRow
+                    event={event}
+                    grid={grid}
+                    showTask={showTask}
+                    marked={matchSet?.has(item.index) ?? false}
+                    current={current === item.index}
+                  />
                 ) : (
                   <div className="px-3 text-muted-foreground/50">…</div>
                 )}

@@ -38,6 +38,10 @@ export const commands = {
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**  Frees a view's buffer and stops its live tail. */
 	closeLogView: (viewId: number) => __TAURI_INVOKE<void>("close_log_view", { viewId }),
+	/**  Sets the search of a view (or clears it with an empty spec). */
+	setLogFilter: (viewId: number, spec: FilterSpec) => typedError<FilterResult, ApiError>(__TAURI_INVOKE("set_log_filter", { viewId, spec })),
+	/**  The listed rows that match the search (for stepping through matches in highlight mode). */
+	getMatchPositions: (viewId: number) => typedError<number[], ApiError>(__TAURI_INVOKE("get_match_positions", { viewId })),
 	/**
 	 *  Starts following a view live (after its backfill). Updates arrive on `on_update`.
 	 * 
@@ -58,6 +62,10 @@ export const commands = {
 	toggleFavorite: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("toggle_favorite", { profile, service })),
 	/**  Records that a service was opened (for "recent" in the palette). */
 	addRecent: (profile: string, service: ServiceRef) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_recent", { profile, service })),
+	/**  Adds a "hide noise" text for a service. */
+	addNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_noise", { profile, service, text })),
+	/**  Removes a "hide noise" text of a service. */
+	removeNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("remove_noise", { profile, service, text })),
 };
 
 /* Types */
@@ -184,6 +192,36 @@ export type FieldValue = string |
 /**  Kept as JSON's number (exact digits); a plain `number` in TypeScript. */
 number | null | boolean;
 
+/**  How a search applies to the list. */
+export type FilterMode = 
+/**  Only matching events are listed. */
+"filter" | 
+/**  All events are listed; matches are marked and can be stepped through. */
+"highlight";
+
+/**  The outcome of setting a search. */
+export type FilterResult = { kind: "applied"; 
+/**  Rows the list shows now. */
+visible: number; 
+/**  Matching events (`None` without a search). */
+matches: number | null; 
+/**  Words to highlight in messages. */
+highlightTerms: string[] } | 
+/**  The query can't be parsed; the previous search stays in effect. */
+{ kind: "invalid"; error: QueryError };
+
+/**  A search as the UI sends it. */
+export type FilterSpec = {
+	query: string,
+	mode: FilterMode,
+	/**  Levels switched off with the level chips. */
+	hiddenLevels: Level[],
+	/**  Search the whole raw line, not just the message. */
+	searchRaw: boolean,
+	/**  The service's "hide noise" texts, when hiding noise is on. */
+	noise: string[],
+};
+
 /**
  *  Log levels, from least to most severe (the derived `Ord` follows declaration order, so
  *  `Level::Warn > Level::Info` works for "WARN and above" filters).
@@ -205,9 +243,13 @@ export type LiveUpdate = {
 	/**  CloudWatch sampled the last update (more than 500 events per second). */
 	sampled: boolean,
 	stats: BufferStats,
-	/**  The first row index that changed (new or moved rows); `None` if no rows changed. */
+	/**  How many rows the list shows (all events, or the matches when filtering). */
+	visible: number,
+	/**  How many events match the search, when there is one. */
+	matches: number | null,
+	/**  The first listed row that changed (new or moved rows); `None` if no rows changed. */
 	firstChanged: number | null,
-	/**  Rows dropped at the top because the buffer was full (all indices shifted by this). */
+	/**  Listed rows dropped at the top because the buffer was full (all indices shifted). */
 	evicted: number,
 	/**  Why the state is what it is, when there's something to say (polling, errors). */
 	message: string | null,
@@ -308,6 +350,11 @@ export type Prefs = {
 	/**  Recently opened services, newest first, at most [`MAX_RECENT`]. */
 	recent: ServiceKey[],
 	settings: Settings,
+	/**
+	 *  "Hide noise" texts per service (by [`ServiceKey::storage_key`]): log lines whose message
+	 *  contains one of them are hidden while hiding noise is on.
+	 */
+	noise: { [key in string]: string[] },
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
@@ -341,6 +388,15 @@ sessionName: string | null } |
 { kind: "other" } | 
 /**  The profile is broken, e.g. it references an `[sso-session]` that doesn't exist. */
 { kind: "misconfigured"; problem: string };
+
+/**  Why a query couldn't be parsed, with the position of the problem. */
+export type QueryError = {
+	message: string,
+	/**  Byte range of the problem in the query text (UTF-8). */
+	start: number,
+	end: number,
+	hint: string | null,
+};
 
 /**  Everything the service overview shows. */
 export type ServiceDetail = {

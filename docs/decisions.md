@@ -133,3 +133,14 @@ group, one update per second with at most 500 events (then sampled), sessions en
 `FilterLogEvents` every 2 seconds; a session timeout or streaming error reconnects after a catch-up backfill
 (from 5 s before the last event; the buffer drops the overlap). Expired credentials stop the tail until it is
 resumed (e.g. after logging in).
+
+## 2026-10-23 — M6 search: scope notes
+
+- **Where filtering runs:** in Rust (`ViewFilter`), incrementally for appended live events; a late event in the
+  middle re-evaluates the view (fast enough at 100k events).
+- **Case:** text, phrases, regular expressions and field equality ignore case; globs too.
+- **Noise:** "hide noise" texts are substrings of the message (case-insensitive), saved per service in the
+  preferences; the noise menu turns hiding on/off and removes entries.
+- **Highlighting** marks only plain text terms in the message (not regex matches or fields).
+- **Fake backend:** the UI tests use a simplified TypeScript version of the query language; the real semantics
+  are tested in Rust (unit and property tests).
