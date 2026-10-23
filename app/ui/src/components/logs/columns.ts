@@ -11,14 +11,15 @@ export function useLogColumns(): LogColumn[] {
  * prefix (frameworks nest it in their own object, e.g. `<framework>.correlationId`).
  */
 const CORRELATION_FIELD = /(^|\.)correlation_?id$/i;
-/** Fallbacks when there is no correlation ID, in order of preference. */
-const TRACE_FIELDS = ["trace.id", "log.correlation"];
+/**
+ * The fallback without a correlation ID: a trace ID (`trace.id` in ECS, `traceId` / `trace_id` in
+ * many APIs, under any prefix), then `log.correlation`.
+ */
+const TRACE_FIELD = /(^|\.)(trace\.id|trace_?id)$/i;
 
 function correlationValue(fields: LogEvent["line"]["fields"]) {
-  const correlation = fields.find((f) => CORRELATION_FIELD.test(f.key) && f.value !== "");
-  if (correlation) return correlation.value;
-  for (const key of TRACE_FIELDS) {
-    const field = fields.find((f) => f.key === key);
+  for (const pattern of [CORRELATION_FIELD, TRACE_FIELD, /^log\.correlation$/]) {
+    const field = fields.find((f) => pattern.test(f.key) && f.value !== "");
     if (field) return field.value;
   }
   return undefined;

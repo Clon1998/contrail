@@ -424,6 +424,10 @@ Ship as `docs/iam-policy.json` so teammates without admin can request exactly th
     chosen log groups (no extra permission, no scan cost); Logs Insights as an opt-in for wide searches
     (billed per GB, needs `logs:StartQuery`/`GetQueryResults`). Related services can be suggested from the
     topics they consume/produce.
+  - *Trace keys differ by service type:* pipeline services carry the framework's correlation ID, while
+    HTTP APIs log their own `traceId` (top level, unrelated to the correlation ID). The trace key is
+    therefore per service (detected: `…correlationId`, else `…traceId`/`trace.id`; overridable in the field
+    mapping), and a trace view follows one key at a time unless a log line carries both.
 - **Route view for routing-framework services** (one image runs configurable routes). Routes come from task
   definition env vars in Spring relaxed binding: `<PREFIX>_ROUTES_<n>_TOPIC`, `…_ENABLED`, `…_GROUP`,
   `…_INPUT_TYPE|SYSTEM|PROPERTIES_<KEY>`, `…_OUTPUTS_<m>_TYPE|SYSTEM|ENABLED|PROPERTIES_<KEY>` (prefix varies,

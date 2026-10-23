@@ -40,4 +40,11 @@ describe("correlation column", () => {
     expect(columnValue(e, "correlation")).toBe("c-1");
     expect(columnValue(event([{ key: "trace.id", value: "t-1" }]), "correlation")).toBe("t-1");
   });
+
+  it("falls back to a trace ID under any name (APIs log traceId, not a correlation ID)", () => {
+    expect(columnValue(event([{ key: "traceId", value: "FsEwYFk0" }]), "correlation")).toBe(
+      "FsEwYFk0",
+    );
+    expect(columnValue(event([{ key: "http.trace_id", value: "t-2" }]), "correlation")).toBe("t-2");
+  });
 });
