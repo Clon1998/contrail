@@ -271,4 +271,38 @@ mod tests {
             .unwrap_err();
         assert_eq!(unknown.code, ErrorCode::NotFound);
     }
+
+    #[tokio::test]
+    async fn a_demo_view_goes_live_and_grows() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "event-ingest");
+        let info = open_logs(&state, ctx, service, 1, None).await.unwrap();
+
+        let updates: Arc<std::sync::Mutex<Vec<LiveUpdate>>> = Arc::default();
+        let recorder = updates.clone();
+        let task = {
+            let views = state.views.lock().unwrap();
+            let view = &views[&info.view_id];
+            LiveTask {
+                source: state.logs.clone(),
+                ctx: view.ctx.clone(),
+                selection: view.selection.clone(),
+                views: state.views.clone(),
+                view_id: info.view_id,
+                last_seen: view.backfilled_until,
+                sink: Arc::new(move |u| recorder.lock().unwrap().push(u)),
+            }
+        };
+        let _handle = live::spawn(task);
+
+        // The demo source delivers once a second; event-ingest logs every 200 ms per task.
+        tokio::time::sleep(std::time::Duration::from_millis(2_300)).await;
+        let updates = updates.lock().unwrap();
+        assert!(updates.iter().any(|u| u.state == live::LiveState::Live));
+        let last = updates.last().unwrap();
+        assert!(
+            last.stats.total > info.stats.total,
+            "the view grew while live"
+        );
+    }
 }
