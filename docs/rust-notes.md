@@ -414,3 +414,19 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   the function per type (monomorphization, no virtual calls), unlike a `Box<dyn Iterator>`, which is one
   function calling through a vtable, like a Java interface.
 - **Where:** `summarize` in `crates/contrail-core/src/logs/fields.rs`, called from `LogView::field_summary`.
+
+## `Option<&[T]>` as "only these, or all" and `Option::is_none_or`
+
+- **What:** `topic_links(cluster, topics: Option<&[String]>, …)` serves both "the services on these topics"
+  (`Some(&topics)`) and "every route of the cluster" (`None`, for the route map). The check is one line:
+  `topics.is_none_or(|topics| topics.contains(t))`, true for `None` or when the closure says so. In Java one
+  would pass `null` or an empty list meaning "all"; here the type says that "no filter" is a separate case, and
+  an empty slice still means "no topics".
+- **Where:** `topic_links` / `cluster_routes` in `app/src-tauri/src/commands/ecs.rs`.
+
+## An enum with no data for a direction
+
+- **What:** a trace hop's direction is `enum HopDirection { Writes, Reads }` rather than a `bool`
+  (`is_writer`). A `match` on it must handle both cases (the compiler checks), and the serialized form is
+  readable (`"writes"` / `"reads"` in TypeScript). Like a Java enum without fields.
+- **Where:** `HopDirection` and `direction()` in `crates/contrail-core/src/logs/trace.rs`.
