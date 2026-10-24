@@ -346,3 +346,25 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   document every 30 s passes through all of them, every sixth stuck retrying in `audit-archiver`, every tenth
   failing in `search-feeder`. Random status events stay in demo-core.
 - Not in the public docs (user guide, website), like the rest of the status-event support.
+
+## 2026-10-24 — M10: a cluster's route map
+
+- **Opened from the cluster** in the tree (a button on the cluster's row, shown on hover or focus) as a tab
+  of its own (`routes|<cluster ARN>`), next to service and trace tabs. With only a route map open, the main
+  area shows the tabs even though no service is selected.
+- **Data:** `cluster_routes` returns every route link of the cluster from the same session-cached topic scan
+  as "Find connected services" (either fills the cache for the other). Opening a map scans when there was no
+  scan yet; "Scan again" refreshes it. Only route services are drawn; the others are listed under the map
+  ("n services have no routes"), each with a shortcut to enter it as a transformer.
+- **Transformers by hand:** reads/writes topics saved in the preferences **by service name**, not per profile
+  or cluster: a service reads and writes the same topics in every environment. The editor lives in the route
+  map (plan.md said settings): that's where the gap shows. Automatic detection from a startup log line is
+  planned (see plan.md, M10 follow-up).
+- **Layout:** the same layered view as traces: columns by longest path, nodes nothing leads to (sources,
+  topics only read here) moved next to their first successor, columns at least 9rem wide so big clusters
+  scroll instead of squeezing. The search keeps the paths through every match (up- and downstream, not
+  siblings). Zoom was left out: the lines are measured from the rendered nodes, and a CSS scale breaks that;
+  scrolling and the search cover large clusters for now.
+- **Branch:** built on top of `feat/m9-trace-on-route-graph`, because the demo's transformer comes from M9's
+  demo data. If M9 isn't merged, M10 is rebased onto `main` keeping only M9's demo and data commits
+  (nothing of either branch is pushed before that).

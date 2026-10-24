@@ -389,8 +389,8 @@ Commits are small and conventional throughout (see CLAUDE.md).
 
 Order set by Patrick: the pipeline framework items first, then features for everyone, then the rest.
 Milestones marked **(evaluation)** are built on their branch first. Patrick gets screenshots from demo mode
-and a short explanation, and the branch is merged only if he decides it's worth having. Any other branch
-that a rejected branch's work depends on is cut from `main` without it.
+and a short explanation, and the branch is merged only if he decides it's worth having. A branch built on
+top of an evaluation branch is rebased onto `main` without it if it's rejected (neither is pushed before).
 
 #### M9 — Trace on the route graph (evaluation)
 - A trace tab can show its result on the route graph: each service in the chain is marked with its hop's
@@ -407,10 +407,14 @@ that a rejected branch's work depends on is cut from `main` without it.
 - A cluster entry in the tree (context menu and a button in its row) opens a **route map** tab: every
   route service in the cluster, linked by topic (input services → topic → output services), built from
   the cluster's topic scan.
-- Only services detected as route services (image repository setting) are drawn. A cluster's other
-  services aren't, and a count says how many were left out. Transformers can be added by hand in the
-  settings (topics they read and write), because their routes live in Java code, not in env vars.
-- Search and zoom on the map; a node opens the service, a topic highlights all its readers and writers.
+- Only services with route variables are drawn. A cluster's other services aren't; they are listed
+  under the map. Transformers can be added by hand in the map (topics they read and write, saved by
+  service name), because their routes live in Java code, not in env vars.
+- Search on the map (keeps the paths through the matches); a node opens the service, a topic lists its
+  writers and readers. No zoom yet (see decisions.md).
+- **Follow-up:** read transformers' topics automatically from a topology log line the framework writes at
+  startup (`GetLogEvents` from the start of the newest task's stream, cached per task definition revision);
+  Patrick provides a log example. Hand-entered topics stay as an override.
 - **Done when:** graph building has unit tests (siblings, disabled routes, transformers by hand); an e2e
   test opens a demo cluster's map; works smoothly with 100+ route services.
 
