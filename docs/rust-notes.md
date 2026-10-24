@@ -388,3 +388,11 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   is dropped, which stops it (futures only run while polled). Like completing a `CompletableFuture` to
   interrupt work, without threads.
 - **Where:** `download` in `app/src-tauri/src/commands/update.rs`.
+
+## Sharing a cached value out of a `Mutex` (`Mutex<HashMap<K, Arc<V>>>`)
+
+- **What:** the route index keeps each cluster's scan as an `Arc<ClusterRoutes>`. A reader locks the map, clones
+  the `Arc` (a pointer and a counter bump, not the data) and unlocks; it filters afterwards without holding the
+  lock, and a new scan can replace the entry meanwhile without disturbing it. Like handing out an immutable
+  snapshot from a `ConcurrentHashMap` instead of copying the value under a `synchronized` block.
+- **Where:** `RouteIndex` in `app/src-tauri/src/route_index.rs`.

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Loader2Icon,
   NetworkIcon,
@@ -32,8 +32,9 @@ const COLUMN_TITLES = ["Sources", "Written by", "Topics", "Read by", "Targets"] 
  * The routes of a routing-framework service (rebuilt from its environment in Rust), drawn as a
  * graph around its topics: the systems and services writing them, the services and systems
  * reading them, each system once. The service itself is selected at first, so its paths stand
- * out; on request the other services on its topics join in. A click on a topic or one of its
- * systems shows the settings.
+ * out; on request the other services on its topics join in. That scan is kept for the session
+ * (in Rust, per cluster), so the next service through the graph shows them right away. A click on
+ * a topic or one of its systems shows the settings.
  */
 export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }) {
   const routes = useMemo(() => containers.flatMap((c) => c.routes?.routes ?? []), [containers]);
@@ -52,8 +53,35 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
     () => buildRouteGraph(self, routes, links.kind === "done" ? links.links : []),
     [self, routes, links],
   );
+  const topics = useMemo(
+    () => [...new Set(routes.flatMap((r) => (r.topic ? [r.topic] : [])))],
+    [routes],
+  );
+
+  // The cluster's last scan, if there was one: no AWS call.
+  useEffect(() => {
+    if (!ctx || !selected || topics.length === 0) return;
+    let current = true;
+    void commands
+      .servicesOnTopics(ctx, selected.clusterArn, topics, selected.serviceName, "cached")
+      .then((result) => {
+        if (!current || result.status === "error") return;
+        const cached = result.data;
+        // A scan started meanwhile has the newer answer.
+        setLinks((links) =>
+          links.kind === "loading"
+            ? links
+            : cached
+              ? { kind: "done", links: cached }
+              : { kind: "idle" },
+        );
+      });
+    return () => {
+      current = false;
+    };
+  }, [ctx, selected, topics]);
+
   if (routes.length === 0) return null;
-  const topics = [...new Set(routes.flatMap((r) => (r.topic ? [r.topic] : [])))];
   const focus = picked === undefined ? graph.selfId : picked;
   const focused = graph.nodes.find((n) => n.id === focus) ?? null;
 
@@ -65,10 +93,11 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
       selected.clusterArn,
       topics,
       selected.serviceName,
+      "fresh",
     );
     setLinks(
       result.status === "ok"
-        ? { kind: "done", links: result.data }
+        ? { kind: "done", links: result.data ?? [] }
         : { kind: "error", error: result.error },
     );
   };
@@ -82,7 +111,11 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
           variant="outline"
           size="xs"
           disabled={links.kind === "loading"}
-          tooltip="Look through the cluster's services for routes on the same topics"
+          tooltip={
+            links.kind === "done"
+              ? "Look through the cluster's services again (they're kept for the session)"
+              : "Look through the cluster's services for routes on the same topics"
+          }
           onClick={() => void find()}
         >
           {links.kind === "loading" ? <Loader2Icon className="animate-spin" /> : <NetworkIcon />}

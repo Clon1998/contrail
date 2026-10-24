@@ -15,6 +15,7 @@ use contrail_core::timestamp::Timestamp;
 
 use crate::live::{LiveHandle, Views};
 use crate::prefs_store::PrefsStore;
+use crate::route_index::RouteIndex;
 
 /// Everything commands need, chosen once at start-up: real AWS or demo fakes.
 pub struct AppState {
@@ -26,6 +27,8 @@ pub struct AppState {
     pub logs: Arc<dyn LogSource>,
     /// Secret values, read only when the user asks for one.
     pub secrets: Arc<dyn SecretSource>,
+    /// The routes found by the last topic scan of each cluster, kept for the session.
+    pub routes: RouteIndex,
     pub prefs: PrefsStore,
     /// Open log views by ID, shared with their live tasks (see [`Views`]). The lock is only held
     /// for quick reads and inserts, never across an `.await`.
@@ -50,6 +53,7 @@ impl AppState {
             logs: Arc::new(contrail_fake::FakeLogs::new(auth.clone())),
             secrets: Arc::new(contrail_fake::FakeSecrets::new(auth.clone())),
             auth,
+            routes: RouteIndex::default(),
             views: Views::default(),
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::in_memory(),
@@ -67,6 +71,7 @@ impl AppState {
             ecs: Arc::new(contrail_aws::AwsEcs::new()),
             logs: Arc::new(contrail_aws::AwsLogs::new()),
             secrets: Arc::new(contrail_aws::AwsSecrets::new()),
+            routes: RouteIndex::default(),
             views: Views::default(),
             next_view_id: AtomicU32::new(1),
             prefs: PrefsStore::load(data_dir.join("prefs.json")),

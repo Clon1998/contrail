@@ -6,6 +6,7 @@ use contrail_core::routes::Endpoint;
 use tauri::State;
 
 use crate::error::ApiResult;
+use crate::route_index::{ClusterRoutes, ServiceRoutes};
 use crate::state::AppState;
 
 /// All clusters of the profile's account in the selected region.
@@ -68,7 +69,7 @@ pub async fn list_tasks(
 }
 
 /// A service of the cluster that reads from or writes to one of the topics asked about.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TopicLink {
     pub topic: String,
@@ -91,10 +92,21 @@ pub enum TopicDirection {
     Out,
 }
 
-/// How many services are described at the same time when looking for topic links.
+/// Where `services_on_topics` gets the cluster's routes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum TopicScan {
+    /// Only from an earlier scan this session: no AWS call, nothing when there was none.
+    Cached,
+    /// Scans the cluster again and keeps the result for the session.
+    Fresh,
+}
+
+/// How many task definitions are read at the same time when scanning a cluster.
 const TOPIC_SCAN_PARALLEL: usize = 5;
 
-/// The services of `cluster_arn` whose routes use one of `topics` (except `exclude`).
+/// The services of `cluster_arn` whose routes use one of `topics` (except `exclude`). `None`
+/// when only the cache was asked and the cluster wasn't scanned yet.
 #[tauri::command]
 #[specta::specta]
 pub async fn services_on_topics(
@@ -103,8 +115,9 @@ pub async fn services_on_topics(
     cluster_arn: String,
     topics: Vec<String>,
     exclude: String,
-) -> ApiResult<Vec<TopicLink>> {
-    find_topic_links(&state, &ctx, &cluster_arn, &topics, &exclude).await
+    scan: TopicScan,
+) -> ApiResult<Option<Vec<TopicLink>>> {
+    find_topic_links(&state, &ctx, &cluster_arn, &topics, &exclude, scan).await
 }
 
 async fn find_topic_links(
@@ -113,83 +126,120 @@ async fn find_topic_links(
     cluster_arn: &str,
     topics: &[String],
     exclude: &str,
-) -> ApiResult<Vec<TopicLink>> {
+    scan: TopicScan,
+) -> ApiResult<Option<Vec<TopicLink>>> {
+    let cluster = match scan {
+        TopicScan::Cached => state.routes.get(ctx, cluster_arn),
+        TopicScan::Fresh => {
+            let routes = scan_cluster(state, ctx, cluster_arn).await?;
+            Some(state.routes.insert(ctx, cluster_arn, routes))
+        }
+    };
+    Ok(cluster.map(|cluster| topic_links(&cluster, topics, exclude)))
+}
+
+/// The routes of all services of the cluster: one batched listing, then each service's task
+/// definition (cached by ARN, so a second scan only lists the services again).
+async fn scan_cluster(
+    state: &AppState,
+    ctx: &AwsCtx,
+    cluster_arn: &str,
+) -> ApiResult<ClusterRoutes> {
     use futures::StreamExt;
 
     let services = state.ecs.list_services(ctx, cluster_arn).await?;
-    let details: Vec<_> = futures::stream::iter(services.into_iter().filter(|s| s.name != exclude))
+    let mut found: ClusterRoutes = futures::stream::iter(services)
         .map(|service| async move {
-            let reference = ServiceRef {
-                cluster_arn: cluster_arn.to_owned(),
-                service_name: service.name.clone(),
-            };
-            (
-                service.name,
-                state.ecs.describe_service(ctx, &reference).await,
-            )
+            let definition = state
+                .ecs
+                .task_definition(ctx, &service.task_definition_arn)
+                .await;
+            (service.name, definition)
         })
         .buffer_unordered(TOPIC_SCAN_PARALLEL)
+        .filter_map(|(service, definition)| async move {
+            // A service whose task definition can't be read is skipped: the others still count.
+            let definition = definition
+                .inspect_err(|err| tracing::warn!(%service, %err, "skipping service in topic scan"))
+                .ok()?;
+            let routes: Vec<_> = definition
+                .containers
+                .into_iter()
+                .filter_map(|c| c.routes)
+                .flat_map(|r| r.routes)
+                .collect();
+            (!routes.is_empty()).then_some(ServiceRoutes { service, routes })
+        })
         .collect()
         .await;
+    found.sort_by(|a, b| a.service.cmp(&b.service));
+    Ok(found)
+}
 
+/// The routes of the cluster's other services on one of `topics`, sorted by topic and service.
+fn topic_links(cluster: &ClusterRoutes, topics: &[String], exclude: &str) -> Vec<TopicLink> {
     let mut links = Vec::new();
-    // A service that can't be described is skipped: the others still count.
-    for (service, detail) in details {
-        let Ok(detail) = detail else { continue };
-        let containers = detail
-            .task_definition
-            .map(|t| t.containers)
-            .unwrap_or_default();
-        for routes in containers.into_iter().filter_map(|c| c.routes) {
-            for route in routes.routes {
-                let Some(topic) = route.topic.filter(|t| topics.contains(t)) else {
-                    continue;
-                };
-                let (direction, endpoints) = match route.input {
-                    Some(input) => (TopicDirection::In, vec![input]),
-                    None => (TopicDirection::Out, route.outputs),
-                };
-                links.push(TopicLink {
-                    topic,
-                    service: service.clone(),
-                    direction,
-                    group: route.group,
-                    enabled: route.enabled,
-                    endpoints: endpoints
-                        .into_iter()
-                        .map(|e| Endpoint {
-                            properties: Vec::new(),
-                            ..e
-                        })
-                        .collect(),
-                });
-            }
+    for ServiceRoutes { service, routes } in cluster.iter().filter(|s| s.service != exclude) {
+        for route in routes {
+            let Some(topic) = route.topic.as_ref().filter(|t| topics.contains(t)) else {
+                continue;
+            };
+            let (direction, endpoints) = match &route.input {
+                Some(input) => (TopicDirection::In, std::slice::from_ref(input)),
+                None => (TopicDirection::Out, route.outputs.as_slice()),
+            };
+            links.push(TopicLink {
+                topic: topic.clone(),
+                service: service.clone(),
+                direction,
+                group: route.group.clone(),
+                enabled: route.enabled,
+                endpoints: endpoints
+                    .iter()
+                    .map(|e| Endpoint {
+                        properties: Vec::new(),
+                        ..e.clone()
+                    })
+                    .collect(),
+            });
         }
     }
     links.sort_by(|a, b| (&a.topic, &a.service).cmp(&(&b.topic, &b.service)));
-    Ok(links)
+    links
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use async_trait::async_trait;
+    use contrail_core::ecs::{EcsSource, TaskDefinitionInfo};
+    use contrail_core::error::SourceError;
+
     use super::*;
+
+    const EDGE: &str = "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge";
+
+    fn ctx() -> AwsCtx {
+        AwsCtx {
+            profile: "demo-dev".into(),
+            region: None,
+        }
+    }
 
     #[tokio::test]
     async fn finds_the_other_side_of_a_topic() {
         let state = AppState::demo();
-        let ctx = AwsCtx {
-            profile: "demo-dev".into(),
-            region: None,
-        };
-        let cluster = "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge";
         let links = find_topic_links(
             &state,
-            &ctx,
-            cluster,
+            &ctx(),
+            EDGE,
             &["demo.events".into()],
             "event-ingest",
+            TopicScan::Fresh,
         )
         .await
+        .unwrap()
         .unwrap();
         let found: Vec<_> = links
             .iter()
@@ -220,5 +270,109 @@ mod tests {
             .collect();
         assert_eq!(systems, [Some("Audit Archive"), Some("Search Index")]);
         assert!(links[0].endpoints.iter().all(|e| e.properties.is_empty()));
+    }
+
+    /// The demo ECS source, recording which calls reach it.
+    struct Counting {
+        inner: contrail_fake::FakeEcs,
+        calls: Mutex<Vec<&'static str>>,
+    }
+
+    impl Counting {
+        fn take(&self) -> Vec<&'static str> {
+            std::mem::take(&mut self.calls.lock().unwrap())
+        }
+
+        fn record(&self, call: &'static str) {
+            self.calls.lock().unwrap().push(call);
+        }
+    }
+
+    #[async_trait]
+    impl EcsSource for Counting {
+        async fn list_clusters(&self, ctx: &AwsCtx) -> Result<Vec<ClusterSummary>, SourceError> {
+            self.record("list_clusters");
+            self.inner.list_clusters(ctx).await
+        }
+
+        async fn list_services(
+            &self,
+            ctx: &AwsCtx,
+            cluster_arn: &str,
+        ) -> Result<Vec<ServiceSummary>, SourceError> {
+            self.record("list_services");
+            self.inner.list_services(ctx, cluster_arn).await
+        }
+
+        async fn describe_service(
+            &self,
+            ctx: &AwsCtx,
+            service: &ServiceRef,
+        ) -> Result<ServiceDetail, SourceError> {
+            self.record("describe_service");
+            self.inner.describe_service(ctx, service).await
+        }
+
+        async fn task_definition(
+            &self,
+            ctx: &AwsCtx,
+            arn: &str,
+        ) -> Result<TaskDefinitionInfo, SourceError> {
+            self.record("task_definition");
+            self.inner.task_definition(ctx, arn).await
+        }
+
+        async fn list_tasks(
+            &self,
+            ctx: &AwsCtx,
+            service: &ServiceRef,
+            include_stopped: bool,
+        ) -> Result<Vec<Task>, SourceError> {
+            self.record("list_tasks");
+            self.inner.list_tasks(ctx, service, include_stopped).await
+        }
+    }
+
+    #[tokio::test]
+    async fn a_scan_is_kept_for_the_whole_cluster_until_the_next_one() {
+        let mut state = AppState::demo();
+        let auth = Arc::new(contrail_fake::FakeAuth::new());
+        let ecs = Arc::new(Counting {
+            inner: contrail_fake::FakeEcs::new(auth),
+            calls: Mutex::default(),
+        });
+        state.ecs = ecs.clone();
+        let links = |exclude: &'static str, scan| {
+            let state = &state;
+            async move {
+                find_topic_links(state, &ctx(), EDGE, &["demo.events".into()], exclude, scan)
+                    .await
+                    .unwrap()
+            }
+        };
+
+        // Nothing scanned yet: the cache alone has nothing and asks nobody.
+        assert_eq!(links("event-ingest", TopicScan::Cached).await, None);
+        assert!(ecs.take().is_empty());
+
+        // A scan lists the services once, then reads each one's task definition.
+        let fresh = links("event-ingest", TopicScan::Fresh).await.unwrap();
+        let calls = ecs.take();
+        assert_eq!(calls[0], "list_services");
+        assert!(calls[1..].iter().all(|&c| c == "task_definition"));
+        assert_eq!(calls.len(), 1 + 4, "one listing, four task definitions");
+
+        // Another service of the cluster (the next one through the graph) needs no call.
+        let cached = links("legacy-gateway", TopicScan::Cached).await.unwrap();
+        assert!(ecs.take().is_empty());
+        assert!(cached.iter().any(|l| l.service == "event-ingest"));
+        assert!(cached.iter().all(|l| l.service != "legacy-gateway"));
+        // And back to the first one.
+        assert_eq!(links("event-ingest", TopicScan::Cached).await, Some(fresh));
+        assert!(ecs.take().is_empty());
+
+        // Scanning again lists the services again.
+        links("event-ingest", TopicScan::Fresh).await.unwrap();
+        assert_eq!(ecs.take()[0], "list_services");
     }
 }

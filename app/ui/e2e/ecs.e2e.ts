@@ -191,8 +191,8 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await expect(gatewayRoutes).toContainText(
     "Output service: reads Kafka topics as consumer group legacy-gateway",
   );
-  // The writers of its topics come before them; another reader sits next to it.
-  await gatewayRoutes.getByRole("button", { name: "Find connected services" }).click();
+  // The cluster's scan is kept: the writers of its topics come before them right away, and
+  // another reader sits next to it.
   await expect(gatewayGraph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
   await expect(gatewayGraph.getByRole("button", { name: "service audit-archiver" })).toContainText(
     "group audit-archiver",
@@ -220,4 +220,14 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await gatewayGraph.getByRole("button", { name: "topic demo.events" }).click();
   await expect(gatewayRoutes.getByRole("region", { name: "Output 2" })).toContainText("disabled");
   await expect(gatewayRoutes).not.toContainText("demo-not-a-secret");
+
+  // Back on the first tab, its connected services are still there.
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: "event-ingest" })
+    .click();
+  const ingestGraph = page
+    .getByRole("main", { name: "Service event-ingest" })
+    .getByRole("group", { name: "Route graph" });
+  await expect(ingestGraph.getByRole("button", { name: "service audit-archiver" })).toBeVisible();
 });

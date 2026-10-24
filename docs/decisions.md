@@ -280,3 +280,14 @@ Later the same day, Patrick preferred the siblings next to the service rather th
 **Decision:** the graph has the same five columns for every service (Sources → Written by → Topics → Read by →
 Targets); the service shown is a node in its column, next to the other services on its topics, and is selected
 at first so its paths are highlighted.
+
+## 2026-10-24 — Topic scans are kept for the session
+
+Patrick tested a real cluster: every service reached through the graph needed another click on "Find connected
+services" (and going back to the first tab too), and each scan described every service of the cluster again,
+one `DescribeServices` per service on top of the batched listing. **Decision:** the scan uses the batched
+listing (10 services per call) plus each service's task definition by ARN, which the AWS adapter caches (a
+registered revision never changes). Its result, the routes of every service of the cluster, is kept in the
+app state per profile, region and cluster for the session, with no expiry: routes only change with a deployment,
+and the button always scans again. A service's Routes card reads that cache when it opens, so the next service
+through the graph (or the tab you came from) shows its connected services without an AWS call.
