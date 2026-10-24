@@ -309,3 +309,16 @@ plus retried), and the reasons of failed events. Transitions (`previousState →
 repeat the fixed lifecycle. The status fields still show in the generic field list. A new `topic:` term filters
 status events by topic (plain-text status lines have no topic field to filter on). Level chips stay in the
 search bar.
+
+## 2026-10-23 — M8 release
+
+- **Release pipeline:** a `v*` tag runs `.github/workflows/release.yml`: draft release with git-cliff notes →
+  tauri-action builds (macOS arm64 and x64 on the arm64 runner via `--target`, Windows NSIS, Linux on Ubuntu
+  22.04 for older glibc) → publish. Assets keep Tauri's default file names.
+- **Unsigned** for v0.1 (no Apple Developer ID / Windows certificate); the README explains the first-start
+  warnings. Updater files *are* signed (Tauri's own key, see "In-app updates" above): with the
+  `TAURI_SIGNING_PRIVATE_KEY` secret set, the workflow also uploads `latest.json`.
+- **Changelog:** git-cliff from Conventional Commits (`cliff.toml`), committed as `CHANGELOG.md` with each
+  release; merge commits and `chore(release)` are left out.
+- **Screenshots** come from the fake backend (demo data) via `pnpm --dir ui screenshots` (the website's spec);
+  the branch's own README screenshot spec was dropped when merging, as the README now links the website.
