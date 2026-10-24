@@ -39,7 +39,8 @@ const SYNTAX: [string, string][] = [
   ["log.logger:*Camel*", "a field matches (* and ?)"],
   ["pipeline.offset>=230000", "a number compared (> >= < <=)"],
   ["task:5f2a  message:x", "task ID prefix, message"],
-  ["state:FAILED  correlation:DE40…", "pipeline status, one document"],
+  ["state:FAILED  topic:orders", "pipeline status, its topic"],
+  ["correlation:DE40…", "one document"],
   ["-healthcheck", "exclude (any term)"],
 ];
 
