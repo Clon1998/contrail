@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { isTyping } from "@/lib/keys";
 
 /** "⌘" on macOS, "Ctrl" elsewhere (shown as separate keys here). */
 const MOD = /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl";
@@ -47,6 +48,7 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [["Click"], "Hide or show a level (level chips)"],
       [["Middle click"], "Only this level (level chips)"],
       [["Right click"], "More level options (level chips)"],
+      [["T"], "Change the time window (type 15m, 3h, yesterday…)"],
     ],
   },
 ];
@@ -83,21 +85,13 @@ export function ShortcutList() {
   );
 }
 
-/** Whether a key press happens while typing (where "?" is just a character). */
-function typing(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
-  );
-}
-
 /** The keyboard shortcuts, opened with "?" or the keyboard button. */
 export function ShortcutsDialog() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "?" && !event.metaKey && !event.ctrlKey && !typing(event.target)) {
+      if (event.key === "?" && !event.metaKey && !event.ctrlKey && !isTyping(event.target)) {
         event.preventDefault();
         setOpen(true);
       }
