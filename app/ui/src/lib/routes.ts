@@ -20,7 +20,14 @@ export interface GraphNode {
   disabled: boolean;
   /** The service the graph is about (highlighted). */
   self: boolean;
+  /** A state badge (a service's last state in a trace). */
+  state?: string | null;
+  /** Expected here but not seen (a service that logged nothing about a traced document). */
+  missing?: boolean;
 }
+
+/** How the step a line stands for ended: done, still waiting, failed. */
+export type EdgeTone = "done" | "waiting" | "failed";
 
 /** A line between two nodes, drawn from left to right. */
 export interface GraphEdge {
@@ -28,6 +35,10 @@ export interface GraphEdge {
   from: string;
   to: string;
   disabled: boolean;
+  /** Coloured by how its step ended. */
+  tone?: EdgeTone | null;
+  /** Drawn dashed: leads to a node that is `missing`. */
+  missing?: boolean;
 }
 
 export interface Graph {
