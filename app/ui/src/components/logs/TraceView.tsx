@@ -26,6 +26,7 @@ import { Ansi } from "./Ansi";
 import { LEVEL_TONE } from "./levels";
 import { EventBody, StatusSummary } from "./LogDetails";
 import { StateBadge } from "./StateBadge";
+import { TraceGraph } from "./TraceGraph";
 
 const OUTCOME = {
   completed: { label: "Completed", tone: "border-success/40 text-success" },
@@ -227,6 +228,8 @@ function TraceResult({ store, trace }: { store: TraceTab["trace"]; trace: Trace 
   // Only status events say how a document ended; a plain trace ID (an API request) has no outcome.
   const outcome = trace.services.some((s) => s.lastState) ? OUTCOME[trace.outcome] : null;
   const hits = only ? trace.hits.filter((h) => h.service === only) : trace.hits;
+  // With hops, the graph shows the services on the document's way; the rest are listed.
+  const chips = trace.services.filter((s) => !trace.hops.some((h) => h.service === s.service));
 
   return (
     <div className="space-y-3 p-4 text-sm">
@@ -248,11 +251,18 @@ function TraceResult({ store, trace }: { store: TraceTab["trace"]; trace: Trace 
         </span>
       </div>
 
-      {trace.services.length > 0 && (
-        <ol aria-label="Services on the way" className="flex flex-wrap items-center gap-1.5">
-          {trace.services.map((service, i) => (
+      {trace.hops.length > 0 && <TraceGraph store={store} trace={trace} />}
+      {chips.length > 0 && (
+        <ol
+          aria-label={trace.hops.length > 0 ? "Also in this trace" : "Services on the way"}
+          className="flex flex-wrap items-center gap-1.5"
+        >
+          {trace.hops.length > 0 && (
+            <li className="text-xs text-muted-foreground">Also in this trace:</li>
+          )}
+          {chips.map((service, i) => (
             <li key={service.service} className="flex items-center gap-1.5">
-              {i > 0 && <span className="text-muted-foreground">→</span>}
+              {i > 0 && trace.hops.length === 0 && <span className="text-muted-foreground">→</span>}
               <button
                 type="button"
                 aria-pressed={only === service.service}

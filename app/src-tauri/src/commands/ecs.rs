@@ -360,7 +360,7 @@ mod tests {
         let calls = ecs.take();
         assert_eq!(calls[0], "list_services");
         assert!(calls[1..].iter().all(|&c| c == "task_definition"));
-        assert_eq!(calls.len(), 1 + 4, "one listing, four task definitions");
+        assert_eq!(calls.len(), 1 + 6, "one listing, six task definitions");
 
         // Another service of the cluster (the next one through the graph) needs no call.
         let cached = links("legacy-gateway", TopicScan::Cached).await.unwrap();

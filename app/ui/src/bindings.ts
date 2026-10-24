@@ -384,6 +384,9 @@ export type FilterSpec = {
 	noise: string[],
 };
 
+/**  Whether a service wrote the document to a topic or read it from one. */
+export type HopDirection = "writes" | "reads";
+
 /**
  *  Log levels, from least to most severe (the derived `Ord` follows declaration order, so
  *  `Level::Warn > Level::Info` works for "WARN and above" filters).
@@ -797,6 +800,8 @@ export type StatusChange = {
 	/**  Follows one document across all services. */
 	correlationId: string | null,
 	topic: string | null,
+	/**  The Kafka consumer group of a consuming service (none on the producing side). */
+	consumerGroup: string | null,
 	/**  Why the state changed ("Processing failed: …"), as the framework or a route wrote it. */
 	message: string | null,
 };
@@ -890,6 +895,8 @@ export type Trace = {
 	hits: TraceHit[],
 	/**  In the order the services were first reached. */
 	services: ServiceTrace[],
+	/**  The topics the document went through, in the order the hops started. */
+	hops: TraceHop[],
 	outcome: TraceOutcome,
 	/**  A service had more matching events than `limit`: its newest are missing. */
 	truncated: boolean,
@@ -908,11 +915,33 @@ export type TraceHit = {
 	event: LogEvent,
 };
 
+/**
+ *  One step of the document's way: a service writing it to a topic, or reading it from one, as
+ *  its status events tell. A service that reads one topic and writes the next (a transformer) has
+ *  two hops.
+ */
+export type TraceHop = {
+	service: string,
+	topic: string,
+	direction: HopDirection,
+	/**  The consumer group that read the topic. */
+	group: string | null,
+	/**  Status events of this hop. */
+	events: number,
+	first: Timestamp,
+	last: Timestamp,
+	/**  The state of the hop's last status event. */
+	lastState: string,
+};
+
 /**  Whether the document finished everywhere it went. */
 export type TraceOutcome = 
 /**  Some service's last state is FAILED. */
 "failed" | 
-/**  Every service with status events ended in COMPLETED. */
+/**
+ *  Every topic the document was written to was read, and every read completed (without
+ *  topics: every service with status events ended in COMPLETED).
+ */
 "completed" | 
 /**  A service is still in an earlier state (or there are no status events). */
 "open";

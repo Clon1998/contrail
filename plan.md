@@ -395,8 +395,9 @@ that a rejected branch's work depends on is cut from `main` without it.
 #### M9 — Trace on the route graph (evaluation)
 - A trace tab can show its result on the route graph: each service in the chain is marked with its hop's
   last state (completed, retrying, failed, no event yet), and the topics between services carry counts.
-- Hops are matched to services in the graph by log group. Services that are in the trace but not in the
-  graph (e.g. transformers) appear next to it, so nothing is hidden.
+- Hops come from the trace's status events (service, topic, wrote or read, last state), so transformers
+  appear on their own; the route scan adds external systems and readers that logged nothing. Services
+  without status events on a topic are listed next to the graph, so nothing is hidden.
 - Clicking a service on the graph opens its events in the trace (the same rows as the list view).
 - Fake: demo traces that cover the whole chain, one of which stops at a retrying hop.
 - **Done when:** unit tests map trace hops to graph nodes; an e2e test opens a demo trace on the graph;

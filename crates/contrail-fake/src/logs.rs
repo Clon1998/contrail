@@ -42,6 +42,8 @@ fn profile_of(log_group: &str) -> Option<(Format, Duration, &'static str)> {
         "event-ingest" => (Format::Nested, Duration::milliseconds(200), "event-ingest"),
         "audit-archiver" => (Format::Dotted, Duration::seconds(8), "audit-archiver"),
         "partner-poller" => (Format::Nested, Duration::seconds(15), "partner-poller"),
+        "event-enricher" => (Format::Nested, Duration::seconds(7), "event-enricher"),
+        "search-feeder" => (Format::Nested, Duration::seconds(9), "search-feeder"),
         _ => return None,
     })
 }
@@ -109,6 +111,7 @@ impl LogSource for FakeLogs {
             .iter()
             .flat_map(|stream| generate(stream, service, format, interval, range))
             .collect();
+        events.extend(documents(&prefixed, service, format, range));
         if let Some(pattern) = &selection.filter_pattern {
             events.retain(|e| e.message.contains(pattern.as_str()));
         }
@@ -185,6 +188,7 @@ impl LogSource for FakeLogs {
                     .iter()
                     .flat_map(|stream| generate(stream, &service, format, interval, range))
                     .collect();
+                events.extend(documents(&streams, &service, format, range));
                 events.sort_by_key(|e| e.timestamp);
                 Some((
                     Ok(LiveItem::Events {
@@ -235,6 +239,253 @@ fn generate(
         slot += step;
     }
     events
+}
+
+/// One demo document starts every 30 seconds.
+const DOCUMENT_EVERY_MS: i64 = 30_000;
+/// The last step of a document comes this long after its start.
+const DOCUMENT_TAKES_MS: i64 = 3_000;
+
+/// One status event of a demo document in one service.
+struct Step {
+    /// After the document's start.
+    after_ms: i64,
+    previous: &'static str,
+    state: &'static str,
+    topic: &'static str,
+    /// The consumer group, on the reading side.
+    group: Option<&'static str>,
+    message: &'static str,
+}
+
+const RAW: &str = "demo.events";
+const ENRICHED: &str = "demo.events.enriched";
+
+/// What `service` logs about document `n`: `event-ingest` writes it to `demo.events`;
+/// `legacy-gateway`, `audit-archiver` and the transformer `event-enricher` read it there, and the
+/// enricher writes it on to `demo.events.enriched`, where `search-feeder` reads it. Every sixth
+/// document stays stuck retrying in `audit-archiver`, every tenth fails in `search-feeder`
+/// (the second document of the recorded demo data both).
+fn steps(service: &str, n: i64) -> Vec<Step> {
+    let step = |after_ms, previous, state, topic, group, message| Step {
+        after_ms,
+        previous,
+        state,
+        topic,
+        group,
+        message,
+    };
+    let consumed = "Record consumed, starting processing";
+    let completed = "Processing completed";
+    match service {
+        "event-ingest" => vec![
+            step(0, "NEW", "RECEIVED", RAW, None, "Document received"),
+            step(
+                40,
+                "RECEIVED",
+                "PUBLISHED",
+                RAW,
+                None,
+                "Document stored and published",
+            ),
+        ],
+        "legacy-gateway" => vec![
+            step(
+                800,
+                "PUBLISHED",
+                "CONSUMING",
+                RAW,
+                Some("legacy-gateway"),
+                consumed,
+            ),
+            step(
+                1_100,
+                "CONSUMING",
+                "COMPLETED",
+                RAW,
+                Some("legacy-gateway"),
+                completed,
+            ),
+        ],
+        "audit-archiver" => {
+            let group = Some("audit-archiver");
+            let end = if n % 6 == 1 {
+                step(
+                    1_500,
+                    "CONSUMING",
+                    "RETRYING",
+                    RAW,
+                    group,
+                    "Route is stopping, the record is retried",
+                )
+            } else {
+                step(1_400, "CONSUMING", "COMPLETED", RAW, group, completed)
+            };
+            vec![
+                step(900, "PUBLISHED", "CONSUMING", RAW, group, consumed),
+                end,
+            ]
+        }
+        "event-enricher" => {
+            let group = Some("event-enricher");
+            vec![
+                step(700, "PUBLISHED", "CONSUMING", RAW, group, consumed),
+                step(
+                    1_000,
+                    "NEW",
+                    "RECEIVED",
+                    ENRICHED,
+                    None,
+                    "Document received",
+                ),
+                step(
+                    1_050,
+                    "RECEIVED",
+                    "PUBLISHED",
+                    ENRICHED,
+                    None,
+                    "Document stored and published",
+                ),
+                step(1_100, "CONSUMING", "COMPLETED", RAW, group, completed),
+            ]
+        }
+        "search-feeder" => {
+            let group = Some("search-feeder");
+            let end = if n % 10 == 1 {
+                step(
+                    2_000,
+                    "CONSUMING",
+                    "FAILED",
+                    ENRICHED,
+                    group,
+                    "Processing failed: missing required field 'sku'",
+                )
+            } else {
+                step(2_000, "CONSUMING", "COMPLETED", ENRICHED, group, completed)
+            };
+            vec![
+                step(1_600, "PUBLISHED", "CONSUMING", ENRICHED, group, consumed),
+                end,
+            ]
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// The correlation ID of demo document `n` (32 hex digits).
+pub fn document_id(n: i64) -> String {
+    format!("{:016x}{n:016x}", hash(&["document", &n.to_string()]))
+}
+
+/// The status events `service` logs in `range` about the demo documents (see [`steps`]), each on
+/// one of `streams`.
+fn documents(streams: &[String], service: &str, format: Format, range: TimeRange) -> Vec<RawEvent> {
+    let millis = |t: Timestamp| (t.0.unix_timestamp_nanos() / 1_000_000) as i64;
+    let (start, end) = (millis(range.start), millis(range.end));
+    if streams.is_empty() || steps(service, 0).is_empty() {
+        return Vec::new();
+    }
+    let mut events = Vec::new();
+    let first = (start - DOCUMENT_TAKES_MS).div_euclid(DOCUMENT_EVERY_MS);
+    for n in first..=end.div_euclid(DOCUMENT_EVERY_MS) {
+        let id = document_id(n);
+        let stream = &streams[(hash(&[&id, service]) % streams.len() as u64) as usize];
+        for step in steps(service, n) {
+            let at = n * DOCUMENT_EVERY_MS + step.after_ms;
+            if !(start..end).contains(&at) {
+                continue;
+            }
+            let at = OffsetDateTime::from_unix_timestamp_nanos(i128::from(at) * 1_000_000)
+                .expect("valid demo timestamp");
+            for (i, message) in status_lines(service, format, &step, &id, n, at)
+                .into_iter()
+                .enumerate()
+            {
+                events.push(RawEvent {
+                    stream: stream.clone(),
+                    timestamp: Timestamp(at + Duration::milliseconds(i as i64)),
+                    message,
+                });
+            }
+        }
+    }
+    events
+}
+
+/// A document's status event as `service` logs it: ECS JSON with the status under `pipeline`
+/// (nested or dotted), or for plain-text logs a line and the status as a JSON line of its own.
+fn status_lines(
+    service: &str,
+    format: Format,
+    step: &Step,
+    id: &str,
+    n: i64,
+    at: OffsetDateTime,
+) -> Vec<String> {
+    let level = match step.state {
+        "FAILED" => "ERROR",
+        "RETRYING" => "WARN",
+        _ => "INFO",
+    };
+    let logger = "com.example.pipeline.StatusManager";
+    let message = format!(
+        "Document status change: [event] {} -> {}",
+        step.previous, step.state
+    );
+    let status = json!({
+        "state": step.state,
+        "previousState": step.previous,
+        "message": step.message,
+        "topicName": step.topic,
+        "consumerGroup": step.group,
+        "partition": n.rem_euclid(3),
+        "offset": 500_000 + n.rem_euclid(100_000),
+        "correlationId": id,
+        "objectName": format!("inbound/demo/{id}_event.json"),
+    });
+    match format {
+        Format::Nested => vec![
+            json!({
+                "@timestamp": rfc3339(at),
+                "log": { "level": level, "logger": logger },
+                "process": { "pid": 1, "thread": { "name": "events-0-C-1" } },
+                "service": { "name": service, "version": "4.2.0", "environment": "DEMO", "node": {} },
+                "message": message,
+                "pipeline": status,
+                "ecs": { "version": "8.11" },
+            })
+            .to_string(),
+        ],
+        Format::Dotted => {
+            let mut event = json!({
+                "@timestamp": rfc3339(at),
+                "log.level": level,
+                "log.logger": logger,
+                "process.thread.name": "events-0-C-1",
+                "service.name": service,
+                "message": message,
+                "ecs.version": "8.11",
+            });
+            for (key, value) in status.as_object().expect("an object") {
+                event[format!("pipeline.{key}")] = value.clone();
+            }
+            vec![event.to_string()]
+        }
+        Format::Spring => {
+            let time = at
+                .format(&time::macros::format_description!(
+                    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+                ))
+                .expect("formattable timestamp");
+            let line = |text: &str| {
+                format!(
+                    "{time} {level:>5} 1 --- [{service}] [{:>15}] {:<40} : {text}",
+                    "events-0-C-1", "c.e.p.StatusManager"
+                )
+            };
+            vec![line(&message), line(&status.to_string())]
+        }
+    }
 }
 
 fn rfc3339(at: OffsetDateTime) -> String {
@@ -298,6 +549,19 @@ fn nested(service: &str, seed: u64, at: OffsetDateTime) -> String {
             )
             .to_owned(),
         ),
+    };
+    // The route services of demo-edge log their documents' steps (see `documents`); only the
+    // demo-core services log status changes of random documents.
+    let (level, logger, message) = if message.starts_with("Document status change")
+        && !matches!(service, "orders-api" | "billing-sync")
+    {
+        (
+            "INFO",
+            "com.example.pipeline.ConsumerHealth",
+            format!("{} records in flight", seed % 5),
+        )
+    } else {
+        (level, logger, message)
     };
     let mut event = json!({
         "@timestamp": rfc3339(at),
@@ -540,6 +804,69 @@ mod tests {
             assert!(!events.is_empty(), "{service}");
             assert!(events.iter().all(|e| e.line.kind == kind), "{service}");
         }
+    }
+
+    #[tokio::test]
+    async fn documents_pass_through_the_edge_services_in_their_formats() {
+        // 12:00 is a document's start: 12:00 UTC is a multiple of 30 s.
+        let n = datetime!(2026-01-15 12:00 UTC).unix_timestamp() * 1000 / DOCUMENT_EVERY_MS;
+        let id = document_id(n);
+        let mut seen = Vec::new();
+        for service in [
+            "event-ingest",
+            "legacy-gateway",
+            "audit-archiver",
+            "event-enricher",
+            "search-feeder",
+        ] {
+            let mut sel = selection(service, &["t1", "t2"]);
+            sel.filter_pattern = Some(id.clone());
+            let raw = fake()
+                .backfill(&ctx(), &sel, minutes(1), 10_000)
+                .await
+                .unwrap();
+            for event in process(raw.events) {
+                let status = event
+                    .status
+                    .expect("only status events mention the document");
+                assert_eq!(status.correlation_id.as_deref(), Some(id.as_str()));
+                seen.push((
+                    service,
+                    status.state,
+                    status.topic.unwrap(),
+                    status.consumer_group,
+                ));
+            }
+        }
+        let has = |service: &str, state: &str, topic: &str| {
+            seen.iter()
+                .any(|(s, st, t, _)| *s == service && st == state && t == topic)
+        };
+        assert!(has("event-ingest", "PUBLISHED", RAW));
+        // Plain text: the status comes from the JSON line after the message.
+        assert!(has("legacy-gateway", "COMPLETED", RAW));
+        // Dotted ECS.
+        assert!(has("audit-archiver", "CONSUMING", RAW));
+        // The transformer reads one topic and writes the next.
+        assert!(has("event-enricher", "COMPLETED", RAW));
+        assert!(has("event-enricher", "PUBLISHED", ENRICHED));
+        assert!(has("search-feeder", "CONSUMING", ENRICHED));
+        assert!(
+            seen.iter()
+                .filter(|(_, state, ..)| state == "CONSUMING")
+                .all(|(service, _, _, group)| group.as_deref() == Some(*service)),
+            "readers log their consumer group"
+        );
+    }
+
+    #[test]
+    fn some_documents_get_stuck_or_fail() {
+        let ends = |service: &str, n: i64| steps(service, n).last().map(|s| s.state);
+        assert_eq!(ends("audit-archiver", 7), Some("RETRYING"));
+        assert_eq!(ends("audit-archiver", 6), Some("COMPLETED"));
+        assert_eq!(ends("search-feeder", 11), Some("FAILED"));
+        assert_eq!(ends("search-feeder", 12), Some("COMPLETED"));
+        assert_eq!(ends("orders-api", 1), None, "not on the documents' way");
     }
 
     #[tokio::test]

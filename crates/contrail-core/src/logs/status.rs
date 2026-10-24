@@ -23,6 +23,8 @@ pub struct StatusChange {
     /// Follows one document across all services.
     pub correlation_id: Option<String>,
     pub topic: Option<String>,
+    /// The Kafka consumer group of a consuming service (none on the producing side).
+    pub consumer_group: Option<String>,
     /// Why the state changed ("Processing failed: …"), as the framework or a route wrote it.
     pub message: Option<String>,
 }
@@ -61,6 +63,7 @@ fn from_fields(line: &ParsedLine) -> Option<StatusChange> {
             previous_state: field(format!("{prefix}.previousState")),
             correlation_id: Some(correlation_id),
             topic: field(format!("{prefix}.topicName")),
+            consumer_group: field(format!("{prefix}.consumerGroup")),
             message: field(format!("{prefix}.message")),
         })
     })
@@ -86,6 +89,7 @@ fn from_json_message(message: &str) -> Option<StatusChange> {
         previous_state: get("previousState"),
         correlation_id: Some(get(CORRELATION)?),
         topic: get("topicName"),
+        consumer_group: get("consumerGroup"),
         message: get("message"),
     })
 }
@@ -118,7 +122,7 @@ mod tests {
     #[test]
     fn nested_status_fields_under_any_prefix() {
         let line = parse_line(
-            r#"{"@timestamp":"2026-01-15T09:12:01Z","log":{"level":"INFO"},"message":"Document status change: [order] PUBLISHED -> CONSUMING","acme":{"state":"CONSUMING","previousState":"PUBLISHED","topicName":"example.orders.v1","correlationId":"4C12-0001","message":"Record consumed, starting processing"}}"#,
+            r#"{"@timestamp":"2026-01-15T09:12:01Z","log":{"level":"INFO"},"message":"Document status change: [order] PUBLISHED -> CONSUMING","acme":{"state":"CONSUMING","previousState":"PUBLISHED","topicName":"example.orders.v1","consumerGroup":"orders-out","correlationId":"4C12-0001","message":"Record consumed, starting processing"}}"#,
         );
         assert_eq!(
             status_change(&line),
@@ -128,6 +132,7 @@ mod tests {
                 previous_state: Some("PUBLISHED".into()),
                 correlation_id: Some("4C12-0001".into()),
                 topic: Some("example.orders.v1".into()),
+                consumer_group: Some("orders-out".into()),
                 message: Some("Record consumed, starting processing".into()),
             })
         );

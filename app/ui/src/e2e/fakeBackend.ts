@@ -32,6 +32,7 @@ import type {
   RowBlock,
   RowWindow,
   ServiceTrace,
+  TraceHop,
   Trace,
   TopicLink,
   TraceHit,
@@ -92,6 +93,8 @@ interface RecordedLogs {
       events: LogEvent[];
     }
   >;
+  /** The demo documents' whole way through their cluster, by correlation ID. */
+  documents: Record<string, TraceHit[]>;
 }
 
 /** The recorded landscape as seen from `account` in `region`, with times relative to now. */
@@ -540,10 +543,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const ctx = args?.ctx as AwsCtx;
         const account = checkCredentials(ctx);
         const id = args?.id as string;
-        const recorded = logsData(account, ctx.region ?? "eu-central-1").services;
+        const data = logsData(account, ctx.region ?? "eu-central-1");
+        const recorded = data.services;
         const hits: TraceHit[] = [];
         const failures: { service: string; message: string }[] = [];
-        for (const service of args?.services as ServiceRef[]) {
+        const chosen = args?.services as ServiceRef[];
+        // A recorded demo document: its events in the chosen services.
+        const document = data.documents[id];
+        if (document) {
+          const names = new Set(chosen.map((s) => s.serviceName));
+          hits.push(...document.filter((h) => names.has(h.service)));
+        }
+        for (const service of document ? [] : chosen) {
           const cluster = service.clusterArn.split("/").at(-1);
           const data = recorded[`${cluster}/${service.serviceName}`];
           if (!data) {
@@ -574,13 +585,51 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             });
           }
         }
+        // Hops per service, topic and direction, like `hops` in trace.rs.
+        const hops: TraceHop[] = [];
+        for (const hit of hits) {
+          const status = hit.event.status;
+          if (!status?.topic) continue;
+          const writing = (state: string | null) => state === "RECEIVED" || state === "PUBLISHED";
+          const direction =
+            !status.consumerGroup && (writing(status.state) || writing(status.previousState))
+              ? "writes"
+              : "reads";
+          const found = hops.find(
+            (h) =>
+              h.service === hit.service && h.topic === status.topic && h.direction === direction,
+          );
+          if (found) {
+            found.events++;
+            found.last = hit.event.timestamp;
+            found.lastState = status.state;
+            found.group ??= status.consumerGroup;
+          } else {
+            hops.push({
+              service: hit.service,
+              topic: status.topic,
+              direction,
+              group: status.consumerGroup,
+              events: 1,
+              first: hit.event.timestamp,
+              last: hit.event.timestamp,
+              lastState: status.state,
+            });
+          }
+        }
         const states = services.flatMap((s) => (s.lastState ? [s.lastState] : []));
-        const outcome = states.includes("FAILED")
-          ? "failed"
-          : states.length > 0 && states.every((s) => s === "COMPLETED")
-            ? "completed"
-            : "open";
-        return { hits, services, outcome, truncated: false, failures } satisfies Trace;
+        // Complete: every write published and read somewhere, every read completed.
+        const complete =
+          hops.length === 0
+            ? states.length > 0 && states.every((s) => s === "COMPLETED")
+            : hops.every((h) =>
+                h.direction === "writes"
+                  ? h.lastState === "PUBLISHED" &&
+                    hops.some((r) => r.direction === "reads" && r.topic === h.topic)
+                  : h.lastState === "COMPLETED",
+              );
+        const outcome = states.includes("FAILED") ? "failed" : complete ? "completed" : "open";
+        return { hits, services, hops, outcome, truncated: false, failures } satisfies Trace;
       }
       case "describe_service":
         return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;

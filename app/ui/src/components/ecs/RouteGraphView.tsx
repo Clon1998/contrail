@@ -1,7 +1,14 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { PlugIcon, ServerIcon, WavesIcon } from "lucide-react";
 import { cn } from "cn";
-import { pathThrough, type Graph, type GraphNode } from "@/lib/routes";
+import { StateBadge } from "@/components/logs/StateBadge";
+import { pathThrough, type EdgeTone, type Graph, type GraphNode } from "@/lib/routes";
+
+const EDGE_TONE: Record<EdgeTone, string> = {
+  done: "stroke-success/70",
+  waiting: "stroke-warning",
+  failed: "stroke-destructive",
+};
 
 interface Path {
   id: string;
@@ -15,11 +22,14 @@ interface Path {
  */
 export function GraphView({
   graph,
+  label = "Route graph",
   columnTitle,
   focus,
   onFocus,
 }: {
   graph: Graph;
+  /** The accessible name of the whole graph. */
+  label?: string;
   /** The heading above a column, if it has one. */
   columnTitle: (column: number) => string | null;
   focus: string | null;
@@ -72,9 +82,10 @@ export function GraphView({
     <div
       ref={container}
       role="group"
-      aria-label="Route graph"
+      aria-label={label}
       className={cn("relative grid py-1", columns.length > 3 ? "gap-x-8" : "gap-x-12")}
-      style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}
+      // Columns as wide as their names need, shrinking evenly when the card is too narrow.
+      style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, auto))` }}
     >
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible">
         {paths.map((path) => {
@@ -86,11 +97,15 @@ export function GraphView({
               key={path.id}
               d={path.d}
               fill="none"
-              strokeWidth={lit ? 2 : 1.5}
-              strokeDasharray={edge.disabled ? "4 4" : undefined}
+              strokeWidth={lit || edge.tone ? 2 : 1.5}
+              strokeDasharray={edge.disabled || edge.missing ? "4 4" : undefined}
               className={cn(
                 "transition-[opacity,stroke] duration-150",
-                lit ? "stroke-primary" : "stroke-muted-foreground/45",
+                edge.tone
+                  ? EDGE_TONE[edge.tone]
+                  : lit
+                    ? "stroke-primary"
+                    : "stroke-muted-foreground/45",
                 active && !lit && "opacity-25",
               )}
             />
@@ -146,7 +161,7 @@ function GraphNodeButton({
     <button
       ref={ref}
       type="button"
-      aria-label={`${node.kind} ${node.label}${node.self ? " (this service)" : ""}${node.disabled ? " (disabled)" : ""}`}
+      aria-label={`${node.kind} ${node.label}${node.self ? " (this service)" : ""}${node.disabled ? " (disabled)" : ""}${node.state ? ` (${node.state})` : ""}${node.missing ? " (no event)" : ""}`}
       aria-pressed={selected}
       title={node.label}
       onClick={onClick}
@@ -161,6 +176,7 @@ function GraphNodeButton({
         node.kind === "system" && "border-border",
         node.self && "border-primary/60 bg-primary/10",
         node.disabled && "border-dashed opacity-60",
+        node.missing && "border-dashed border-warning/60 bg-transparent",
         selected && "ring-2 ring-primary",
         dimmed && "opacity-40",
       )}
@@ -176,8 +192,14 @@ function GraphNodeButton({
         >
           {node.label}
         </span>
+        {node.state && <StateBadge state={node.state} className="mt-0.5 self-start" />}
         {(node.detail !== null || node.disabled || node.self) && (
-          <span className="truncate text-[11px] text-muted-foreground">
+          <span
+            className={cn(
+              "truncate text-[11px] text-muted-foreground",
+              node.missing && "text-warning",
+            )}
+          >
             {/* Its own group is in the line above the graph. */}
             {node.self ? <span className="text-primary">this service</span> : node.detail}
             {node.disabled && <span className="text-warning"> disabled</span>}
