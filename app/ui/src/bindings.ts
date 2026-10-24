@@ -552,6 +552,8 @@ export type ParsedLine = {
 export type PipelineSummary = {
 	/**  Status events among the summarized events. */
 	events: number,
+	/**  The field prefix of most status events (`""`: JSON status lines in plain-text logs). */
+	prefix: string,
 	/**  Per state, in lifecycle order (unknown states last). */
 	states: ValueCount[],
 	/**  Per topic, the most active first. */

@@ -59,6 +59,8 @@ pub struct ValueCount {
 pub struct PipelineSummary {
     /// Status events among the summarized events.
     pub events: u32,
+    /// The field prefix of most status events (`""`: JSON status lines in plain-text logs).
+    pub prefix: String,
     /// Per state, in lifecycle order (unknown states last).
     pub states: Vec<ValueCount>,
     /// Per topic, the most active first.
@@ -224,6 +226,7 @@ pub fn summarize<'a>(events: impl IntoIterator<Item = &'a LogEvent>) -> FieldSum
 #[derive(Default)]
 struct PipelineCounter<'a> {
     events: u32,
+    prefixes: HashMap<&'a str, u32>,
     states: HashMap<&'a str, u32>,
     topics: HashMap<&'a str, HashMap<&'a str, u32>>,
     documents: HashMap<&'a str, DocumentState<'a>>,
@@ -242,6 +245,7 @@ struct DocumentState<'a> {
 impl<'a> PipelineCounter<'a> {
     fn add(&mut self, status: &'a super::StatusChange) {
         let state = status.state.as_str();
+        *self.prefixes.entry(&status.prefix).or_default() += 1;
         *self.states.entry(state).or_default() += 1;
         if let Some(topic) = status.topic.as_deref() {
             *self
@@ -254,7 +258,8 @@ impl<'a> PipelineCounter<'a> {
         if state.eq_ignore_ascii_case("FAILED")
             && let Some(reason) = status.message.as_deref()
         {
-            *self.failure_reasons.entry(reason.trim()).or_default() += 1;
+            // Kept exactly as logged (some end in a space), so a field term matches it again.
+            *self.failure_reasons.entry(reason).or_default() += 1;
         }
         if let Some(id) = status.correlation_id.as_deref() {
             let retrying = state.eq_ignore_ascii_case("RETRYING");
@@ -301,8 +306,13 @@ impl<'a> PipelineCounter<'a> {
             })
             .collect();
         topics.sort_by(|a, b| b.total.cmp(&a.total).then_with(|| a.topic.cmp(&b.topic)));
+        let prefix = top(self.prefixes, 1)
+            .pop()
+            .map(|p| p.value)
+            .unwrap_or_default();
         Some(PipelineSummary {
             events: self.events,
+            prefix,
             states: in_order(&self.states),
             topics,
             documents: documents(self.documents),
@@ -480,6 +490,7 @@ mod tests {
         let summary = summarize(&events);
         let pipeline = summary.pipeline.unwrap();
         assert_eq!(pipeline.events, 9);
+        assert_eq!(pipeline.prefix, "pipeline");
         // Lifecycle order, not by count.
         assert_eq!(
             counts(&pipeline.states),
