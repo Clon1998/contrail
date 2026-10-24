@@ -61,18 +61,6 @@ export function sameWindow(a: TimeWindow, b: TimeWindow): boolean {
     : b.kind === "range" && a.from === b.from && a.to === b.to;
 }
 
-/** `15 min`, `2 h`, `3 d`, or `10-22 08:00 – 10-22 09:30` for a fixed range. */
-export function windowLabel(timeWindow: TimeWindow, timeZone: TimeZone): string {
-  if (timeWindow.kind === "range") {
-    const short = (iso: string) => toDateTimeLocal(iso, timeZone).slice(5).replace("T", " ");
-    return `${short(timeWindow.from)} – ${short(timeWindow.to)}`;
-  }
-  const { minutes } = timeWindow;
-  if (minutes % 1440 === 0) return `${minutes / 1440} d`;
-  if (minutes % 60 === 0) return `${minutes / 60} h`;
-  return `${minutes} min`;
-}
-
 /** An ISO time as the value of an `<input type="datetime-local">` (`2026-10-22T08:15`). */
 export function toDateTimeLocal(iso: string, timeZone: TimeZone): string {
   const date = new Date(iso);

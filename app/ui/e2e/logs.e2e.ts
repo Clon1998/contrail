@@ -9,6 +9,15 @@ async function openLogs(page: Page, cluster: string, service: string) {
   return page.getByRole("list", { name: "Log events" });
 }
 
+/** Opens the time picker, types `text` (e.g. `1h`) and applies it with Enter. */
+async function chooseWindow(page: Page, text: string) {
+  await page.getByRole("button", { name: /^Time window:/ }).click();
+  const input = page.getByRole("combobox", { name: "Time window" });
+  await input.fill(text);
+  await page.keyboard.press("Enter");
+  await expect(input).toBeHidden();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
@@ -147,32 +156,69 @@ test("live: following stops when scrolled up and resumes with Jump to latest", a
 
 test("time windows: longer ones open paused, a fixed range isn't followed", async ({ page }) => {
   await openLogs(page, "demo-core", "orders-api");
-  const windows = page.getByRole("radiogroup", { name: "Time window" });
+  const picker = page.getByRole("button", { name: /^Time window:/ });
+  await expect(picker).toHaveAccessibleName("Time window: Last 15 min");
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
 
-  await windows.getByRole("radio", { name: "1 h" }).click();
+  await chooseWindow(page, "1h");
+  await expect(picker).toHaveAccessibleName("Time window: Last 1 h");
   await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
   await page.getByRole("button", { name: "Resume live tail" }).click();
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
 
-  // Custom: the last 2 days.
-  await windows.getByRole("radio", { name: "Custom" }).click();
-  const relative = page.getByRole("form", { name: "Relative time window" });
-  await relative.getByLabel("Amount").fill("2");
-  await relative.getByRole("radio", { name: "d" }).click();
-  await relative.getByRole("button", { name: "Apply" }).click();
-  await expect(windows.getByRole("radio", { name: "2 d" })).toHaveAttribute("aria-checked", "true");
+  // Typed: the last 2 days, previewed before Enter.
+  await picker.click();
+  const input = page.getByRole("combobox", { name: "Time window" });
+  await input.fill("2d");
+  await expect(page.getByRole("option", { name: /Last 2 days/ })).toContainText("opens paused");
+  await page.keyboard.press("Enter");
+  await expect(picker).toHaveAccessibleName("Time window: Last 2 d");
   await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
 
-  // Custom: a fixed range.
-  await windows.getByRole("radio", { name: "2 d" }).click();
-  const range = page.getByRole("form", { name: "Fixed time range" });
-  await range.getByLabel("From").fill("2026-01-15T09:00");
-  await range.getByLabel("To").fill("2026-01-15T10:00");
-  await range.getByRole("button", { name: "Apply" }).click();
-  await expect(windows.getByRole("radio", { name: "01-15 09:00 – 01-15 10:00" })).toBeVisible();
+  // Typed: a fixed range.
+  await chooseWindow(page, "yesterday 9-10");
+  await expect(picker).toHaveAccessibleName("Time window: Yesterday 09:00 → 10:00");
   await expect(page.getByText("fixed range", { exact: true })).toBeVisible();
   await expect(page.getByRole("status", { name: /^Live tail/ })).toHaveCount(0);
+});
+
+test("the time picker: T opens it, it explains bad input, remembers windows, has a calendar", async ({
+  page,
+}) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const picker = page.getByRole("button", { name: /^Time window:/ });
+
+  // T opens the picker on the current window (15 min); Arrow Down moves on to the next one.
+  await page.keyboard.press("t");
+  const input = page.getByRole("combobox", { name: "Time window" });
+  await expect(input).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(picker).toHaveAccessibleName("Time window: Last 1 h");
+
+  // What it can't read, it explains.
+  await picker.click();
+  await input.fill("soon");
+  await expect(page.getByRole("status").filter({ hasText: "Try 15m, 3h" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // A window chosen once shows up under "Recent".
+  await chooseWindow(page, "3h");
+  await picker.click();
+  await expect(page.getByRole("option", { name: /Last 3 hours/ })).toBeVisible();
+
+  // The calendar: one day, all of it.
+  await page.getByRole("button", { name: "Calendar" }).click();
+  const calendar = page.getByRole("group", { name: "Calendar" });
+  await calendar.getByRole("button", { name: "Previous month" }).click();
+  const month = new Date();
+  month.setDate(1);
+  month.setMonth(month.getMonth() - 1);
+  const name = month.toLocaleString("en", { month: "long" });
+  await calendar.getByRole("button", { name: `${name} 10, ${month.getFullYear()}` }).click();
+  await calendar.getByRole("button", { name: "Apply" }).click();
+  await expect(picker).toHaveAccessibleName(/^Time window: \w{3} 10(, \d{4})?$/);
+  await expect(page.getByText("fixed range", { exact: true })).toBeVisible();
 });
 
 test("newest first: the newest event on top, new events arrive there", async ({ page }) => {
@@ -264,10 +310,7 @@ test("a long window starts with the newest events; scrolling up loads older ones
 }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(list).toHaveAttribute("aria-rowcount", /^10000\d$/); // 15 min: everything
-  await page
-    .getByRole("radiogroup", { name: "Time window" })
-    .getByRole("radio", { name: "1 h" })
-    .click();
+  await chooseWindow(page, "1h");
   // 1 h opens paused (the count stays put) with only the newest half loaded.
   await expect(list).toHaveAttribute("aria-rowcount", "50000");
   await expect(page.getByRole("button", { name: "Load older" })).toBeVisible();
@@ -285,10 +328,7 @@ test("a long window starts with the newest events; scrolling up loads older ones
 test("a long window that fits on screen loads its older events right away", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "legacy-gateway");
   const all = Number(await list.getAttribute("aria-rowcount"));
-  await page
-    .getByRole("radiogroup", { name: "Time window" })
-    .getByRole("radio", { name: "1 h" })
-    .click();
+  await chooseWindow(page, "1h");
   await expect(list).toHaveAttribute("aria-rowcount", String(all));
   await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
 });
@@ -298,10 +338,7 @@ test("the end of the list says whether older events are loading, missing or all 
 }) => {
   await page.goto("/?olderDelay=800");
   const list = await openLogs(page, "demo-edge", "event-ingest");
-  await page
-    .getByRole("radiogroup", { name: "Time window" })
-    .getByRole("radio", { name: "1 h" })
-    .click();
+  await chooseWindow(page, "1h");
   await expect(list).toHaveAttribute("aria-rowcount", "50000");
   const marker = page.getByRole("status", { name: "Older events" });
 
@@ -333,10 +370,7 @@ test("the live tail state explains itself in a tooltip", async ({ page }) => {
     1,
   );
 
-  await page
-    .getByRole("radiogroup", { name: "Time window" })
-    .getByRole("radio", { name: "1 h" })
-    .click();
+  await chooseWindow(page, "1h");
   await page.mouse.move(0, 0);
   await page.getByRole("status", { name: "Live tail: Paused" }).hover();
   await expect(
