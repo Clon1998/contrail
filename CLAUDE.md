@@ -90,7 +90,7 @@ pnpm --dir ui screenshots      # refresh the website's app screenshots after vis
 pnpm install && pnpm dev       # landing page, quick start, download + pages from docs/ (site.config.mjs)
 
 # Release: from the repo root on main (CI green), after updating versions and CHANGELOG.md
-pnpm --dir app dlx git-cliff@2.14.2 --config ../cliff.toml --repository .. --tag vX.Y.Z -o ../CHANGELOG.md
+pnpm --dir app dlx git-cliff@2.14.2 --config cliff.toml --repository . --tag vX.Y.Z -o CHANGELOG.md
 git tag vX.Y.Z && git push origin vX.Y.Z   # .github/workflows/release.yml builds and publishes
 ```
 

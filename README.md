@@ -47,9 +47,8 @@ historical search. See the [FAQ](docs/faq.md#what-doesnt-contrail-do).
 
 ## Install
 
-Installers are attached to [GitHub Releases](https://github.com/Clon1998/contrail/releases) (the first public
-release is still being prepared; until then, build it yourself or grab a CI build, see
-[Development](docs/development.md#ci-builds)):
+Installers are attached to [GitHub Releases](https://github.com/Clon1998/contrail/releases). Once installed,
+Contrail updates itself:
 
 | Platform | File |
 |---|---|

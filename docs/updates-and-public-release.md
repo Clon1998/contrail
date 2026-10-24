@@ -5,8 +5,11 @@ In-app updates work like Frida's: an installed Contrail reads
 installs it after checking its signature. GitHub serves that file without a login **only for a public
 repository**, so updates need two things from you: a signing key, and a public repository.
 
-The app side is on `main` (Settings → About → Updates; a header button when an update exists). The release
-side (signed updater files and `latest.json`) is on the branch `feat/m8-release`, which isn't merged yet.
+The app side is Settings → About → Updates (plus a header button when an update exists); the release workflow
+(`.github/workflows/release.yml`) signs the updater files and uploads `latest.json`.
+
+**Status (2026-10-24):** all steps below are done: history checked, key generated, public key committed,
+secrets set, repository public, `v0.1.0` released. The steps stay here for reference (e.g. a new key).
 
 ## 1. Check the history before going public
 
@@ -67,9 +70,8 @@ GitHub → repository → Settings → General → Danger Zone → Change visibi
 gh repo edit Clon1998/contrail --visibility public --accept-visibility-change-consequences
 ```
 
-## 5. Release (when you decide to)
+## 5. Release
 
-Merge `feat/m8-release` (release workflow, changelog, README, screenshots; its README needs merging with
-today's README changes and the screenshots regenerating), then tag as described there. Installed copies see a
-release once it is **published** (drafts and pre-releases aren't offered). The first version with the updater
-has to be installed by hand; from then on Contrail updates itself.
+Update `CHANGELOG.md` and tag as described in `CLAUDE.md` (Commands → Release). Installed copies see a release
+once it is **published** (drafts and pre-releases aren't offered). The first version with the updater has to be
+installed by hand; from then on Contrail updates itself.
