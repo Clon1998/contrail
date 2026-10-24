@@ -291,3 +291,21 @@ registered revision never changes). Its result, the routes of every service of t
 app state per profile, region and cluster for the session, with no expiry: routes only change with a deployment,
 and the button always scans again. A service's Routes card reads that cache when it opens, so the next service
 through the graph (or the tab you came from) shows its connected services without an AWS call.
+
+## 2026-10-24 — A Fields panel instead of the state chips
+
+Patrick asked for a Splunk-like field sidebar. **Decision:** a panel on the right (toggle: Fields button or F)
+summarizes the events that **match the search** (drill-down: a click adds `field:value`, the counts narrow),
+computed in Rust in one pass over the buffer (about 60 ms for 100,000 events in a release build; refreshed when a
+search is applied and at most once a second while events arrive, only while the panel is open). Per field: how
+many events have it and its top 10 values; at most 1,000 distinct values are counted per field, so ID-like fields
+cost bounded memory and are shown as "all different". Whether the panel is open is remembered per service for
+the session (with the search), not saved to disk.
+
+For pipeline status events the panel adds its own section, chosen from what the status fields mean: the states
+(the chips moved here from the search bar, which Patrick found confusing there), the states per topic, the
+documents (correlation IDs) by where their last event left them (in progress, failed, completed, published,
+plus retried), and the reasons of failed events. Transitions (`previousState → state`) were left out: they mostly
+repeat the fixed lifecycle. The status fields still show in the generic field list. A new `topic:` term filters
+status events by topic (plain-text status lines have no topic field to filter on). Level chips stay in the
+search bar.

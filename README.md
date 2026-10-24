@@ -35,7 +35,8 @@ it never stores credentials.
 - **Live tail** with CloudWatch Live Tail (or polling without the permission), paused automatically while you
   don't look, because it is billed per minute.
 - **Search** as you type: words, phrases, fields, levels, comparisons and regular expressions, as a filter or
-  highlighted. Level chips and "Hide lines like this" remove the noise. [Search syntax](docs/query-syntax.md)
+  highlighted. Level chips and "Hide lines like this" remove the noise. The **Fields** panel counts the most common
+  values of every field in the matching events; a click on one narrows the search. [Search syntax](docs/query-syntax.md)
 - **Tracing across services**: follow a correlation or trace ID through the services of a cluster, on a timeline.
 - Tabs per service, time windows (relative or fixed), export as `.log` or `.jsonl`, field mapping for other JSON
   layouts, dark and light themes, keyboard-first.

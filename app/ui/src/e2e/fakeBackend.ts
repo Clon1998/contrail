@@ -2,6 +2,9 @@ import type { InvokeArgs } from "@tauri-apps/api/core";
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import type {
   FieldMapping,
+  FieldSummary,
+  Outcome,
+  ValueCount,
   FilterResult,
   FilterSpec,
   Level,
@@ -34,6 +37,7 @@ import type {
   TraceHit,
   UpdateInfo,
 } from "@/bindings";
+import { splitTerms } from "@/lib/queryTerms";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
 
@@ -733,6 +737,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           rows: rowBlocks(viewId, args?.windows as RowWindow[]),
         } satisfies FilterResult;
       }
+      case "field_summary": {
+        const viewId = args?.viewId as number;
+        const events = views.get(viewId);
+        if (!Array.isArray(events)) return summarize([]);
+        const filter = filters.get(viewId);
+        return summarize(filter ? filter.matched.flatMap((i) => events[i] ?? []) : events);
+      }
       case "get_match_positions": {
         const filter = filters.get(args?.viewId as number);
         if (!filter) return [];
@@ -959,10 +970,12 @@ function compileQuery(
   | { error: { message: string; start: number; end: number; hint: string | null } } {
   const tests: FakeTest[] = [];
   const terms: string[] = [];
-  for (const match of query.matchAll(/(-?)("[^"]*"?|\S+)/g)) {
-    const negation = match[1] ?? "";
-    const rawToken = match[2] ?? "";
-    const start = match.index;
+  let searchFrom = 0;
+  for (const term of splitTerms(query)) {
+    const start = query.indexOf(term, searchFrom);
+    searchFrom = start + term.length;
+    const negation = term.length > 1 && term.startsWith("-") ? "-" : "";
+    const rawToken = term.slice(negation.length);
     if (rawToken.startsWith('"') && (rawToken.length === 1 || !rawToken.endsWith('"'))) {
       return {
         error: {
@@ -985,7 +998,7 @@ function compileQuery(
           error: {
             message: `unknown level "${level[2]}"`,
             start: start + negation.length + 5 + op.length,
-            end: start + match[0].length,
+            end: start + term.length,
             hint: "Levels: TRACE, DEBUG, INFO, WARN, ERROR",
           },
         };
@@ -1001,13 +1014,14 @@ function compileQuery(
       };
     } else if (field) {
       const key = field[1] ?? "";
-      const value = field[2] ?? "";
+      const value = (field[2] ?? "").replace(/^"(.*)"$/, "$1").replace(/\\(.)/g, "$1");
       const escaped = value.replace(/[.+^${}()|[\]\\]/g, "\\$&");
       const pattern = new RegExp(`^${escaped.replaceAll("*", ".*").replaceAll("?", ".")}$`, "i");
       test = (e) => {
         // Like the Rust side: `state:` and `correlation:` look at the pipeline status change.
         if (key === "state" && e.status) return pattern.test(e.status.state);
         if (key === "correlation") return pattern.test(e.status?.correlationId ?? "");
+        if (key === "topic") return pattern.test(e.status?.topic ?? "");
         const found = e.line.fields.find((f) => f.key === key)?.value;
         return found !== undefined && found !== null && pattern.test(String(found));
       };
@@ -1019,6 +1033,115 @@ function compileQuery(
     tests.push(negation ? (e, raw) => !test(e, raw) : test);
   }
   return { test: (e, raw) => tests.every((t) => t(e, raw)), terms };
+}
+
+/** Like the Rust side (crates/contrail-core/src/logs/fields.rs), without its limits. */
+function summarize(events: LogEvent[]): FieldSummary {
+  const top = (counts: Map<string, number>, limit: number): ValueCount[] =>
+    [...counts]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, limit)
+      .map(([value, count]) => ({ value, count }));
+  const bump = (map: Map<string, number>, key: string) => map.set(key, (map.get(key) ?? 0) + 1);
+
+  const fields = new Map<string, { count: number; values: Map<string, number> }>();
+  const states = new Map<string, number>();
+  const topics = new Map<string, Map<string, number>>();
+  const reasons = new Map<string, number>();
+  const documents = new Map<string, { last: string; seen: number; retried: boolean }>();
+  let statusEvents = 0;
+  let prefix = "";
+  for (const e of events) {
+    for (const f of e.line.fields) {
+      const entry = fields.get(f.key) ?? { count: 0, values: new Map() };
+      entry.count++;
+      bump(entry.values, String(f.value));
+      fields.set(f.key, entry);
+    }
+    const status = e.status;
+    if (!status) continue;
+    prefix = status.prefix;
+    bump(states, status.state);
+    if (status.topic) {
+      const perTopic = topics.get(status.topic) ?? new Map<string, number>();
+      bump(perTopic, status.state);
+      topics.set(status.topic, perTopic);
+    }
+    if (status.state === "FAILED" && status.message) bump(reasons, status.message);
+    if (status.correlationId) {
+      const doc = documents.get(status.correlationId);
+      documents.set(status.correlationId, {
+        last: status.state,
+        seen: statusEvents,
+        retried: (doc?.retried ?? false) || status.state === "RETRYING",
+      });
+    }
+    statusEvents++;
+  }
+
+  const lifecycle = ["RECEIVED", "PUBLISHED", "CONSUMING", "RETRYING", "COMPLETED", "FAILED"];
+  const rank = (s: string) => (lifecycle.includes(s) ? lifecycle.indexOf(s) : lifecycle.length);
+  const order = [...states.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  const inOrder = (counts: Map<string, number>) =>
+    order.flatMap((value) => (counts.has(value) ? [{ value, count: counts.get(value) ?? 0 }] : []));
+  const outcomeOf = (last: string): Outcome =>
+    last === "COMPLETED"
+      ? "completed"
+      : last === "FAILED"
+        ? "failed"
+        : last === "PUBLISHED"
+          ? "published"
+          : "inProgress";
+  const group = (outcome: Outcome, docs: [string, { seen: number }][]) => ({
+    outcome,
+    count: docs.length,
+    ids: docs.sort((a, b) => b[1].seen - a[1].seen).map(([id]) => id),
+  });
+  const outcomes = (["inProgress", "failed", "completed", "published"] as const)
+    .map((o) =>
+      group(
+        o,
+        [...documents].filter(([, d]) => outcomeOf(d.last) === o),
+      ),
+    )
+    .filter((g) => g.count > 0);
+
+  return {
+    events: events.length,
+    fields: [...fields]
+      .map(([key, { count, values }]) => ({
+        key,
+        count,
+        distinct: values.size,
+        moreDistinct: false,
+        top: top(values, 10),
+      }))
+      .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key)),
+    pipeline:
+      statusEvents === 0
+        ? null
+        : {
+            events: statusEvents,
+            prefix,
+            states: inOrder(states),
+            topics: [...topics]
+              .map(([topic, counts]) => ({
+                topic,
+                total: [...counts.values()].reduce((a, b) => a + b, 0),
+                states: inOrder(counts),
+              }))
+              .sort((a, b) => b.total - a.total || a.topic.localeCompare(b.topic)),
+            documents: {
+              total: documents.size,
+              outcomes,
+              retried: group(
+                "retried",
+                [...documents].filter(([, d]) => d.retried),
+              ),
+            },
+            failureReasons: top(reasons, 10),
+          },
+  };
 }
 
 /** Level counts of a list of events, as the Rust buffer reports them. */

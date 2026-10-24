@@ -31,10 +31,15 @@ Field names are the dotted names shown when a line is expanded (`log.logger`, `p
   trace) instead of just the message.
 - **Level chips:** click a level to hide or show it (combined with the search); middle click shows only that
   level (again: all levels); right click offers "only", "and above" and "show all".
+- **Fields (F):** the panel beside the list shows every field of the events that match the search: in how many
+  of them it occurs and its most common values with their counts. Click a value to add `field:value` to the
+  search (click again to remove it), Alt+click to exclude it (`-field:value`). The counts follow the search, so
+  you can narrow down step by step. Fields whose values are all different (IDs, timestamps) just say so.
 - **Noise:** "Hide lines like this" in an expanded line hides every line of that service whose message
   contains the same text; the Noise menu lists and removes them (saved per service).
 
-**Keys:** Enter / F3 next match, Shift+Enter / Shift+F3 previous, Esc clears, ⌘F / Ctrl+F focuses the search.
+**Keys:** Enter / F3 next match, Shift+Enter / Shift+F3 previous, Esc clears, ⌘F / Ctrl+F focuses the search,
+F shows or hides the Fields panel.
 
 Invalid queries are explained under the search box (e.g. `unknown level "LOUD"`), and the previous search
 stays in effect until the query is fixed.

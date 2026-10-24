@@ -46,18 +46,35 @@ interface TabsState {
   closeAll: () => void;
 }
 
-/** What a service's view looked like when its tab closed (search, window, tab, task). */
-type ViewMemory = Pick<LogsState, "search" | "timeWindow" | "tab" | "taskFilter">;
+/** What a service's view looked like when its tab closed (search, window, tab, task, panel). */
+type ViewMemory = Pick<
+  LogsState,
+  "search" | "timeWindow" | "tab" | "taskFilter" | "fieldsOpen" | "fieldsExpanded"
+>;
 
 /**
  * The views of closed tabs, by tab key, for this session (not saved to disk): reopening a service
- * brings back its search, time window, Overview/Logs choice and task.
+ * brings back its search, time window, Overview/Logs choice, task and Fields panel.
  */
 const remembered = new Map<string, ViewMemory>();
 
 function remember(tab: ServiceTab) {
-  const { search, timeWindow, tab: shown, taskFilter } = tab.logs.getState();
-  remembered.set(tab.key, { search, timeWindow, tab: shown, taskFilter });
+  const {
+    search,
+    timeWindow,
+    tab: shown,
+    taskFilter,
+    fieldsOpen,
+    fieldsExpanded,
+  } = tab.logs.getState();
+  remembered.set(tab.key, {
+    search,
+    timeWindow,
+    tab: shown,
+    taskFilter,
+    fieldsOpen,
+    fieldsExpanded,
+  });
 }
 
 export function tabKey(service: ServiceRef): string {
