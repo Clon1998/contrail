@@ -4,7 +4,9 @@
 //!   `billing-sync` (deployment in progress)
 //! - `demo-edge`: `legacy-gateway` (EC2, plain-text logs), `event-ingest` (high volume),
 //!   `audit-archiver` (a second reader of `event-ingest`'s topic, with its own group and targets),
-//!   `partner-poller` (a second writer of that topic). Route services have only inputs or outputs.
+//!   `partner-poller` (a second writer of that topic), `event-enricher` (a transformer: reads that
+//!   topic and writes `demo.events.enriched` from code, so it has no route variables) and
+//!   `search-feeder` (reads the enriched topic). Route services have only inputs or outputs.
 //! - `demo-batch`: no services
 //!
 //! All names, IDs and ARNs are invented. Times are relative to "now".
@@ -219,6 +221,38 @@ const SERVICES: &[ServiceSpec] = &[
         stopped: &[],
         events: &["has reached a steady state."],
     },
+    ServiceSpec {
+        cluster: "demo-edge",
+        name: "event-enricher",
+        family: None,
+        revision: 7,
+        image_tag: "2.1.0",
+        launch_type: "FARGATE",
+        cpu: "512",
+        memory: "1024",
+        desired: 2,
+        running: &["HEALTHY", "HEALTHY"],
+        pending: 0,
+        previous: None,
+        stopped: &[],
+        events: &["has reached a steady state."],
+    },
+    ServiceSpec {
+        cluster: "demo-edge",
+        name: "search-feeder",
+        family: None,
+        revision: 4,
+        image_tag: "1.4.0",
+        launch_type: "FARGATE",
+        cpu: "256",
+        memory: "512",
+        desired: 1,
+        running: &["HEALTHY"],
+        pending: 0,
+        previous: None,
+        stopped: &[],
+        events: &["has reached a steady state."],
+    },
 ];
 
 const CLUSTERS: &[&str] = &["demo-batch", "demo-core", "demo-edge"];
@@ -285,6 +319,21 @@ fn environment(spec: &ServiceSpec) -> Vec<EnvVar> {
             (
                 "ACME_ROUTES_0_OUTPUTS_1_PROPERTIES_URL",
                 "https://search.example.com/ingest".to_owned(),
+            ),
+        ]);
+    }
+    if spec.name == "search-feeder" {
+        vars.extend([
+            ("ACME_ROUTES_0_TOPIC", "demo.events.enriched".to_owned()),
+            ("ACME_ROUTES_0_GROUP", "search-feeder".to_owned()),
+            ("ACME_ROUTES_0_OUTPUTS_0_TYPE", "http".to_owned()),
+            (
+                "ACME_ROUTES_0_OUTPUTS_0_SYSTEM",
+                "Product Catalog".to_owned(),
+            ),
+            (
+                "ACME_ROUTES_0_OUTPUTS_0_PROPERTIES_URL",
+                "https://catalog.example.com/documents".to_owned(),
             ),
         ]);
     }

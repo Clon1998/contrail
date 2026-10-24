@@ -5216,20 +5216,201 @@
       },
       "streams": 2,
       "stats": {
-        "total": 360,
+        "total": 480,
         "evicted": 0,
         "trace": 0,
         "debug": 61,
-        "info": 213,
+        "info": 333,
         "warn": 27,
         "error": 59,
         "unknown": 0,
-        "states": {}
+        "states": {
+          "COMPLETED": 30,
+          "CONSUMING": 30
+        }
       },
       "truncated": false,
       "events": [
         {
           "seq": 1,
+          "timestamp": "2026-01-01T11:45:00.8Z",
+          "cwTimestamp": "2026-01-01T11:45:00.8Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:00.8Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:00.800Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : Document status change: [event] PUBLISHED -> CONSUMING",
+          "status": null
+        },
+        {
+          "seq": 2,
+          "timestamp": "2026-01-01T11:45:00.8Z",
+          "cwTimestamp": "2026-01-01T11:45:00.801Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:00.8Z",
+            "level": "INFO",
+            "message": "{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              310
+            ]
+          },
+          "raw": "2026-01-01T11:45:00.800Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Record consumed, starting processing"
+          }
+        },
+        {
+          "seq": 3,
+          "timestamp": "2026-01-01T11:45:01.1Z",
+          "cwTimestamp": "2026-01-01T11:45:01.1Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:01.1Z",
+            "level": "INFO",
+            "message": "Document status change: [event] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:01.100Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : Document status change: [event] CONSUMING -> COMPLETED",
+          "status": null
+        },
+        {
+          "seq": 4,
+          "timestamp": "2026-01-01T11:45:01.1Z",
+          "cwTimestamp": "2026-01-01T11:45:01.101Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:01.1Z",
+            "level": "INFO",
+            "message": "{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              294
+            ]
+          },
+          "raw": "2026-01-01T11:45:01.100Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Processing completed"
+          }
+        },
+        {
+          "seq": 5,
           "timestamp": "2026-01-01T11:45:01.465Z",
           "cwTimestamp": "2026-01-01T11:45:01.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5268,7 +5449,7 @@
           "status": null
         },
         {
-          "seq": 2,
+          "seq": 6,
           "timestamp": "2026-01-01T11:45:01.89Z",
           "cwTimestamp": "2026-01-01T11:45:01.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5311,7 +5492,7 @@
           "status": null
         },
         {
-          "seq": 3,
+          "seq": 7,
           "timestamp": "2026-01-01T11:45:06.465Z",
           "cwTimestamp": "2026-01-01T11:45:06.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5350,7 +5531,7 @@
           "status": null
         },
         {
-          "seq": 4,
+          "seq": 8,
           "timestamp": "2026-01-01T11:45:06.89Z",
           "cwTimestamp": "2026-01-01T11:45:06.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5389,7 +5570,7 @@
           "status": null
         },
         {
-          "seq": 5,
+          "seq": 9,
           "timestamp": "2026-01-01T11:45:11.465Z",
           "cwTimestamp": "2026-01-01T11:45:11.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5432,7 +5613,7 @@
           "status": null
         },
         {
-          "seq": 6,
+          "seq": 10,
           "timestamp": "2026-01-01T11:45:11.89Z",
           "cwTimestamp": "2026-01-01T11:45:11.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5471,7 +5652,7 @@
           "status": null
         },
         {
-          "seq": 7,
+          "seq": 11,
           "timestamp": "2026-01-01T11:45:16.465Z",
           "cwTimestamp": "2026-01-01T11:45:16.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5513,7 +5694,7 @@
           "status": null
         },
         {
-          "seq": 8,
+          "seq": 12,
           "timestamp": "2026-01-01T11:45:16.89Z",
           "cwTimestamp": "2026-01-01T11:45:16.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5552,7 +5733,7 @@
           "status": null
         },
         {
-          "seq": 9,
+          "seq": 13,
           "timestamp": "2026-01-01T11:45:21.465Z",
           "cwTimestamp": "2026-01-01T11:45:21.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5591,7 +5772,7 @@
           "status": null
         },
         {
-          "seq": 10,
+          "seq": 14,
           "timestamp": "2026-01-01T11:45:21.89Z",
           "cwTimestamp": "2026-01-01T11:45:21.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5630,7 +5811,7 @@
           "status": null
         },
         {
-          "seq": 11,
+          "seq": 19,
           "timestamp": "2026-01-01T11:45:26.465Z",
           "cwTimestamp": "2026-01-01T11:45:26.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5669,7 +5850,7 @@
           "status": null
         },
         {
-          "seq": 12,
+          "seq": 15,
           "timestamp": "2026-01-01T11:45:26.89Z",
           "cwTimestamp": "2026-01-01T11:45:26.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5708,7 +5889,185 @@
           "status": null
         },
         {
-          "seq": 13,
+          "seq": 16,
+          "timestamp": "2026-01-01T11:45:30.8Z",
+          "cwTimestamp": "2026-01-01T11:45:30.8Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:30.8Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:30.800Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : Document status change: [event] PUBLISHED -> CONSUMING",
+          "status": null
+        },
+        {
+          "seq": 17,
+          "timestamp": "2026-01-01T11:45:30.8Z",
+          "cwTimestamp": "2026-01-01T11:45:30.801Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:30.8Z",
+            "level": "INFO",
+            "message": "{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              310
+            ]
+          },
+          "raw": "2026-01-01T11:45:30.800Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Record consumed, starting processing"
+          }
+        },
+        {
+          "seq": 18,
+          "timestamp": "2026-01-01T11:45:31.1Z",
+          "cwTimestamp": "2026-01-01T11:45:31.1Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:31.1Z",
+            "level": "INFO",
+            "message": "Document status change: [event] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "2026-01-01T11:45:31.100Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : Document status change: [event] CONSUMING -> COMPLETED",
+          "status": null
+        },
+        {
+          "seq": 20,
+          "timestamp": "2026-01-01T11:45:31.1Z",
+          "cwTimestamp": "2026-01-01T11:45:31.101Z",
+          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
+          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:31.1Z",
+            "level": "INFO",
+            "message": "{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              294
+            ]
+          },
+          "raw": "2026-01-01T11:45:31.100Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Processing completed"
+          }
+        },
+        {
+          "seq": 21,
           "timestamp": "2026-01-01T11:45:31.465Z",
           "cwTimestamp": "2026-01-01T11:45:31.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5750,7 +6109,7 @@
           "status": null
         },
         {
-          "seq": 14,
+          "seq": 22,
           "timestamp": "2026-01-01T11:45:31.89Z",
           "cwTimestamp": "2026-01-01T11:45:31.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5789,7 +6148,7 @@
           "status": null
         },
         {
-          "seq": 15,
+          "seq": 23,
           "timestamp": "2026-01-01T11:45:36.465Z",
           "cwTimestamp": "2026-01-01T11:45:36.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5828,7 +6187,7 @@
           "status": null
         },
         {
-          "seq": 16,
+          "seq": 24,
           "timestamp": "2026-01-01T11:45:36.89Z",
           "cwTimestamp": "2026-01-01T11:45:36.89Z",
           "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
@@ -5867,7 +6226,7 @@
           "status": null
         },
         {
-          "seq": 17,
+          "seq": 25,
           "timestamp": "2026-01-01T11:45:41.465Z",
           "cwTimestamp": "2026-01-01T11:45:41.465Z",
           "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
@@ -5903,325 +6262,6 @@
             "jsonSpan": null
           },
           "raw": "2026-01-01T11:45:41.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
-          "status": null
-        },
-        {
-          "seq": 18,
-          "timestamp": "2026-01-01T11:45:41.89Z",
-          "cwTimestamp": "2026-01-01T11:45:41.89Z",
-          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
-          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:41.89Z",
-            "level": "ERROR",
-            "message": "Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "ERROR"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "scheduling-1"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.p.ShipmentPollingService"
-              }
-            ],
-            "error": null,
-            "jsonSpan": [
-              51,
-              94
-            ]
-          },
-          "raw": "2026-01-01T11:45:41.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Error while polling shipment 9F2K: 404 Not Found: \"{\"title\":\"Shipment not found\",\"status\":404}\"",
-          "status": null
-        },
-        {
-          "seq": 19,
-          "timestamp": "2026-01-01T11:45:46.465Z",
-          "cwTimestamp": "2026-01-01T11:45:46.465Z",
-          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
-          "taskId": "51a70bd575f344a0502dccd2497186d4",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:46.465Z",
-            "level": "DEBUG",
-            "message": "GET /actuator/health 200 2ms",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "DEBUG"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "http-nio-8080-exec-2"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.web.RequestLogger"
-              }
-            ],
-            "error": null,
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:45:46.465Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms",
-          "status": null
-        },
-        {
-          "seq": 20,
-          "timestamp": "2026-01-01T11:45:46.89Z",
-          "cwTimestamp": "2026-01-01T11:45:46.89Z",
-          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
-          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:46.89Z",
-            "level": "INFO",
-            "message": "Polled 14 shipments, 2 changed",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "INFO"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "scheduling-1"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.p.ShipmentPollingService"
-              }
-            ],
-            "error": null,
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:45:46.890Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 14 shipments, 2 changed",
-          "status": null
-        },
-        {
-          "seq": 21,
-          "timestamp": "2026-01-01T11:45:51.465Z",
-          "cwTimestamp": "2026-01-01T11:45:51.465Z",
-          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
-          "taskId": "51a70bd575f344a0502dccd2497186d4",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:51.465Z",
-            "level": "INFO",
-            "message": "Polled 17 shipments, 1 changed",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "INFO"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "scheduling-1"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.p.ShipmentPollingService"
-              }
-            ],
-            "error": null,
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:45:51.465Z  INFO 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polled 17 shipments, 1 changed",
-          "status": null
-        },
-        {
-          "seq": 22,
-          "timestamp": "2026-01-01T11:45:51.89Z",
-          "cwTimestamp": "2026-01-01T11:45:51.89Z",
-          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
-          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:51.89Z",
-            "level": "DEBUG",
-            "message": "GET /actuator/health 200 2ms",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "DEBUG"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "http-nio-8080-exec-2"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.web.RequestLogger"
-              }
-            ],
-            "error": null,
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:45:51.890Z DEBUG 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RequestLogger                  : GET /actuator/health 200 2ms",
-          "status": null
-        },
-        {
-          "seq": 23,
-          "timestamp": "2026-01-01T11:45:56.465Z",
-          "cwTimestamp": "2026-01-01T11:45:56.465Z",
-          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
-          "taskId": "51a70bd575f344a0502dccd2497186d4",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:56.465Z",
-            "level": "WARN",
-            "message": "Rate limit reached for client demo-partner (120 req/min)",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "WARN"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "http-nio-8080-exec-2"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.web.RateLimitFilter"
-              }
-            ],
-            "error": null,
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:45:56.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
-          "status": null
-        },
-        {
-          "seq": 24,
-          "timestamp": "2026-01-01T11:45:56.89Z",
-          "cwTimestamp": "2026-01-01T11:45:56.89Z",
-          "stream": "ecs/legacy-gateway/51aa71d575f627c9fbf69f48b421c9d2",
-          "taskId": "51aa71d575f627c9fbf69f48b421c9d2",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:45:56.89Z",
-            "level": "ERROR",
-            "message": "Polling failed",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "ERROR"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "scheduling-1"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.p.ShipmentPollingService"
-              }
-            ],
-            "error": {
-              "errorType": "java.lang.IllegalStateException",
-              "message": "Partner API unavailable",
-              "stackTrace": "java.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted"
-            },
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:45:56.890Z ERROR 1 --- [legacy-gateway] [   scheduling-1] c.e.g.p.ShipmentPollingService           : Polling failed\njava.lang.IllegalStateException: Partner API unavailable\n\tat com.example.payments.service.SettlementService.step0(SettlementService.java:40)\n\tat org.springframework.web.client.RestTemplate.step1(RestTemplate.java:43)\n\tat java.util.concurrent.ThreadPoolExecutor.step2(ThreadPoolExecutor.java:46)\n\tat com.example.payments.client.LedgerClient.step3(LedgerClient.java:49)\n\tat com.example.payments.service.SettlementService.step4(SettlementService.java:52)\n\tat org.springframework.web.client.RestTemplate.step5(RestTemplate.java:55)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.base/sun.nio.ch.NioSocketImpl.timedRead(NioSocketImpl.java:278)\n\t... 4 common frames omitted",
-          "status": null
-        },
-        {
-          "seq": 25,
-          "timestamp": "2026-01-01T11:46:01.465Z",
-          "cwTimestamp": "2026-01-01T11:46:01.465Z",
-          "stream": "ecs/legacy-gateway/51a70bd575f344a0502dccd2497186d4",
-          "taskId": "51a70bd575f344a0502dccd2497186d4",
-          "line": {
-            "kind": "spring",
-            "timestamp": "2026-01-01T11:46:01.465Z",
-            "level": "WARN",
-            "message": "Rate limit reached for client demo-partner (120 req/min)",
-            "fields": [
-              {
-                "key": "log.level",
-                "value": "WARN"
-              },
-              {
-                "key": "process.pid",
-                "value": 1
-              },
-              {
-                "key": "service.name",
-                "value": "legacy-gateway"
-              },
-              {
-                "key": "process.thread.name",
-                "value": "http-nio-8080-exec-2"
-              },
-              {
-                "key": "log.logger",
-                "value": "c.e.g.web.RateLimitFilter"
-              }
-            ],
-            "error": null,
-            "jsonSpan": null
-          },
-          "raw": "2026-01-01T11:46:01.465Z  WARN 1 --- [legacy-gateway] [http-nio-8080-exec-2] c.e.g.web.RateLimitFilter                : Rate limit reached for client demo-partner (120 req/min)",
           "status": null
         }
       ]
