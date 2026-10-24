@@ -938,7 +938,10 @@ export type TraceHop = {
 export type TraceOutcome = 
 /**  Some service's last state is FAILED. */
 "failed" | 
-/**  Every service with status events ended in COMPLETED. */
+/**
+ *  Every topic the document was written to was read, and every read completed (without
+ *  topics: every service with status events ended in COMPLETED).
+ */
 "completed" | 
 /**  A service is still in an earlier state (or there are no status events). */
 "open";

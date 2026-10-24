@@ -75,7 +75,8 @@ pub struct TraceHop {
 pub enum TraceOutcome {
     /// Some service's last state is FAILED.
     Failed,
-    /// Every service with status events ended in COMPLETED.
+    /// Every topic the document was written to was read, and every read completed (without
+    /// topics: every service with status events ended in COMPLETED).
     Completed,
     /// A service is still in an earlier state (or there are no status events).
     Open,
@@ -221,9 +222,10 @@ fn assemble(mut hits: Vec<TraceHit>, mut failures: Vec<TraceFailure>, truncated:
     hits.sort_by_key(|h| (h.event.timestamp, h.event.cw_timestamp));
     failures.sort_by(|a, b| a.service.cmp(&b.service));
     let services = summarize(&hits);
+    let hops = hops(&hits);
     Trace {
-        outcome: outcome(&services),
-        hops: hops(&hits),
+        outcome: outcome(&services, &hops),
+        hops,
         hits,
         services,
         truncated,
@@ -311,14 +313,33 @@ fn hops(hits: &[TraceHit]) -> Vec<TraceHop> {
     hops
 }
 
-fn outcome(services: &[ServiceTrace]) -> TraceOutcome {
+/// Failed anywhere fails the trace. With hops, the document is complete when every write got
+/// published, every topic written to was read and every read completed: an input service ends in
+/// PUBLISHED, so its last state alone can't tell. Without hops (status events without a topic),
+/// every service must end in COMPLETED.
+fn outcome(services: &[ServiceTrace], hops: &[TraceHop]) -> TraceOutcome {
     let states: Vec<&str> = services
         .iter()
         .filter_map(|s| s.last_state.as_deref())
         .collect();
-    if states.iter().any(|s| s.eq_ignore_ascii_case("FAILED")) {
-        TraceOutcome::Failed
-    } else if !states.is_empty() && states.iter().all(|s| s.eq_ignore_ascii_case("COMPLETED")) {
+    let is = |state: &str, expected: &str| state.eq_ignore_ascii_case(expected);
+    if states.iter().any(|s| is(s, "FAILED")) {
+        return TraceOutcome::Failed;
+    }
+    let complete = if hops.is_empty() {
+        !states.is_empty() && states.iter().all(|s| is(s, "COMPLETED"))
+    } else {
+        hops.iter().all(|hop| match hop.direction {
+            HopDirection::Writes => {
+                is(&hop.last_state, "PUBLISHED")
+                    && hops
+                        .iter()
+                        .any(|h| h.direction == HopDirection::Reads && h.topic == hop.topic)
+            }
+            HopDirection::Reads => is(&hop.last_state, "COMPLETED"),
+        })
+    };
+    if complete {
         TraceOutcome::Completed
     } else {
         TraceOutcome::Open
@@ -611,6 +632,35 @@ mod tests {
                 ("output", "enriched", Reads, Some("output"), 2, "RETRYING"),
             ]
         );
+        // The output service is still retrying.
+        assert_eq!(trace.outcome, TraceOutcome::Open);
+    }
+
+    #[test]
+    fn a_document_is_complete_when_every_topic_was_read() {
+        let source = Groups(HashMap::from([
+            (
+                "input",
+                Ok(vec![
+                    (1, hop("RECEIVED", "raw", None)),
+                    (2, hop("PUBLISHED", "raw", None)),
+                ]),
+            ),
+            (
+                "output",
+                Ok(vec![
+                    (3, hop("CONSUMING", "raw", Some("output"))),
+                    (4, hop("COMPLETED", "raw", Some("output"))),
+                ]),
+            ),
+        ]));
+        // The input service ends in PUBLISHED, and that's fine once the topic was read.
+        assert_eq!(
+            run(&source, &["input", "output"]).outcome,
+            TraceOutcome::Completed
+        );
+        // Without the reader, the document waits on its topic.
+        assert_eq!(run(&source, &["input"]).outcome, TraceOutcome::Open);
     }
 
     #[test]
