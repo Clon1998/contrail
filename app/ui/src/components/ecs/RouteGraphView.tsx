@@ -23,6 +23,7 @@ interface Path {
 export function GraphView({
   graph,
   label = "Route graph",
+  minColumnWidth = "0px",
   columnTitle,
   focus,
   onFocus,
@@ -30,6 +31,8 @@ export function GraphView({
   graph: Graph;
   /** The accessible name of the whole graph. */
   label?: string;
+  /** Columns never get narrower (the container scrolls instead), for big graphs. */
+  minColumnWidth?: string;
   /** The heading above a column, if it has one. */
   columnTitle: (column: number) => string | null;
   focus: string | null;
@@ -85,7 +88,7 @@ export function GraphView({
       aria-label={label}
       className={cn("relative grid py-1", columns.length > 3 ? "gap-x-8" : "gap-x-12")}
       // Columns as wide as their names need, shrinking evenly when the card is too narrow.
-      style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, auto))` }}
+      style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(${minColumnWidth}, auto))` }}
     >
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible">
         {paths.map((path) => {

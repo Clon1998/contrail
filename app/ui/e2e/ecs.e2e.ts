@@ -231,3 +231,45 @@ test("routes of a routing-framework service as a graph, and the services on the 
     .getByRole("group", { name: "Route graph" });
   await expect(ingestGraph.getByRole("button", { name: "service audit-archiver" })).toBeVisible();
 });
+
+test("a cluster's route map, with a transformer entered by hand", async ({ page }) => {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "demo-edge" }).hover();
+  await tree.getByRole("button", { name: "Route map of demo-edge" }).click();
+
+  const tabs = page.getByRole("tablist", { name: "Open tabs" });
+  await expect(tabs.getByRole("tab", { name: "Routes demo-edge" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  const map = page.getByRole("main", { name: "Route map demo-edge" });
+  const graph = map.getByRole("group", { name: "Cluster route map" });
+  await expect(graph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
+  await expect(graph.getByRole("button", { name: "service search-feeder" })).toBeVisible();
+  await expect(graph.getByRole("button", { name: "topic orders.created" })).toBeVisible();
+  // The transformer has no routes: it isn't drawn, and the enriched topic has no writer.
+  await expect(graph.getByRole("button", { name: "service event-enricher" })).toHaveCount(0);
+  await map.getByText("1 service has no routes and isn't drawn").click();
+
+  await map.getByRole("button", { name: "event-enricher" }).click();
+  const form = map.getByRole("form", { name: "Transformer" });
+  await form.getByLabel("Reads").fill("demo.events");
+  await form.getByLabel("Writes").fill("demo.events.enriched");
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(graph.getByRole("button", { name: "service event-enricher" })).toContainText(
+    "transformer",
+  );
+
+  // Finding a service keeps what lies on its paths: the way to it, not its siblings.
+  await map.getByRole("searchbox", { name: "Find in the route map" }).fill("search-feeder");
+  await expect(graph.getByRole("button", { name: "service event-enricher" })).toBeVisible();
+  await expect(graph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
+  await expect(graph.getByRole("button", { name: "service legacy-gateway" })).toHaveCount(0);
+
+  // A service opens from the map; the map stays in its tab.
+  await graph.getByRole("button", { name: "service search-feeder" }).click();
+  await map.getByRole("button", { name: "Open search-feeder" }).click();
+  await expect(page.getByRole("main", { name: "Service search-feeder" })).toBeVisible();
+  await expect(tabs.getByRole("tab", { name: "Routes demo-edge" })).toBeVisible();
+});

@@ -2,7 +2,7 @@
 
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::FieldMapping;
-use contrail_core::prefs::{Prefs, ServiceKey, Settings};
+use contrail_core::prefs::{Prefs, ServiceKey, Settings, Transformer};
 use tauri::State;
 
 use crate::error::ApiResult;
@@ -103,4 +103,17 @@ pub fn add_recent(
 ) -> ApiResult<Prefs> {
     let key = ServiceKey::new(&profile, &service);
     Ok(state.prefs.update(|p| p.add_recent(key))?)
+}
+
+/// Sets what a transformer reads and writes (no topics removes it), for the route maps.
+#[tauri::command]
+#[specta::specta]
+pub fn set_transformer(
+    state: State<'_, AppState>,
+    service: String,
+    transformer: Transformer,
+) -> ApiResult<Prefs> {
+    Ok(state
+        .prefs
+        .update(|p| p.set_transformer(&service, transformer))?)
 }

@@ -223,7 +223,8 @@ export function pathThrough(graph: Graph, id: string): { nodes: Set<string>; edg
  * furthest node leading to it (the longest path from a start), so lines always run left to right.
  * Systems that only receive data are moved to the last column, so all targets line up. A cycle
  * (a service reading the topic it writes) can't push nodes further right forever: each node moves
- * at most once per node of the graph.
+ * at most once per node of the graph. Nodes nothing leads to then move right, next to where their
+ * lines go.
  */
 export function layerColumns(
   ids: string[],
@@ -242,8 +243,41 @@ export function layerColumns(
     }
     if (!moved) break;
   }
+  // A node nothing leads to (a source, a topic only read here) moves right up to just before its
+  // first successor, so its lines don't cross the graph.
+  const led = new Set(edges.map((e) => e.to));
+  for (const id of ids) {
+    if (led.has(id)) continue;
+    const next = edges.filter((e) => e.from === id).map((e) => columns.get(e.to) ?? 0);
+    if (next.length > 0) columns.set(id, Math.max(0, Math.min(...next) - 1));
+  }
   const last = Math.max(0, ...[...columns].filter(([id]) => !sinks.has(id)).map(([, c]) => c + 1));
   for (const id of sinks)
     if (columns.has(id)) columns.set(id, Math.max(last, columns.get(id) ?? 0));
   return columns;
+}
+
+/**
+ * A column's heading from what it holds, for graphs whose length varies (a trace, a cluster):
+ * sources, services, topics or targets; a column of mixed kinds has none.
+ */
+export function columnTitles(graph: Graph): (column: number) => string | null {
+  const titles = new Map<number, string>();
+  for (const column of new Set(graph.nodes.map((n) => n.column))) {
+    const kinds = new Set(graph.nodes.filter((n) => n.column === column).map((n) => n.kind));
+    // A column of mixed kinds (a topic next to an early reader's target) has no heading.
+    const only = kinds.size === 1 ? [...kinds][0] : null;
+    const title =
+      only === "topic"
+        ? "Topic"
+        : only === "system"
+          ? column === 0
+            ? "Sources"
+            : "Targets"
+          : only === "service"
+            ? "Services"
+            : null;
+    if (title) titles.set(column, title);
+  }
+  return (column) => titles.get(column) ?? null;
 }

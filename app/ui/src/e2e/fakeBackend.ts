@@ -33,6 +33,7 @@ import type {
   RowWindow,
   ServiceTrace,
   TraceHop,
+  Transformer,
   Trace,
   TopicLink,
   TraceHit,
@@ -238,6 +239,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     },
     noise: {},
     fieldMappings: {},
+    transformers: {},
     lastUpdateCheck: null,
     ...options.prefs,
   };
@@ -478,12 +480,14 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!services) throw apiError("notFound", "cluster not found");
         return services;
       }
-      case "services_on_topics": {
-        // Like the Rust side: other services of the cluster whose routes use these topics.
+      case "services_on_topics":
+      case "cluster_routes": {
+        // Like the Rust side: services of the cluster whose routes use these topics (all of the
+        // cluster's routes for the route map).
         const ctx = args?.ctx as AwsCtx;
         const clusterArn = args?.clusterArn as string;
-        const topics = args?.topics as string[];
-        const exclude = args?.exclude as string;
+        const topics = (args?.topics as string[] | undefined) ?? null;
+        const exclude = (args?.exclude as string | undefined) ?? "";
         // Like the Rust side, a scan is kept for the session; "cached" only reads it.
         const key = `${ctx.profile}|${ctx.region ?? ""}|${clusterArn}`;
         if (args?.scan === "fresh") scannedClusters.add(key);
@@ -495,7 +499,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           const { detail } = serviceData(ctx, { clusterArn, serviceName: summary.name });
           for (const container of detail.taskDefinition?.containers ?? []) {
             for (const route of container.routes?.routes ?? []) {
-              if (route.topic && topics.includes(route.topic)) {
+              if (route.topic && (topics === null || topics.includes(route.topic))) {
                 links.push({
                   topic: route.topic,
                   service: summary.name,
@@ -876,6 +880,22 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const fieldMappings: Record<string, FieldMapping> = Object.fromEntries(others);
         if (mapping.message || mapping.level || mapping.timestamp) fieldMappings[key] = mapping;
         prefs = { ...prefs, fieldMappings };
+        return prefs;
+      }
+      case "set_transformer": {
+        // Like the Rust side: trimmed, without blanks and duplicates; no topics removes it.
+        const service = args?.service as string;
+        const given = args?.transformer as Transformer;
+        const clean = (topics: string[]) =>
+          [...new Set(topics.map((t) => t.trim()).filter(Boolean))].sort();
+        const transformer = { reads: clean(given.reads), writes: clean(given.writes) };
+        const transformers = Object.fromEntries(
+          Object.entries(prefs.transformers).filter(([name]) => name !== service),
+        );
+        if (transformer.reads.length + transformer.writes.length > 0) {
+          transformers[service] = transformer;
+        }
+        prefs = { ...prefs, transformers };
         return prefs;
       }
       case "add_noise":

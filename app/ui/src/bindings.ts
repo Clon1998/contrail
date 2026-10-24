@@ -74,6 +74,12 @@ export const commands = {
 	 */
 	servicesOnTopics: (ctx: AwsCtx, clusterArn: string, topics: string[], exclude: string, scan: TopicScan) => typedError<TopicLink[] | null, ApiError>(__TAURI_INVOKE("services_on_topics", { ctx, clusterArn, topics, exclude, scan })),
 	/**
+	 *  Every route of every service of `cluster_arn`, for the cluster's route map. `None` when only
+	 *  the cache was asked and the cluster wasn't scanned yet (the scan is the same as for
+	 *  `services_on_topics`, so either one fills the cache for the other).
+	 */
+	clusterRoutes: (ctx: AwsCtx, clusterArn: string, scan: TopicScan) => typedError<TopicLink[] | null, ApiError>(__TAURI_INVOKE("cluster_routes", { ctx, clusterArn, scan })),
+	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 	 */
@@ -125,6 +131,8 @@ export const commands = {
 	removeNoise: (profile: string, service: ServiceRef, text: string) => typedError<Prefs, ApiError>(__TAURI_INVOKE("remove_noise", { profile, service, text })),
 	/**  Sets a service's field mapping (an empty one removes it). Open views keep theirs until reopened. */
 	setFieldMapping: (profile: string, service: ServiceRef, mapping: FieldMapping) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_field_mapping", { profile, service, mapping })),
+	/**  Sets what a transformer reads and writes (no topics removes it), for the route maps. */
+	setTransformer: (service: string, transformer: Transformer) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_transformer", { service, transformer })),
 };
 
 /* Types */
@@ -583,6 +591,11 @@ export type Prefs = {
 	noise: { [key in string]: string[] },
 	/**  Field mappings per service (by [`ServiceKey::storage_key`]). */
 	fieldMappings: { [key in string]: FieldMapping },
+	/**
+	 *  Transformers by service name. Not per profile or cluster: a service reads and writes the
+	 *  same topics in every environment.
+	 */
+	transformers: { [key in string]: Transformer },
 	/**  When the automatic update check last ran (Unix seconds). */
 	lastUpdateCheck: number | null,
 };
@@ -859,7 +872,7 @@ export type Timestamp = string;
 
 export type TopicDirection = "in" | "out";
 
-/**  A service of the cluster that reads from or writes to one of the topics asked about. */
+/**  A route of a service of the cluster: the topic it writes or reads, and its other end. */
 export type TopicLink = {
 	topic: string,
 	service: string,
@@ -945,6 +958,15 @@ export type TraceOutcome =
 "completed" | 
 /**  A service is still in an earlier state (or there are no status events). */
 "open";
+
+/**
+ *  A service that reads and writes Kafka topics from its code (a "transformer"). No route
+ *  variables say which topics, so they are entered by hand for the cluster's route map.
+ */
+export type Transformer = {
+	reads: string[],
+	writes: string[],
+};
 
 /**  A newer version that can be installed (or, see `install_blocker`, only downloaded by hand). */
 export type UpdateInfo = {

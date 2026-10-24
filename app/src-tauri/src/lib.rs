@@ -50,6 +50,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         logs::load_older,
         ecs::reveal_secret,
         ecs::services_on_topics,
+        ecs::cluster_routes,
         trace::trace_id,
         update::check_for_update,
         update::install_update,
@@ -65,6 +66,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         prefs::add_noise,
         prefs::remove_noise,
         prefs::set_field_mapping,
+        prefs::set_transformer,
     ])
 }
 

@@ -13,12 +13,13 @@ import { useProfiles } from "@/stores/profiles";
 import { tabKey, useTabs } from "@/stores/tabs";
 import { HealthDot } from "./HealthDot";
 import { Overview } from "./Overview";
+import { RouteMap } from "./RouteMap";
 import { ServiceTabs } from "./ServiceTabs";
 
 /** The open service is refreshed this often (only while it is shown). */
 const REFRESH_MS = 30_000;
 
-/** The active tab: the selected service inside the logs store of its tab, or a trace. */
+/** The active tab: the selected service inside the logs store of its tab, a trace or a map. */
 export function ServiceView() {
   const selected = useEcs((s) => s.selected);
   const tab = useTabs((s) => s.tabs.find((t) => t.key === s.activeKey));
@@ -33,6 +34,7 @@ export function ServiceView() {
         </LogsContext.Provider>
       )}
       {tab?.kind === "trace" && <TraceView key={tab.key} tab={tab} />}
+      {tab?.kind === "routes" && <RouteMap key={tab.key} tab={tab} />}
     </div>
   );
 }
