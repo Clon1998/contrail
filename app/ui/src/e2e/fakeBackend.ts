@@ -32,6 +32,7 @@ import type {
   RowBlock,
   RowWindow,
   ServiceTrace,
+  TraceHop,
   Trace,
   TopicLink,
   TraceHit,
@@ -574,13 +575,45 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             });
           }
         }
+        // Hops per service, topic and direction, like `hops` in trace.rs.
+        const hops: TraceHop[] = [];
+        for (const hit of hits) {
+          const status = hit.event.status;
+          if (!status?.topic) continue;
+          const writing = (state: string | null) => state === "RECEIVED" || state === "PUBLISHED";
+          const direction =
+            !status.consumerGroup && (writing(status.state) || writing(status.previousState))
+              ? "writes"
+              : "reads";
+          const found = hops.find(
+            (h) =>
+              h.service === hit.service && h.topic === status.topic && h.direction === direction,
+          );
+          if (found) {
+            found.events++;
+            found.last = hit.event.timestamp;
+            found.lastState = status.state;
+            found.group ??= status.consumerGroup;
+          } else {
+            hops.push({
+              service: hit.service,
+              topic: status.topic,
+              direction,
+              group: status.consumerGroup,
+              events: 1,
+              first: hit.event.timestamp,
+              last: hit.event.timestamp,
+              lastState: status.state,
+            });
+          }
+        }
         const states = services.flatMap((s) => (s.lastState ? [s.lastState] : []));
         const outcome = states.includes("FAILED")
           ? "failed"
           : states.length > 0 && states.every((s) => s === "COMPLETED")
             ? "completed"
             : "open";
-        return { hits, services, outcome, truncated: false, failures } satisfies Trace;
+        return { hits, services, hops, outcome, truncated: false, failures } satisfies Trace;
       }
       case "describe_service":
         return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;

@@ -10,7 +10,7 @@ use specta::Type;
 use crate::auth::AwsCtx;
 use crate::timestamp::Timestamp;
 
-use super::{LogEvent, LogSource, StreamSelection, TimeRange, process};
+use super::{LogEvent, LogSource, StatusChange, StreamSelection, TimeRange, process};
 
 /// At most this many services are searched at the same time (CloudWatch limits the request rate).
 const PARALLEL: usize = 4;
@@ -42,6 +42,33 @@ pub struct ServiceTrace {
     pub last_state: Option<String>,
 }
 
+/// Whether a service wrote the document to a topic or read it from one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum HopDirection {
+    Writes,
+    Reads,
+}
+
+/// One step of the document's way: a service writing it to a topic, or reading it from one, as
+/// its status events tell. A service that reads one topic and writes the next (a transformer) has
+/// two hops.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TraceHop {
+    pub service: String,
+    pub topic: String,
+    pub direction: HopDirection,
+    /// The consumer group that read the topic.
+    pub group: Option<String>,
+    /// Status events of this hop.
+    pub events: u32,
+    pub first: Timestamp,
+    pub last: Timestamp,
+    /// The state of the hop's last status event.
+    pub last_state: String,
+}
+
 /// Whether the document finished everywhere it went.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +96,8 @@ pub struct Trace {
     pub hits: Vec<TraceHit>,
     /// In the order the services were first reached.
     pub services: Vec<ServiceTrace>,
+    /// The topics the document went through, in the order the hops started.
+    pub hops: Vec<TraceHop>,
     pub outcome: TraceOutcome,
     /// A service had more matching events than `limit`: its newest are missing.
     pub truncated: bool,
@@ -194,6 +223,7 @@ fn assemble(mut hits: Vec<TraceHit>, mut failures: Vec<TraceFailure>, truncated:
     let services = summarize(&hits);
     Trace {
         outcome: outcome(&services),
+        hops: hops(&hits),
         hits,
         services,
         truncated,
@@ -223,6 +253,62 @@ fn summarize(hits: &[TraceHit]) -> Vec<ServiceTrace> {
         }
     }
     services
+}
+
+/// The producing side logs `RECEIVED → PUBLISHED` without a consumer group; everything else
+/// (`CONSUMING → COMPLETED | FAILED | RETRYING`) happens while reading. A producer that fails
+/// (`RECEIVED → FAILED`) is still writing.
+fn direction(status: &StatusChange) -> HopDirection {
+    let writing = |state: &str| {
+        ["RECEIVED", "PUBLISHED"]
+            .iter()
+            .any(|w| state.eq_ignore_ascii_case(w))
+    };
+    if status.consumer_group.is_none()
+        && (writing(&status.state) || status.previous_state.as_deref().is_some_and(writing))
+    {
+        HopDirection::Writes
+    } else {
+        HopDirection::Reads
+    }
+}
+
+/// The hops of the (time-ordered) hits: one per service, topic and direction.
+fn hops(hits: &[TraceHit]) -> Vec<TraceHop> {
+    let mut hops: Vec<TraceHop> = Vec::new();
+    for hit in hits {
+        let Some(status) = &hit.event.status else {
+            continue;
+        };
+        let Some(topic) = &status.topic else {
+            continue;
+        };
+        let direction = direction(status);
+        let existing = hops
+            .iter_mut()
+            .find(|h| h.service == hit.service && &h.topic == topic && h.direction == direction);
+        match existing {
+            Some(hop) => {
+                hop.events += 1;
+                hop.last = hit.event.timestamp;
+                hop.last_state = status.state.clone();
+                if hop.group.is_none() {
+                    hop.group = status.consumer_group.clone();
+                }
+            }
+            None => hops.push(TraceHop {
+                service: hit.service.clone(),
+                topic: topic.clone(),
+                direction,
+                group: status.consumer_group.clone(),
+                events: 1,
+                first: hit.event.timestamp,
+                last: hit.event.timestamp,
+                last_state: status.state.clone(),
+            }),
+        }
+    }
+    hops
 }
 
 fn outcome(services: &[ServiceTrace]) -> TraceOutcome {
@@ -289,6 +375,17 @@ mod tests {
         Box::leak(
             format!(r#"{{"message":"status","fw":{{"state":"{state}","correlationId":"{id}"}}}}"#)
                 .into_boxed_str(),
+        )
+    }
+
+    /// A status event about `topic`, read by `group` (or written, without one).
+    fn hop(state: &str, topic: &str, group: Option<&str>) -> &'static str {
+        let group = group.map_or("null".to_owned(), |g| format!(r#""{g}""#));
+        Box::leak(
+            format!(
+                r#"{{"message":"status","fw":{{"state":"{state}","correlationId":"DOC-1","topicName":"{topic}","consumerGroup":{group}}}}}"#
+            )
+            .into_boxed_str(),
         )
     }
 
@@ -459,6 +556,81 @@ mod tests {
         );
         let services: Vec<_> = trace.services.iter().map(|s| s.service.as_str()).collect();
         assert_eq!(services, ["input", "output"]);
+    }
+
+    #[test]
+    fn hops_follow_the_document_through_a_transformer() {
+        let source = Groups(HashMap::from([
+            (
+                "input",
+                Ok(vec![
+                    (1, hop("RECEIVED", "raw", None)),
+                    (2, hop("PUBLISHED", "raw", None)),
+                ]),
+            ),
+            (
+                "enricher",
+                Ok(vec![
+                    (3, hop("CONSUMING", "raw", Some("enricher"))),
+                    (4, hop("RECEIVED", "enriched", None)),
+                    (5, hop("PUBLISHED", "enriched", None)),
+                    (6, hop("COMPLETED", "raw", Some("enricher"))),
+                ]),
+            ),
+            (
+                "output",
+                Ok(vec![
+                    (7, hop("CONSUMING", "enriched", Some("output"))),
+                    (8, hop("RETRYING", "enriched", Some("output"))),
+                    (9, "a plain line about DOC-1"),
+                ]),
+            ),
+        ]));
+        let trace = run(&source, &["output", "enricher", "input"]);
+        let hops: Vec<_> = trace
+            .hops
+            .iter()
+            .map(|h| {
+                (
+                    h.service.as_str(),
+                    h.topic.as_str(),
+                    h.direction,
+                    h.group.as_deref(),
+                    h.events,
+                    h.last_state.as_str(),
+                )
+            })
+            .collect();
+        use HopDirection::{Reads, Writes};
+        assert_eq!(
+            hops,
+            [
+                ("input", "raw", Writes, None, 2, "PUBLISHED"),
+                ("enricher", "raw", Reads, Some("enricher"), 2, "COMPLETED"),
+                ("enricher", "enriched", Writes, None, 2, "PUBLISHED"),
+                ("output", "enriched", Reads, Some("output"), 2, "RETRYING"),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_failing_producer_is_still_writing() {
+        let failed = |previous: &str, group: Option<&str>| StatusChange {
+            prefix: "fw".into(),
+            state: "FAILED".into(),
+            previous_state: Some(previous.into()),
+            correlation_id: Some("DOC-1".into()),
+            topic: Some("raw".into()),
+            consumer_group: group.map(str::to_owned),
+            message: None,
+        };
+        assert_eq!(direction(&failed("RECEIVED", None)), HopDirection::Writes);
+        assert_eq!(
+            direction(&failed("CONSUMING", Some("out"))),
+            HopDirection::Reads
+        );
+        // Without a group, a failure while consuming still counts as reading.
+        assert_eq!(direction(&failed("CONSUMING", None)), HopDirection::Reads);
     }
 
     #[test]

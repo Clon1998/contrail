@@ -13,7 +13,14 @@ const request = {
   clusterArn: "arn:aws:ecs:eu-central-1:111122223333:cluster/demo",
   origin: "orders-api",
 };
-const trace: Trace = { hits: [], services: [], outcome: "open", truncated: false, failures: [] };
+const trace: Trace = {
+  hits: [],
+  services: [],
+  hops: [],
+  outcome: "open",
+  truncated: false,
+  failures: [],
+};
 
 beforeEach(() => vi.mocked(commands.traceId).mockReset());
 
