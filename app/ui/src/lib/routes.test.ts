@@ -185,6 +185,23 @@ describe("layerColumns", () => {
     });
   });
 
+  it("moves a start right, next to where it leads", () => {
+    // A topic only one late service reads.
+    const columns = layerColumns(
+      ["input", "a", "reader", "b", "late", "only-read"],
+      edges([
+        ["input", "a"],
+        ["a", "reader"],
+        ["reader", "b"],
+        ["b", "late"],
+        ["only-read", "late"],
+      ]),
+    );
+    expect(columns.get("late")).toBe(4);
+    expect(columns.get("only-read")).toBe(3);
+    expect(columns.get("input")).toBe(0);
+  });
+
   it("lines up targets in the last column", () => {
     const columns = layerColumns(
       ["input", "a", "reader", "early", "b", "output", "late"],
