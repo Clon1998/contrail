@@ -7,11 +7,36 @@ import type { Endpoint, Route, TopicLink } from "@/bindings";
  */
 export type RouteColumn = 0 | 1 | 2 | 3 | 4;
 
-export interface RouteNode {
+/** A box of a drawn graph: an external system, a service or a topic, in one column. */
+export interface GraphNode {
   id: string;
-  column: RouteColumn;
+  /** Left to right, from 0. */
+  column: number;
   kind: "system" | "service" | "topic";
   label: string;
+  /** A second, smaller line (an endpoint type, a consumer group). */
+  detail: string | null;
+  /** Drawn dashed and faded: switched off. */
+  disabled: boolean;
+  /** The service the graph is about (highlighted). */
+  self: boolean;
+}
+
+/** A line between two nodes, drawn from left to right. */
+export interface GraphEdge {
+  id: string;
+  from: string;
+  to: string;
+  disabled: boolean;
+}
+
+export interface Graph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface RouteNode extends GraphNode {
+  column: RouteColumn;
   /**
    * A system's endpoint type (`sftp`, `artemis_mq`, …); a service's consumer group; a topic's
    * group only when this service's routes use different groups.
@@ -21,19 +46,13 @@ export interface RouteNode {
   disabled: boolean;
   /** The shown service's routes through this node, by index. */
   routes: number[];
-  /** The service whose overview this is. */
-  self: boolean;
 }
 
-export interface RouteEdge {
-  id: string;
-  from: string;
-  to: string;
-  disabled: boolean;
+export interface RouteEdge extends GraphEdge {
   routes: number[];
 }
 
-export interface RouteGraph {
+export interface RouteGraph extends Graph {
   nodes: RouteNode[];
   edges: RouteEdge[];
   /** The node of the service shown. */
@@ -161,10 +180,7 @@ export function buildRouteGraph(
  * What lies on a path through `id`: the nodes it is reached from and the nodes it leads to, and
  * the lines between them. Hovering a node highlights exactly that.
  */
-export function pathThrough(
-  graph: RouteGraph,
-  id: string,
-): { nodes: Set<string>; edges: Set<string> } {
+export function pathThrough(graph: Graph, id: string): { nodes: Set<string>; edges: Set<string> } {
   const walk = (start: string, next: (from: string) => string[]) => {
     const seen = new Set<string>();
     const queue = [start];
