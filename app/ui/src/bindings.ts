@@ -51,6 +51,11 @@ export const commands = {
 	/**  The listed rows that match the search (for stepping through matches in highlight mode). */
 	getMatchPositions: (viewId: number) => typedError<number[], ApiError>(__TAURI_INVOKE("get_match_positions", { viewId })),
 	/**
+	 *  Which fields the events matching the view's search have, their most common values, and an
+	 *  overview of the pipeline status events among them (for the Fields panel).
+	 */
+	fieldSummary: (viewId: number) => typedError<FieldSummary, ApiError>(__TAURI_INVOKE("field_summary", { viewId })),
+	/**
 	 *  Starts following a view live (after its backfill). Updates arrive on `on_update`.
 	 * 
 	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
@@ -246,6 +251,22 @@ export type Deployment = {
 	updatedAt: Timestamp | null,
 };
 
+export type DocumentGroup = {
+	outcome: Outcome,
+	count: number,
+	/**  The newest [`MAX_IDS`] correlation IDs. */
+	ids: string[],
+};
+
+/**  The documents (correlation IDs) of the status events, by where their last event left them. */
+export type DocumentSummary = {
+	total: number,
+	/**  The outcomes that occur, in the order of [`Outcome`]. */
+	outcomes: DocumentGroup[],
+	/**  Documents that went through `RETRYING` (they're also counted under their outcome). */
+	retried: DocumentGroup,
+};
+
 /**  One end of a route: where data comes from (input) or goes to (output). */
 export type Endpoint = {
 	/**  `sftp`, `s3`, `http`, `kafka`, … (the framework's `type`). */
@@ -293,6 +314,27 @@ export type FieldMapping = {
 	message: string | null,
 	level: string | null,
 	timestamp: string | null,
+};
+
+export type FieldStats = {
+	key: string,
+	/**  Events that have the field. */
+	count: number,
+	/**  Distinct values counted (at most [`MAX_DISTINCT`]). */
+	distinct: number,
+	/**  There are more distinct values than were counted. */
+	moreDistinct: boolean,
+	/**  The most common values, most common first. */
+	top: ValueCount[],
+};
+
+export type FieldSummary = {
+	/**  How many events were summarized (the matches of the search, or all). */
+	events: number,
+	/**  Most common first (then by name). */
+	fields: FieldStats[],
+	/**  Only when some of the events are pipeline status events. */
+	pipeline: PipelineSummary | null,
 };
 
 /**
@@ -474,6 +516,18 @@ export type OlderEvents = {
 	rows: LogEvent[],
 };
 
+/**  Where a document's last status event left it, as far as this service's logs show. */
+export type Outcome = 
+/**
+ *  Last seen in a non-final state (`RECEIVED`, `CONSUMING`, `RETRYING`): still being worked
+ *  on, or stuck.
+ */
+"inProgress" | "failed" | "completed" | 
+/**  Handed on to Kafka: where an input service's part ends. */
+"published" | 
+/**  Only for [`DocumentSummary::retried`]. */
+"retried";
+
 /**  What the parser gets out of one raw log line. */
 export type ParsedLine = {
 	kind: LogKind,
@@ -493,6 +547,18 @@ export type ParsedLine = {
 	error: LogError | null,
 	/**  Byte range `[start, end)` of the first JSON object embedded in `message`, if any. */
 	jsonSpan: [number, number] | null,
+};
+
+export type PipelineSummary = {
+	/**  Status events among the summarized events. */
+	events: number,
+	/**  Per state, in lifecycle order (unknown states last). */
+	states: ValueCount[],
+	/**  Per topic, the most active first. */
+	topics: TopicStates[],
+	documents: DocumentSummary,
+	/**  The most common messages of `FAILED` events. */
+	failureReasons: ValueCount[],
 };
 
 /**  Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`]. */
@@ -729,6 +795,8 @@ export type StatusChange = {
 	/**  Follows one document across all services. */
 	correlationId: string | null,
 	topic: string | null,
+	/**  Why the state changed ("Processing failed: …"), as the framework or a route wrote it. */
+	message: string | null,
 };
 
 export type Task = {
@@ -808,6 +876,13 @@ export type TopicScan =
 /**  Scans the cluster again and keeps the result for the session. */
 "fresh";
 
+export type TopicStates = {
+	topic: string,
+	total: number,
+	/**  In the same order as [`PipelineSummary::states`]. */
+	states: ValueCount[],
+};
+
 export type Trace = {
 	/**  Oldest first. */
 	hits: TraceHit[],
@@ -860,6 +935,11 @@ export type UpdateProgress = {
 	/**  Bytes. `u32` (up to 4 GB) because specta can't export `u64` to TypeScript numbers. */
 	downloaded: number,
 	total: number | null,
+};
+
+export type ValueCount = {
+	value: string,
+	count: number,
 };
 
 /* Tauri Specta runtime */

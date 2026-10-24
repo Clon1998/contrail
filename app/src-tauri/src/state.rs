@@ -8,7 +8,8 @@ use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::EcsSource;
 use contrail_core::logs::{
-    FieldMapping, LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter, VisibleChange,
+    FieldMapping, FieldSummary, LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter,
+    VisibleChange, summarize,
 };
 use contrail_core::secrets::SecretSource;
 use contrail_core::timestamp::Timestamp;
@@ -174,6 +175,14 @@ impl LogView {
 
     pub fn match_count(&self) -> Option<usize> {
         self.filter.as_ref().map(ViewFilter::match_count)
+    }
+
+    /// The field summary of the events that match the search (all events without one).
+    pub fn field_summary(&self) -> FieldSummary {
+        match &self.filter {
+            Some(filter) => summarize(filter.matched().iter().filter_map(|&i| self.buffer.get(i))),
+            None => summarize(self.buffer.iter()),
+        }
     }
 
     /// The listed rows `offset..offset + limit`.
