@@ -26,11 +26,19 @@ export interface TraceTab {
   lastActive: number;
 }
 
+/** A cluster's route map: every route service, linked by topic. */
+export interface RoutesTab {
+  kind: "routes";
+  key: string;
+  clusterArn: string;
+  lastActive: number;
+}
+
 /**
  * An open tab. A union with a `kind` tag (a "discriminated union"): checking `tab.kind` tells
- * TypeScript which of the two it is, a bit like a sealed interface with pattern matching in Java.
+ * TypeScript which one it is, a bit like a sealed interface with pattern matching in Java.
  */
-export type Tab = ServiceTab | TraceTab;
+export type Tab = ServiceTab | TraceTab | RoutesTab;
 
 interface TabsState {
   tabs: Tab[];
@@ -39,6 +47,8 @@ interface TabsState {
   activate: (service: ServiceRef) => void;
   /** Shows the trace of `request.id` in its cluster, opening a tab if needed. */
   openTrace: (request: TraceRequest) => void;
+  /** Shows the route map of a cluster, opening a tab if needed. */
+  openRouteMap: (clusterArn: string) => void;
   /** Shows an open tab. */
   show: (key: string) => void;
   /** Closes a tab; returns the tab to show next (the neighbour), if any. */
@@ -84,6 +94,10 @@ export function tabKey(service: ServiceRef): string {
 /** Tracing the same ID in the same cluster again shows its tab. */
 export function traceKey(request: Pick<TraceRequest, "clusterArn" | "id">): string {
   return `trace|${request.clusterArn}|${request.id}`;
+}
+
+export function routesKey(clusterArn: string): string {
+  return `routes|${clusterArn}`;
 }
 
 /** Ends what a tab keeps running (a service's log view and live tail). */
@@ -135,6 +149,17 @@ export const useTabs = create<TabsState>((set, get) => ({
     } else {
       const trace = createTraceStore(request);
       tabs = [...withRoom(tabs), { kind: "trace", key, trace, lastActive: Date.now() }];
+    }
+    set({ tabs, activeKey: key });
+  },
+
+  openRouteMap: (clusterArn) => {
+    const key = routesKey(clusterArn);
+    let tabs = get().tabs;
+    if (tabs.some((t) => t.key === key)) {
+      tabs = touched(tabs, key);
+    } else {
+      tabs = [...withRoom(tabs), { kind: "routes", key, clusterArn, lastActive: Date.now() }];
     }
     set({ tabs, activeKey: key });
   },

@@ -1,16 +1,16 @@
 import { useEffect, type ReactNode } from "react";
-import { RouteIcon, XIcon } from "lucide-react";
+import { NetworkIcon, RouteIcon, XIcon } from "lucide-react";
 import { useStore } from "zustand";
 import { cn } from "cn";
 import { useAutoPause } from "@/hooks/useAutoPause";
 import { nameFromArn } from "@/lib/ecs";
 import { useEcs } from "@/stores/ecs";
 import { LogsContext, useLogs } from "@/stores/logs";
-import { useTabs, type ServiceTab, type Tab, type TraceTab } from "@/stores/tabs";
+import { useTabs, type RoutesTab, type ServiceTab, type Tab, type TraceTab } from "@/stores/tabs";
 
 /** Shows a tab: a service tab also selects its service (the sidebar follows it). */
 function show(tab: Tab) {
-  if (tab.kind === "trace") {
+  if (tab.kind !== "service") {
     useTabs.getState().show(tab.key);
     return;
   }
@@ -67,6 +67,20 @@ function TraceTabItem({ tab, active }: { tab: TraceTab; active: boolean }) {
       label={`Trace ${request.id}`}
       title={`Trace ${request.id} · from ${request.origin}`}
       icon={<RouteIcon aria-hidden className="size-3 shrink-0 text-muted-foreground" />}
+    />
+  );
+}
+
+/** A cluster's route map. */
+function RoutesTabItem({ tab, active }: { tab: RoutesTab; active: boolean }) {
+  const cluster = nameFromArn(tab.clusterArn);
+  return (
+    <TabShell
+      tab={tab}
+      active={active}
+      label={`Routes ${cluster}`}
+      title={`Route map of ${cluster}`}
+      icon={<NetworkIcon aria-hidden className="size-3 shrink-0 text-muted-foreground" />}
     />
   );
 }
@@ -165,8 +179,10 @@ export function ServiceTabs() {
           <LogsContext.Provider key={tab.key} value={tab.logs}>
             <ServiceTabItem tab={tab} active={tab.key === activeKey} />
           </LogsContext.Provider>
-        ) : (
+        ) : tab.kind === "trace" ? (
           <TraceTabItem key={tab.key} tab={tab} active={tab.key === activeKey} />
+        ) : (
+          <RoutesTabItem key={tab.key} tab={tab} active={tab.key === activeKey} />
         ),
       )}
     </div>

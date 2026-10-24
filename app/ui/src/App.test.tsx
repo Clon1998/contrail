@@ -140,7 +140,7 @@ describe("App", () => {
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     const core = await within(tree).findByRole("treeitem", { name: "demo-core" });
     expect(core.textContent).toContain("3 svc");
-    fireEvent.click(within(core).getByRole("button"));
+    fireEvent.click(within(core).getByRole("button", { expanded: false }));
 
     const payments = await within(core).findByRole("treeitem", { name: "payments-worker" });
     expect(payments.textContent).toContain("1/2");
@@ -161,7 +161,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     fireEvent.click(
       within(await within(tree).findByRole("treeitem", { name: "payments-worker" })).getByRole(
@@ -235,7 +237,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     fireEvent.click(
       within(await within(tree).findByRole("treeitem", { name: "payments-worker" })).getByRole(
@@ -256,7 +260,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-edge" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-edge" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     fireEvent.click(
       within(await within(tree).findByRole("treeitem", { name: "legacy-gateway" })).getByRole(
@@ -281,7 +287,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     fireEvent.click(
       within(await within(tree).findByRole("treeitem", { name: "orders-api" })).getByRole("button"),
@@ -308,7 +316,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     fireEvent.click(
       within(await within(tree).findByRole("treeitem", { name: "payments-worker" })).getByRole(
@@ -365,7 +375,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     const pick = async (name: string) =>
       fireEvent.click(
@@ -431,7 +443,9 @@ describe("App", () => {
     render(<App />);
     const tree = await screen.findByRole("tree", { name: "Clusters" });
     fireEvent.click(
-      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button"),
+      within(await within(tree).findByRole("treeitem", { name: "demo-core" })).getByRole("button", {
+        expanded: false,
+      }),
     );
     fireEvent.click(
       within(await within(tree).findByRole("treeitem", { name: "orders-api" })).getByRole("button"),

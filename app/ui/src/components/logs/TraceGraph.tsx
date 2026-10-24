@@ -4,7 +4,8 @@ import { Loader2Icon, NetworkIcon, SearchIcon } from "lucide-react";
 import { commands, type ApiError, type Trace, type TopicLink } from "@/bindings";
 import { GraphView } from "@/components/ecs/RouteGraphView";
 import { Button } from "@/components/ui/button";
-import { buildTraceGraph, serviceNodeId, type TraceGraph as Graph } from "@/lib/traceGraph";
+import { columnTitles } from "@/lib/routes";
+import { buildTraceGraph, serviceNodeId } from "@/lib/traceGraph";
 import { useEcs } from "@/stores/ecs";
 import type { TraceTab } from "@/stores/tabs";
 
@@ -13,28 +14,6 @@ type Links =
   | { kind: "loading" }
   | { kind: "done"; links: TopicLink[] }
   | { kind: "error"; error: ApiError };
-
-/** A column's heading from what it holds: the paths are as long as the document's way. */
-function columnTitles(graph: Graph): (column: number) => string | null {
-  const titles = new Map<number, string>();
-  for (const column of new Set(graph.nodes.map((n) => n.column))) {
-    const kinds = new Set(graph.nodes.filter((n) => n.column === column).map((n) => n.kind));
-    // A column of mixed kinds (a topic next to an early reader's target) has no heading.
-    const only = kinds.size === 1 ? [...kinds][0] : null;
-    const title =
-      only === "topic"
-        ? "Topic"
-        : only === "system"
-          ? column === 0
-            ? "Sources"
-            : "Targets"
-          : only === "service"
-            ? "Services"
-            : null;
-    if (title) titles.set(column, title);
-  }
-  return (column) => titles.get(column) ?? null;
-}
 
 /**
  * The trace on the route graph: the services the document passed and the topics between them,

@@ -25,6 +25,8 @@ export default function App() {
   const region = useCurrentRegion();
   const showTree = useEcs((s) => s.ctx !== null);
   const selectedService = useEcs((s) => s.selected);
+  // A route map opens from a cluster, without a service.
+  const hasTabs = useTabs((s) => s.tabs.length > 0);
   const ctxId = useEcs((s) => (s.ctx ? ctxKey(s.ctx) : null));
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function App() {
       <LoginOutput />
       <div className="flex min-h-0 flex-1">
         {showTree && <Sidebar />}
-        {selectedService ? <ServiceView /> : <ConnectionPanel />}
+        {selectedService || hasTabs ? <ServiceView /> : <ConnectionPanel />}
       </div>
       <ServicePalette />
     </div>

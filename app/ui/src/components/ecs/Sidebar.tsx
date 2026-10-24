@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { ChevronRightIcon, Loader2Icon, RefreshCwIcon, SearchIcon, StarIcon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  Loader2Icon,
+  NetworkIcon,
+  RefreshCwIcon,
+  SearchIcon,
+  StarIcon,
+} from "lucide-react";
 import { cn } from "cn";
 import type { ServiceRef } from "@/bindings";
 import { Button } from "@/components/ui/button";
@@ -9,6 +16,7 @@ import { openServiceKey } from "@/lib/navigation";
 import { sameService, useEcs } from "@/stores/ecs";
 import { usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
+import { useTabs } from "@/stores/tabs";
 import { HealthDot } from "./HealthDot";
 
 /** Favorites of the selected profile and the Cluster → Service tree. */
@@ -140,22 +148,35 @@ function ClusterNode({ arn, query }: { arn: string; query: string }) {
 
   return (
     <li role="treeitem" aria-expanded={expanded} aria-label={cluster.name}>
-      <button
-        type="button"
-        onClick={() => void toggle(arn)}
-        className="flex w-full items-center gap-1.5 px-2 py-1 text-left hover:bg-accent"
-      >
-        <ChevronRightIcon
-          className={cn(
-            "size-3.5 shrink-0 text-muted-foreground transition-transform",
-            expanded && "rotate-90",
-          )}
-        />
-        <span className="truncate font-medium">{cluster.name}</span>
-        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-          {cluster.activeServices} svc · {cluster.runningTasks} tasks
-        </span>
-      </button>
+      <div className="group flex items-center hover:bg-accent">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => void toggle(arn)}
+          className="flex min-w-0 flex-1 items-center gap-1.5 py-1 pl-2 text-left"
+        >
+          <ChevronRightIcon
+            className={cn(
+              "size-3.5 shrink-0 text-muted-foreground transition-transform",
+              expanded && "rotate-90",
+            )}
+          />
+          <span className="truncate font-medium">{cluster.name}</span>
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+            {cluster.activeServices} svc · {cluster.runningTasks} tasks
+          </span>
+        </button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Route map of ${cluster.name}`}
+          tooltip="Route map: the cluster's services linked by topic"
+          className="mr-1 ml-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+          onClick={() => useTabs.getState().openRouteMap(arn)}
+        >
+          <NetworkIcon />
+        </Button>
+      </div>
       {expanded && (
         <ul role="group">
           {services?.state === "loading" && !services.data && (
