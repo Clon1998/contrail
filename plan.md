@@ -468,6 +468,12 @@ that a rejected branch's work depends on is cut from `main` without it.
   terminal and failure states, document keys, route env var pattern) into a declarative pack. The current
   framework stays the built-in pack, active as today with no setup; other packs (e.g. OpenTelemetry
   `trace_id`, a plain `traceId`) are optional.
+- **M21 — Group similar lines:** turn messages into templates in Rust (Drain-style, variable parts such
+  as numbers, IDs and hosts become `<n>`, `<id>`, `<host>`) and show a Groups view with a count per template.
+  A group can be hidden as noise or filtered to with one click; templates that are new since a deployment
+  (M17) or since a chosen time are marked; FAILED status events are grouped by their message.
+  Done when: templating has unit and property tests (stable templates, no merging of unrelated lines) and
+  stays fast at 100k lines; e2e covers hiding a group and filtering to one.
 - A v0.2.0 release once M9–M15 are merged and Patrick has smoke-tested them.
 
 ---
@@ -525,9 +531,5 @@ Ship as `docs/iam-policy.json` so teammates without admin can request exactly th
 - Multi-container tasks / sidecars (container selector; model already carries `container`).
 - Split view; Lambda log groups; CloudWatch Logs Insights quick queries.
 - CLI companion (`contrail tail <service>`).
-- **Waiting for Patrick's decision** (examples asked for on 2026-10-24):
-  - *Group similar lines:* turn messages into templates (Drain-style) with counts, hide a whole group as
-    noise, mark templates that are new since a deployment, group FAILED status events by message.
-  - *Compare environments:* the same route service across profiles (dev/test/prod), comparing route
-    structure, enabled flags, consumer groups and image tags rather than host-like values.
+- Dropped on 2026-10-24: comparing a route service across environments (Patrick sees no use for it).
 - Rebindable keyboard shortcuts in the settings (v0.1 lists them in Settings → Shortcuts; decided 2026-10-23).
