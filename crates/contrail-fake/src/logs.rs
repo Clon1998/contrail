@@ -264,7 +264,8 @@ const ENRICHED: &str = "demo.events.enriched";
 /// What `service` logs about document `n`: `event-ingest` writes it to `demo.events`;
 /// `legacy-gateway`, `audit-archiver` and the transformer `event-enricher` read it there, and the
 /// enricher writes it on to `demo.events.enriched`, where `search-feeder` reads it. Every sixth
-/// document stays stuck retrying in `audit-archiver`, every tenth fails in `search-feeder`.
+/// document stays stuck retrying in `audit-archiver`, every tenth fails in `search-feeder`
+/// (the second document of the recorded demo data both).
 fn steps(service: &str, n: i64) -> Vec<Step> {
     let step = |after_ms, previous, state, topic, group, message| Step {
         after_ms,
@@ -308,7 +309,7 @@ fn steps(service: &str, n: i64) -> Vec<Step> {
         ],
         "audit-archiver" => {
             let group = Some("audit-archiver");
-            let end = if n % 6 == 5 {
+            let end = if n % 6 == 1 {
                 step(
                     1_500,
                     "CONSUMING",
@@ -350,7 +351,7 @@ fn steps(service: &str, n: i64) -> Vec<Step> {
         }
         "search-feeder" => {
             let group = Some("search-feeder");
-            let end = if n % 10 == 7 {
+            let end = if n % 10 == 1 {
                 step(
                     2_000,
                     "CONSUMING",
@@ -548,6 +549,19 @@ fn nested(service: &str, seed: u64, at: OffsetDateTime) -> String {
             )
             .to_owned(),
         ),
+    };
+    // The route services of demo-edge log their documents' steps (see `documents`); only the
+    // demo-core services log status changes of random documents.
+    let (level, logger, message) = if message.starts_with("Document status change")
+        && !matches!(service, "orders-api" | "billing-sync")
+    {
+        (
+            "INFO",
+            "com.example.pipeline.ConsumerHealth",
+            format!("{} records in flight", seed % 5),
+        )
+    } else {
+        (level, logger, message)
     };
     let mut event = json!({
         "@timestamp": rfc3339(at),
@@ -848,9 +862,10 @@ mod tests {
     #[test]
     fn some_documents_get_stuck_or_fail() {
         let ends = |service: &str, n: i64| steps(service, n).last().map(|s| s.state);
-        assert_eq!(ends("audit-archiver", 5), Some("RETRYING"));
-        assert_eq!(ends("audit-archiver", 4), Some("COMPLETED"));
-        assert_eq!(ends("search-feeder", 7), Some("FAILED"));
+        assert_eq!(ends("audit-archiver", 7), Some("RETRYING"));
+        assert_eq!(ends("audit-archiver", 6), Some("COMPLETED"));
+        assert_eq!(ends("search-feeder", 11), Some("FAILED"));
+        assert_eq!(ends("search-feeder", 12), Some("COMPLETED"));
         assert_eq!(ends("orders-api", 1), None, "not on the documents' way");
     }
 
