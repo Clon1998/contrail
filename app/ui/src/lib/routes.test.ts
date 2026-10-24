@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Endpoint, Route, TopicLink } from "@/bindings";
-import { buildRouteGraph, pathThrough } from "./routes";
+import { buildRouteGraph, layerColumns, pathThrough } from "./routes";
 
 const endpoint = (kind: string, system: string, enabled = true): Endpoint => ({
   kind,
@@ -153,5 +153,65 @@ describe("pathThrough", () => {
     ]);
     // The other reader of the same topic isn't on the way.
     expect(path.edges.has("topic:events->service:3:auditor")).toBe(false);
+  });
+});
+
+describe("layerColumns", () => {
+  const edges = (pairs: [string, string][]) => pairs.map(([from, to]) => ({ from, to }));
+
+  it("puts each node right of the furthest node leading to it", () => {
+    // source → input → topic A → transformer → topic B → output → target, and a reader of A.
+    const columns = layerColumns(
+      ["source", "input", "a", "transformer", "b", "output", "reader", "target"],
+      edges([
+        ["source", "input"],
+        ["input", "a"],
+        ["a", "transformer"],
+        ["transformer", "b"],
+        ["b", "output"],
+        ["a", "reader"],
+        ["output", "target"],
+      ]),
+    );
+    expect(Object.fromEntries(columns)).toEqual({
+      source: 0,
+      input: 1,
+      a: 2,
+      transformer: 3,
+      reader: 3,
+      b: 4,
+      output: 5,
+      target: 6,
+    });
+  });
+
+  it("lines up targets in the last column", () => {
+    const columns = layerColumns(
+      ["input", "a", "reader", "early", "b", "output", "late"],
+      edges([
+        ["input", "a"],
+        ["a", "reader"],
+        ["reader", "early"],
+        ["a", "b"],
+        ["b", "output"],
+        ["output", "late"],
+      ]),
+      new Set(["early", "late"]),
+    );
+    expect(columns.get("early")).toBe(4);
+    expect(columns.get("late")).toBe(4);
+  });
+
+  it("stops on a cycle", () => {
+    const columns = layerColumns(
+      ["service", "topic"],
+      edges([
+        ["service", "topic"],
+        ["topic", "service"],
+      ]),
+    );
+    // Finite: a few columns, not one per round of an endless loop.
+    expect(columns.size).toBe(2);
+    expect(Math.max(...columns.values())).toBeLessThan(10);
   });
 });

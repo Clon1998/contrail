@@ -205,3 +205,34 @@ export function pathThrough(graph: Graph, id: string): { nodes: Set<string>; edg
   );
   return { nodes: new Set([...downstream, ...upstream]), edges: new Set(edges.map((e) => e.id)) };
 }
+
+/**
+ * Columns for a graph whose paths can be longer than the five fixed columns of one service's
+ * routes (input → topic → transformer → topic → output): every node goes one column right of the
+ * furthest node leading to it (the longest path from a start), so lines always run left to right.
+ * Systems that only receive data are moved to the last column, so all targets line up. A cycle
+ * (a service reading the topic it writes) can't push nodes further right forever: each node moves
+ * at most once per node of the graph.
+ */
+export function layerColumns(
+  ids: string[],
+  edges: Pick<GraphEdge, "from" | "to">[],
+  sinks: Set<string> = new Set(),
+): Map<string, number> {
+  const columns = new Map(ids.map((id) => [id, 0]));
+  for (let round = 0; round < ids.length; round++) {
+    let moved = false;
+    for (const { from, to } of edges) {
+      const next = (columns.get(from) ?? 0) + 1;
+      if (columns.has(to) && next > (columns.get(to) ?? 0)) {
+        columns.set(to, next);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  const last = Math.max(0, ...[...columns].filter(([id]) => !sinks.has(id)).map(([, c]) => c + 1));
+  for (const id of sinks)
+    if (columns.has(id)) columns.set(id, Math.max(last, columns.get(id) ?? 0));
+  return columns;
+}
