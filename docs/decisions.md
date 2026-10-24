@@ -322,3 +322,27 @@ search bar.
   release; merge commits and `chore(release)` are left out.
 - **Screenshots** come from the fake backend (demo data) via `pnpm --dir ui screenshots` (the website's spec);
   the branch's own README screenshot spec was dropped when merging, as the README now links the website.
+
+## 2026-10-24 — M9: a trace drawn on the route graph (evaluation)
+
+Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful after the screenshots.
+
+- **Hops come from the status events**, not from the route scan: each `(service, topic, direction)` of a
+  trace is one hop with its last state. Direction: no consumer group and a producer state (`RECEIVED`,
+  `PUBLISHED`, or a failure right after one) → wrote; everything else → read. Status events now carry the
+  consumer group. This way transformers (no route variables) show up on the document's way by themselves.
+- **The graph needs no extra AWS call**: services and topics come from the hops. The cluster's route scan
+  (cached for the session, or "Find connected services") adds the external systems and the readers of the
+  document's topics that logged nothing ("no event" when searched, "not searched" otherwise, with a button to
+  search them too). Writers of the same topic are siblings, not missing hops, and are left out; so are
+  switched-off routes. Services are matched by name (the trace already searches per service), not by log group.
+- **Outcome rule changed**: with hops, a document is *completed* when every write was published, every topic it
+  was written to was read by a searched service, and every read completed. Before, an input service's last
+  state (`PUBLISHED`) kept every trace that started there *open*.
+- **Layout**: columns by longest path (input → topic → transformer → topic → output), targets right next to
+  their service (lined up at the end, the lines of early readers crossed the rest of the graph), columns as wide
+  as their names. The per-service route graph uses the same view (`RouteGraphView.tsx`).
+- **Demo**: demo-edge got a transformer (`event-enricher`) and a reader of its topic (`search-feeder`); one
+  document every 30 s passes through all of them, every sixth stuck retrying in `audit-archiver`, every tenth
+  failing in `search-feeder`. Random status events stay in demo-core.
+- Not in the public docs (user guide, website), like the rest of the status-event support.
