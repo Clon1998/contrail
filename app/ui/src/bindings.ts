@@ -797,6 +797,8 @@ export type StatusChange = {
 	/**  Follows one document across all services. */
 	correlationId: string | null,
 	topic: string | null,
+	/**  The Kafka consumer group of a consuming service (none on the producing side). */
+	consumerGroup: string | null,
 	/**  Why the state changed ("Processing failed: …"), as the framework or a route wrote it. */
 	message: string | null,
 };

@@ -232,6 +232,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000002-0000000000003DDE",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -381,6 +382,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -533,6 +535,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -682,6 +685,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -831,6 +835,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000005-0000000000009AAB",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -921,6 +926,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -1070,6 +1076,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -1160,6 +1167,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -1250,6 +1258,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -1520,6 +1529,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000005-0000000000009AAB",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -1610,6 +1620,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -1818,6 +1829,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -2162,6 +2174,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -2314,6 +2327,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Processing failed: missing required field 'customerId'"
           }
         },
@@ -2404,6 +2418,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -2549,6 +2564,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -2694,6 +2710,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000001-0000000000001EEF",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -2964,6 +2981,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -3172,6 +3190,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000001-0000000000001EEF",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -3321,6 +3340,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000001-0000000000001EEF",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
@@ -3521,6 +3541,7 @@
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000000-0000000000000000",
             "topic": "example.returns.events.v1",
+            "consumerGroup": null,
             "message": "Processing completed"
           }
         },
@@ -3611,6 +3632,7 @@
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000005-0000000000009AAB",
             "topic": "example.orders.events.v1",
+            "consumerGroup": null,
             "message": "Record consumed, starting processing"
           }
         },
