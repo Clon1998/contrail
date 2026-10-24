@@ -68,9 +68,22 @@ impl EcsSource for AwsEcs {
         let client = self.client(ctx).await;
         let (mut detail, primary) = describe_service(&client, &ctx.profile, service).await?;
         if let Some(arn) = primary {
-            detail.task_definition = Some(self.task_definition(&client, &ctx.profile, &arn).await?);
+            detail.task_definition = Some(
+                self.cached_task_definition(&client, &ctx.profile, &arn)
+                    .await?,
+            );
         }
         Ok(detail)
+    }
+
+    async fn task_definition(
+        &self,
+        ctx: &AwsCtx,
+        arn: &str,
+    ) -> Result<TaskDefinitionInfo, SourceError> {
+        let client = self.client(ctx).await;
+        self.cached_task_definition(&client, &ctx.profile, arn)
+            .await
     }
 
     async fn list_tasks(
@@ -90,7 +103,7 @@ impl EcsSource for AwsEcs {
 }
 
 impl AwsEcs {
-    async fn task_definition(
+    async fn cached_task_definition(
         &self,
         client: &Client,
         profile: &str,
@@ -176,6 +189,7 @@ fn service_summary(service: &aws_sdk_ecs::types::Service) -> ServiceSummary {
         launch_type: service.launch_type().map(|l| l.as_str().to_owned()),
         task_definition: task_definition_label(service.task_definition().unwrap_or_default())
             .to_owned(),
+        task_definition_arn: text(service.task_definition()),
     }
 }
 
@@ -552,6 +566,10 @@ mod tests {
         let listed: Vec<String> = services.iter().map(|s| s.name.clone()).collect();
         assert_eq!(listed, names);
         assert_eq!(services[0].task_definition, "svc-01:3");
+        assert_eq!(
+            services[0].task_definition_arn,
+            "arn:aws:ecs:eu-central-1:111122223333:task-definition/svc-01:3"
+        );
         assert_eq!(services[0].launch_type.as_deref(), Some("FARGATE"));
     }
 
@@ -665,8 +683,13 @@ mod tests {
         let arn = primary.unwrap();
         assert!(arn.ends_with("orders:4"), "uses the PRIMARY deployment");
         assert_eq!(describe.num_calls(), 1);
-        let info = ecs.task_definition(&client, "dev", &arn).await.unwrap();
-        ecs.task_definition(&client, "dev", &arn).await.unwrap();
+        let info = ecs
+            .cached_task_definition(&client, "dev", &arn)
+            .await
+            .unwrap();
+        ecs.cached_task_definition(&client, "dev", &arn)
+            .await
+            .unwrap();
         assert_eq!(task_def.num_calls(), 1, "task definitions are cached");
         assert_eq!(info.revision, 4);
         assert_eq!(info.containers[0].log_driver.as_deref(), Some("awslogs"));

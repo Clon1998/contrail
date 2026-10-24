@@ -43,6 +43,8 @@ pub struct ServiceSummary {
     pub launch_type: Option<String>,
     /// The current task definition as `family:revision`.
     pub task_definition: String,
+    /// Its full ARN, for [`EcsSource::task_definition`].
+    pub task_definition_arn: String,
 }
 
 /// Everything the service overview shows.
@@ -197,6 +199,13 @@ pub trait EcsSource: Send + Sync {
         ctx: &AwsCtx,
         service: &ServiceRef,
     ) -> Result<ServiceDetail, SourceError>;
+
+    /// A task definition by ARN. Registered revisions never change, so sources may cache them.
+    async fn task_definition(
+        &self,
+        ctx: &AwsCtx,
+        arn: &str,
+    ) -> Result<TaskDefinitionInfo, SourceError>;
 
     /// The service's tasks: running ones first (newest first), then, with `include_stopped`,
     /// the recently stopped ones ECS still remembers (about an hour), newest first.

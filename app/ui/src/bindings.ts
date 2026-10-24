@@ -63,8 +63,11 @@ export const commands = {
 	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
 	 */
 	revealSecret: (ctx: AwsCtx, valueFrom: string) => typedError<string, ApiError>(__TAURI_INVOKE("reveal_secret", { ctx, valueFrom })),
-	/**  The services of `cluster_arn` whose routes use one of `topics` (except `exclude`). */
-	servicesOnTopics: (ctx: AwsCtx, clusterArn: string, topics: string[], exclude: string) => typedError<TopicLink[], ApiError>(__TAURI_INVOKE("services_on_topics", { ctx, clusterArn, topics, exclude })),
+	/**
+	 *  The services of `cluster_arn` whose routes use one of `topics` (except `exclude`). `None`
+	 *  when only the cache was asked and the cluster wasn't scanned yet.
+	 */
+	servicesOnTopics: (ctx: AwsCtx, clusterArn: string, topics: string[], exclude: string, scan: TopicScan) => typedError<TopicLink[] | null, ApiError>(__TAURI_INVOKE("services_on_topics", { ctx, clusterArn, topics, exclude, scan })),
 	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
@@ -655,6 +658,8 @@ export type ServiceSummary = {
 	launchType: string | null,
 	/**  The current task definition as `family:revision`. */
 	taskDefinition: string,
+	/**  Its full ARN, for [`EcsSource::task_definition`]. */
+	taskDefinitionArn: string,
 };
 
 /**  What the trace shows of one service. */
@@ -795,6 +800,13 @@ export type TopicLink = {
 	 */
 	endpoints: Endpoint[],
 };
+
+/**  Where `services_on_topics` gets the cluster's routes from. */
+export type TopicScan = 
+/**  Only from an earlier scan this session: no AWS call, nothing when there was none. */
+"cached" | 
+/**  Scans the cluster again and keeps the result for the session. */
+"fresh";
 
 export type Trace = {
 	/**  Oldest first. */

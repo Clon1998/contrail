@@ -40,7 +40,8 @@
         "running": 3,
         "pending": 1,
         "launchType": "FARGATE",
-        "taskDefinition": "billing-sync:8"
+        "taskDefinition": "billing-sync:8",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/billing-sync:8"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/orders-api",
@@ -51,7 +52,8 @@
         "running": 3,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "orders-api:42"
+        "taskDefinition": "orders-api:42",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/orders-api:42"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-core/payments-worker",
@@ -62,7 +64,8 @@
         "running": 1,
         "pending": 1,
         "launchType": "FARGATE",
-        "taskDefinition": "payments-worker:17"
+        "taskDefinition": "payments-worker:17",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/payments-worker:17"
       }
     ],
     "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge": [
@@ -75,7 +78,8 @@
         "running": 1,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "audit-archiver:12"
+        "taskDefinition": "audit-archiver:12",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/audit-archiver:12"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/event-ingest",
@@ -86,7 +90,8 @@
         "running": 6,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/legacy-gateway",
@@ -97,7 +102,8 @@
         "running": 2,
         "pending": 0,
         "launchType": "EC2",
-        "taskDefinition": "legacy-gateway:113"
+        "taskDefinition": "legacy-gateway:113",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/legacy-gateway:113"
       },
       {
         "arn": "arn:aws:ecs:eu-central-1:111122223333:service/demo-edge/partner-poller",
@@ -108,7 +114,8 @@
         "running": 1,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "partner-poller:3"
+        "taskDefinition": "partner-poller:3",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/partner-poller:3"
       }
     ]
   },
@@ -123,7 +130,8 @@
         "running": 3,
         "pending": 1,
         "launchType": "FARGATE",
-        "taskDefinition": "billing-sync:8"
+        "taskDefinition": "billing-sync:8",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/billing-sync:8"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
@@ -227,7 +235,8 @@
         "running": 3,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "orders-api:42"
+        "taskDefinition": "orders-api:42",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/orders-api:42"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
@@ -313,7 +322,8 @@
         "running": 1,
         "pending": 1,
         "launchType": "FARGATE",
-        "taskDefinition": "payments-worker:17"
+        "taskDefinition": "payments-worker:17",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/payments-worker:17"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
@@ -409,7 +419,8 @@
         "running": 1,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "audit-archiver:12"
+        "taskDefinition": "audit-archiver:12",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/audit-archiver:12"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
@@ -567,7 +578,8 @@
         "running": 6,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
+        "taskDefinition": "EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/EventIngestStackDemoEdgeIngestTaskDefinition4F2A9C1E:5"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",
@@ -704,7 +716,8 @@
         "running": 2,
         "pending": 0,
         "launchType": "EC2",
-        "taskDefinition": "legacy-gateway:113"
+        "taskDefinition": "legacy-gateway:113",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/legacy-gateway:113"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": null,
@@ -1128,7 +1141,8 @@
         "running": 1,
         "pending": 0,
         "launchType": "FARGATE",
-        "taskDefinition": "partner-poller:3"
+        "taskDefinition": "partner-poller:3",
+        "taskDefinitionArn": "arn:aws:ecs:eu-central-1:111122223333:task-definition/partner-poller:3"
       },
       "createdAt": "2025-09-03T12:00:00Z",
       "platformVersion": "1.4.0",

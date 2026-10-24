@@ -236,6 +236,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
   };
 
   const rejected = new Set(options.rejectedSessions);
+  /** Clusters whose topic scan is kept, by profile, region and cluster ARN. */
+  const scannedClusters = new Set<string>();
 
   /** What an AWS call would see: the account ID, or the error for unusable credentials. */
   function checkCredentials(ctx: AwsCtx): string {
@@ -475,6 +477,10 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const clusterArn = args?.clusterArn as string;
         const topics = args?.topics as string[];
         const exclude = args?.exclude as string;
+        // Like the Rust side, a scan is kept for the session; "cached" only reads it.
+        const key = `${ctx.profile}|${ctx.region ?? ""}|${clusterArn}`;
+        if (args?.scan === "fresh") scannedClusters.add(key);
+        else if (!scannedClusters.has(key)) return null;
         const data = ecs(ctx);
         const links: TopicLink[] = [];
         for (const summary of data.services[clusterArn] ?? []) {

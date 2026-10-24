@@ -7,6 +7,7 @@ mod demo_data;
 mod error;
 mod live;
 mod prefs_store;
+mod route_index;
 mod state;
 
 use tauri::Manager;
