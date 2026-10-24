@@ -33,6 +33,7 @@ import type {
   RowWindow,
   ServiceTrace,
   TraceHop,
+  Transformer,
   Trace,
   TopicLink,
   TraceHit,
@@ -238,6 +239,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     },
     noise: {},
     fieldMappings: {},
+    transformers: {},
     lastUpdateCheck: null,
     ...options.prefs,
   };
@@ -878,6 +880,22 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const fieldMappings: Record<string, FieldMapping> = Object.fromEntries(others);
         if (mapping.message || mapping.level || mapping.timestamp) fieldMappings[key] = mapping;
         prefs = { ...prefs, fieldMappings };
+        return prefs;
+      }
+      case "set_transformer": {
+        // Like the Rust side: trimmed, without blanks and duplicates; no topics removes it.
+        const service = args?.service as string;
+        const given = args?.transformer as Transformer;
+        const clean = (topics: string[]) =>
+          [...new Set(topics.map((t) => t.trim()).filter(Boolean))].sort();
+        const transformer = { reads: clean(given.reads), writes: clean(given.writes) };
+        const transformers = Object.fromEntries(
+          Object.entries(prefs.transformers).filter(([name]) => name !== service),
+        );
+        if (transformer.reads.length + transformer.writes.length > 0) {
+          transformers[service] = transformer;
+        }
+        prefs = { ...prefs, transformers };
         return prefs;
       }
       case "add_noise":

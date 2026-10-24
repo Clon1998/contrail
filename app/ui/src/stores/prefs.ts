@@ -6,6 +6,7 @@ import {
   type ServiceKey,
   type ServiceRef,
   type Settings,
+  type Transformer,
 } from "@/bindings";
 
 /** Local preferences, kept by the Rust side (saved as JSON) and mirrored here. */
@@ -19,6 +20,8 @@ interface PrefsState {
   addNoise: (profile: string, service: ServiceRef, text: string) => Promise<void>;
   removeNoise: (profile: string, service: ServiceRef, text: string) => Promise<void>;
   setFieldMapping: (profile: string, service: ServiceRef, mapping: FieldMapping) => Promise<void>;
+  /** What a transformer reads and writes (no topics removes it), for the route maps. */
+  setTransformer: (service: string, transformer: Transformer) => Promise<void>;
   /** Changes some settings; the rest stay as they are. */
   updateSettings: (change: Partial<Settings>) => Promise<void>;
 }
@@ -46,6 +49,7 @@ export const EMPTY_PREFS: Prefs = {
   settings: DEFAULT_SETTINGS,
   noise: {},
   fieldMappings: {},
+  transformers: {},
   lastUpdateCheck: null,
 };
 
@@ -81,6 +85,7 @@ export const usePrefs = create<PrefsState>((set, get) => {
     removeNoise: (profile, service, text) => apply(commands.removeNoise(profile, service, text)),
     setFieldMapping: (profile, service, mapping) =>
       apply(commands.setFieldMapping(profile, service, mapping)),
+    setTransformer: (service, transformer) => apply(commands.setTransformer(service, transformer)),
     updateSettings: (change) => apply(commands.setSettings({ ...get().prefs.settings, ...change })),
   };
 });

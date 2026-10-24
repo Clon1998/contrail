@@ -199,6 +199,39 @@ impl Settings {
     }
 }
 
+/// A service that reads and writes Kafka topics from its code (a "transformer"). No route
+/// variables say which topics, so they are entered by hand for the cluster's route map.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct Transformer {
+    pub reads: Vec<String>,
+    pub writes: Vec<String>,
+}
+
+impl Transformer {
+    /// Trimmed, without blanks and duplicates, sorted.
+    fn normalized(self) -> Self {
+        let clean = |topics: Vec<String>| {
+            let mut topics: Vec<String> = topics
+                .into_iter()
+                .map(|t| t.trim().to_owned())
+                .filter(|t| !t.is_empty())
+                .collect();
+            topics.sort();
+            topics.dedup();
+            topics
+        };
+        Self {
+            reads: clean(self.reads),
+            writes: clean(self.writes),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.reads.is_empty() && self.writes.is_empty()
+    }
+}
+
 /// Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -216,6 +249,9 @@ pub struct Prefs {
     pub noise: BTreeMap<String, Vec<String>>,
     /// Field mappings per service (by [`ServiceKey::storage_key`]).
     pub field_mappings: BTreeMap<String, FieldMapping>,
+    /// Transformers by service name. Not per profile or cluster: a service reads and writes the
+    /// same topics in every environment.
+    pub transformers: BTreeMap<String, Transformer>,
     /// When the automatic update check last ran (Unix seconds).
     pub last_update_check: Option<u32>,
 }
@@ -237,6 +273,7 @@ impl Prefs {
             settings: Settings,
             noise: BTreeMap<String, Vec<String>>,
             field_mappings: BTreeMap<String, FieldMapping>,
+            transformers: BTreeMap<String, Transformer>,
             last_update_check: Option<u32>,
         }
 
@@ -259,6 +296,7 @@ impl Prefs {
             settings: stored.settings,
             noise: stored.noise,
             field_mappings: stored.field_mappings,
+            transformers: stored.transformers,
             last_update_check: stored.last_update_check,
         })
     }
@@ -309,6 +347,16 @@ impl Prefs {
             self.field_mappings.remove(&key.storage_key());
         } else {
             self.field_mappings.insert(key.storage_key(), mapping);
+        }
+    }
+
+    /// Sets (or, without topics, removes) what a transformer reads and writes.
+    pub fn set_transformer(&mut self, service: &str, transformer: Transformer) {
+        let transformer = transformer.normalized();
+        if transformer.is_empty() {
+            self.transformers.remove(service);
+        } else {
+            self.transformers.insert(service.to_owned(), transformer);
         }
     }
 
@@ -420,6 +468,31 @@ mod tests {
 
         prefs.set_field_mapping(&orders, FieldMapping::default());
         assert!(prefs.field_mappings.is_empty());
+    }
+
+    #[test]
+    fn transformers_by_service_name() {
+        let mut prefs = Prefs::default();
+        prefs.set_transformer(
+            "enricher",
+            Transformer {
+                reads: vec![" raw ".into(), "raw".into(), "".into()],
+                writes: vec!["enriched".into()],
+            },
+        );
+        assert_eq!(
+            prefs.transformers["enricher"],
+            Transformer {
+                reads: vec!["raw".into()],
+                writes: vec!["enriched".into()],
+            },
+            "trimmed, without blanks and duplicates"
+        );
+        let json = serde_json::to_string(&prefs).unwrap();
+        assert_eq!(Prefs::from_json(&json).unwrap(), prefs);
+
+        prefs.set_transformer("enricher", Transformer::default());
+        assert!(prefs.transformers.is_empty());
     }
 
     #[test]

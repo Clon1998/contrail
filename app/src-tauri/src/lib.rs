@@ -66,6 +66,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         prefs::add_noise,
         prefs::remove_noise,
         prefs::set_field_mapping,
+        prefs::set_transformer,
     ])
 }
 
