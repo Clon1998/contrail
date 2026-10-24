@@ -122,6 +122,10 @@ jobs:
     name: Publish the release
     needs: [draft, build]
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      # To start the website deploy below.
+      actions: write
     steps:
       - name: Publish the draft
         env:
@@ -129,3 +133,11 @@ jobs:
         run: |
           latest=$([[ "$GITHUB_REF_NAME" == *-* ]] && echo --latest=false || echo --latest)
           gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false $latest
+      # A release published with the built-in token starts no `release` workflows, so site.yml
+      # wouldn't notice it; workflow_dispatch is the exception. The download buttons then point
+      # at the new files.
+      - name: Redeploy the website
+        if: ${{ !contains(github.ref_name, '-') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run site.yml --ref main --repo "$GITHUB_REPOSITORY"
