@@ -385,6 +385,91 @@ Commits are small and conventional throughout (see CLAUDE.md).
   from demo mode, known limitations (unsigned builds → Gatekeeper/SmartScreen notes).
 - **Done when:** `v0.1.0` tagged and installable on Patrick's machine.
 
+### After v0.1.0 (planned 2026-10-24)
+
+Order set by Patrick: the pipeline framework items first, then features for everyone, then the rest.
+Milestones marked **(evaluation)** are built on their branch first. Patrick gets screenshots from demo mode
+and a short explanation, and the branch is merged only if he decides it's worth having. Any other branch
+that a rejected branch's work depends on is cut from `main` without it.
+
+#### M9 — Trace on the route graph (evaluation)
+- A trace tab can show its result on the route graph: each service in the chain is marked with its hop's
+  last state (completed, retrying, failed, no event yet), and the topics between services carry counts.
+- Hops are matched to services in the graph by log group. Services that are in the trace but not in the
+  graph (e.g. transformers) appear next to it, so nothing is hidden.
+- Clicking a service on the graph opens its events in the trace (the same rows as the list view).
+- Fake: demo traces that cover the whole chain, one of which stops at a retrying hop.
+- **Done when:** unit tests map trace hops to graph nodes; an e2e test opens a demo trace on the graph;
+  Patrick has the screenshots and decided whether to merge.
+
+#### M10 — Cluster route map
+- A cluster entry in the tree (context menu and a button in its row) opens a **route map** tab: every
+  route service in the cluster, linked by topic (input services → topic → output services), built from
+  the cluster's topic scan.
+- Only services detected as route services (image repository setting) are drawn. A cluster's other
+  services aren't, and a count says how many were left out. Transformers can be added by hand in the
+  settings (topics they read and write), because their routes live in Java code, not in env vars.
+- Search and zoom on the map; a node opens the service, a topic highlights all its readers and writers.
+- **Done when:** graph building has unit tests (siblings, disabled routes, transformers by hand); an e2e
+  test opens a demo cluster's map; works smoothly with 100+ route services.
+
+#### M11 — Stuck documents
+- **Document keys:** a document is followed by its correlation ID **or its object name** (`fw.objectName`,
+  the key under which the framework stores a document). Hops that log only one of the two keys still join
+  the same document, as long as some event carries both. The trace tab accepts either key.
+- **Stuck documents** for a view or a trace's services: documents whose last state isn't terminal
+  (no COMPLETED or FAILED) and is older than a threshold (setting, default 15 min). Each one shows its key,
+  its last state, the service, the age, and a button to open its trace.
+- Runs in Rust over the buffer, updated incrementally while a live tail runs.
+- **Done when:** unit and property tests for joining keys and for the stuck rule; demo data includes stuck
+  documents; an e2e test covers listing them and opening a trace from the list.
+
+#### M12 — Saved queries & history
+- History of the search box (per service and global, de-duplicated) with arrow-key recall.
+- Saved queries with a name, either per service or global, from a menu in the search bar and from ⌘K.
+- **Done when:** stored in the preferences with migration tests; e2e covers saving, recalling and deleting.
+
+#### M13 — Timeline
+- A bar chart above the log list showing event counts over the view's window, stacked by level, computed
+  in Rust from the buffer and from the active filter. Dragging over it narrows the time window; it updates
+  live.
+- **Done when:** bucketing has unit tests (time zones, empty buckets, newest-first order); live updates
+  stay smooth at 100k lines; e2e covers zooming in by dragging.
+
+#### M14 — Shareable links
+- A `contrail://` link (Tauri deep-link plugin) encoding profile, region, cluster, service, task, time
+  window and query, made from "Copy link" in a view or a trace tab. Opening the link shows the same view,
+  or asks to log in first.
+- "Open in CloudWatch console" for a view or a single event, for teammates without Contrail.
+- **Done when:** link encoding round-trips (property test); links from unknown profiles explain what's
+  missing; e2e covers opening a link.
+
+#### M15 — Login without the AWS CLI
+- Profiles and `sso-session` sections are still read from `~/.aws/config` as now. Only the login changes:
+  when the AWS CLI isn't installed (or by a setting), Contrail runs the SSO device flow itself
+  (`aws-sdk-ssooidc`) and opens the browser.
+- **Open point for Patrick:** where the token goes. Either it's written to the CLI's token cache
+  (`~/.aws/sso/cache`, shared with the CLI, the same file the CLI writes), or it's kept in memory only
+  (log in again after each app start). Record the choice in `docs/decisions.md`; the security docs must
+  describe it.
+- **Done when:** the flow is covered by an HTTP mock test; demo mode simulates it; Patrick logs into a
+  real profile on a machine without the CLI.
+
+#### Later in this round (order to be confirmed)
+- **M16 — Context around a line:** "show surrounding lines" on a matching line opens ±N lines of the same
+  task around it, without the filter, with the matching line marked.
+- **M17 — ECS events & stopped tasks (evaluation):** service events and deployments as markers in the log
+  list and the timeline; recently stopped tasks with their stop reason and exit codes, and their logs.
+- **M18 — Route health:** for the time window, counts of COMPLETED / FAILED / RETRYING per topic and
+  consumer group, the failure rate and a throughput sparkline, on the Routes card and the route map.
+- **M19 — Partitions & offsets (evaluation):** link dead-letter events to the originals by partition and
+  offset; show gaps and out-of-order offsets per partition.
+- **M20 — Framework packs:** move what Contrail knows about the pipeline framework (field prefix, states,
+  terminal and failure states, document keys, route env var pattern) into a declarative pack. The current
+  framework stays the built-in pack, active as today with no setup; other packs (e.g. OpenTelemetry
+  `trace_id`, a plain `traceId`) are optional.
+- A v0.2.0 release once M9–M15 are merged and Patrick has smoke-tested them.
+
 ---
 
 ## 8. Required IAM permissions (read-only)
@@ -438,7 +523,11 @@ Ship as `docs/iam-policy.json` so teammates without admin can request exactly th
   topic, so a service-to-service graph by topic follows). Detect such services by image repository name (a
   setting). Mask credential-looking properties as in the environment list.
 - Multi-container tasks / sidecars (container selector; model already carries `container`).
-- Cross-service trace view: follow one `trace.id` across several services.
-- Saved filters / query history; split view; Lambda log groups; CloudWatch Logs Insights quick queries.
-- Built-in SSO device flow; CLI companion (`contrail tail <service>`); open-source release.
+- Split view; Lambda log groups; CloudWatch Logs Insights quick queries.
+- CLI companion (`contrail tail <service>`).
+- **Waiting for Patrick's decision** (examples asked for on 2026-10-24):
+  - *Group similar lines:* turn messages into templates (Drain-style) with counts, hide a whole group as
+    noise, mark templates that are new since a deployment, group FAILED status events by message.
+  - *Compare environments:* the same route service across profiles (dev/test/prod), comparing route
+    structure, enabled flags, consumer groups and image tags rather than host-like values.
 - Rebindable keyboard shortcuts in the settings (v0.1 lists them in Settings → Shortcuts; decided 2026-10-23).
