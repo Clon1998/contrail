@@ -7,7 +7,6 @@ import {
   liveMode,
   stripAnsi,
   toDateTimeLocal,
-  windowLabel,
 } from "./logs";
 
 describe("log helpers", () => {
@@ -59,19 +58,6 @@ describe("stack traces and JSON", () => {
 });
 
 describe("time windows", () => {
-  it("labels relative and absolute windows", () => {
-    expect(windowLabel({ kind: "last", minutes: 15 }, "utc")).toBe("15 min");
-    expect(windowLabel({ kind: "last", minutes: 120 }, "utc")).toBe("2 h");
-    expect(windowLabel({ kind: "last", minutes: 2 * 1440 }, "utc")).toBe("2 d");
-    expect(windowLabel({ kind: "last", minutes: 90 }, "utc")).toBe("90 min");
-    expect(
-      windowLabel(
-        { kind: "range", from: "2026-10-22T08:00:00Z", to: "2026-10-22T09:30:00Z" },
-        "utc",
-      ),
-    ).toBe("10-22 08:00 – 10-22 09:30");
-  });
-
   it("follows live only for short windows, and never for a fixed range", () => {
     expect(liveMode({ kind: "last", minutes: 5 })).toBe("live");
     expect(liveMode({ kind: "last", minutes: 15 })).toBe("live");

@@ -35,7 +35,10 @@ page has the details.
 - The list scrolls smoothly through up to 100,000 lines, starts at the newest, and expands a line into its fields,
   raw JSON, embedded JSON and stack trace (with copy buttons). The task picker in the toolbar (or a task's **Logs**
   button) shows only one task; the columns button adds logger, thread or correlation/trace ID.
-- **Time window:** 5 min, 15 min, 1 h, 6 h, or custom (the last N minutes/hours/days, or a fixed from–to range). A
+- **Time window:** click it in the toolbar (or press **T**) and type what you want: `15m`, `3h`, `2d`, `1w`, `1h30m`,
+  `today`, `since 14:00`, `yesterday`, `oct 20`, `9:00-11:30` or `yesterday 9-11`. The picker shows what it understood
+  before you press Enter, and whether the window will follow live, open paused or be a fixed range. Quick windows,
+  your recent ones and a calendar for fixed ranges are there too. Days and times follow the time zone setting. A
   view loads the newest events first; scrolling to the oldest row loads more ("Load all" in the toolbar loads the
   whole window). The end of the list says whether older events are loading, can be loaded, or whether it is the
   start of the window. Search and export cover the loaded events.

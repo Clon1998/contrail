@@ -1,24 +1,39 @@
-import { useState } from "react";
-import { CalendarClockIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Command as CommandPrimitive } from "cmdk";
+import { CalendarDaysIcon, CheckIcon, ChevronDownIcon, ClockIcon } from "lucide-react";
 import { cn } from "cn";
-import type { TimeWindow } from "@/bindings";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import type { TimeWindow, TimeZone } from "@/bindings";
+import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { isTyping } from "@/lib/keys";
+import { liveMode, sameWindow } from "@/lib/logs";
+import { recentWindows, rememberWindow } from "@/lib/recentWindows";
 import {
-  BACKFILL_WINDOWS,
-  fromDateTimeLocal,
-  LIVE_BY_DEFAULT_MINUTES,
-  sameWindow,
-  toDateTimeLocal,
-  windowLabel,
-} from "@/lib/logs";
+  durationText,
+  parseTimeInput,
+  windowChip,
+  windowDetail,
+  windowTitle,
+} from "@/lib/timeInput";
 import { usePrefs } from "@/stores/prefs";
+import { RangeCalendar } from "./RangeCalendar";
 
-const UNITS = { min: 1, h: 60, d: 1440 } as const;
-type Unit = keyof typeof UNITS;
+/** The quick picks, as one would type them (the shortcut shown next to each). */
+const QUICK = ["5m", "15m", "1h", "6h", "24h", "7d", "today", "yesterday"];
 
-/** The presets, plus "Custom": the last N minutes/hours/days, or a fixed from–to range. */
+/** How a window behaves once chosen: the dot and words next to it. */
+const MODE = {
+  live: { label: "live", legend: "live", dot: "bg-success" },
+  paused: { label: "opens paused", legend: "paused", dot: "bg-warning" },
+  off: { label: "fixed range", legend: "fixed", dot: "bg-muted-foreground" },
+} as const;
+
+/**
+ * The time window of a log view: a button showing the current window, opening a small command
+ * palette (also with T). Type `15m`, `3h`, `yesterday`, `since 14:00`, `9:00-11:30`… and see
+ * what it means before pressing Enter, or pick a quick window, a recent one or a range on the
+ * calendar.
+ */
 export function TimeWindowPicker({
   value,
   onChange,
@@ -27,178 +42,260 @@ export function TimeWindowPicker({
   onChange: (timeWindow: TimeWindow) => void;
 }) {
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
-  const isPreset = BACKFILL_WINDOWS.some((w) => sameWindow(value, { kind: "last", ...w }));
-  const tab = (checked: boolean) =>
-    cn(
-      "rounded px-2 py-0.5",
-      checked
-        ? "bg-primary text-primary-foreground"
-        : "text-muted-foreground hover:text-foreground",
-    );
-
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Time window"
-      className="flex rounded-md border border-border p-0.5"
-    >
-      {BACKFILL_WINDOWS.map((w) => {
-        const checked = sameWindow(value, { kind: "last", minutes: w.minutes });
-        return (
-          <button
-            key={w.minutes}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            onClick={() => onChange({ kind: "last", minutes: w.minutes })}
-            className={tab(checked)}
-          >
-            {w.label}
-          </button>
-        );
-      })}
-      <CustomWindow value={value} onChange={onChange} timeZone={timeZone}>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={!isPreset}
-          className={cn(tab(!isPreset), "flex items-center gap-1")}
-        >
-          <CalendarClockIcon className="size-3" />
-          {isPreset ? "Custom" : windowLabel(value, timeZone)}
-        </button>
-      </CustomWindow>
-    </div>
-  );
-}
-
-function CustomWindow({
-  value,
-  onChange,
-  timeZone,
-  children,
-}: {
-  value: TimeWindow;
-  onChange: (timeWindow: TimeWindow) => void;
-  timeZone: "local" | "utc";
-  children: React.ReactNode;
-}) {
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState("2");
-  const [unit, setUnit] = useState<Unit>("h");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const mode = MODE[liveMode(value)];
 
-  // Start the form from the current window each time it opens.
-  const onOpenChange = (next: boolean) => {
-    if (next) {
-      const now = new Date().toISOString();
-      const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
-      setFrom(toDateTimeLocal(value.kind === "range" ? value.from : hourAgo, timeZone));
-      setTo(toDateTimeLocal(value.kind === "range" ? value.to : now, timeZone));
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (event.key.toLowerCase() === "t" && plain && !isTyping(event.target)) {
+        event.preventDefault();
+        setOpen(true);
+      }
     }
-    setOpen(next);
-  };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const apply = (timeWindow: TimeWindow) => {
+    rememberWindow(timeWindow);
     onChange(timeWindow);
     setOpen(false);
   };
 
-  const minutes = Math.round(Number(amount) * UNITS[unit]);
-  const relativeValid = Number.isFinite(minutes) && minutes >= 1;
-  const fromIso = fromDateTimeLocal(from, timeZone);
-  const toIso = fromDateTimeLocal(to, timeZone);
-  const rangeValid = fromIso !== null && toIso !== null && fromIso < toIso;
-
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent align="start" className="w-80 space-y-4 text-xs">
-        <form
-          aria-label="Relative time window"
-          className="space-y-1.5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (relativeValid) apply({ kind: "last", minutes });
-          }}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Time window: ${windowChip(value, timeZone)}`}
+          title="Time window (T)"
+          className={cn(
+            "flex h-6 items-center gap-1.5 rounded-md border border-border px-2 transition-colors hover:bg-accent",
+            open && "bg-accent",
+          )}
         >
-          <p className="font-medium">Last</p>
-          <div className="flex gap-1.5">
-            <Input
-              type="number"
-              min={1}
-              aria-label="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="h-7 w-20 text-xs"
-            />
-            <div
-              role="radiogroup"
-              aria-label="Unit"
-              className="flex rounded-md border border-border p-0.5"
-            >
-              {(Object.keys(UNITS) as Unit[]).map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  role="radio"
-                  aria-checked={u === unit}
-                  onClick={() => setUnit(u)}
-                  className={cn(
-                    "rounded px-2",
-                    u === unit ? "bg-secondary text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
-            <Button type="submit" size="xs" className="ml-auto" disabled={!relativeValid}>
-              Apply
-            </Button>
-          </div>
-          <p className="text-muted-foreground">
-            Windows longer than {LIVE_BY_DEFAULT_MINUTES} minutes open paused: they don’t follow new
-            events until you resume the live tail.
-          </p>
-        </form>
-
-        <form
-          aria-label="Fixed time range"
-          className="space-y-1.5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (rangeValid) apply({ kind: "range", from: fromIso, to: toIso });
-          }}
-        >
-          <p className="font-medium">
-            From – to{" "}
-            <span className="font-normal text-muted-foreground">
-              ({timeZone === "utc" ? "UTC" : "local time"})
-            </span>
-          </p>
-          <Input
-            type="datetime-local"
-            aria-label="From"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="h-7 text-xs"
-          />
-          <Input
-            type="datetime-local"
-            aria-label="To"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="h-7 text-xs"
-          />
-          <div className="flex items-center gap-2">
-            <p className="text-muted-foreground">A fixed range is not followed live.</p>
-            <Button type="submit" size="xs" className="ml-auto" disabled={!rangeValid}>
-              Apply
-            </Button>
-          </div>
-        </form>
+          <ClockIcon className="size-3.5 text-muted-foreground" />
+          <span className="font-medium tabular-nums">{windowChip(value, timeZone)}</span>
+          <span aria-hidden className={cn("size-1.5 rounded-full", mode.dot)} />
+          <ChevronDownIcon className="size-3 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto overflow-hidden p-0">
+        <TimePalette value={value} timeZone={timeZone} onApply={apply} />
       </PopoverContent>
     </Popover>
+  );
+}
+
+interface Choice {
+  key: string;
+  window: TimeWindow;
+  /** Instead of the window's own title (`Today` rather than `Last 9 hours 12 minutes`). */
+  title?: string;
+  /** What to type for it, shown at the right. */
+  shortcut?: string;
+}
+
+function TimePalette({
+  value,
+  timeZone,
+  onApply,
+}: {
+  value: TimeWindow;
+  timeZone: TimeZone;
+  onApply: (window: TimeWindow) => void;
+}) {
+  // "Now" for the labels and the typed window: taken when the palette opens and on each key.
+  const [{ text, now }, setInput] = useState(() => ({ text: "", now: Date.now() }));
+  const [calendar, setCalendar] = useState(value.kind === "range");
+  const [recent] = useState(recentWindows);
+
+  const typed = parseTimeInput(text, timeZone, now);
+  const query = text.trim().toLowerCase();
+  const quick: Choice[] = QUICK.flatMap((shortcut) => {
+    const parsed = parseTimeInput(shortcut, timeZone, now);
+    if (parsed.kind !== "ok") return [];
+    const matches =
+      !query ||
+      shortcut.startsWith(query) ||
+      windowTitle(parsed.window, timeZone, now).toLowerCase().includes(query);
+    return matches
+      ? [{ key: `quick-${shortcut}`, window: parsed.window, title: parsed.title, shortcut }]
+      : [];
+  });
+  const recents: Choice[] = query
+    ? []
+    : recent
+        .filter((w) => !quick.some((q) => sameWindow(q.window, w)))
+        .map((window, i) => ({ key: `recent-${i}`, window }));
+
+  // The typed window is the one Enter takes. Arrow keys move the selection; typing starts over.
+  // Without input, the current window (Enter keeps it).
+  const currentKey = [...quick, ...recents].find((c) => sameWindow(c.window, value))?.key;
+  const firstKey =
+    typed.kind === "ok" ? "typed" : (currentKey ?? quick[0]?.key ?? recents[0]?.key ?? "");
+  const [moved, setMoved] = useState<{ text: string; key: string } | null>(null);
+  const selected = moved?.text === text ? moved.key : firstKey;
+
+  return (
+    <div className="flex text-xs">
+      <Command
+        shouldFilter={false}
+        loop
+        value={selected}
+        onValueChange={(key) => setMoved({ text, key })}
+        className="w-[22rem] rounded-none bg-transparent"
+      >
+        <div className="flex items-center gap-2 border-b border-border px-3">
+          <ClockIcon className="size-4 shrink-0 text-muted-foreground" />
+          <CommandPrimitive.Input
+            autoFocus
+            aria-label="Time window"
+            placeholder="15m, 3h, yesterday, since 14:00, 9:00-11:30…"
+            value={text}
+            onValueChange={(next) => setInput({ text: next, now: Date.now() })}
+            className="h-10 w-full bg-transparent text-sm outline-hidden placeholder:text-muted-foreground"
+          />
+          {typed.kind === "ok" && <Kbd>↵</Kbd>}
+        </div>
+        <CommandList className="max-h-[22rem] p-1">
+          {typed.kind === "ok" && (
+            <CommandGroup heading="Your input">
+              <WindowItem
+                prominent
+                choice={{ key: "typed", window: typed.window, title: typed.title }}
+                current={value}
+                timeZone={timeZone}
+                now={now}
+                onApply={onApply}
+              />
+            </CommandGroup>
+          )}
+          {typed.kind === "invalid" && (
+            <p role="status" className="px-3 py-2 text-muted-foreground">
+              {typed.hint}
+            </p>
+          )}
+          {quick.length > 0 && (
+            <CommandGroup heading="Quick">
+              {quick.map((choice) => (
+                <WindowItem
+                  key={choice.key}
+                  choice={choice}
+                  current={value}
+                  timeZone={timeZone}
+                  now={now}
+                  onApply={onApply}
+                />
+              ))}
+            </CommandGroup>
+          )}
+          {recents.length > 0 && (
+            <CommandGroup heading="Recent">
+              {recents.map((choice) => (
+                <WindowItem
+                  key={choice.key}
+                  choice={choice}
+                  current={value}
+                  timeZone={timeZone}
+                  now={now}
+                  onApply={onApply}
+                />
+              ))}
+            </CommandGroup>
+          )}
+        </CommandList>
+        <div className="flex items-center gap-2 border-t border-border px-2 py-1.5 text-muted-foreground">
+          <button
+            type="button"
+            aria-pressed={calendar}
+            onClick={() => setCalendar(!calendar)}
+            className={cn(
+              "flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground",
+              calendar && "bg-accent text-foreground",
+            )}
+          >
+            <CalendarDaysIcon className="size-3.5" /> Calendar
+          </button>
+          <span className="ml-auto flex items-center gap-2.5">
+            {Object.values(MODE).map((mode) => (
+              <span key={mode.legend} className="flex items-center gap-1 whitespace-nowrap">
+                <span aria-hidden className={cn("size-1.5 rounded-full", mode.dot)} />
+                {mode.legend}
+              </span>
+            ))}
+            <span className="border-l border-border pl-2.5 whitespace-nowrap">
+              {timeZone === "utc" ? "UTC" : "local time"}
+            </span>
+          </span>
+        </div>
+      </Command>
+      {calendar && (
+        <div className="border-l border-border">
+          <RangeCalendar value={value} timeZone={timeZone} onApply={onApply} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** One window to choose: a line with its dot, title and detail; the typed one bigger. */
+function WindowItem({
+  choice,
+  current,
+  timeZone,
+  now,
+  onApply,
+  prominent = false,
+}: {
+  choice: Choice;
+  current: TimeWindow;
+  timeZone: TimeZone;
+  now: number;
+  onApply: (window: TimeWindow) => void;
+  prominent?: boolean;
+}) {
+  const { window } = choice;
+  const mode = MODE[liveMode(window)];
+  const title = choice.title ?? windowTitle(window, timeZone, now);
+  // With a title of its own (`Since 14:00`), the detail says how long that is.
+  const detail =
+    choice.title && window.kind === "last"
+      ? durationText(window.minutes, "long")
+      : windowDetail(window, timeZone, now);
+  return (
+    <CommandItem
+      value={choice.key}
+      onSelect={() => onApply(window)}
+      className={cn("gap-2.5", prominent ? "py-2" : "py-1")}
+    >
+      <span aria-hidden className={cn("size-1.5 shrink-0 rounded-full", mode.dot)} />
+      {prominent ? (
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-sm font-medium">{title}</span>
+          <span className="truncate text-xs text-muted-foreground">
+            {detail} · {mode.label}
+          </span>
+        </span>
+      ) : (
+        <span className="flex min-w-0 flex-1 items-baseline gap-2">
+          <span className="shrink-0 text-sm">{title}</span>
+          <span className="truncate text-xs text-muted-foreground">{detail}</span>
+        </span>
+      )}
+      {sameWindow(window, current) && (
+        <CheckIcon aria-label="Current" className="size-3.5 text-primary" />
+      )}
+      {choice.shortcut && <Kbd>{choice.shortcut}</Kbd>}
+    </CommandItem>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[0.65rem] text-muted-foreground">
+      {children}
+    </kbd>
   );
 }
