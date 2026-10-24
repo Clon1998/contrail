@@ -4,7 +4,10 @@ import { layerColumns, type EdgeTone, type GraphEdge, type GraphNode } from "./r
 export interface TraceNode extends GraphNode {
   /** A service's last state in the trace (its badge). */
   state: string | null;
-  /** A service on one of the topics (from the route scan) that logged nothing about the ID. */
+  /**
+   * A service on one of the topics (from the route scan) that logged nothing about the ID, or
+   * that wasn't searched (`detail` tells which).
+   */
   missing: boolean;
 }
 
@@ -36,16 +39,16 @@ export function hopTone(state: string): EdgeTone {
  * services that read it there (a transformer reads one topic and writes the next), each line in
  * the colour of how that hop ended. With `links` from the cluster's route scan, the external
  * systems at both ends join in, and so do services on the same topics that logged nothing about
- * the document: those are where it may be missing.
+ * the document: those are where it may be missing (or they weren't among the `searched`).
  */
 export function buildTraceGraph(
   hops: TraceHop[],
   services: ServiceTrace[],
   links: TopicLink[] = [],
+  searched: string[] = [],
 ): TraceGraph {
   const nodes = new Map<string, Omit<TraceNode, "column">>();
   const edges = new Map<string, TraceEdge>();
-  const sinks = new Set<string>();
   const state = new Map(services.map((s) => [s.service, s.lastState]));
 
   const addNode = (node: Omit<TraceNode, "column">) => {
@@ -79,7 +82,13 @@ export function buildTraceGraph(
       id,
       kind: "service",
       label: name,
-      detail: missing ? "no event" : group ? `group ${group}` : null,
+      detail: missing
+        ? searched.includes(name)
+          ? "no event"
+          : "not searched"
+        : group
+          ? `group ${group}`
+          : null,
       disabled,
       self: false,
       state: state.get(name) ?? null,
@@ -98,7 +107,6 @@ export function buildTraceGraph(
       state: null,
       missing: false,
     });
-    if (side === "target") sinks.add(id);
     return id;
   };
 
@@ -116,11 +124,11 @@ export function buildTraceGraph(
     const t = `topic:${link.topic}`;
     const known = inTrace.has(link.service);
     const disabled = !link.enabled;
-    // A route that is switched off isn't where the document went missing.
-    if (!known && disabled) continue;
+    // A route that is switched off isn't where the document went missing, and neither is another
+    // writer of the topic (a sibling of the one that wrote the document).
+    if (!known && (disabled || link.direction === "in")) continue;
     const id = service(link.service, link.group, !known, disabled);
     if (link.direction === "in") {
-      if (!known) addEdge(id, t, null);
       for (const e of link.endpoints)
         addEdge(system("source", e, !e.enabled), id, null, !e.enabled);
     } else {
@@ -130,7 +138,9 @@ export function buildTraceGraph(
     }
   }
 
-  const columns = layerColumns([...nodes.keys()], [...edges.values()], sinks);
+  // Targets right next to their service: lined up at the end, the lines of early readers would
+  // cross the rest of the way.
+  const columns = layerColumns([...nodes.keys()], [...edges.values()]);
   const missing = (id: string) => nodes.get(id)?.missing ?? false;
   return {
     nodes: [...nodes.values()].map((n) => ({ ...n, column: columns.get(n.id) ?? 0 })),

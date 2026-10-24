@@ -96,21 +96,31 @@ describe("buildTraceGraph", () => {
   });
 
   it("adds systems and the readers that logged nothing from the route scan", () => {
-    const graph = buildTraceGraph(hops, services, [
-      link("ingest", "raw", "in", [endpoint("sftp", "Partner")]),
-      link("archiver", "raw", "out", [endpoint("s3", "Archive")]),
-      link("off", "raw", "out", [endpoint("http", "Old API")], false),
-      link("feeder", "enriched", "out", [endpoint("http", "Catalog", false)]),
-      link("unrelated", "other.topic", "out", []),
-    ]);
+    const graph = buildTraceGraph(
+      hops,
+      services,
+      [
+        link("ingest", "raw", "in", [endpoint("sftp", "Partner")]),
+        link("archiver", "raw", "out", [endpoint("s3", "Archive")]),
+        link("auditor", "raw", "out", []),
+        link("poller", "raw", "in", [endpoint("http", "Portal")]),
+        link("off", "raw", "out", [endpoint("http", "Old API")], false),
+        link("feeder", "enriched", "out", [endpoint("http", "Catalog", false)]),
+        link("unrelated", "other.topic", "out", []),
+      ],
+      ["ingest", "enricher", "feeder", "archiver"],
+    );
     const node = (id: string) => graph.nodes.find((n) => n.id === id);
     expect(node("service:archiver")).toMatchObject({ missing: true, detail: "no event" });
+    // Not chosen in the picker: nothing is known about it yet.
+    expect(node("service:auditor")).toMatchObject({ missing: true, detail: "not searched" });
     // A switched-off route isn't where the document went missing.
     expect(node("service:off")).toBeUndefined();
+    expect(node("service:poller")).toBeUndefined();
     expect(node("service:unrelated")).toBeUndefined();
     expect(node("system:source:sftp|Partner")?.column).toBe(0);
-    // Targets line up in the last column, after the longest way.
-    expect(node("system:target:s3|Archive")?.column).toBe(6);
+    // Targets right after their service, not lined up at the end.
+    expect(node("system:target:s3|Archive")?.column).toBe(4);
     expect(node("system:target:http|Catalog")).toMatchObject({ column: 6, disabled: true });
     expect(graph.edges.find((e) => e.to === "service:archiver")).toMatchObject({
       tone: null,
