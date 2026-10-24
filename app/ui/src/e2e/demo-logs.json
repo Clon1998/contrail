@@ -6266,5 +6266,2183 @@
         }
       ]
     }
+  },
+  "documents": {
+    "8e2d097d530b30c0000000000382e102": [
+      {
+        "service": "event-ingest",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:00Z",
+          "cwTimestamp": "2026-01-01T11:45:00Z",
+          "stream": "ecs/event-ingest/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:00Z",
+            "level": "INFO",
+            "message": "Document status change: [event] NEW -> RECEIVED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:00Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-ingest"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "NEW"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document received"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-ingest\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] NEW -> RECEIVED\",\"pipeline\":{\"state\":\"RECEIVED\",\"previousState\":\"NEW\",\"message\":\"Document received\",\"topicName\":\"demo.events\",\"consumerGroup\":null,\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "RECEIVED",
+            "previousState": "NEW",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": null,
+            "message": "Document received"
+          }
+        }
+      },
+      {
+        "service": "event-ingest",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:00.04Z",
+          "cwTimestamp": "2026-01-01T11:45:00.04Z",
+          "stream": "ecs/event-ingest/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:00.04Z",
+            "level": "INFO",
+            "message": "Document status change: [event] RECEIVED -> PUBLISHED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:00.04Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-ingest"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document stored and published"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.04Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-ingest\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] RECEIVED -> PUBLISHED\",\"pipeline\":{\"state\":\"PUBLISHED\",\"previousState\":\"RECEIVED\",\"message\":\"Document stored and published\",\"topicName\":\"demo.events\",\"consumerGroup\":null,\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "PUBLISHED",
+            "previousState": "RECEIVED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": null,
+            "message": "Document stored and published"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:00.7Z",
+          "cwTimestamp": "2026-01-01T11:45:00.7Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:00.7Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:00.7Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "event-enricher"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.7Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"event-enricher\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "event-enricher",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "legacy-gateway",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:00.8Z",
+          "cwTimestamp": "2026-01-01T11:45:00.801Z",
+          "stream": "ecs/legacy-gateway/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:00.8Z",
+            "level": "INFO",
+            "message": "{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              310
+            ]
+          },
+          "raw": "2026-01-01T11:45:00.800Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "audit-archiver",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:00.9Z",
+          "cwTimestamp": "2026-01-01T11:45:00.9Z",
+          "stream": "ecs/audit-archiver/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:00.9Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:00.9Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:00.9Z\",\"log.level\":\"INFO\",\"log.logger\":\"com.example.pipeline.StatusManager\",\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"audit-archiver\",\"message\":\"Document status change: [event] PUBLISHED -> CONSUMING\",\"ecs.version\":\"8.11\",\"pipeline.state\":\"CONSUMING\",\"pipeline.previousState\":\"PUBLISHED\",\"pipeline.message\":\"Record consumed, starting processing\",\"pipeline.topicName\":\"demo.events\",\"pipeline.consumerGroup\":\"audit-archiver\",\"pipeline.partition\":0,\"pipeline.offset\":508930,\"pipeline.correlationId\":\"8e2d097d530b30c0000000000382e102\",\"pipeline.objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "audit-archiver",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:01Z",
+          "cwTimestamp": "2026-01-01T11:45:01Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01Z",
+            "level": "INFO",
+            "message": "Document status change: [event] NEW -> RECEIVED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "NEW"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document received"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] NEW -> RECEIVED\",\"pipeline\":{\"state\":\"RECEIVED\",\"previousState\":\"NEW\",\"message\":\"Document received\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":null,\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "RECEIVED",
+            "previousState": "NEW",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events.enriched",
+            "consumerGroup": null,
+            "message": "Document received"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:01.05Z",
+          "cwTimestamp": "2026-01-01T11:45:01.05Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01.05Z",
+            "level": "INFO",
+            "message": "Document status change: [event] RECEIVED -> PUBLISHED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01.05Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document stored and published"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.05Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] RECEIVED -> PUBLISHED\",\"pipeline\":{\"state\":\"PUBLISHED\",\"previousState\":\"RECEIVED\",\"message\":\"Document stored and published\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":null,\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "PUBLISHED",
+            "previousState": "RECEIVED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events.enriched",
+            "consumerGroup": null,
+            "message": "Document stored and published"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:01.1Z",
+          "cwTimestamp": "2026-01-01T11:45:01.1Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01.1Z",
+            "level": "INFO",
+            "message": "Document status change: [event] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01.1Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "event-enricher"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.1Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"event-enricher\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "event-enricher",
+            "message": "Processing completed"
+          }
+        }
+      },
+      {
+        "service": "legacy-gateway",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:01.1Z",
+          "cwTimestamp": "2026-01-01T11:45:01.101Z",
+          "stream": "ecs/legacy-gateway/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:01.1Z",
+            "level": "INFO",
+            "message": "{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              294
+            ]
+          },
+          "raw": "2026-01-01T11:45:01.100Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Processing completed"
+          }
+        }
+      },
+      {
+        "service": "audit-archiver",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:01.4Z",
+          "cwTimestamp": "2026-01-01T11:45:01.4Z",
+          "stream": "ecs/audit-archiver/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01.4Z",
+            "level": "INFO",
+            "message": "Document status change: [event] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01.4Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.4Z\",\"log.level\":\"INFO\",\"log.logger\":\"com.example.pipeline.StatusManager\",\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"audit-archiver\",\"message\":\"Document status change: [event] CONSUMING -> COMPLETED\",\"ecs.version\":\"8.11\",\"pipeline.state\":\"COMPLETED\",\"pipeline.previousState\":\"CONSUMING\",\"pipeline.message\":\"Processing completed\",\"pipeline.topicName\":\"demo.events\",\"pipeline.consumerGroup\":\"audit-archiver\",\"pipeline.partition\":0,\"pipeline.offset\":508930,\"pipeline.correlationId\":\"8e2d097d530b30c0000000000382e102\",\"pipeline.objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events",
+            "consumerGroup": "audit-archiver",
+            "message": "Processing completed"
+          }
+        }
+      },
+      {
+        "service": "search-feeder",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:01.6Z",
+          "cwTimestamp": "2026-01-01T11:45:01.6Z",
+          "stream": "ecs/search-feeder/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:01.6Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:01.6Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "search-feeder"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "search-feeder"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:01.6Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"search-feeder\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":\"search-feeder\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events.enriched",
+            "consumerGroup": "search-feeder",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "search-feeder",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:02Z",
+          "cwTimestamp": "2026-01-01T11:45:02Z",
+          "stream": "ecs/search-feeder/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:02Z",
+            "level": "INFO",
+            "message": "Document status change: [event] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:02Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "search-feeder"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "search-feeder"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 0
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508930
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e2d097d530b30c0000000000382e102"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e2d097d530b30c0000000000382e102_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:02Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"search-feeder\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":\"search-feeder\",\"partition\":0,\"offset\":508930,\"correlationId\":\"8e2d097d530b30c0000000000382e102\",\"objectName\":\"inbound/demo/8e2d097d530b30c0000000000382e102_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e2d097d530b30c0000000000382e102",
+            "topic": "demo.events.enriched",
+            "consumerGroup": "search-feeder",
+            "message": "Processing completed"
+          }
+        }
+      }
+    ],
+    "8e306f7d530e13e9000000000382e103": [
+      {
+        "service": "event-ingest",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:30Z",
+          "cwTimestamp": "2026-01-01T11:45:30Z",
+          "stream": "ecs/event-ingest/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:30Z",
+            "level": "INFO",
+            "message": "Document status change: [event] NEW -> RECEIVED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:30Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-ingest"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "NEW"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document received"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:30Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-ingest\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] NEW -> RECEIVED\",\"pipeline\":{\"state\":\"RECEIVED\",\"previousState\":\"NEW\",\"message\":\"Document received\",\"topicName\":\"demo.events\",\"consumerGroup\":null,\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "RECEIVED",
+            "previousState": "NEW",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": null,
+            "message": "Document received"
+          }
+        }
+      },
+      {
+        "service": "event-ingest",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:30.04Z",
+          "cwTimestamp": "2026-01-01T11:45:30.04Z",
+          "stream": "ecs/event-ingest/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:30.04Z",
+            "level": "INFO",
+            "message": "Document status change: [event] RECEIVED -> PUBLISHED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:30.04Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-ingest"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document stored and published"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:30.04Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-ingest\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] RECEIVED -> PUBLISHED\",\"pipeline\":{\"state\":\"PUBLISHED\",\"previousState\":\"RECEIVED\",\"message\":\"Document stored and published\",\"topicName\":\"demo.events\",\"consumerGroup\":null,\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "PUBLISHED",
+            "previousState": "RECEIVED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": null,
+            "message": "Document stored and published"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:30.7Z",
+          "cwTimestamp": "2026-01-01T11:45:30.7Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:30.7Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:30.7Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "event-enricher"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:30.7Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"event-enricher\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "event-enricher",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "legacy-gateway",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:30.8Z",
+          "cwTimestamp": "2026-01-01T11:45:30.801Z",
+          "stream": "ecs/legacy-gateway/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:30.8Z",
+            "level": "INFO",
+            "message": "{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              310
+            ]
+          },
+          "raw": "2026-01-01T11:45:30.800Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "audit-archiver",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:30.9Z",
+          "cwTimestamp": "2026-01-01T11:45:30.9Z",
+          "stream": "ecs/audit-archiver/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:30.9Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:30.9Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:30.9Z\",\"log.level\":\"INFO\",\"log.logger\":\"com.example.pipeline.StatusManager\",\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"audit-archiver\",\"message\":\"Document status change: [event] PUBLISHED -> CONSUMING\",\"ecs.version\":\"8.11\",\"pipeline.state\":\"CONSUMING\",\"pipeline.previousState\":\"PUBLISHED\",\"pipeline.message\":\"Record consumed, starting processing\",\"pipeline.topicName\":\"demo.events\",\"pipeline.consumerGroup\":\"audit-archiver\",\"pipeline.partition\":1,\"pipeline.offset\":508931,\"pipeline.correlationId\":\"8e306f7d530e13e9000000000382e103\",\"pipeline.objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "audit-archiver",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:31Z",
+          "cwTimestamp": "2026-01-01T11:45:31Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:31Z",
+            "level": "INFO",
+            "message": "Document status change: [event] NEW -> RECEIVED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:31Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "NEW"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document received"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:31Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] NEW -> RECEIVED\",\"pipeline\":{\"state\":\"RECEIVED\",\"previousState\":\"NEW\",\"message\":\"Document received\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":null,\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "RECEIVED",
+            "previousState": "NEW",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events.enriched",
+            "consumerGroup": null,
+            "message": "Document received"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:31.05Z",
+          "cwTimestamp": "2026-01-01T11:45:31.05Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:31.05Z",
+            "level": "INFO",
+            "message": "Document status change: [event] RECEIVED -> PUBLISHED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:31.05Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "RECEIVED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Document stored and published"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:31.05Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] RECEIVED -> PUBLISHED\",\"pipeline\":{\"state\":\"PUBLISHED\",\"previousState\":\"RECEIVED\",\"message\":\"Document stored and published\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":null,\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "PUBLISHED",
+            "previousState": "RECEIVED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events.enriched",
+            "consumerGroup": null,
+            "message": "Document stored and published"
+          }
+        }
+      },
+      {
+        "service": "event-enricher",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:31.1Z",
+          "cwTimestamp": "2026-01-01T11:45:31.1Z",
+          "stream": "ecs/event-enricher/0a1b2c3d4e5f",
+          "taskId": "0a1b2c3d4e5f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:31.1Z",
+            "level": "INFO",
+            "message": "Document status change: [event] CONSUMING -> COMPLETED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:31.1Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "event-enricher"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "COMPLETED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "event-enricher"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:31.1Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"event-enricher\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"event-enricher\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "event-enricher",
+            "message": "Processing completed"
+          }
+        }
+      },
+      {
+        "service": "legacy-gateway",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:31.1Z",
+          "cwTimestamp": "2026-01-01T11:45:31.101Z",
+          "stream": "ecs/legacy-gateway/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "spring",
+            "timestamp": "2026-01-01T11:45:31.1Z",
+            "level": "INFO",
+            "message": "{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+            "fields": [
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "service.name",
+                "value": "legacy-gateway"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "log.logger",
+                "value": "c.e.p.StatusManager"
+              }
+            ],
+            "error": null,
+            "jsonSpan": [
+              0,
+              294
+            ]
+          },
+          "raw": "2026-01-01T11:45:31.100Z  INFO 1 --- [legacy-gateway] [   events-0-C-1] c.e.p.StatusManager                      : {\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"demo.events\",\"consumerGroup\":\"legacy-gateway\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+          "status": {
+            "prefix": "",
+            "state": "COMPLETED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "legacy-gateway",
+            "message": "Processing completed"
+          }
+        }
+      },
+      {
+        "service": "audit-archiver",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:31.5Z",
+          "cwTimestamp": "2026-01-01T11:45:31.5Z",
+          "stream": "ecs/audit-archiver/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:31.5Z",
+            "level": "WARN",
+            "message": "Document status change: [event] CONSUMING -> RETRYING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:31.5Z"
+              },
+              {
+                "key": "log.level",
+                "value": "WARN"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "RETRYING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Route is stopping, the record is retried"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "audit-archiver"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:31.5Z\",\"log.level\":\"WARN\",\"log.logger\":\"com.example.pipeline.StatusManager\",\"process.thread.name\":\"events-0-C-1\",\"service.name\":\"audit-archiver\",\"message\":\"Document status change: [event] CONSUMING -> RETRYING\",\"ecs.version\":\"8.11\",\"pipeline.state\":\"RETRYING\",\"pipeline.previousState\":\"CONSUMING\",\"pipeline.message\":\"Route is stopping, the record is retried\",\"pipeline.topicName\":\"demo.events\",\"pipeline.consumerGroup\":\"audit-archiver\",\"pipeline.partition\":1,\"pipeline.offset\":508931,\"pipeline.correlationId\":\"8e306f7d530e13e9000000000382e103\",\"pipeline.objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "RETRYING",
+            "previousState": "CONSUMING",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events",
+            "consumerGroup": "audit-archiver",
+            "message": "Route is stopping, the record is retried"
+          }
+        }
+      },
+      {
+        "service": "search-feeder",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:31.6Z",
+          "cwTimestamp": "2026-01-01T11:45:31.6Z",
+          "stream": "ecs/search-feeder/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:31.6Z",
+            "level": "INFO",
+            "message": "Document status change: [event] PUBLISHED -> CONSUMING",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:31.6Z"
+              },
+              {
+                "key": "log.level",
+                "value": "INFO"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "search-feeder"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "PUBLISHED"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "search-feeder"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:31.6Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"search-feeder\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":\"search-feeder\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "CONSUMING",
+            "previousState": "PUBLISHED",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events.enriched",
+            "consumerGroup": "search-feeder",
+            "message": "Record consumed, starting processing"
+          }
+        }
+      },
+      {
+        "service": "search-feeder",
+        "event": {
+          "seq": 0,
+          "timestamp": "2026-01-01T11:45:32Z",
+          "cwTimestamp": "2026-01-01T11:45:32Z",
+          "stream": "ecs/search-feeder/6a7b8c9d0e1f",
+          "taskId": "6a7b8c9d0e1f",
+          "line": {
+            "kind": "ecs",
+            "timestamp": "2026-01-01T11:45:32Z",
+            "level": "ERROR",
+            "message": "Document status change: [event] CONSUMING -> FAILED",
+            "fields": [
+              {
+                "key": "@timestamp",
+                "value": "2026-01-01T11:45:32Z"
+              },
+              {
+                "key": "log.level",
+                "value": "ERROR"
+              },
+              {
+                "key": "log.logger",
+                "value": "com.example.pipeline.StatusManager"
+              },
+              {
+                "key": "process.pid",
+                "value": 1
+              },
+              {
+                "key": "process.thread.name",
+                "value": "events-0-C-1"
+              },
+              {
+                "key": "service.name",
+                "value": "search-feeder"
+              },
+              {
+                "key": "service.version",
+                "value": "4.2.0"
+              },
+              {
+                "key": "service.environment",
+                "value": "DEMO"
+              },
+              {
+                "key": "pipeline.state",
+                "value": "FAILED"
+              },
+              {
+                "key": "pipeline.previousState",
+                "value": "CONSUMING"
+              },
+              {
+                "key": "pipeline.message",
+                "value": "Processing failed: missing required field 'sku'"
+              },
+              {
+                "key": "pipeline.topicName",
+                "value": "demo.events.enriched"
+              },
+              {
+                "key": "pipeline.consumerGroup",
+                "value": "search-feeder"
+              },
+              {
+                "key": "pipeline.partition",
+                "value": 1
+              },
+              {
+                "key": "pipeline.offset",
+                "value": 508931
+              },
+              {
+                "key": "pipeline.correlationId",
+                "value": "8e306f7d530e13e9000000000382e103"
+              },
+              {
+                "key": "pipeline.objectName",
+                "value": "inbound/demo/8e306f7d530e13e9000000000382e103_event.json"
+              },
+              {
+                "key": "ecs.version",
+                "value": "8.11"
+              }
+            ],
+            "error": null,
+            "jsonSpan": null
+          },
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:32Z\",\"log\":{\"level\":\"ERROR\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"search-feeder\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [event] CONSUMING -> FAILED\",\"pipeline\":{\"state\":\"FAILED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing failed: missing required field 'sku'\",\"topicName\":\"demo.events.enriched\",\"consumerGroup\":\"search-feeder\",\"partition\":1,\"offset\":508931,\"correlationId\":\"8e306f7d530e13e9000000000382e103\",\"objectName\":\"inbound/demo/8e306f7d530e13e9000000000382e103_event.json\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "status": {
+            "prefix": "pipeline",
+            "state": "FAILED",
+            "previousState": "CONSUMING",
+            "correlationId": "8e306f7d530e13e9000000000382e103",
+            "topic": "demo.events.enriched",
+            "consumerGroup": "search-feeder",
+            "message": "Processing failed: missing required field 'sku'"
+          }
+        }
+      }
+    ]
   }
 }

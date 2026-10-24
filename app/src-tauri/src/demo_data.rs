@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{EcsSource, ServiceRef};
+use contrail_core::logs::trace::{TraceTarget, trace};
 use contrail_core::logs::{LogBuffer, LogSource, TimeRange, process, resolve_log_location};
 use contrail_core::timestamp::Timestamp;
 use contrail_fake::{FakeAuth, FakeEcs, FakeLogs};
@@ -27,6 +28,8 @@ const LOG_SERVICES: &[(&str, &str)] = &[
     ("demo-edge", "legacy-gateway"),
 ];
 const LOG_EVENTS_PER_SERVICE: usize = 25;
+/// The cluster whose services the recorded demo documents pass through.
+const DOCUMENT_CLUSTER: &str = "demo-edge";
 
 /// The demo landscape as seen by `demo-dev`, with all times relative to a fixed instant.
 async fn record() -> Value {
@@ -114,11 +117,41 @@ async fn record_logs() -> Value {
             }),
         );
     }
+    // The documents in the recorded events, traced through all services of their cluster (the
+    // fake backend only has the first events of each service, not the documents' whole way).
+    let ids: std::collections::BTreeSet<String> = services
+        .values()
+        .flat_map(|s| s["events"].as_array().cloned().unwrap_or_default())
+        .filter_map(|e| e["status"]["correlationId"].as_str().map(str::to_owned))
+        .collect();
+    let cluster_arn = format!("arn:aws:ecs:eu-central-1:111122223333:cluster/{DOCUMENT_CLUSTER}");
+    let mut targets = Vec::new();
+    for summary in ecs.list_services(&ctx, &cluster_arn).await.unwrap() {
+        let service = ServiceRef {
+            cluster_arn: cluster_arn.clone(),
+            service_name: summary.name.clone(),
+        };
+        let detail = ecs.describe_service(&ctx, &service).await.unwrap();
+        let location = resolve_log_location(&detail.task_definition.unwrap()).unwrap();
+        targets.push(TraceTarget {
+            service: summary.name,
+            selection: location.selection(&[], None, true),
+        });
+    }
+    let mut documents = BTreeMap::new();
+    for id in ids {
+        let found = trace(&logs, &ctx, targets.clone(), &id, range, 1_000).await;
+        // Only the demo-edge documents go further than one service.
+        if found.hops.len() > 1 {
+            documents.insert(id, found.hits);
+        }
+    }
     json!({
         "recordedAt": "2026-01-01T12:00:00Z",
         "account": "111122223333",
         "region": "eu-central-1",
         "services": services,
+        "documents": documents,
     })
 }
 
