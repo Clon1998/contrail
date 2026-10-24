@@ -312,10 +312,10 @@ test("trace a document across services, in a tab of its own", async ({ page }) =
   await timeline.getByRole("listitem").first().getByRole("button").first().click();
   await expect(timeline.getByLabel("Fields").first()).toBeVisible();
 
-  // A service on the way shows only its events; pressed again, all of them.
+  // A service on the document's way shows only its events; pressed again, all of them.
   const step = trace
-    .getByRole("list", { name: "Services on the way" })
-    .getByRole("button", { name: /orders-api/ });
+    .getByRole("group", { name: "Trace graph" })
+    .getByRole("button", { name: /^service orders-api/ });
   const all = await timeline.getByRole("listitem").count();
   await step.click();
   await expect(step).toHaveAttribute("aria-pressed", "true");
@@ -353,4 +353,64 @@ test("trace an API request by its trace ID, without a document outcome", async (
   await expect(
     trace.getByRole("list", { name: "Services on the way" }).getByRole("listitem"),
   ).not.toHaveCount(1);
+});
+
+test("a document's trace on the route graph, with the services it hasn't reached", async ({
+  page,
+}) => {
+  // The second recorded demo document: stuck in audit-archiver, failed in search-feeder.
+  const id = "8e306f7d530e13e9000000000382e103";
+  const list = await openLogs(page, "demo-edge", "legacy-gateway");
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page.getByRole("textbox", { name: "Search logs" }).fill(id);
+  await expect.poll(() => rowCount(page)).toBe(2);
+  await list.getByRole("listitem").first().getByRole("button").first().click();
+  await page.getByRole("button", { name: "Trace across services" }).click();
+
+  const trace = page.getByRole("main", { name: /^Trace / });
+  await trace.getByRole("checkbox", { name: "event-ingest" }).click();
+  await trace.getByRole("checkbox", { name: "event-enricher" }).click();
+  await trace.getByRole("button", { name: "Search 3 services" }).click();
+
+  // The way so far: ingest → topic → gateway and the transformer → next topic.
+  const graph = trace.getByRole("group", { name: "Trace graph" });
+  await expect(
+    graph.getByRole("button", { name: "service event-ingest (PUBLISHED)" }),
+  ).toBeVisible();
+  await expect(graph.getByRole("button", { name: "topic demo.events", exact: true })).toBeVisible();
+  await expect(
+    graph.getByRole("button", { name: "service legacy-gateway (COMPLETED)" }),
+  ).toBeVisible();
+  await expect(graph.getByRole("button", { name: "topic demo.events.enriched" })).toBeVisible();
+  // Nobody searched has read the enriched topic yet.
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Open");
+
+  // The route scan adds the systems and the readers that weren't searched.
+  await trace.getByRole("button", { name: "Find connected services" }).click();
+  await expect(
+    graph.getByRole("button", { name: "system Example Partner", exact: true }),
+  ).toBeVisible();
+  const archiver = graph.getByRole("button", { name: "service audit-archiver (no event)" });
+  await expect(archiver).toContainText("not searched");
+  // A sibling writer of the topic isn't on the document's way.
+  await expect(graph.getByRole("button", { name: /service partner-poller/ })).toHaveCount(0);
+
+  await archiver.click();
+  await trace.getByRole("button", { name: "Search audit-archiver too" }).click();
+  await expect(
+    graph.getByRole("button", { name: "service audit-archiver (RETRYING)" }),
+  ).toBeVisible();
+  // The scan is kept: search-feeder waits on the enriched topic, not searched yet.
+  await graph.getByRole("button", { name: /service search-feeder/ }).click();
+  await trace.getByRole("button", { name: "Search search-feeder too" }).click();
+  await expect(graph.getByRole("button", { name: "service search-feeder (FAILED)" })).toBeVisible();
+  await expect(trace.getByRole("status", { name: "Trace outcome" })).toContainText("Failed");
+
+  // A service on the graph shows only its events.
+  const timeline = trace.getByRole("list", { name: "Trace events" });
+  await graph.getByRole("button", { name: "service event-enricher (COMPLETED)" }).click();
+  await expect(timeline.getByRole("listitem")).toHaveCount(4);
+  await expect(timeline.getByRole("listitem").first()).toContainText("event-enricher");
+  await graph.getByRole("button", { name: "service event-enricher (COMPLETED)" }).click();
+  await expect(timeline.getByRole("listitem")).toHaveCount(12);
 });
