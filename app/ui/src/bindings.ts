@@ -655,6 +655,8 @@ export type ServiceSummary = {
 	launchType: string | null,
 	/**  The current task definition as `family:revision`. */
 	taskDefinition: string,
+	/**  Its full ARN, for [`EcsSource::task_definition`]. */
+	taskDefinitionArn: string,
 };
 
 /**  What the trace shows of one service. */

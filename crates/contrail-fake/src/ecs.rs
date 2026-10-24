@@ -442,6 +442,38 @@ fn summary(spec: &ServiceSpec, region: &str, account: &str) -> ServiceSummary {
         pending: spec.pending,
         launch_type: Some(spec.launch_type.to_owned()),
         task_definition: spec.task_definition(spec.revision),
+        task_definition_arn: format!(
+            "arn:aws:ecs:{region}:{account}:task-definition/{}",
+            spec.task_definition(spec.revision)
+        ),
+    }
+}
+
+/// The current task definition of a demo service.
+fn task_definition_info(spec: &ServiceSpec, region: &str, account: &str) -> TaskDefinitionInfo {
+    TaskDefinitionInfo {
+        family: spec.family().to_owned(),
+        revision: spec.revision,
+        cpu: Some(spec.cpu.to_owned()),
+        memory: Some(spec.memory.to_owned()),
+        containers: vec![ContainerDefinitionInfo {
+            name: spec.name.to_owned(),
+            image: image(spec, account, region),
+            image_tag: spec.image_tag.to_owned(),
+            log_driver: Some("awslogs".to_owned()),
+            log_options: [
+                ("awslogs-group", format!("/ecs/{}", spec.name)),
+                ("awslogs-region", region.to_owned()),
+                ("awslogs-stream-prefix", "ecs".to_owned()),
+            ]
+            .into_iter()
+            .map(|(k, v)| (k.to_owned(), v))
+            .collect(),
+            routes: parse_routes(&environment(spec), &secrets(spec, region, account)),
+            environment: environment(spec),
+            secrets: secrets(spec, region, account),
+            environment_files: Vec::new(),
+        }],
     }
 }
 
@@ -568,32 +600,24 @@ impl EcsSource for FakeEcs {
             created_at: self.ago(120 * 24 * 60),
             platform_version: (spec.launch_type == "FARGATE").then(|| "1.4.0".to_owned()),
             deployments,
-            task_definition: Some(TaskDefinitionInfo {
-                family: spec.family().to_owned(),
-                revision: spec.revision,
-                cpu: Some(spec.cpu.to_owned()),
-                memory: Some(spec.memory.to_owned()),
-                containers: vec![ContainerDefinitionInfo {
-                    name: spec.name.to_owned(),
-                    image: image(spec, &account, &region),
-                    image_tag: spec.image_tag.to_owned(),
-                    log_driver: Some("awslogs".to_owned()),
-                    log_options: [
-                        ("awslogs-group", format!("/ecs/{}", spec.name)),
-                        ("awslogs-region", region.clone()),
-                        ("awslogs-stream-prefix", "ecs".to_owned()),
-                    ]
-                    .into_iter()
-                    .map(|(k, v)| (k.to_owned(), v))
-                    .collect(),
-                    routes: parse_routes(&environment(spec), &secrets(spec, &region, &account)),
-                    environment: environment(spec),
-                    secrets: secrets(spec, &region, &account),
-                    environment_files: Vec::new(),
-                }],
-            }),
+            task_definition: Some(task_definition_info(spec, &region, &account)),
             events,
         })
+    }
+
+    /// Only the current revision of each demo service exists.
+    async fn task_definition(
+        &self,
+        ctx: &AwsCtx,
+        arn: &str,
+    ) -> Result<TaskDefinitionInfo, SourceError> {
+        let (account, region) = self.account(ctx)?;
+        let label = contrail_core::ecs::task_definition_label(arn);
+        SERVICES
+            .iter()
+            .find(|s| s.task_definition(s.revision) == label)
+            .map(|spec| task_definition_info(spec, &region, &account))
+            .ok_or_else(|| SourceError::NotFound(format!("task definition {label}")))
     }
 
     async fn list_tasks(
@@ -777,6 +801,23 @@ mod tests {
                 .as_deref(),
             Some("awslogs")
         );
+    }
+
+    #[tokio::test]
+    async fn task_definitions_by_arn_match_the_service_overview() {
+        let ecs = fake();
+        let svc = service("demo-edge", "event-ingest");
+        let detail = ecs.describe_service(&ctx("demo-dev"), &svc).await.unwrap();
+        let by_arn = ecs
+            .task_definition(&ctx("demo-dev"), &detail.summary.task_definition_arn)
+            .await
+            .unwrap();
+        assert_eq!(Some(by_arn), detail.task_definition);
+
+        let current = &detail.summary.task_definition_arn;
+        let old = format!("{}:4", current.strip_suffix(":5").unwrap());
+        let missing = ecs.task_definition(&ctx("demo-dev"), &old).await;
+        assert!(matches!(missing, Err(SourceError::NotFound(_))));
     }
 
     #[tokio::test]
