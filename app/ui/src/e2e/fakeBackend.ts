@@ -478,12 +478,14 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!services) throw apiError("notFound", "cluster not found");
         return services;
       }
-      case "services_on_topics": {
-        // Like the Rust side: other services of the cluster whose routes use these topics.
+      case "services_on_topics":
+      case "cluster_routes": {
+        // Like the Rust side: services of the cluster whose routes use these topics (all of the
+        // cluster's routes for the route map).
         const ctx = args?.ctx as AwsCtx;
         const clusterArn = args?.clusterArn as string;
-        const topics = args?.topics as string[];
-        const exclude = args?.exclude as string;
+        const topics = (args?.topics as string[] | undefined) ?? null;
+        const exclude = (args?.exclude as string | undefined) ?? "";
         // Like the Rust side, a scan is kept for the session; "cached" only reads it.
         const key = `${ctx.profile}|${ctx.region ?? ""}|${clusterArn}`;
         if (args?.scan === "fresh") scannedClusters.add(key);
@@ -495,7 +497,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           const { detail } = serviceData(ctx, { clusterArn, serviceName: summary.name });
           for (const container of detail.taskDefinition?.containers ?? []) {
             for (const route of container.routes?.routes ?? []) {
-              if (route.topic && topics.includes(route.topic)) {
+              if (route.topic && (topics === null || topics.includes(route.topic))) {
                 links.push({
                   topic: route.topic,
                   service: summary.name,

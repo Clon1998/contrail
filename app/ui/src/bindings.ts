@@ -74,6 +74,12 @@ export const commands = {
 	 */
 	servicesOnTopics: (ctx: AwsCtx, clusterArn: string, topics: string[], exclude: string, scan: TopicScan) => typedError<TopicLink[] | null, ApiError>(__TAURI_INVOKE("services_on_topics", { ctx, clusterArn, topics, exclude, scan })),
 	/**
+	 *  Every route of every service of `cluster_arn`, for the cluster's route map. `None` when only
+	 *  the cache was asked and the cluster wasn't scanned yet (the scan is the same as for
+	 *  `services_on_topics`, so either one fills the cache for the other).
+	 */
+	clusterRoutes: (ctx: AwsCtx, clusterArn: string, scan: TopicScan) => typedError<TopicLink[] | null, ApiError>(__TAURI_INVOKE("cluster_routes", { ctx, clusterArn, scan })),
+	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 	 */
@@ -859,7 +865,7 @@ export type Timestamp = string;
 
 export type TopicDirection = "in" | "out";
 
-/**  A service of the cluster that reads from or writes to one of the topics asked about. */
+/**  A route of a service of the cluster: the topic it writes or reads, and its other end. */
 export type TopicLink = {
 	topic: string,
 	service: string,

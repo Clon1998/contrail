@@ -68,7 +68,7 @@ pub async fn list_tasks(
         .await?)
 }
 
-/// A service of the cluster that reads from or writes to one of the topics asked about.
+/// A route of a service of the cluster: the topic it writes or reads, and its other end.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct TopicLink {
@@ -117,14 +117,29 @@ pub async fn services_on_topics(
     exclude: String,
     scan: TopicScan,
 ) -> ApiResult<Option<Vec<TopicLink>>> {
-    find_topic_links(&state, &ctx, &cluster_arn, &topics, &exclude, scan).await
+    find_topic_links(&state, &ctx, &cluster_arn, Some(&topics), &exclude, scan).await
 }
 
+/// Every route of every service of `cluster_arn`, for the cluster's route map. `None` when only
+/// the cache was asked and the cluster wasn't scanned yet (the scan is the same as for
+/// `services_on_topics`, so either one fills the cache for the other).
+#[tauri::command]
+#[specta::specta]
+pub async fn cluster_routes(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    cluster_arn: String,
+    scan: TopicScan,
+) -> ApiResult<Option<Vec<TopicLink>>> {
+    find_topic_links(&state, &ctx, &cluster_arn, None, "", scan).await
+}
+
+/// The links of the cluster's services on `topics` (all topics with `None`), except `exclude`'s.
 async fn find_topic_links(
     state: &AppState,
     ctx: &AwsCtx,
     cluster_arn: &str,
-    topics: &[String],
+    topics: Option<&[String]>,
     exclude: &str,
     scan: TopicScan,
 ) -> ApiResult<Option<Vec<TopicLink>>> {
@@ -176,12 +191,18 @@ async fn scan_cluster(
     Ok(found)
 }
 
-/// The routes of the cluster's other services on one of `topics`, sorted by topic and service.
-fn topic_links(cluster: &ClusterRoutes, topics: &[String], exclude: &str) -> Vec<TopicLink> {
+/// The routes of the cluster's services (but `exclude`) on one of `topics` (all with `None`),
+/// sorted by topic and service.
+fn topic_links(
+    cluster: &ClusterRoutes,
+    topics: Option<&[String]>,
+    exclude: &str,
+) -> Vec<TopicLink> {
     let mut links = Vec::new();
     for ServiceRoutes { service, routes } in cluster.iter().filter(|s| s.service != exclude) {
         for route in routes {
-            let Some(topic) = route.topic.as_ref().filter(|t| topics.contains(t)) else {
+            let wanted = |t: &&String| topics.is_none_or(|topics| topics.contains(t));
+            let Some(topic) = route.topic.as_ref().filter(wanted) else {
                 continue;
             };
             let (direction, endpoints) = match &route.input {
@@ -234,7 +255,7 @@ mod tests {
             &state,
             &ctx(),
             EDGE,
-            &["demo.events".into()],
+            Some(&["demo.events".into()]),
             "event-ingest",
             TopicScan::Fresh,
         )
@@ -334,6 +355,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn the_route_map_gets_every_route_of_the_cluster() {
+        let state = AppState::demo();
+        let links = find_topic_links(&state, &ctx(), EDGE, None, "", TopicScan::Fresh)
+            .await
+            .unwrap()
+            .unwrap();
+        let topics: std::collections::BTreeSet<_> =
+            links.iter().map(|l| l.topic.as_str()).collect();
+        assert!(topics.contains("demo.events") && topics.contains("orders.created"));
+        // Every route service, the transformer (no route variables) not among them.
+        let services: std::collections::BTreeSet<_> =
+            links.iter().map(|l| l.service.as_str()).collect();
+        assert_eq!(
+            services.into_iter().collect::<Vec<_>>(),
+            [
+                "audit-archiver",
+                "event-ingest",
+                "legacy-gateway",
+                "partner-poller",
+                "search-feeder"
+            ]
+        );
+    }
+
+    #[tokio::test]
     async fn a_scan_is_kept_for_the_whole_cluster_until_the_next_one() {
         let mut state = AppState::demo();
         let auth = Arc::new(contrail_fake::FakeAuth::new());
@@ -345,9 +391,16 @@ mod tests {
         let links = |exclude: &'static str, scan| {
             let state = &state;
             async move {
-                find_topic_links(state, &ctx(), EDGE, &["demo.events".into()], exclude, scan)
-                    .await
-                    .unwrap()
+                find_topic_links(
+                    state,
+                    &ctx(),
+                    EDGE,
+                    Some(&["demo.events".into()]),
+                    exclude,
+                    scan,
+                )
+                .await
+                .unwrap()
             }
         };
 
