@@ -198,8 +198,12 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -221,13 +225,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:05.071001066Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":231679,\"correlationId\":\"DE40C0DE00000002-0000000000003DDE\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:05.071001066Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.returns.events.v1\",\"partition\":1,\"offset\":231679,\"correlationId\":\"DE40C0DE00000002-0000000000003DDE\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000002-0000000000003DDE",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -342,6 +347,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -365,13 +374,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.911354533Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":238450,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:10.911354533Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":238450,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -489,6 +499,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -512,13 +526,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.071753497Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":235650,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.071753497Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":235650,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -633,6 +648,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -656,13 +675,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:20.911419184Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":238129,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:20.911419184Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":238129,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -777,8 +797,12 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -800,13 +824,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.071329187Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":235029,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:25.071329187Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.returns.events.v1\",\"partition\":3,\"offset\":235029,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000005-0000000000009AAB",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -862,6 +887,10 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -885,13 +914,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:26.177968132Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":237093,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:26.177968132Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":237093,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -1006,8 +1036,12 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -1029,13 +1063,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:34.391971184Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":237958,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:34.391971184Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.returns.events.v1\",\"partition\":0,\"offset\":237958,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -1091,6 +1126,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -1114,13 +1153,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:35.071218287Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":238144,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:35.071218287Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":238144,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -1176,8 +1216,12 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -1199,13 +1243,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:36.17738963Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":236584,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:36.17738963Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.returns.events.v1\",\"partition\":2,\"offset\":236584,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -1441,6 +1486,10 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -1464,13 +1513,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:46.177695861Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":237823,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:46.177695861Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":237823,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000005-0000000000009AAB",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -1526,6 +1576,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -1549,13 +1603,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:50.911687746Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":230886,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:50.911687746Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":230886,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -1729,6 +1784,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -1752,13 +1811,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:56.177260061Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231682,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:56.177260061Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"billing-sync\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231682,\"correlationId\":\"DE40C0DE00000004-0000000000007BBC\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000004-0000000000007BBC",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -2068,8 +2128,12 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -2091,13 +2155,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.141953704Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":234039,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:03.141953704Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.returns.events.v1\",\"partition\":1,\"offset\":234039,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -2215,8 +2280,12 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing failed: missing required field 'customerId'"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -2238,13 +2307,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.34188929Z\",\"log\":{\"level\":\"ERROR\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> FAILED\",\"pipeline\":{\"state\":\"FAILED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":231706,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:06.34188929Z\",\"log\":{\"level\":\"ERROR\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> FAILED\",\"pipeline\":{\"state\":\"FAILED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing failed: missing required field 'customerId'\",\"topicName\":\"example.returns.events.v1\",\"partition\":0,\"offset\":231706,\"correlationId\":\"DE40C0DE00000003-0000000000005CCD\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "FAILED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000003-0000000000005CCD",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Processing failed: missing required field 'customerId'"
           }
         },
         {
@@ -2300,6 +2370,10 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -2323,13 +2397,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.117871506Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":232894,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:07.117871506Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.orders.events.v1\",\"partition\":0,\"offset\":232894,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -2440,6 +2515,10 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -2463,13 +2542,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.99366019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":230460,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:09.99366019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":230460,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -2580,8 +2660,12 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -2603,13 +2687,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.117904912Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":239549,\"correlationId\":\"DE40C0DE00000001-0000000000001EEF\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:11.117904912Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"main\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.returns.events.v1\",\"partition\":1,\"offset\":239549,\"correlationId\":\"DE40C0DE00000001-0000000000001EEF\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000001-0000000000001EEF",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -2845,6 +2930,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -2868,13 +2957,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.117107043Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":234345,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:15.117107043Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"events-0-C-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":3,\"offset\":234345,\"correlationId\":\"DE40C0DE00000006-000000000000B99A\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000006-000000000000B99A",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -3048,6 +3138,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -3071,13 +3165,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.341772997Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":232681,\"correlationId\":\"DE40C0DE00000001-0000000000001EEF\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:18.341772997Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":5,\"offset\":232681,\"correlationId\":\"DE40C0DE00000001-0000000000001EEF\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000001-0000000000001EEF",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -3192,8 +3287,12 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -3215,13 +3314,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.141001436Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":2,\"offset\":231760,\"correlationId\":\"DE40C0DE00000001-0000000000001EEF\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:19.141001436Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"http-nio-8080-exec-2\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.returns.events.v1\",\"partition\":2,\"offset\":231760,\"correlationId\":\"DE40C0DE00000001-0000000000001EEF\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000001-0000000000001EEF",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {
@@ -3387,8 +3487,12 @@
                 "value": "CONSUMING"
               },
               {
+                "key": "pipeline.message",
+                "value": "Processing completed"
+              },
+              {
                 "key": "pipeline.topicName",
-                "value": "example.orders.events.v1"
+                "value": "example.returns.events.v1"
               },
               {
                 "key": "pipeline.partition",
@@ -3410,13 +3514,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.117965314Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"topicName\":\"example.orders.events.v1\",\"partition\":4,\"offset\":235888,\"correlationId\":\"DE40C0DE00000000-0000000000000000\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.117965314Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] CONSUMING -> COMPLETED\",\"pipeline\":{\"state\":\"COMPLETED\",\"previousState\":\"CONSUMING\",\"message\":\"Processing completed\",\"topicName\":\"example.returns.events.v1\",\"partition\":4,\"offset\":235888,\"correlationId\":\"DE40C0DE00000000-0000000000000000\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "COMPLETED",
             "previousState": "CONSUMING",
             "correlationId": "DE40C0DE00000000-0000000000000000",
-            "topic": "example.orders.events.v1"
+            "topic": "example.returns.events.v1",
+            "message": "Processing completed"
           }
         },
         {
@@ -3472,6 +3577,10 @@
                 "value": "PUBLISHED"
               },
               {
+                "key": "pipeline.message",
+                "value": "Record consumed, starting processing"
+              },
+              {
                 "key": "pipeline.topicName",
                 "value": "example.orders.events.v1"
               },
@@ -3495,13 +3604,14 @@
             "error": null,
             "jsonSpan": null
           },
-          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.141840019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":237793,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
+          "raw": "{\"@timestamp\":\"2026-01-01T11:45:23.141840019Z\",\"log\":{\"level\":\"INFO\",\"logger\":\"com.example.pipeline.StatusManager\"},\"process\":{\"pid\":1,\"thread\":{\"name\":\"scheduling-1\"}},\"service\":{\"name\":\"orders-api\",\"version\":\"4.2.0\",\"environment\":\"DEMO\",\"node\":{}},\"message\":\"Document status change: [order] PUBLISHED -> CONSUMING\",\"pipeline\":{\"state\":\"CONSUMING\",\"previousState\":\"PUBLISHED\",\"message\":\"Record consumed, starting processing\",\"topicName\":\"example.orders.events.v1\",\"partition\":1,\"offset\":237793,\"correlationId\":\"DE40C0DE00000005-0000000000009AAB\"},\"ecs\":{\"version\":\"8.11\"}}",
           "status": {
             "prefix": "pipeline",
             "state": "CONSUMING",
             "previousState": "PUBLISHED",
             "correlationId": "DE40C0DE00000005-0000000000009AAB",
-            "topic": "example.orders.events.v1"
+            "topic": "example.orders.events.v1",
+            "message": "Record consumed, starting processing"
           }
         },
         {

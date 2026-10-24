@@ -89,6 +89,12 @@ export interface LogsState {
   fresh: Record<number, true>;
   /** Rows just put in front of the list (`nonce` makes each load count), for keeping the scroll. */
   prepended: { count: number; nonce: number } | null;
+  /** The Fields panel is shown (remembered per service for the session, like the search). */
+  fieldsOpen: boolean;
+  /** Fields whose values the panel lists. */
+  fieldsExpanded: string[];
+  /** Counts the searches applied, so the Fields panel knows when to count again. */
+  searchRevision: number;
 
   /**
    * Opens the logs of `service` (or one task of it) for `timeWindow`, then follows new events (live,
@@ -121,6 +127,8 @@ export interface LogsState {
   /** Jumps to the next (1) or previous (-1) match after/before `fromIndex`. */
   gotoMatch: (direction: 1 | -1, fromIndex: number) => Promise<void>;
   setTab: (tab: "overview" | "logs") => void;
+  setFieldsOpen: (open: boolean) => void;
+  toggleFieldExpanded: (key: string) => void;
   /** Shows only `taskId`'s logs, or all tasks again with `null`. */
   showTask: (service: ServiceRef, taskId: string | null) => void;
   toggleExpanded: (seq: number) => void;
@@ -311,6 +319,9 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     timeWindow,
     tab: "overview",
     taskFilter: null,
+    fieldsOpen: false,
+    fieldsExpanded: [],
+    searchRevision: 0,
     expanded: {},
     older: NO_OLDER,
     prepended: null,
@@ -500,6 +511,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         expanded: {},
         currentMatch: -1,
         matchPositions: [],
+        searchRevision: get().searchRevision + 1,
       });
       if (search.mode === "highlight") await refreshMatchPositions();
     },
@@ -527,6 +539,15 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     },
 
     setTab: (tab) => set({ tab }),
+    setFieldsOpen: (fieldsOpen) => set({ fieldsOpen }),
+    toggleFieldExpanded: (key) => {
+      const expanded = get().fieldsExpanded;
+      set({
+        fieldsExpanded: expanded.includes(key)
+          ? expanded.filter((k) => k !== key)
+          : [...expanded, key],
+      });
+    },
     showTask: (service, taskId) =>
       set({ taskFilter: taskId ? { service, taskId } : null, tab: "logs" }),
     toggleExpanded: (seq) => set((s) => ({ expanded: { ...s.expanded, [seq]: !s.expanded[seq] } })),

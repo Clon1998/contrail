@@ -6,8 +6,8 @@ use std::sync::atomic::Ordering;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::{
-    BufferStats, ExportFormat, FilterMode, Level, LogBuffer, LogEvent, LogLocation, TimeWindow,
-    ViewFilter, backfill_newest, process, resolve_log_location, write_events,
+    BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LogBuffer, LogEvent, LogLocation,
+    TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location, write_events,
 };
 use contrail_core::prefs::ServiceKey;
 use contrail_core::query::{MatchOptions, QueryError, parse_query, parse_regex_query};
@@ -381,6 +381,16 @@ pub fn get_match_positions(state: State<'_, AppState>, view_id: u32) -> ApiResul
         .collect())
 }
 
+/// Which fields the events matching the view's search have, their most common values, and an
+/// overview of the pipeline status events among them (for the Fields panel).
+#[tauri::command]
+#[specta::specta]
+pub fn field_summary(state: State<'_, AppState>, view_id: u32) -> ApiResult<FieldSummary> {
+    let views = state.views.lock().expect("views lock poisoned");
+    let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+    Ok(view.field_summary())
+}
+
 /// Frees a view's buffer and stops its live tail.
 #[tauri::command]
 #[specta::specta]
@@ -554,6 +564,40 @@ mod tests {
         assert!(written > 0);
         assert_eq!(text.lines().count(), written as usize);
         assert!(text.lines().all(|l| l.contains(r#""level":"ERROR""#)));
+    }
+
+    #[tokio::test]
+    async fn summarizes_the_fields_of_the_matching_events() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "orders-api");
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
+        let summary = |state: &AppState| state.views.lock().unwrap()[&info.view_id].field_summary();
+
+        let all = summary(&state);
+        assert_eq!(all.events, info.stats.total);
+        assert!(all.fields.iter().any(|f| f.key == "log.logger"));
+        let pipeline = all.pipeline.unwrap();
+        assert!(pipeline.states.len() > 1);
+        assert_eq!(pipeline.topics.len(), 2);
+
+        // Drilling down: only the failed status events count now.
+        let spec = FilterSpec {
+            query: "state:FAILED".into(),
+            mode: FilterMode::Highlight,
+            hidden_levels: vec![],
+            search_raw: false,
+            regex: false,
+            noise: vec![],
+        };
+        apply_filter(&state, info.view_id, spec, &[]).unwrap();
+        let failed = summary(&state);
+        let pipeline = failed.pipeline.unwrap();
+        assert_eq!(failed.events, pipeline.events);
+        let states: Vec<&str> = pipeline.states.iter().map(|s| s.value.as_str()).collect();
+        assert_eq!(states, ["FAILED"]);
+        assert!(!pipeline.failure_reasons.is_empty());
     }
 
     #[tokio::test]

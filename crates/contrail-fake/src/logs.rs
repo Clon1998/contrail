@@ -312,10 +312,24 @@ fn nested(service: &str, seed: u64, at: OffsetDateTime) -> String {
         .and_then(|rest| rest.rsplit_once(" -> "))
     {
         let previous = before.rsplit(' ').next().unwrap_or("CONSUMING");
+        let reason = match state {
+            "FAILED" => pick(
+                seed >> 4,
+                &[
+                    "Processing failed: missing required field 'customerId'",
+                    "Processing failed: Read timed out",
+                    "Processing failed: missing required field 'customerId'",
+                ],
+            ),
+            "COMPLETED" => "Processing completed",
+            "RETRYING" => "Route is stopping, the record is retried",
+            _ => "Record consumed, starting processing",
+        };
         event["pipeline"] = json!({
             "state": state,
             "previousState": previous,
-            "topicName": "example.orders.events.v1",
+            "message": reason,
+            "topicName": pick(seed >> 12, &["example.orders.events.v1", "example.orders.events.v1", "example.returns.events.v1"]),
             "partition": seed % 6,
             "offset": 230_000 + seed % 10_000,
             // A handful of documents, so one document shows up in several events (and services).

@@ -66,6 +66,8 @@ describe("tabs", () => {
       tab: "logs",
       timeWindow: { kind: "last", minutes: 360 },
       search: { ...first.getState().search, query: "level:ERROR", regex: false },
+      fieldsOpen: true,
+      fieldsExpanded: ["log.logger"],
     });
     useTabs.getState().close(useTabs.getState().tabs[0]?.key ?? "");
 
@@ -74,6 +76,8 @@ describe("tabs", () => {
     expect(reopened?.tab).toBe("logs");
     expect(reopened?.timeWindow).toEqual({ kind: "last", minutes: 360 });
     expect(reopened?.search.query).toBe("level:ERROR");
+    expect(reopened?.fieldsOpen).toBe(true);
+    expect(reopened?.fieldsExpanded).toEqual(["log.logger"]);
 
     // Switching profile or region closes all tabs; their views are remembered too.
     reopened?.setTab("overview");

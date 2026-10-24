@@ -194,6 +194,7 @@ test("changing the search swaps the rows without a placeholder flash", async ({ 
 test("pipeline status events: state badges, state chips and one document", async ({ page }) => {
   const list = await openLogs(page, "demo-core", "orders-api");
   await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page.getByRole("button", { name: "Fields" }).click();
   const states = page.getByRole("group", { name: "Pipeline states" });
   await expect(states.getByRole("button", { name: /^COMPLETED \d+/ })).toBeVisible();
 
@@ -211,9 +212,79 @@ test("pipeline status events: state badges, state chips and one document", async
   await expect.poll(() => rowCount(page)).toBeGreaterThanOrEqual(1);
 });
 
+test("the Fields panel counts the matching events' values and filters by click", async ({
+  page,
+}) => {
+  await openLogs(page, "demo-core", "orders-api");
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  // F opens it (and closes it again).
+  await page.keyboard.press("f");
+  const panel = page.getByRole("complementary", { name: "Fields" });
+  await expect(panel).toBeVisible();
+
+  // A field's most common values, with counts; a click filters by one.
+  const fields = panel.getByRole("region", { name: "All fields" });
+  await fields.getByRole("textbox", { name: "Filter fields" }).fill("logger");
+  await fields.getByRole("button", { name: /^log\.logger/ }).click();
+  const values = fields.getByRole("list", { name: "Values of log.logger" });
+  await values.getByRole("button", { name: /^com\.example\.cache\.CatalogCache \d+$/ }).click();
+  await expect(search).toHaveValue("log.logger:com.example.cache.CatalogCache");
+  // Counted again over the matches: only that value is left; a second click removes it.
+  await expect(values.getByRole("button")).toHaveCount(1);
+  await values.getByRole("button").click();
+  await expect(search).toHaveValue("");
+  // Alt+click excludes the value.
+  await values.getByRole("button", { name: /^com\.example\.cache\.CatalogCache/ }).click({
+    modifiers: ["Alt"],
+  });
+  await expect(search).toHaveValue("-log.logger:com.example.cache.CatalogCache");
+  await expect(values.getByRole("button", { name: /CatalogCache/ })).toHaveCount(0);
+  await search.press("Escape");
+
+  // The pipeline overview: a state on a topic, the failure reasons, the documents.
+  const pipeline = panel.getByRole("region", { name: "Pipeline" });
+  const perTopic = pipeline.getByRole("list", { name: "States per topic" });
+  await perTopic
+    .getByRole("button", { name: /^example\.returns\.events\.v1 COMPLETED \d+$/ })
+    .click();
+  await expect(search).toHaveValue("state:COMPLETED topic:example.returns.events.v1");
+  await expect(perTopic.getByRole("listitem")).toHaveCount(1);
+  await search.press("Escape");
+
+  const reasons = pipeline.getByRole("list", { name: "Failure reasons" });
+  await reasons.getByRole("button").first().click();
+  await expect(search).toHaveValue(/^state:FAILED pipeline\.message:"Processing failed: [^"]+"$/);
+  await expect(pipeline.getByRole("group", { name: "Pipeline states" })).toContainText("FAILED");
+  await search.press("Escape");
+
+  const documents = pipeline.getByRole("list", { name: "Documents" });
+  await documents.getByRole("button", { name: /Completed/ }).click();
+  await documents
+    .getByRole("list", { name: "Completed documents" })
+    .getByRole("button")
+    .first()
+    .click();
+  await expect(search).toHaveValue(/^correlation:\S+$/);
+
+  // The panel stays open for this service while another tab is shown.
+  await page
+    .getByRole("tree", { name: "Clusters" })
+    .getByRole("treeitem", { name: "billing-sync" })
+    .click();
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: "orders-api" })
+    .click();
+  await expect(panel).toBeVisible();
+  await page.keyboard.press("f");
+  await expect(panel).toBeHidden();
+});
+
 test("trace a document across services, in a tab of its own", async ({ page }) => {
   const list = await openLogs(page, "demo-core", "orders-api");
   await page.getByRole("button", { name: "Pause live tail" }).click();
+  await page.getByRole("button", { name: "Fields" }).click();
   await page
     .getByRole("group", { name: "Pipeline states" })
     .getByRole("button", { name: /^FAILED / })

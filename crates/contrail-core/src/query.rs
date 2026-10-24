@@ -9,6 +9,7 @@
 //! log.logger:*Camel*      a field matches a glob (`*` any text, `?` one character)
 //! pipeline.offset>=230000 a numeric field compared (>, >=, <, <=)
 //! task:5f2a  message:x    the task ID (prefix) or the message
+//! state:FAILED            a pipeline status event's state (topic:… its topic, correlation:… its ID)
 //! -healthcheck            any term negated
 //! ```
 //!
@@ -42,6 +43,8 @@ pub enum Condition {
     Task(String),
     /// A pipeline status change in this state (or a plain `state` field), any case.
     State(String),
+    /// A pipeline status change on this topic, any case.
+    Topic(String),
     /// The event's correlation ID (status change or any `…correlationId` field), any case.
     Correlation(String),
     /// A field equals (case-insensitive) this text.
@@ -308,6 +311,7 @@ fn parse_term(body: &str, start: usize, end: usize) -> Result<Condition, QueryEr
         "task" if op == Op::Is => Ok(Condition::Task(value.to_lowercase())),
         "state" if op == Op::Is => Ok(Condition::State(value.to_lowercase())),
         "correlation" if op == Op::Is => Ok(Condition::Correlation(value.to_lowercase())),
+        "topic" if op == Op::Is => Ok(Condition::Topic(value.to_lowercase())),
         _ if op == Op::Is && value.contains(['*', '?']) => Ok(Condition::FieldGlob {
             key: key.to_owned(),
             pattern: glob(&value),
@@ -391,6 +395,11 @@ impl Query {
                         .is_some_and(|s| s.state.to_lowercase() == *state)
                         || field_text(event, "state").is_some_and(|t| t.to_lowercase() == *state)
                 }
+                Condition::Topic(topic) => event
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.topic.as_deref())
+                    .is_some_and(|t| t.to_lowercase() == *topic),
                 Condition::Correlation(id) => correlation_id(event.status.as_ref(), &event.line)
                     .is_some_and(|actual| actual.to_lowercase() == *id),
                 Condition::FieldIs { key, value } => {
@@ -532,13 +541,15 @@ mod tests {
             stream: "ecs/app/abc".into(),
             timestamp: Timestamp(datetime!(2026-01-15 12:00 UTC)),
             message:
-                r#"{"message":"status","acme":{"state":"FAILED","correlationId":"CE50-66FE"}}"#
+                r#"{"message":"status","acme":{"state":"FAILED","correlationId":"CE50-66FE","topicName":"example.orders"}}"#
                     .into(),
         });
         assert!(matches("state:failed", &status));
         assert!(!matches("state:COMPLETED", &status));
         assert!(matches("correlation:ce50-66fe", &status));
         assert!(!matches("correlation:other", &status));
+        assert!(matches("topic:Example.Orders", &status));
+        assert!(!matches("topic:example", &status));
         // A plain `state` field counts too (logs that aren't status events).
         let order = ecs("INFO", "order");
         assert!(!matches("state:SHIPPED", &order));

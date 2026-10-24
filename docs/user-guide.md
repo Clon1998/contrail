@@ -60,6 +60,9 @@ page has the details.
   See [Search syntax](query-syntax.md).
 - Level chips hide levels (middle click: only this level; right click: more); "Hide lines like this" builds a
   per-service noise list.
+- **Fields** (or F) opens a panel with every field of the matching events and its most common values; a click
+  on a value filters by it, Alt+click excludes it, and the counts follow the search. Whether the panel is open
+  is remembered per service for the session.
 
 ## Tracing across services
 

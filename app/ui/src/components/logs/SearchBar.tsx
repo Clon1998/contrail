@@ -23,7 +23,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { noiseKey, usePrefs } from "@/stores/prefs";
-import { stateTone } from "./states";
 import { hiddenForAtLeast, hiddenForOnly, LEVEL_TONE, LEVELS, toggleLevel } from "./levels";
 import { Hint } from "@/components/ui/tooltip";
 
@@ -39,7 +38,8 @@ const SYNTAX: [string, string][] = [
   ["log.logger:*Camel*", "a field matches (* and ?)"],
   ["pipeline.offset>=230000", "a number compared (> >= < <=)"],
   ["task:5f2a  message:x", "task ID prefix, message"],
-  ["state:FAILED  correlation:DE40…", "pipeline status, one document"],
+  ["state:FAILED  topic:orders", "pipeline status, its topic"],
+  ["correlation:DE40…", "one document"],
   ["-healthcheck", "exclude (any term)"],
 ];
 
@@ -189,49 +189,6 @@ function LevelChips() {
           </ContextMenu>
         );
       })}
-    </span>
-  );
-}
-
-/**
- * Pipeline state chips (only for services that log framework status events): counts per state;
- * clicking one filters by that state (again: shows all states).
- */
-function StateChips() {
-  const states = useLogs((s) => s.view?.stats.states);
-  const query = useLogs((s) => s.search.query);
-  const setSearch = useLogs((s) => s.setSearch);
-  const entries = Object.entries(states ?? {});
-  if (entries.length === 0) return null;
-  const terms = query.trim().split(/\s+/).filter(Boolean);
-  const active = terms
-    .find((t) => /^state:/i.test(t))
-    ?.slice("state:".length)
-    .toUpperCase();
-  const choose = (state: string) => {
-    const rest = terms.filter((t) => !/^state:/i.test(t));
-    const next = active === state ? rest : [...rest, `state:${state}`];
-    void setSearch({ query: next.join(" ") });
-  };
-  return (
-    <span className="flex items-center gap-1" role="group" aria-label="Pipeline states">
-      {entries.map(([state, count]) => (
-        <button
-          key={state}
-          type="button"
-          aria-label={`${state} ${count}`}
-          aria-pressed={active === state}
-          onClick={() => choose(state)}
-          className={cn(
-            "rounded border px-1.5 py-0.5 tabular-nums",
-            stateTone(state),
-            active === state && "bg-accent",
-            active && active !== state && "opacity-50",
-          )}
-        >
-          {state} {count.toLocaleString()}
-        </button>
-      ))}
     </span>
   );
 }
@@ -399,7 +356,6 @@ export function SearchBar() {
           </span>
         )}
         <span className="ml-auto flex items-center gap-2">
-          <StateChips />
           <LevelChips />
           <NoiseMenu />
         </span>

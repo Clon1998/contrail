@@ -396,3 +396,21 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   lock, and a new scan can replace the entry meanwhile without disturbing it. Like handing out an immutable
   snapshot from a `ConcurrentHashMap` instead of copying the value under a `synchronized` block.
 - **Where:** `RouteIndex` in `app/src-tauri/src/route_index.rs`.
+
+## Counting without copying: borrowed map keys and `Cow`
+
+- **What:** the field summary counts values in a `HashMap<Cow<'a, str>, u32>` whose keys borrow the text of the
+  events in the buffer (`'a` is how long the events live). Text values are `Cow::Borrowed` (no allocation);
+  numbers have no text to borrow and become `Cow::Owned(n.to_string())`. `Cow` ("clone on write") is an enum
+  of the two, used where a value is usually borrowed but sometimes has to be owned. Only the top values are
+  copied into the result, with `to_owned()`. In Java, every key would be a reference anyway; Rust makes the
+  borrow explicit, and the compiler checks the map doesn't outlive the events.
+- **Where:** `FieldCounter` in `crates/contrail-core/src/logs/fields.rs`.
+
+## Generic `impl IntoIterator` instead of `dyn Iterator`
+
+- **What:** `summarize(events: impl IntoIterator<Item = &'a LogEvent>)` takes all events of a buffer or only the
+  matches of a search (two different iterator types). As a generic parameter, the compiler generates a copy of
+  the function per type (monomorphization, no virtual calls), unlike a `Box<dyn Iterator>`, which is one
+  function calling through a vtable, like a Java interface.
+- **Where:** `summarize` in `crates/contrail-core/src/logs/fields.rs`, called from `LogView::field_summary`.

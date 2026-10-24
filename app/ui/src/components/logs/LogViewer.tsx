@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import {
   CircleAlertIcon,
   Columns3Icon,
+  ListTreeIcon,
   Loader2Icon,
   PauseIcon,
   PlayIcon,
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDateTime, shortTaskId } from "@/lib/ecs";
+import { isTyping } from "@/lib/keys";
 import { formatLogTime, liveHint, liveMode } from "@/lib/logs";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
@@ -34,6 +36,7 @@ import { usePrefs } from "@/stores/prefs";
 import { OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { ExportMenu } from "./ExportMenu";
 import { FieldMappingDialog } from "./FieldMappingDialog";
+import { FieldsPanel } from "./FieldsPanel";
 import { LogList } from "./LogList";
 import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
@@ -174,6 +177,34 @@ function LiveFailure() {
   );
 }
 
+/** Shows or hides the Fields panel; also with F. */
+function FieldsToggle() {
+  const open = useLogs((s) => s.fieldsOpen);
+  const setOpen = useLogs((s) => s.setFieldsOpen);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (event.key.toLowerCase() === "f" && plain && !isTyping(event.target)) {
+        event.preventDefault();
+        setOpen(!open);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, setOpen]);
+  return (
+    <Button
+      variant={open ? "secondary" : "ghost"}
+      size="xs"
+      aria-pressed={open}
+      tooltip="The fields of the matching events and their most common values (F)"
+      onClick={() => setOpen(!open)}
+    >
+      <ListTreeIcon /> Fields
+    </Button>
+  );
+}
+
 /** Radix Select can't use "" as a value, so "all tasks" gets a sentinel. */
 const ALL_TASKS = "__all__";
 
@@ -237,6 +268,7 @@ export function LogViewer() {
       logColumns: shown ? [...columns, column] : columns.filter((c) => c !== column),
     });
   const visible = useLogs((s) => s.visible);
+  const fieldsOpen = useLogs((s) => s.fieldsOpen);
   // The task filter only applies to the service it was set for.
   const taskId = taskFilter && sameService(taskFilter.service, selected) ? taskFilter.taskId : null;
 
@@ -273,6 +305,7 @@ export function LogViewer() {
             <Badge variant="outline">truncated</Badge>
           </Hint>
         )}
+        {view && <FieldsToggle />}
         <FieldMappingDialog />
         <ExportMenu />
         <DropdownMenu>
@@ -307,23 +340,28 @@ export function LogViewer() {
           </span>
         </p>
       )}
-      {loading && (
-        <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-          <Loader2Icon className="size-4 animate-spin" /> Loading logs…
-        </p>
-      )}
-      {!loading && view && view.stats.total === 0 && (
-        <p className="p-4 text-sm text-muted-foreground">No log events in this time window.</p>
-      )}
-      {!loading && view && view.stats.total > 0 && visible === 0 && (
-        <div>
-          <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
-          {!view.complete && <OlderMarker />}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {loading && (
+            <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+              <Loader2Icon className="size-4 animate-spin" /> Loading logs…
+            </p>
+          )}
+          {!loading && view && view.stats.total === 0 && (
+            <p className="p-4 text-sm text-muted-foreground">No log events in this time window.</p>
+          )}
+          {!loading && view && view.stats.total > 0 && visible === 0 && (
+            <div>
+              <p className="p-4 text-sm text-muted-foreground">No events match the search.</p>
+              {!view.complete && <OlderMarker />}
+            </div>
+          )}
+          {!loading && view && visible > 0 && (
+            <LogList viewId={view.viewId} total={visible} showTask={taskId === null} />
+          )}
         </div>
-      )}
-      {!loading && view && visible > 0 && (
-        <LogList viewId={view.viewId} total={visible} showTask={taskId === null} />
-      )}
+        {view && fieldsOpen && <FieldsPanel />}
+      </div>
     </div>
   );
 }
