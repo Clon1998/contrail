@@ -129,7 +129,13 @@ function MapNodeView({ data }: NodeProps<MapNode>) {
             <TooltipTrigger asChild>
               <ContextMenuTrigger asChild>{box}</ContextMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[28rem] p-2">
+            {/* A card in the popover colours rather than the inverted tooltip ones. */}
+            <TooltipContent
+              side="bottom"
+              sideOffset={6}
+              arrow={false}
+              className="max-w-[28rem] border border-border bg-popover p-2 text-popover-foreground shadow-lg"
+            >
               <ConfigList config={node.config} node={node} compact />
             </TooltipContent>
           </Tooltip>
