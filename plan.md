@@ -478,10 +478,9 @@ round. The numbers stay as they are (they're referenced in commits and docs).
 - Profiles and `sso-session` sections are still read from `~/.aws/config` as now. Only the login changes:
   when the AWS CLI isn't installed (or by a setting), Contrail runs the SSO device flow itself
   (`aws-sdk-ssooidc`) and opens the browser.
-- **Open point for Patrick:** where the token goes. Either it's written to the CLI's token cache
-  (`~/.aws/sso/cache`, shared with the CLI, the same file the CLI writes), or it's kept in memory only
-  (log in again after each app start). Record the choice in `docs/decisions.md`; the security docs must
-  describe it.
+- **Token storage (Patrick, 2026-10-26):** written to the CLI's token cache (`~/.aws/sso/cache`, the same
+  file and format the CLI writes), so the login survives restarts and is shared with the CLI and SDKs.
+  Recorded in `docs/decisions.md`; the security docs describe it.
 - **Done when:** the flow is covered by an HTTP mock test; demo mode simulates it; Patrick logs into a
   real profile on a machine without the CLI.
 
