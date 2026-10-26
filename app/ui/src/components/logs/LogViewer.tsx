@@ -42,6 +42,7 @@ import { FieldsPanel } from "./FieldsPanel";
 import { LogList } from "./LogList";
 import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
+import { ShareMenu } from "./ShareMenu";
 import { TimelineChart } from "./TimelineChart";
 import { TimeWindowPicker } from "./TimeWindowPicker";
 import { Hint } from "@/components/ui/tooltip";
@@ -359,6 +360,7 @@ export function LogViewer() {
         {view && <FieldsToggle />}
         <FieldMappingDialog />
         <ExportMenu />
+        <ShareMenu />
         <TimelineToggle />
         <WrapToggle />
         <DropdownMenu>

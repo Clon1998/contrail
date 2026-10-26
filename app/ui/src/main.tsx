@@ -18,6 +18,8 @@ const ready =
           rowsDelayMs: Number(new URLSearchParams(location.search).get("rowsDelay") ?? 0),
           olderDelayMs: Number(new URLSearchParams(location.search).get("olderDelay") ?? 0),
           update: new URLSearchParams(location.search).get("update") ?? undefined,
+          // `?link=contrail://…`: a link Contrail was started with.
+          link: new URLSearchParams(location.search).get("link") ?? undefined,
         }),
       )
     : Promise.resolve();

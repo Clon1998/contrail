@@ -1,7 +1,13 @@
 import { useState, type ReactNode } from "react";
-import { ArrowRightIcon, ChevronRightIcon, EyeOffIcon, FileSearchIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  ChevronRightIcon,
+  ExternalLinkIcon,
+  EyeOffIcon,
+  FileSearchIcon,
+} from "lucide-react";
 import { cn } from "cn";
-import type { LogEvent } from "@/bindings";
+import { commands, type LogEvent } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import {
   classifyTrace,
@@ -12,6 +18,7 @@ import {
   type TraceLineKind,
 } from "@/lib/logs";
 import { appendTerm, fieldTerm } from "@/lib/highlight";
+import { regionOf } from "@/lib/links";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { CopyButton } from "@/components/CopyButton";
@@ -121,6 +128,7 @@ export function LogDetails({ event }: { event: LogEvent }) {
   const applySearch = useLogs((s) => s.applySearch);
   const service = useLogs((s) => s.service);
   const profile = useLogs((s) => s.profile);
+  const view = useLogs((s) => s.view);
   const addNoise = usePrefs((s) => s.addNoise);
   const filterBy = (term: string) => void setSearch({ query: appendTerm(query, term) });
   // The first line of the message, cut at 80 characters: specific enough, short enough to read.
@@ -148,6 +156,20 @@ export function LogDetails({ event }: { event: LogEvent }) {
         )}
         {!documentId && traceId && (
           <TraceButton id={traceId} term={`"${traceId}"`} at={event.timestamp} />
+        )}
+        {view && service && (
+          <Button
+            variant="outline"
+            size="xs"
+            tooltip="This line and a minute around it in its stream, in the AWS console"
+            onClick={() =>
+              void commands
+                .consoleLink(view.viewId, regionOf(service.clusterArn), event.seq, null)
+                .then((r) => (r.status === "ok" ? commands.openConsole(r.data) : r))
+            }
+          >
+            <ExternalLinkIcon /> CloudWatch console
+          </Button>
         )}
       </div>
 
