@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { routePath, type ClusterGraph, type ClusterNode, type PathScope } from "@/lib/clusterGraph";
 import { layoutClusterGraph, NODE_HEIGHT, nodeWidth, type Position } from "@/lib/mapLayout";
+import type { CanvasMemory } from "@/stores/routeMaps";
 import { ConfigList } from "./RouteConfig";
 
 /** Lines feeding into the selected node (upstream), and lines it feeds (downstream). */
@@ -186,6 +187,10 @@ export function ClusterMapCanvas(props: {
   graph: ClusterGraph;
   selected: string | null;
   actions: MapActions;
+  /** Where the canvas was when it was last shown; it starts there if the same nodes are drawn. */
+  saved: CanvasMemory | null;
+  /** Called when the canvas goes away (another tab is shown), with where it was. */
+  onSave: (memory: CanvasMemory) => void;
 }) {
   return (
     <ReactFlowProvider>
@@ -194,19 +199,33 @@ export function ClusterMapCanvas(props: {
   );
 }
 
+/** Which nodes a graph has: a saved canvas only applies to the same ones. */
+const graphKey = (graph: ClusterGraph) =>
+  graph.nodes
+    .map((n) => n.id)
+    .sort()
+    .join("\n");
+
 function Canvas({
   graph,
   selected,
   actions,
-}: {
-  graph: ClusterGraph;
-  selected: string | null;
-  actions: MapActions;
-}) {
+  saved,
+  onSave,
+}: Parameters<typeof ClusterMapCanvas>[0]) {
   const flow = useReactFlow();
-  const [layout, setLayout] = useState<{ graph: ClusterGraph; at: Map<string, Position> } | null>(
-    null,
+  const key = useMemo(() => graphKey(graph), [graph]);
+  // Back where it was (a saved canvas of the same nodes), or laid out by ELK below.
+  const [layout, setLayout] = useState<{
+    graph: ClusterGraph;
+    at: Map<string, Position>;
+    viewport?: Viewport;
+  } | null>(() =>
+    saved?.graphKey === key ? { graph, at: saved.positions, viewport: saved.viewport } : null,
   );
+  const restoredGraph = useRef(layout ? graph : null);
+  // The node a restored canvas was saved with is already in view: no automatic pan for it.
+  const restoredSelection = useRef(layout ? selected : null);
   // Bumped by "Re-layout": the same graph laid out again, dragged nodes back in place.
   const [round, setRound] = useState(0);
   const [nodes, setNodes, onNodesChange] = useNodesState<MapNode>([]);
@@ -218,12 +237,33 @@ function Canvas({
   };
 
   useEffect(() => {
+    if (restoredGraph.current === graph && round === 0) return;
+    restoredGraph.current = null;
     let current = true;
     void layoutClusterGraph(graph).then((at) => current && setLayout({ graph, at }));
     return () => {
       current = false;
     };
   }, [graph, round]);
+
+  // Saved when the canvas goes away. The ref is updated after every render, so the cleanup (which
+  // runs once, at the end) sees the latest nodes and callback.
+  const latest = useRef({ nodes, key, onSave });
+  useEffect(() => {
+    latest.current = { nodes, key, onSave };
+  });
+  useEffect(
+    () => () => {
+      const { nodes: last, key: shown, onSave: save } = latest.current;
+      if (last.length === 0) return;
+      save({
+        graphKey: shown,
+        positions: new Map(last.map((n) => [n.id, n.position])),
+        viewport: flow.getViewport(),
+      });
+    },
+    [flow],
+  );
 
   const path = useMemo(
     () =>
@@ -260,6 +300,11 @@ function Canvas({
     if (!selected) {
       if (restoreRef.current) void flow.setViewport(restoreRef.current, { duration: 300 });
       restoreRef.current = null;
+      restoredSelection.current = null;
+      return;
+    }
+    if (selected === restoredSelection.current) {
+      restoredSelection.current = null;
       return;
     }
     // After the panel has opened and the map has its new width.
@@ -286,10 +331,13 @@ function Canvas({
     return () => clearTimeout(timer);
   }, [selected, flow]);
 
-  // Fit once the nodes of a new layout are measured (React Flow needs their sizes for it).
+  // Fit once the nodes of a new layout are measured (React Flow needs their sizes for it); a
+  // restored canvas goes back to its zoom and position instead.
   const measured = useNodesInitialized();
   useEffect(() => {
-    if (layout && measured) void flow.fitView({ padding: 0.1, duration: 200, maxZoom: 1 });
+    if (!layout || !measured) return;
+    if (layout.viewport) void flow.setViewport(layout.viewport);
+    else void flow.fitView({ padding: 0.1, duration: 200, maxZoom: 1 });
   }, [layout, measured, flow]);
 
   const styled = nodes.map((n) => ({

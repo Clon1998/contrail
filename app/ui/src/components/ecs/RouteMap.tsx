@@ -9,13 +9,7 @@ import {
   SquareArrowOutUpRightIcon,
   XIcon,
 } from "lucide-react";
-import {
-  commands,
-  type ApiError,
-  type ServiceTopology,
-  type TopicLink,
-  type Transformer,
-} from "@/bindings";
+import { commands, type ServiceTopology, type Transformer } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,18 +25,16 @@ import { formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { isTyping } from "@/lib/keys";
 import { useEcs } from "@/stores/ecs";
 import { usePrefs } from "@/stores/prefs";
+import {
+  recallRouteMap,
+  rememberRouteMap,
+  type CanvasMemory,
+  type RouteScan as Scan,
+  type TopologyScan as Topology,
+} from "@/stores/routeMaps";
 import type { RoutesTab } from "@/stores/tabs";
 import { ClusterMapCanvas, DOWNSTREAM_COLOR, UPSTREAM_COLOR } from "./ClusterMapCanvas";
 import { ConfigList } from "./RouteConfig";
-
-type Scan =
-  { kind: "loading" } | { kind: "done"; links: TopicLink[] } | { kind: "error"; error: ApiError };
-
-/** The transformers found in startup lines (read after the routes, it takes longer). */
-type Topology =
-  | { kind: "loading" }
-  | { kind: "done"; found: ServiceTopology[] }
-  | { kind: "error"; error: ApiError };
 
 /**
  * A cluster's route map, in a tab of its own: every route service (from the cluster's topic scan,
@@ -50,7 +42,8 @@ type Topology =
  * linked by topic, each with the external systems at its other end, on a canvas to zoom and pan.
  * The search keeps what lies on a path through the matching services, topics, systems or route
  * settings; a click on a node colours what feeds into it and what it feeds, and shows its routes.
- * Right-click narrows the map to one node's path or one side of it.
+ * Right-click narrows the map to one node's path or one side of it. Showing another tab and coming
+ * back brings it back as it was (see `stores/routeMaps`).
  */
 export function RouteMap({ tab }: { tab: RoutesTab }) {
   const { clusterArn } = tab;
@@ -58,11 +51,20 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
   const loaded = useEcs((s) => s.services[clusterArn]);
   const loadServices = useEcs((s) => s.loadServices);
   const transformers = usePrefs((s) => s.prefs.transformers);
-  const [scan, setScan] = useState<Scan>({ kind: "loading" });
-  const [topology, setTopology] = useState<Topology>({ kind: "loading" });
-  const [query, setQuery] = useState("");
-  const [focus, setFocus] = useState<string | null>(null);
-  const [scope, setScope] = useState<{ id: string; scope: PathScope } | null>(null);
+  // What the tab looked like when it was last shown (read once, when it mounts).
+  const [saved] = useState(() => recallRouteMap(tab.key));
+  const [scan, setScan] = useState<Scan>(saved?.scan ?? { kind: "loading" });
+  const [topology, setTopology] = useState<Topology>(saved?.topology ?? { kind: "loading" });
+  const [query, setQuery] = useState(saved?.query ?? "");
+  const [focus, setFocus] = useState<string | null>(saved?.focus ?? null);
+  const [scope, setScope] = useState<{ id: string; scope: PathScope } | null>(saved?.scope ?? null);
+  useEffect(() => {
+    rememberRouteMap(tab.key, { scan, topology, query, focus, scope });
+  }, [tab.key, scan, topology, query, focus, scope]);
+  const saveCanvas = useCallback(
+    (canvas: CanvasMemory) => rememberRouteMap(tab.key, { canvas }),
+    [tab.key],
+  );
   const [editing, setEditing] = useState<string | null>(null);
   const services = useMemo(
     () => (loaded && "data" in loaded ? (loaded.data ?? []) : []).map((s) => s.name),
@@ -117,13 +119,16 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
       }),
     [load, loadTopology],
   );
+  // Scanned already when the tab was shown before: nothing to load.
+  const scanned = saved?.scan.kind === "done" && saved.topology.kind === "done";
   useEffect(() => {
+    if (scanned) return;
     let current = true;
     void scanAll(false, () => current);
     return () => {
       current = false;
     };
-  }, [scanAll]);
+  }, [scanAll, scanned]);
 
   const found = useMemo(() => (topology.kind === "done" ? topology.found : []), [topology]);
   const whole = useMemo(
@@ -295,7 +300,13 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
             <p className="p-4 text-muted-foreground">Nothing matches “{query}”.</p>
           )}
           {graph.nodes.length > 0 && (
-            <ClusterMapCanvas graph={graph} selected={focus} actions={actions} />
+            <ClusterMapCanvas
+              graph={graph}
+              selected={focus}
+              actions={actions}
+              saved={saved?.canvas ?? null}
+              onSave={saveCanvas}
+            />
           )}
           <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col items-start gap-2">
             {editing !== null && (

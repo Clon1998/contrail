@@ -354,3 +354,38 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await map.getByRole("button", { name: "Show the whole map" }).click();
   await expect(node("service audit-archiver")).toBeVisible();
 });
+
+test("the route map comes back as it was after another tab", async ({ page }) => {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "demo-edge" }).hover();
+  await tree.getByRole("button", { name: "Route map of demo-edge" }).click();
+  const map = page.getByRole("main", { name: "Route map demo-edge" });
+  const graph = map.getByRole("group", { name: "Cluster route map" });
+  const gateway = graph.getByRole("button", { name: "service legacy-gateway", exact: true });
+
+  await map.getByRole("searchbox", { name: "Find in the route map" }).fill("demo");
+  await gateway.click();
+  await map.getByRole("button", { name: "Zoom in" }).click();
+  await page.waitForTimeout(400);
+  const before = await gateway.boundingBox();
+
+  await tree.getByRole("treeitem", { name: "demo-edge" }).getByRole("button").first().click();
+  await tree.getByRole("treeitem", { name: "legacy-gateway" }).click();
+  await expect(page.getByRole("main", { name: "Service legacy-gateway" })).toBeVisible();
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: /Routes/ })
+    .click();
+
+  await expect(map.getByRole("searchbox", { name: "Find in the route map" })).toHaveValue("demo");
+  await expect(map.getByRole("region", { name: "Node details" })).toContainText("legacy-gateway");
+  await expect
+    .poll(async () => {
+      const after = await gateway.boundingBox();
+      return after && before
+        ? Math.round(Math.abs(after.x - before.x) + Math.abs(after.y - before.y))
+        : -1;
+    })
+    .toBeLessThan(2);
+});
