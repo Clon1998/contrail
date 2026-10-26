@@ -232,7 +232,7 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await expect(ingestGraph.getByRole("button", { name: "service audit-archiver" })).toBeVisible();
 });
 
-test("a cluster's route map, with a transformer entered by hand", async ({ page }) => {
+test("a cluster's route map, with a transformer found in its startup logs", async ({ page }) => {
   await page.goto("/");
   const tree = page.getByRole("tree", { name: "Clusters" });
   await tree.getByRole("treeitem", { name: "demo-edge" }).hover();
@@ -248,18 +248,24 @@ test("a cluster's route map, with a transformer entered by hand", async ({ page 
   await expect(graph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
   await expect(graph.getByRole("button", { name: "service search-feeder" })).toBeVisible();
   await expect(graph.getByRole("button", { name: "topic orders.created" })).toBeVisible();
-  // The transformer has no routes: it isn't drawn, and the enriched topic has no writer.
-  await expect(graph.getByRole("button", { name: "service event-enricher" })).toHaveCount(0);
-  await map.getByText("1 service has no routes and isn't drawn").click();
+  // The transformer has no routes, but its startup lines say what it reads and writes.
+  const enricher = graph.getByRole("button", { name: "service event-enricher" });
+  await expect(enricher).toContainText("transformer");
+  await expect(map.getByText(/services? ha(s|ve) no routes/)).toHaveCount(0);
+  await enricher.click();
+  const details = map.getByRole("region", { name: "Node details" });
+  await expect(details).toContainText("from the startup logs of task");
+  await expect(details).toContainText("demo.events: event-enricher ×3");
 
-  await map.getByRole("button", { name: "event-enricher" }).click();
+  // Entered by hand, its topics take the place of what the logs say.
+  await details.getByRole("button", { name: "Override topics" }).click();
   const form = map.getByRole("form", { name: "Transformer" });
-  await form.getByLabel("Reads").fill("demo.events");
-  await form.getByLabel("Writes").fill("demo.events.enriched");
+  await expect(form.getByLabel("Reads")).toHaveValue("demo.events");
+  await form.getByLabel("Writes").fill("demo.events.enriched, demo.events.audit");
   await form.getByRole("button", { name: "Save" }).click();
-  await expect(graph.getByRole("button", { name: "service event-enricher" })).toContainText(
-    "transformer",
-  );
+  await expect(graph.getByRole("button", { name: "topic demo.events.audit" })).toBeVisible();
+  await expect(details).toContainText("topics entered by hand");
+  await enricher.click();
 
   // Finding a service keeps what lies on its paths: the way to it, not its siblings.
   await map.getByRole("searchbox", { name: "Find in the route map" }).fill("search-feeder");

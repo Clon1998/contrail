@@ -171,7 +171,7 @@ pub async fn startup_topology(
     find_startup_topology(&state, &ctx, &cluster_arn, scan).await
 }
 
-async fn find_startup_topology(
+pub(crate) async fn find_startup_topology(
     state: &AppState,
     ctx: &AwsCtx,
     cluster_arn: &str,

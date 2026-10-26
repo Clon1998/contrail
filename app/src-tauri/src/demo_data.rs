@@ -42,6 +42,13 @@ async fn record() -> Value {
     };
 
     let clusters = ecs.list_clusters(&ctx).await.unwrap();
+    // The transformers' startup lines, read the way the app does, from the same fixed instant.
+    let mut state = crate::state::AppState::demo();
+    state.ecs = Arc::new(FakeEcs::with_fixed_now(
+        Arc::new(FakeAuth::new()),
+        recorded_at,
+    ));
+    let mut topology = BTreeMap::new();
     // BTreeMaps keep the keys sorted, so the file is stable between runs.
     let mut services = BTreeMap::new();
     let mut details = BTreeMap::new();
@@ -61,6 +68,15 @@ async fn record() -> Value {
             tasks.insert(key, ecs.list_tasks(&ctx, &service_ref, true).await.unwrap());
         }
         services.insert(cluster.arn.clone(), list);
+        let found = crate::commands::ecs::find_startup_topology(
+            &state,
+            &ctx,
+            &cluster.arn,
+            crate::commands::ecs::TopicScan::Fresh,
+        )
+        .await
+        .unwrap();
+        topology.insert(cluster.arn.clone(), found.unwrap_or_default());
     }
 
     json!({
@@ -71,6 +87,7 @@ async fn record() -> Value {
         "services": services,
         "details": details,
         "tasks": tasks,
+        "topology": topology,
     })
 }
 

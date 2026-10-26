@@ -1,9 +1,35 @@
-import type { Endpoint, TopicLink, Transformer } from "@/bindings";
+import type { Endpoint, ServiceTopology, TopicLink, Transformer } from "@/bindings";
 import { layerColumns, pathThrough, type Graph, type GraphEdge, type GraphNode } from "./routes";
 
+/** Where a transformer's topics come from: its startup log lines, or entered by hand. */
+export type TransformerOrigin = "logs" | "manual";
+
+/** A transformer's topics and where they come from (entered by hand when not said). */
+export interface KnownTransformer extends Transformer {
+  origin?: TransformerOrigin;
+}
+
 export interface ClusterNode extends GraphNode {
-  /** A service whose topics were entered by hand (a transformer). */
+  /** A service that reads and writes topics from its code (a transformer). */
   transformer: boolean;
+  /** Where a transformer's topics come from; `null` for everything else. */
+  origin: TransformerOrigin | null;
+}
+
+/**
+ * The transformers to draw: those found in startup lines, and those entered by hand. A service
+ * entered by hand is drawn as entered, even when its startup lines say otherwise.
+ */
+export function knownTransformers(
+  found: ServiceTopology[],
+  manual: Record<string, Transformer>,
+): Record<string, KnownTransformer> {
+  const known: Record<string, KnownTransformer> = {};
+  for (const t of found) {
+    known[t.service] = { reads: t.reads.map((r) => r.topic), writes: t.writes, origin: "logs" };
+  }
+  for (const [name, t] of Object.entries(manual)) known[name] = { ...t, origin: "manual" };
+  return known;
 }
 
 export interface ClusterGraph extends Graph {
@@ -17,14 +43,14 @@ export const clusterServiceId = (name: string) => `service:${name}`;
 
 /**
  * A whole cluster's routes as one graph: input services write topics, output services read them,
- * transformers (entered by hand) read one topic and write the next, each service with the external
+ * transformers (from their startup lines or entered by hand) read one topic and write the next, each service with the external
  * systems at its other end. A system several services use is one node, so the graph shows who
  * shares it. `services` are the cluster's services: transformers of other clusters are left out,
  * and the services that are neither route services nor transformers are counted in `leftOut`.
  */
 export function buildClusterGraph(
   links: TopicLink[],
-  transformers: Record<string, Transformer>,
+  transformers: Record<string, KnownTransformer>,
   services: string[],
 ): ClusterGraph {
   const nodes = new Map<string, Omit<ClusterNode, "column">>();
@@ -32,13 +58,13 @@ export function buildClusterGraph(
 
   const node = (
     id: string,
-    template: Omit<ClusterNode, "id" | "column" | "self" | "disabled">,
+    template: Omit<ClusterNode, "id" | "column" | "self" | "disabled" | "origin">,
     disabled: boolean,
   ) => {
     const existing = nodes.get(id);
     // On as soon as one route through it is on.
     if (existing) existing.disabled &&= disabled;
-    else nodes.set(id, { ...template, id, self: false, disabled });
+    else nodes.set(id, { ...template, id, self: false, disabled, origin: null });
     return id;
   };
   const edge = (from: string, to: string, disabled: boolean) => {
@@ -97,6 +123,7 @@ export function buildClusterGraph(
     if (existing) {
       existing.transformer = true;
       existing.detail = "transformer";
+      existing.origin = transformer.origin ?? "manual";
     }
     for (const read of transformer.reads) edge(topic(read, false), service, false);
     for (const written of transformer.writes) edge(service, topic(written, false), false);
