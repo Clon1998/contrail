@@ -40,6 +40,7 @@ import type {
   TraceHit,
   UpdateInfo,
 } from "@/bindings";
+import { looksSecret } from "@/lib/ecs";
 import { splitTerms } from "@/lib/queryTerms";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -510,9 +511,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
                   direction: route.input ? "in" : "out",
                   group: route.group,
                   enabled: route.enabled,
+                  // Values of secrets are left out, like the Rust side does.
                   endpoints: (route.input ? [route.input] : route.outputs).map((e) => ({
                     ...e,
-                    properties: [],
+                    properties: e.properties.map((p) => ({
+                      ...p,
+                      value: p.valueFrom || looksSecret(p.variable) ? "" : p.value,
+                    })),
                   })),
                 });
               }

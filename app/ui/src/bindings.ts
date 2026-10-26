@@ -913,7 +913,8 @@ export type TopicLink = {
 	enabled: boolean,
 	/**
 	 *  Where that service's route gets its data from (input) or sends it to (outputs): type,
-	 *  system and whether it is on. Their properties are left out; the graph doesn't show them.
+	 *  system, whether it is on and its settings (for the map's details and search). Values of
+	 *  secrets are left out (see [`RouteProperty::masked`]): they never reach the UI.
 	 */
 	endpoints: Endpoint[],
 };

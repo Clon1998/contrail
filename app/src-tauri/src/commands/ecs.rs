@@ -3,7 +3,7 @@
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{ClusterSummary, ServiceDetail, ServiceRef, ServiceSummary, Task};
 use contrail_core::logs::{StreamSelection, TimeRange, process, resolve_log_location};
-use contrail_core::routes::Endpoint;
+use contrail_core::routes::{Endpoint, RouteProperty};
 use contrail_core::timestamp::Timestamp;
 use contrail_core::topology::{ConsumedTopic, STARTUP_PHRASE, startup_topology as read_startup};
 use tauri::State;
@@ -85,7 +85,8 @@ pub struct TopicLink {
     /// The route is switched on.
     pub enabled: bool,
     /// Where that service's route gets its data from (input) or sends it to (outputs): type,
-    /// system and whether it is on. Their properties are left out; the graph doesn't show them.
+    /// system, whether it is on and its settings (for the map's details and search). Values of
+    /// secrets are left out (see [`RouteProperty::masked`]): they never reach the UI.
     pub endpoints: Vec<Endpoint>,
 }
 
@@ -375,7 +376,7 @@ fn topic_links(
                 endpoints: endpoints
                     .iter()
                     .map(|e| Endpoint {
-                        properties: Vec::new(),
+                        properties: e.properties.iter().map(RouteProperty::masked).collect(),
                         ..e.clone()
                     })
                     .collect(),
@@ -440,14 +441,27 @@ mod tests {
                 ("partner-poller", TopicDirection::In, None),
             ]
         );
-        // Their targets come along (for the graph's next column), without their settings.
+        // Their targets come along (for the graph's next column), with their settings.
         let systems: Vec<_> = links[0]
             .endpoints
             .iter()
             .map(|e| e.system.as_deref())
             .collect();
         assert_eq!(systems, [Some("Audit Archive"), Some("Search Index")]);
-        assert!(links[0].endpoints.iter().all(|e| e.properties.is_empty()));
+        assert!(links[0].endpoints.iter().all(|e| !e.properties.is_empty()));
+        // A password in a plain variable is left out; the other settings are there.
+        let gateway = links
+            .iter()
+            .find(|l| l.service == "legacy-gateway")
+            .unwrap();
+        let settings: Vec<_> = gateway
+            .endpoints
+            .iter()
+            .flat_map(|e| &e.properties)
+            .map(|p| (p.key.as_str(), p.value.as_str()))
+            .collect();
+        assert!(settings.contains(&("password", "")), "{settings:?}");
+        assert!(settings.contains(&("url", "https://api.example.com/in")));
     }
 
     /// The demo ECS source, recording which calls reach it.

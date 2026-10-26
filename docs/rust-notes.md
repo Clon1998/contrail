@@ -438,3 +438,10 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   no new type). `#[derive(Default)]` on a generic struct adds the bound `T: Default` to the generated impl, even
   though an empty map needs no default `T`; writing `impl<T> Default for ClusterIndex<T>` by hand avoids that.
 - **Where:** `app/src-tauri/src/route_index.rs` (routes and the transformers' startup topology).
+
+## A regex compiled once: `static … LazyLock<Regex>`
+
+- **What:** `static SECRET_NAME: LazyLock<Regex> = LazyLock::new(|| Regex::new(…))` builds the regex on first
+  use and shares it between threads afterwards, like a lazily initialised `static final Pattern` in Java.
+  `Regex::new` inside a function would compile the pattern on every call.
+- **Where:** `SECRET_NAME` / `RouteProperty::is_secret` in `crates/contrail-core/src/routes.rs`.

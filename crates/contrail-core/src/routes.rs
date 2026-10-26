@@ -40,6 +40,37 @@ pub struct RouteProperty {
     pub value_from: Option<String>,
 }
 
+/// Variable names that usually hold a credential, as whole words (`…KEYEXPRESSION` isn't a key).
+/// The same rule as `looksSecret` in the UI.
+///
+/// `LazyLock` compiles the regex once, on first use, and shares it between threads (like a Java
+/// `static final` field with lazy initialisation).
+static SECRET_NAME: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+    Regex::new(
+        r"(?i)(^|[_.-])(PASSWORD|PASSWD|PWD|SECRET|TOKEN|CREDENTIALS?|API_?KEY|ACCESS_KEY|PRIVATE_KEY|KEY)([_.-]|$)",
+    )
+    .expect("valid regex")
+});
+
+impl RouteProperty {
+    /// Filled from a secret, or a plain variable whose name says it holds a credential.
+    pub fn is_secret(&self) -> bool {
+        self.value_from.is_some() || SECRET_NAME.is_match(&self.variable)
+    }
+
+    /// The property with the value of a secret left out (the reference stays).
+    pub fn masked(&self) -> RouteProperty {
+        RouteProperty {
+            value: if self.is_secret() {
+                String::new()
+            } else {
+                self.value.clone()
+            },
+            ..self.clone()
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct Route {
@@ -256,6 +287,32 @@ mod tests {
             route.outputs[0].properties[0].variable,
             "ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN"
         );
+    }
+
+    #[test]
+    fn credentials_are_masked_by_reference_or_name() {
+        let property = |variable: &str, value_from: Option<&str>| RouteProperty {
+            key: "k".into(),
+            value: "plain".into(),
+            variable: variable.into(),
+            value_from: value_from.map(str::to_owned),
+        };
+        for secret in [
+            property("ROUTES_0_OUTPUTS_0_PROPERTIES_PASSWORD", None),
+            property("ROUTES_0_INPUT_PROPERTIES_API_KEY", None),
+            property("ROUTES_0_INPUT_PROPERTIES_HOST", Some("arn:aws:ssm:…")),
+        ] {
+            assert!(secret.is_secret(), "{}", secret.variable);
+            assert_eq!(secret.masked().value, "");
+            assert_eq!(secret.masked().value_from, secret.value_from);
+        }
+        for plain in [
+            property("ROUTES_0_INPUT_PROPERTIES_HOST", None),
+            property("ROUTES_0_INPUT_PROPERTIES_KEYEXPRESSION", None),
+        ] {
+            assert!(!plain.is_secret(), "{}", plain.variable);
+            assert_eq!(plain.masked().value, "plain");
+        }
     }
 
     #[test]
