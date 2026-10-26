@@ -400,3 +400,15 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   transformer come from (startup logs of which task, or by hand). Origin is per transformer, not per edge.
 - **Demo:** the fake can't know when its tasks started (events are a pure function of stream and time), so
   `event-enricher` repeats its startup lines every 15 minutes; any 15-minute window holds them once.
+
+## 2026-10-26 — Route map v2 on React Flow and ELK (M10.3, evaluation)
+
+- **Why:** the team found the column layout of a big cluster's map messy: no zoom, and fixed column headers that
+  are wrong once a transformer chain shifts nodes by a column. This replaces "Zoom was left out" of M10.
+- **Libraries (Patrick approved both):** `@xyflow/react` 12.12.0 (MIT) for the canvas (zoom, pan, dragging,
+  custom nodes, edges, minimap); `elkjs` 0.12.0 for the layered left-to-right layout (Eclipse Layout Kernel
+  compiled to JS). Hand-rolling zoom, pan and dragging would be a lot of fiddly code for a worse result.
+- **elkjs licence:** EPL-2.0 (or GPL-3.0). Contrail stays MIT: elkjs is used unmodified as a separate library,
+  and EPL's copyleft only covers changes to its own files. Its licence ships with the package.
+- **Scope:** only the cluster route map moves to the canvas. The per-service route graph and the trace graph keep
+  the column view, where the columns do mean the same thing on every row.
