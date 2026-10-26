@@ -583,6 +583,52 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn links_a_view_or_one_event_to_the_console() {
+        use crate::commands::links::console_link_of;
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
+
+        let view = console_link_of(
+            &state,
+            info.view_id,
+            "eu-central-1".into(),
+            None,
+            Some("timeout".into()),
+        )
+        .unwrap();
+        assert!(view.starts_with("https://eu-central-1.console.aws.amazon.com/cloudwatch/home"));
+        assert!(view.contains("log-group/$252Fecs$252Flegacy-gateway/log-events"));
+        assert!(view.contains("filterPattern$3D$2522timeout$2522"));
+        // A whole service: no stream filter.
+        assert!(!view.contains("logStreamNameFilter"));
+
+        let (seq, stream) = {
+            let views = state.views.lock().unwrap();
+            let event = views[&info.view_id].buffer.iter().next().unwrap();
+            (event.seq, event.stream.clone())
+        };
+        let event =
+            console_link_of(&state, info.view_id, "eu-central-1".into(), Some(seq), None).unwrap();
+        assert!(event.contains(&format!(
+            "logStreamNameFilter$3D{}",
+            stream.replace('/', "$252F")
+        )));
+        assert!(
+            console_link_of(
+                &state,
+                info.view_id,
+                "eu-central-1".into(),
+                Some(u32::MAX),
+                None
+            )
+            .is_err()
+        );
+    }
+
+    #[tokio::test]
     async fn the_timeline_counts_the_listed_events() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-edge", "legacy-gateway");

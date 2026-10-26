@@ -27,7 +27,7 @@ const BINDINGS_PATH: &str = "../ui/src/bindings.ts";
 /// functions for them, so the frontend can't call a command with the wrong name or arguments.
 /// It's a separate function so both [`run`] and the `export_bindings` test can use it.
 fn specta_builder() -> Builder<tauri::Wry> {
-    use commands::{app, auth, ecs, files, logs, prefs, trace, update};
+    use commands::{app, auth, ecs, files, links, logs, prefs, trace, update};
 
     Builder::<tauri::Wry>::new().commands(collect_commands![
         app::app_info,
@@ -54,6 +54,9 @@ fn specta_builder() -> Builder<tauri::Wry> {
         ecs::cluster_routes,
         ecs::startup_topology,
         files::save_image,
+        links::view_link,
+        links::parse_view_link,
+        links::console_link,
         trace::trace_id,
         update::check_for_update,
         update::install_update,
@@ -109,7 +112,18 @@ pub fn run() {
     // here keeps every connection on the same one (`install_default` only fails if one is set).
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default();
+    // Must come first: a link opened while Contrail runs starts a second process on Windows and
+    // Linux; this hands its link to the running app (to the deep-link plugin) and brings the
+    // window forward, then the second process quits.
+    #[cfg(any(windows, target_os = "linux"))]
+    let app = app.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+        }
+    }));
+    app.plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -122,6 +136,15 @@ pub fn run() {
                 AppState::aws(&app.path().app_data_dir()?)?
             };
             app.manage(state);
+            // `contrail://` links: installers register the scheme on Windows and macOS; an AppImage
+            // (Linux) and development builds register it when they start.
+            #[cfg(any(target_os = "linux", all(windows, debug_assertions)))]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                if let Err(err) = app.deep_link().register_all() {
+                    tracing::warn!(%err, "could not register contrail:// links");
+                }
+            }
             tracing::info!(
                 version = env!("CARGO_PKG_VERSION"),
                 demo,
