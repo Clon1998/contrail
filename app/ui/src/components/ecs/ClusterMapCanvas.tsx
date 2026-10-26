@@ -61,7 +61,13 @@ const Actions = createContext<MapActions | null>(null);
 /** How a node is drawn relative to the selection. */
 type Tone = "selected" | "upstream" | "downstream" | "both" | "dimmed" | null;
 
-type MapNodeData = { node: ClusterNode; tone: Tone; match: string | null };
+type MapNodeData = {
+  node: ClusterNode;
+  tone: Tone;
+  match: string | null;
+  /** The search match last jumped to. */
+  current: boolean;
+};
 type MapNode = Node<MapNodeData, "map">;
 
 const NODE_ICON = { system: PlugIcon, service: ServerIcon, topic: WavesIcon } as const;
@@ -71,7 +77,7 @@ const NODE_ICON = { system: PlugIcon, service: ServerIcon, topic: WavesIcon } as
  * node has the same height (for the layout); one-line nodes (topics) are centred in it.
  */
 function MapNodeView({ data }: NodeProps<MapNode>) {
-  const { node, tone, match } = data;
+  const { node, tone, match, current } = data;
   const actions = use(Actions);
   const Icon = NODE_ICON[node.kind];
   const box = (
@@ -93,6 +99,7 @@ function MapNodeView({ data }: NodeProps<MapNode>) {
         (tone === "downstream" || tone === "both") && "border-solid border-primary",
         tone === "dimmed" && "opacity-30",
         match !== null && "ring-2 ring-warning/70",
+        current && "bg-warning/15 ring-4 ring-warning",
       )}
     >
       <Icon className="size-3.5 shrink-0 text-muted-foreground" />
@@ -191,6 +198,8 @@ export function ClusterMapCanvas(props: {
   saved: CanvasMemory | null;
   /** Called when the canvas goes away (another tab is shown), with where it was. */
   onSave: (memory: CanvasMemory) => void;
+  /** A search match to centre and zoom to (`nonce` makes jumping to it again work). */
+  jump: { id: string; nonce: number } | null;
 }) {
   return (
     <ReactFlowProvider>
@@ -212,6 +221,7 @@ function Canvas({
   actions,
   saved,
   onSave,
+  jump,
 }: Parameters<typeof ClusterMapCanvas>[0]) {
   const flow = useReactFlow();
   const key = useMemo(() => graphKey(graph), [graph]);
@@ -288,7 +298,7 @@ function Canvas({
         id: node.id,
         type: "map",
         position: layout.at.get(node.id) ?? { x: 0, y: 0 },
-        data: { node, tone: null, match: null },
+        data: { node, tone: null, match: null, current: false },
       })),
     );
   }, [layout, setNodes]);
@@ -331,6 +341,22 @@ function Canvas({
     return () => clearTimeout(timer);
   }, [selected, flow]);
 
+  // Jumping to a search match: centre it and zoom in to at least 100 %. A move the user asked
+  // for, so closing the details won't undo it.
+  useEffect(() => {
+    if (!jump) return;
+    const node = flow.getInternalNode(jump.id);
+    if (!node) return;
+    userMoved();
+    const at = node.internals.positionAbsolute;
+    const zoom = Math.max(flow.getViewport().zoom, 1);
+    void flow.setCenter(
+      at.x + (node.measured.width ?? 0) / 2,
+      at.y + (node.measured.height ?? 0) / 2,
+      { zoom, duration: 300 },
+    );
+  }, [jump, flow]);
+
   // Fit once the nodes of a new layout are measured (React Flow needs their sizes for it); a
   // restored canvas goes back to its zoom and position instead.
   const measured = useNodesInitialized();
@@ -342,7 +368,12 @@ function Canvas({
 
   const styled = nodes.map((n) => ({
     ...n,
-    data: { ...n.data, tone: toneOf(n.id), match: graph.matches?.get(n.id) ?? null },
+    data: {
+      ...n.data,
+      tone: toneOf(n.id),
+      match: graph.matches?.get(n.id) ?? null,
+      current: n.id === jump?.id,
+    },
   }));
   const edges: Edge[] = graph.edges.map((e) => {
     const up = path?.upstream.edges.has(e.id) ?? false;

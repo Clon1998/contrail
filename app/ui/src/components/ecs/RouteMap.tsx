@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ChevronDownIcon,
+  ChevronUpIcon,
   CircleXIcon,
   EyeOffIcon,
   FilterIcon,
@@ -61,6 +63,9 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
   const [focus, setFocus] = useState<string | null>(saved?.focus ?? null);
   const [scope, setScope] = useState<{ id: string; scope: PathScope } | null>(saved?.scope ?? null);
   const [hideDisabled, setHideDisabled] = useState(saved?.hideDisabled ?? false);
+  // Stepping through the search's matches (Enter / Shift+Enter): the one last jumped to.
+  const [jump, setJump] = useState<{ id: string; nonce: number } | null>(null);
+  const searchBox = useRef<HTMLInputElement>(null);
   useEffect(() => {
     rememberRouteMap(tab.key, { scan, topology, query, focus, scope, hideDisabled });
   }, [tab.key, scan, topology, query, focus, scope, hideDisabled]);
@@ -155,6 +160,17 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
   );
   const routeServices = whole.nodes.filter((n) => n.kind === "service" && !n.transformer).length;
   const focused = graph.nodes.find((n) => n.id === focus) ?? null;
+  // In the order the graph lists them (left to right, roughly).
+  const matchIds = useMemo(
+    () => graph.nodes.filter((n) => graph.matches?.has(n.id)).map((n) => n.id),
+    [graph],
+  );
+  const matchIndex = jump ? matchIds.indexOf(jump.id) : -1;
+  const step = (direction: 1 | -1) => {
+    if (matchIds.length === 0) return;
+    const next = (matchIndex + direction + matchIds.length) % matchIds.length;
+    setJump({ id: matchIds[next] ?? "", nonce: Date.now() });
+  };
   const scopedTo = scope && whole.nodes.find((n) => n.id === scope.id);
   const openService = useEcs((s) => s.openService);
   const actions = useMemo(
@@ -170,9 +186,14 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
     [clusterArn, openService],
   );
 
-  // Esc clears the selection first, then the narrowing to one path.
+  // Esc clears the selection first, then the narrowing to one path; "/" goes to the search.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "/" && !isTyping(event.target)) {
+        event.preventDefault();
+        searchBox.current?.focus();
+        return;
+      }
       if (event.key !== "Escape" || isTyping(event.target)) return;
       if (focus) setFocus(null);
       else if (scope) setScope(null);
@@ -212,13 +233,52 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
             </Button>
           )}
           <Input
+            ref={searchBox}
             type="search"
             aria-label="Find in the route map"
-            placeholder="Find a service, topic, system, host, path…"
+            placeholder="Find a service, topic, system, host, path… (/)"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setJump(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                step(e.shiftKey ? -1 : 1);
+              }
+            }}
             className="h-7 w-64 text-xs"
           />
+          {query.trim() !== "" && (
+            <span className="flex items-center text-xs text-muted-foreground tabular-nums">
+              <span aria-label="Matches" className="px-1">
+                {matchIds.length === 0
+                  ? "0"
+                  : `${matchIndex >= 0 ? matchIndex + 1 : "–"} / ${matchIds.length}`}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Previous match"
+                tooltip="Shift+Enter"
+                disabled={matchIds.length === 0}
+                onClick={() => step(-1)}
+              >
+                <ChevronUpIcon />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Next match"
+                tooltip="Enter"
+                disabled={matchIds.length === 0}
+                onClick={() => step(1)}
+              >
+                <ChevronDownIcon />
+              </Button>
+            </span>
+          )}
           <Button
             variant={hideDisabled ? "secondary" : "outline"}
             size="xs"
@@ -318,6 +378,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
               actions={actions}
               saved={saved?.canvas ?? null}
               onSave={saveCanvas}
+              jump={jump}
             />
           )}
           <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col items-start gap-2">

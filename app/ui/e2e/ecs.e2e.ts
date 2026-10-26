@@ -342,7 +342,23 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await expect(node("service event-ingest")).toBeVisible();
   await expect(node("service partner-poller")).toHaveCount(0);
   await expect(node("system Order Portal")).toHaveCount(0);
+
+  // Enter and Shift+Enter step through the matches.
+  await search.fill("example.com");
+  const count = map.getByLabel("Matches");
+  await expect(count).toHaveText(/^– \/ \d+$/);
+  await search.press("Enter");
+  await expect(count).toHaveText(/^1 \/ \d+$/);
+  await search.press("Enter");
+  await expect(count).toHaveText(/^2 \/ \d+$/);
+  await search.press("Shift+Enter");
+  await expect(count).toHaveText(/^1 \/ \d+$/);
   await search.fill("");
+  // "/" goes to the search from the map.
+  await search.blur();
+  await page.keyboard.press("/");
+  await expect(search).toBeFocused();
+  await search.blur();
 
   // Switched-off routes can be hidden.
   await expect(node("system Example Partner API (disabled)")).toBeVisible();
