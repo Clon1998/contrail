@@ -73,6 +73,8 @@ impl From<AuthError> for ApiError {
             ),
             AuthError::LoginFailed { .. } => ApiError::new(ErrorCode::LoginFailed, message)
                 .with_hint("Check the login output above, or run `aws sso login` in a terminal."),
+            AuthError::DeviceLoginFailed(_) => ApiError::new(ErrorCode::LoginFailed, message)
+                .with_hint("Log in again and confirm the code in the browser within about 10 minutes."),
             AuthError::Credentials { profile, .. } => ApiError::new(ErrorCode::Credentials, message)
                 .with_hint(format!("Log in again (aws sso login --profile {profile}).")),
             AuthError::Aws(_) => ApiError::new(ErrorCode::Aws, message),

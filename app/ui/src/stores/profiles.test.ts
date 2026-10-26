@@ -47,17 +47,20 @@ describe("profiles store", () => {
     expect(state.identity).toMatchObject({ state: "ok", identity: { account: "333344445555" } });
   });
 
-  it("keeps the error when the AWS CLI is missing", async () => {
-    installFakeBackend({ cliMissing: true });
+  it("logs in without the AWS CLI with a code to confirm", async () => {
+    installFakeBackend({ noCli: true });
     await useProfiles.getState().load();
     await useProfiles.getState().select("demo-sandbox");
 
     await useProfiles.getState().startLogin();
 
-    expect(useProfiles.getState().login).toMatchObject({
+    const state = useProfiles.getState();
+    expect(state.login).toMatchObject({
       running: false,
-      error: { code: "cliMissing" },
+      error: null,
+      device: { code: "DEMO-CODE" },
     });
+    expect(state.statuses["demo-sandbox"]?.state).toBe("valid");
   });
 
   it("uses the saved region override before the profile's region", async () => {

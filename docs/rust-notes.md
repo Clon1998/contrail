@@ -452,3 +452,11 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   trait, and Rust only finds trait methods when the trait is imported (Java has no equivalent: an interface's
   methods are always visible on the object). The compiler's error says which trait to import.
 - **Where:** `app/src-tauri/src/commands/files.rs`.
+
+## `if let … && let …` (let chains, edition 2024)
+
+- **What:** `if let (LoginProgress::Device { url, .. }, false) = (&progress, demo) && let Err(err) = open(url)`
+  matches a pattern and, only if it matched, runs and matches the next expression, all in one `if`. Before edition
+  2024 this needed nested `if let` blocks. Like a Java `if (x instanceof Device d && !demo)` with a second check
+  that can use `d`.
+- **Where:** the `sso_login` command in `app/src-tauri/src/commands/auth.rs`.

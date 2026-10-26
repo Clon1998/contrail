@@ -8,8 +8,9 @@ installs the app and uses their own AWS login.
 
 - **Contrail** ([Download](https://clon1998.github.io/contrail/download/)). It updates itself; the update check can
   be switched off in **Settings → About → Updates**.
-- **The [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)**, for SSO
-  logins. Contrail runs `aws sso login` for you when you click **Log in**.
+- **Optionally the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)**:
+  Contrail runs `aws sso login` for you when it's installed, and logs in itself otherwise (a code to confirm in the
+  browser; the token goes to the CLI's cache).
 - **AWS profiles** in `~/.aws/config`. SSO profiles (IAM Identity Center) are the main case; profiles with assume
   role, `credential_process` or static keys work too, because the AWS SDK resolves them like the CLI does.
 

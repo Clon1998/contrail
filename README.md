@@ -59,8 +59,9 @@ Contrail updates itself:
 The builds aren't code-signed yet. On macOS, right-click the app → **Open** the first time. On Windows, SmartScreen
 asks once: **More info → Run anyway**. On Linux, make the AppImage executable with `chmod +x`.
 
-Contrail needs the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) for
-SSO logins.
+SSO logins use the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) when
+it's installed; without it, Contrail logs in itself (a code to confirm in the browser) and shares the token with the
+CLI's cache.
 
 ## Getting started
 

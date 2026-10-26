@@ -177,8 +177,8 @@ export const DEMO_PROFILES: Profile[] = [
 export interface FakeBackendOptions {
   /** How long the fake login takes. */
   loginDelayMs?: number;
-  /** Make every login fail with the CLI-missing error. */
-  cliMissing?: boolean;
+  /** No AWS CLI: logins use the built-in device flow (a page and a code), like the app does. */
+  noCli?: boolean;
   /** Preferences to start with (default: none). */
   prefs?: Partial<Prefs>;
   /** How often live tails add an event (default: every second). */
@@ -243,6 +243,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       newestFirst: false,
       wrapLines: false,
       showTimeline: true,
+      builtinLogin: false,
       checkForUpdates: true,
     },
     noise: {},
@@ -463,17 +464,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       case "sso_login": {
         const name = args?.profile as string;
         const channel = args?.onProgress as { id: number };
-        if (options.cliMissing) {
-          throw {
-            code: "cliMissing",
-            message: "the AWS CLI (`aws`) was not found",
-            hint: "Install AWS CLI v2, then try again.",
-          };
+        if (options.noCli || prefs.settings.builtinLogin) {
+          sendProgress(channel, 0, {
+            kind: "device",
+            url: "https://demo-corp.awsapps.com/start#/device?user_code=DEMO-CODE",
+            code: "DEMO-CODE",
+          });
+        } else {
+          sendProgress(channel, 0, {
+            kind: "output",
+            line: "Attempting to automatically open the SSO authorization page in your default browser.",
+          });
         }
-        sendProgress(channel, 0, {
-          kind: "output",
-          line: "Attempting to automatically open the SSO authorization page in your default browser.",
-        });
         await new Promise((resolve) => setTimeout(resolve, options.loginDelayMs ?? 0));
         expiry[name] = Date.now() + 8 * HOUR;
         rejected.delete(name);

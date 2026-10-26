@@ -10,8 +10,9 @@ import Downloads from "../../components/Downloads.astro";
 
 ## Requirements
 
-Contrail needs the [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-for SSO logins, and reads your profiles from `~/.aws/config` (`%USERPROFILE%\.aws\config` on Windows).
+Contrail reads your profiles from `~/.aws/config` (`%USERPROFILE%\.aws\config` on Windows). SSO logins use the
+[AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) when it's installed;
+without it, Contrail logs in itself.
 
 ## Build from source
 

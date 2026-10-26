@@ -440,3 +440,18 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
 - **Live:** the chart asks again when the events, the search or its width change, at most once a second.
 - **Dragging** sets a fixed time range (whole buckets under the drag); the view reloads for it, like picking
   the range in the time picker. A setting (`showTimeline`, on by default) hides the chart.
+
+## 2026-10-26 — M15: SSO login without the AWS CLI
+
+- **When:** Contrail runs the SSO login itself when the `aws` CLI isn't found, or when the setting "Log in
+  without the AWS CLI" is on. Otherwise it keeps running `aws sso login` (unchanged).
+- **How:** the OAuth device flow of IAM Identity Center (`aws-sdk-ssooidc`, already in the lockfile through
+  `aws-config`): RegisterClient (public client "Contrail"), StartDeviceAuthorization, open the verification
+  page in the browser (`tauri-plugin-opener` 2.7.2) and show the code, poll CreateToken (honouring
+  `AuthorizationPending` and `SlowDown`). These calls aren't signed and change nothing in the account.
+- **Token storage (Patrick's choice):** the CLI's token cache, `~/.aws/sso/cache/<sha1>.json`, in the CLI's
+  format and under its file name (SHA-1 of the `sso-session` name, or of the start URL for legacy profiles).
+  The SDK, the CLI and Contrail's session status read it from there, so the login survives restarts and is
+  shared. `sso-session` profiles get the refresh token and client registration too (the SDK renews the token
+  like after a CLI login); legacy profiles only the access token, like the CLI writes them. The file is written
+  atomically and readable only by the user (0600 on macOS/Linux). Memory-only storage was the alternative.

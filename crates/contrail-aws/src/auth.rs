@@ -1,12 +1,15 @@
 //! The real [`AuthProvider`]: local AWS files, STS and the AWS CLI.
 
 use async_trait::async_trait;
-use contrail_core::auth::{AuthError, AuthProvider, AwsCtx, CallerIdentity, LoginProgress};
-use contrail_core::profile::Profile;
+use contrail_core::auth::{
+    AuthError, AuthProvider, AwsCtx, CallerIdentity, LoginMethod, LoginProgress,
+};
+use contrail_core::profile::{Profile, ProfileAuth};
 use contrail_core::sso::{SessionStatus, session_status};
 use time::OffsetDateTime;
 
 use crate::files::AwsFiles;
+use crate::sso_device::{self, DeviceLogin};
 use crate::{cli, sts};
 
 /// Authentication against the real AWS setup of this machine.
@@ -53,17 +56,49 @@ impl AuthProvider for AwsAuth {
         sts::caller_identity(&client, &ctx.profile).await
     }
 
+    /// `aws sso login` when the CLI is installed (and `method` allows it), otherwise the built-in
+    /// device flow, which writes the token to the CLI's cache itself.
     async fn login(
         &self,
         profile: &str,
+        method: LoginMethod,
         progress: &(dyn Fn(LoginProgress) + Send + Sync),
     ) -> Result<(), AuthError> {
         let profile = self.find_profile(profile)?;
-        if profile.auth.sso_session().is_none() {
+        let (
+            ProfileAuth::Sso {
+                start_url,
+                sso_region,
+                session_name,
+                ..
+            },
+            Some(session),
+        ) = (&profile.auth, profile.auth.sso_session())
+        else {
             return Err(AuthError::NotSso(profile.name));
+        };
+        let cli = match method {
+            LoginMethod::Auto => cli::find_aws_cli(),
+            LoginMethod::BuiltIn => None,
+        };
+        if let Some(aws) = cli {
+            return cli::sso_login(&aws, &profile.name, progress).await;
         }
-        let aws = cli::find_aws_cli().ok_or(AuthError::CliMissing)?;
-        cli::sso_login(&aws, &profile.name, progress).await
+        let login = DeviceLogin {
+            start_url: start_url.clone(),
+            region: sso_region.clone(),
+            refreshable: session_name.is_some(),
+        };
+        let client = sso_device::oidc_client(sso_region).await;
+        let token = sso_device::device_login(&client, &login, progress).await?;
+        let path = self.files.write_cached_token(&session, &token)?;
+        progress(LoginProgress::Output {
+            line: format!(
+                "Logged in. The token is in {} (shared with the AWS CLI).",
+                path.display()
+            ),
+        });
+        Ok(())
     }
 }
 
@@ -105,7 +140,7 @@ mod tests {
     async fn login_refuses_non_sso_profiles_before_looking_for_the_cli() {
         let (_dir, auth) = auth_with_config("[profile keys]\naws_access_key_id = AKIAEXAMPLE\n");
         assert_eq!(
-            auth.login("keys", &|_| {}).await,
+            auth.login("keys", LoginMethod::Auto, &|_| {}).await,
             Err(AuthError::NotSso("keys".into()))
         );
     }

@@ -13,8 +13,10 @@ export const commands = {
 	/**  Checks the credentials with `sts:GetCallerIdentity` ("connected as …"). */
 	callerIdentity: (ctx: AwsCtx) => typedError<CallerIdentity, ApiError>(__TAURI_INVOKE("caller_identity", { ctx })),
 	/**
-	 *  Runs `aws sso login` for `profile`. Output lines arrive on `on_progress` while it runs; the
-	 *  command returns when the login has finished.
+	 *  Logs in to `profile`'s SSO session: `aws sso login`, or Contrail's own login when the CLI is
+	 *  missing or the setting asks for it. Progress (the CLI's output lines, or the page and code of
+	 *  the built-in login, whose page is opened in the browser) arrives on `on_progress`; the command
+	 *  returns when the login has finished.
 	 * 
 	 *  A Tauri `Channel` is a typed, ordered stream from Rust to the one frontend call that created
 	 *  it, cheaper than global events. The log views will stream batches the same way.
@@ -553,13 +555,18 @@ export type LogViewInfo = {
 	complete: boolean,
 };
 
-/**  Progress of a running `aws sso login`, streamed to the UI. */
+/**  Progress of a running SSO login, streamed to the UI. */
 export type LoginProgress = 
 /**
  *  One line the login process printed (it contains the URL and code to use when the
  *  browser doesn't open by itself).
  */
-{ kind: "output"; line: string };
+{ kind: "output"; line: string } | 
+/**
+ *  The built-in login waits for the user to confirm `code` on the page `url` (the app opens
+ *  it in the browser).
+ */
+{ kind: "device"; url: string; code: string };
 
 /**  What `load_older` added to a view. */
 export type OlderEvents = {
@@ -898,6 +905,8 @@ export type Settings = {
 	wrapLines: boolean,
 	/**  The timeline (events over time, by level) is shown above log lists. */
 	showTimeline: boolean,
+	/**  Log in to SSO with Contrail's own login (device flow) even when the AWS CLI is installed. */
+	builtinLogin: boolean,
 	/**  Look for a new Contrail version on start (at most once a day). */
 	checkForUpdates: boolean,
 };

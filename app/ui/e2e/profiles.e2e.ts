@@ -54,3 +54,21 @@ test("region override defaults to the profile's region", async ({ page }) => {
   await page.getByRole("option", { name: "us-west-2" }).click();
   await expect(region).toContainText("us-west-2");
 });
+
+test("the built-in login shows a code to confirm, then connects", async ({ page }) => {
+  await page.keyboard.press("ControlOrMeta+,");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByRole("button", { name: "AWS" }).click();
+  await dialog.getByRole("checkbox", { name: "Log in without the AWS CLI" }).check();
+  await page.keyboard.press("Escape");
+
+  await page.keyboard.press("ControlOrMeta+Shift+P");
+  await page.keyboard.type("prod");
+  await page.keyboard.press("Enter");
+  await page.getByRole("banner").getByRole("button", { name: "Log in" }).click();
+
+  const output = page.getByRole("region", { name: "Login output" });
+  await expect(output.getByLabel("Login code")).toContainText("DEMO-CODE");
+  await expect(output).toContainText("Check that the browser shows this code");
+  await expect(page.getByText("Connected to demo-prod")).toBeVisible();
+});
