@@ -191,7 +191,8 @@ impl LogView {
     }
 
     /// The listed events (the matches when filtering, every event otherwise) counted over time,
-    /// from the start of the window to its end or the newest event, whichever is later.
+    /// from as far back as events are loaded (a long window loads newest first: what isn't
+    /// loaded yet must not look like "no events") to the end or the newest event, if later.
     pub fn timeline(&self, max_buckets: u32, utc_offset_minutes: i32) -> Timeline {
         let newest = self.buffer.iter().last().map(|e| e.timestamp);
         let to = newest.map_or(self.backfilled_until, |n| n.max(self.backfilled_until));
@@ -202,14 +203,14 @@ impl LogView {
         match filtering {
             Some(filter) => timeline(
                 filter.matched().iter().filter_map(|&i| self.buffer.get(i)),
-                self.window_start,
+                self.loaded_from,
                 to,
                 max_buckets,
                 utc_offset_minutes,
             ),
             None => timeline(
                 self.buffer.iter(),
-                self.window_start,
+                self.loaded_from,
                 to,
                 max_buckets,
                 utc_offset_minutes,

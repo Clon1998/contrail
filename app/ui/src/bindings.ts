@@ -896,6 +896,8 @@ export type Settings = {
 	newestFirst: boolean,
 	/**  Long messages wrap onto more lines instead of being cut off at the list's edge. */
 	wrapLines: boolean,
+	/**  The timeline (events over time, by level) is shown above log lists. */
+	showTimeline: boolean,
 	/**  Look for a new Contrail version on start (at most once a day). */
 	checkForUpdates: boolean,
 };

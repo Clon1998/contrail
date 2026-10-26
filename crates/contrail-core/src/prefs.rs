@@ -138,6 +138,8 @@ pub struct Settings {
     pub newest_first: bool,
     /// Long messages wrap onto more lines instead of being cut off at the list's edge.
     pub wrap_lines: bool,
+    /// The timeline (events over time, by level) is shown above log lists.
+    pub show_timeline: bool,
     /// Look for a new Contrail version on start (at most once a day).
     pub check_for_updates: bool,
 }
@@ -158,6 +160,7 @@ impl Default for Settings {
             log_columns: Vec::new(),
             newest_first: false,
             wrap_lines: false,
+            show_timeline: true,
             check_for_updates: true,
         }
     }
@@ -192,6 +195,7 @@ impl Settings {
         read(value, "logColumns", &mut settings.log_columns);
         read(value, "newestFirst", &mut settings.newest_first);
         read(value, "wrapLines", &mut settings.wrap_lines);
+        read(value, "showTimeline", &mut settings.show_timeline);
         read(value, "checkForUpdates", &mut settings.check_for_updates);
         settings
     }
@@ -665,6 +669,7 @@ mod tests {
             .unwrap()
             .settings;
         assert!(!settings.wrap_lines);
+        assert!(settings.show_timeline, "on unless switched off");
         assert!(settings.newest_first);
         let json = r#"{"settings":{"wrapLines":true}}"#;
         assert!(Prefs::from_json(json).unwrap().settings.wrap_lines);
@@ -761,7 +766,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"checkForUpdates":true}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"checkForUpdates":true}"#
         );
     }
 

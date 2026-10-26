@@ -222,4 +222,30 @@ mod tests {
         assert_eq!(t.buckets.last().map(LevelCounts::total), Some(1));
         assert_eq!(t.buckets.iter().map(LevelCounts::total).sum::<u32>(), 1);
     }
+
+    #[test]
+    fn counts_100k_events_quickly() {
+        let from = datetime!(2026-10-26 12:00 UTC);
+        let events: Vec<LogEvent> = (0..100_000)
+            .map(|i| event(from + Duration::milliseconds(i * 9), Some(Level::Info)))
+            .collect();
+        let started = std::time::Instant::now();
+        let t = timeline(
+            &events,
+            Timestamp(from),
+            Timestamp(from + Duration::minutes(15)),
+            240,
+            60,
+        );
+        // The UI asks at most once a second while live; even unoptimised test builds stay far below.
+        assert!(
+            started.elapsed() < std::time::Duration::from_millis(200),
+            "{:?}",
+            started.elapsed()
+        );
+        assert_eq!(
+            t.buckets.iter().map(LevelCounts::total).sum::<u32>(),
+            100_000
+        );
+    }
 }
