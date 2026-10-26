@@ -412,3 +412,10 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   and EPL's copyleft only covers changes to its own files. Its licence ships with the package.
 - **Scope:** only the cluster route map moves to the canvas. The per-service route graph and the trace graph keep
   the column view, where the columns do mean the same thing on every row.
+- **Following routes, not services:** lines carry the routes they belong to. Inside a route service only lines
+  of the same route connect (a source leads only to its own route's topic, a topic only to its own route's
+  targets), so selecting a target no longer lights every source of the service writing its topic. Transformers
+  connect everything they touch (their reads and writes aren't paired).
+- **Settings on the map:** the scan now sends endpoint settings to the UI, with the values of secrets (from
+  Secrets Manager/SSM, or in a variable named like a credential) emptied in Rust first. The search matches
+  settings on the system end of a route; secrets can't match, and nothing is ever resolved for it.
