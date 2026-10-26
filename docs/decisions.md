@@ -378,6 +378,9 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
 - **Keeping the list's place:** hiding the list unmounts it. It saves the event at its top (sequence number and
   pixel offset) in the tab's logs store and goes back there when shown again, unless it was following the
   newest event. Jumps and "older rows added" that happened before the list mounted are not replayed.
+  The top event is worked out when the list is hidden (rows reached by a fast scroll load after the last
+  scroll event), and the virtualizer starts at the saved offset (`initialOffset`): it scrolls there whenever it
+  attaches to the element, which undid a scroll made from an effect.
 - **Overview cache:** service detail and tasks are cached per service for the session. Data younger than 30 s
   is shown without a call; older data is shown and refreshed quietly. The 30 s timer refreshes quietly too.
 - **Loading states:** skeletons (shimmer) instead of spinners, starting with the Overview.

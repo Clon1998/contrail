@@ -160,6 +160,40 @@ test("live: new events arrive, pause stops them, resume continues", async ({ pag
     .toBeGreaterThan(paused);
 });
 
+test("the list keeps a place in the middle across Overview, Logs and tabs", async ({ page }) => {
+  page.on("console", (m) => m.text().startsWith("DBG") && console.log(m.text()));
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  const scroller = list.locator("..");
+  await scroller.evaluate((el) => {
+    el.scrollTop = el.scrollHeight / 2;
+  });
+  const row = list.getByRole("button", { name: /Ingested event #5\d{4} / }).nth(5);
+  const name = (await row.innerText()).match(/Ingested event #\d+/)?.[0] ?? "";
+  await row.click();
+  const top = async () => (await row.boundingBox())?.y;
+  const before = await top();
+  console.log("DBG before", before, name, await scroller.evaluate((el) => el.scrollTop));
+
+  const samePlace = async () => {
+    const back = list.getByRole("button", { name: new RegExp(`${name} `) });
+    await expect(back).toHaveAttribute("aria-expanded", "true");
+    await expect.poll(async () => (await back.boundingBox())?.y).toBe(before);
+  };
+  await page.getByRole("tab", { name: "Overview" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  await samePlace();
+
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "legacy-gateway" }).click();
+  await expect(page.getByRole("main", { name: "Service legacy-gateway" })).toBeVisible();
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: /event-ingest/ })
+    .click();
+  await samePlace();
+});
+
 test("the list keeps its place and open rows across Overview, Logs and tabs", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();

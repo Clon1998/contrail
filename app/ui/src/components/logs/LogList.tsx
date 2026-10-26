@@ -55,8 +55,11 @@ export function LogList({
   const savedAnchor = useLogs((s) => s.scrollAnchor);
   const setScrollAnchor = useLogs((s) => s.setScrollAnchor);
   const [atNewest, setAtNewest] = useState(savedAnchor === null);
-  // Kept up to date while scrolling, saved to the store when the list unmounts.
-  const anchor = useRef<ScrollAnchor | null>(savedAnchor);
+  // The scroll position, kept up to date while scrolling (`null`: not scrolled since mounting).
+  const scrolled = useRef<{ top: number; newest: boolean } | null>(null);
+  // Works out the event at the top when the list unmounts: the rows there may have loaded only
+  // after the last scroll event. Replaced on every render, so it sees the latest rows.
+  const anchorNow = useRef<() => ScrollAnchor | null>(() => savedAnchor);
   // What the list was last positioned for (view, font size, order); `null` until mounted.
   const positionedFor = useRef<string | null>(null);
   // Jumps and prepends from before the list was mounted are done: only new ones move it.
@@ -69,12 +72,23 @@ export function LogList({
   const loadOlder = useLogs((s) => s.loadOlder);
   const rowHeight = Math.round(fontSize * 1.6);
 
+  // Back where it was when it was hidden, if that event is still loaded: the virtualizer starts
+  // there (it scrolls to its initial offset whenever it attaches to the element, so scrolling
+  // from an effect would be undone). Rows are all estimated the same height right after mounting.
+  const [restoredOffset] = useState(() => {
+    const index = savedAnchor ? cachedIndexOf(pages, savedAnchor.seq) : undefined;
+    if (!savedAnchor || index === undefined) return null;
+    const margin = newestFirst ? 0 : OLDER_MARKER_HEIGHT;
+    return margin + toData(index) * rowHeight + savedAnchor.offset;
+  });
+
   // TanStack Virtual decides which rows to render. Rows have a fixed height until expanded;
   // `measureElement` corrects the size of rows that turn out taller. The React compiler can't
   // optimise this hook (it returns functions that change internally); that is expected.
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: total,
+    initialOffset: restoredOffset ?? 0,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
     overscan: 40,
@@ -102,17 +116,15 @@ export function LogList({
     }
   }, [dataFrom, dataTo, total, pages, fetchRows]);
 
-  // Back where it was when it was hidden, if that event is still loaded.
-  const restore = () => {
-    const index = savedAnchor ? cachedIndexOf(pages, savedAnchor.seq) : undefined;
-    const start =
-      index === undefined ? undefined : virtualizer.getOffsetForIndex(toData(index), "start");
-    if (!savedAnchor || !start) return false;
-    virtualizer.scrollToOffset(start[0] + savedAnchor.offset);
-    return true;
+  anchorNow.current = () => {
+    const position = scrolled.current;
+    if (!position) return savedAnchor;
+    if (position.newest) return null;
+    const top = virtualizer.getVirtualItemForOffset(position.top);
+    const event = top && row(toData(top.index));
+    return top && event ? { seq: event.seq, offset: position.top - top.start } : null;
   };
-
-  useEffect(() => () => setScrollAnchor(anchor.current), [setScrollAnchor]);
+  useEffect(() => () => setScrollAnchor(anchorNow.current()), [setScrollAnchor]);
 
   // A new view (or font size, or order) starts at the newest event. Right after mounting, the list
   // goes back to where it was instead. In development React runs effects twice: the second run
@@ -122,7 +134,7 @@ export function LogList({
     if (positionedFor.current === inputs) return;
     const mounting = positionedFor.current === null;
     positionedFor.current = inputs;
-    if (mounting && restore()) return;
+    if (mounting && restoredOffset !== null) return;
     if (total > 0) scrollToNewest();
     setAtNewest(true);
     // Only on these changes: new rows must not pull the user back to the newest event.
@@ -186,11 +198,7 @@ export function LogList({
             ? el.scrollTop <= EDGE_SLACK
             : el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_SLACK;
           setAtNewest(newest);
-          const top = virtualizer.getVirtualItemForOffset(el.scrollTop);
-          const event = top && row(toData(top.index));
-          if (newest) anchor.current = null;
-          else if (top && event)
-            anchor.current = { seq: event.seq, offset: el.scrollTop - top.start };
+          scrolled.current = { top: el.scrollTop, newest };
         }}
         className="absolute inset-0 overflow-auto font-mono text-(length:--log-font-size) leading-[1.6]"
       >
