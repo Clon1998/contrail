@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Endpoint, TopicLink } from "@/bindings";
-import { buildClusterGraph, filterClusterGraph, knownTransformers } from "./clusterGraph";
+import {
+  buildClusterGraph,
+  filterClusterGraph,
+  knownTransformers,
+  routePath,
+  scopeClusterGraph,
+} from "./clusterGraph";
 
 const endpoint = (kind: string, system: string, enabled = true): Endpoint => ({
   kind,
@@ -117,5 +123,92 @@ describe("buildClusterGraph", () => {
     ]);
     expect(labels("nothing")).toEqual([]);
     expect(filterClusterGraph(graph, " ").nodes).toHaveLength(graph.nodes.length);
+  });
+
+  describe("one input service with two routes", () => {
+    const property = (key: string, value: string, valueFrom: string | null = null) => ({
+      key,
+      value,
+      variable: `ROUTES_0_INPUT_PROPERTIES_${key.toUpperCase()}`,
+      valueFrom,
+    });
+    const crew: TopicLink[] = [
+      link("crew-input", "crew.hotels", "in", [
+        { ...endpoint("sftp", "Crew SFTP"), properties: [property("host", "sftp.crew.example")] },
+      ]),
+      link("crew-input", "crew.rosters", "in", [
+        {
+          ...endpoint("mq", "Crew MQ"),
+          properties: [
+            property("queue", "CREW.ROSTERS"),
+            property("password", "", "arn:aws:ssm:x"),
+          ],
+        },
+      ]),
+      link("hotel-output", "crew.hotels", "out", [endpoint("kafka", "Hotels")]),
+      link("roster-output", "crew.rosters", "out", [endpoint("s3", "Roster Archive")]),
+    ];
+    const graph = buildClusterGraph(crew, {}, ["crew-input", "hotel-output", "roster-output"]);
+    const labels = (ids: Set<string>) =>
+      [...ids].map((id) => graph.nodes.find((n) => n.id === id)?.label).sort();
+
+    it("follows a target back through its own route only", () => {
+      const { upstream, downstream } = routePath(graph, "system:target:kafka|Hotels");
+      expect(labels(upstream.nodes)).toEqual([
+        "Crew SFTP",
+        "Hotels",
+        "crew-input",
+        "crew.hotels",
+        "hotel-output",
+      ]);
+      expect(labels(downstream.nodes)).toEqual(["Hotels"]);
+    });
+
+    it("follows a source forward through its own route only", () => {
+      const { downstream } = routePath(graph, "system:source:mq|Crew MQ");
+      expect(labels(downstream.nodes)).toEqual([
+        "Crew MQ",
+        "Roster Archive",
+        "crew-input",
+        "crew.rosters",
+        "roster-output",
+      ]);
+    });
+
+    it("from the service itself, every route counts", () => {
+      const { upstream, downstream } = routePath(graph, "service:crew-input");
+      expect(labels(upstream.nodes)).toEqual(["Crew MQ", "Crew SFTP", "crew-input"]);
+      expect(labels(downstream.nodes)).toEqual([
+        "Hotels",
+        "Roster Archive",
+        "crew-input",
+        "crew.hotels",
+        "crew.rosters",
+        "hotel-output",
+        "roster-output",
+      ]);
+    });
+
+    it("finds a route by its settings, never by a secret", () => {
+      const byHost = filterClusterGraph(graph, "SFTP.CREW");
+      expect(byHost.matches?.get("system:source:sftp|Crew SFTP")).toBe("host: sftp.crew.example");
+      // The service has the same setting; the other route isn't on the way.
+      expect(byHost.nodes.some((n) => n.label === "Roster Archive")).toBe(false);
+      expect(filterClusterGraph(graph, "crew.rosters").matches?.get("topic:crew.rosters")).toBe(
+        "name",
+      );
+      expect(filterClusterGraph(graph, "ssm").nodes).toEqual([]);
+      expect(filterClusterGraph(graph, "password").nodes).toEqual([]);
+    });
+
+    it("shows only one side of a node on request", () => {
+      const only = (scope: "path" | "upstream" | "downstream") =>
+        scopeClusterGraph(graph, "topic:crew.hotels", scope)
+          .nodes.map((n) => n.label)
+          .sort();
+      expect(only("upstream")).toEqual(["Crew SFTP", "crew-input", "crew.hotels"]);
+      expect(only("downstream")).toEqual(["Hotels", "crew.hotels", "hotel-output"]);
+      expect(only("path")).toHaveLength(5);
+    });
   });
 });
