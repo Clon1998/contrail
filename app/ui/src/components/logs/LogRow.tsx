@@ -7,7 +7,7 @@ import { formatLogTime, stripAnsi } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { Ansi } from "./Ansi";
-import { columnValue, OPTIONAL_COLUMNS, useLogColumns } from "./columns";
+import { columnText, columnValue, OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { LEVEL_TONE } from "./levels";
 import { StateBadge } from "./StateBadge";
 import { LogDetails } from "./LogDetails";
@@ -80,7 +80,7 @@ export function LogRow({
             className="truncate text-muted-foreground"
             title={columnValue(event, c.id)}
           >
-            {columnValue(event, c.id)}
+            {columnText(event, c.id)}
           </span>
         ))}
         <span className="truncate">
