@@ -242,6 +242,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       logColumns: [],
       newestFirst: false,
       wrapLines: false,
+      showTimeline: true,
       checkForUpdates: true,
     },
     noise: {},
@@ -845,6 +846,38 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const last = exports.at(-1);
         if (last) Object.assign(last, { format: args?.format as string, count });
         return count;
+      }
+      case "log_timeline": {
+        // A simpler version of the Rust bucketing: same round steps, aligned to UTC + offset.
+        const viewId = args?.viewId as number;
+        const maxBuckets = Math.max(1, args?.maxBuckets as number);
+        const offsetMs = (args?.utcOffsetMinutes as number) * 60_000;
+        const rows = listed(viewId);
+        const now = Date.now();
+        const times = Array.isArray(rows)
+          ? rows.map((e) => ({ at: Date.parse(e.timestamp), level: e.line.level }))
+          : [];
+        const from = times.length > 0 ? Math.min(...times.map((t) => t.at)) : now - 15 * 60_000;
+        const to = times.length > 0 ? Math.max(...times.map((t) => t.at)) : now;
+        const steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600, 86400];
+        const bucketMs =
+          (steps.find((s) => Math.ceil((to - from) / (s * 1000)) <= maxBuckets) ?? 86400) * 1000;
+        const start = Math.floor((from + offsetMs) / bucketMs) * bucketMs - offsetMs;
+        const empty = () => ({ error: 0, warn: 0, info: 0, debug: 0, trace: 0, none: 0 });
+        const buckets = Array.from({ length: Math.floor((to - start) / bucketMs) + 1 }, empty);
+        if (Array.isArray(rows)) {
+          for (const { at, level } of times) {
+            const bucket = buckets[Math.floor((at - start) / bucketMs)];
+            if (!bucket) continue;
+            const key = (level?.toLowerCase() ?? "none") as keyof ReturnType<typeof empty>;
+            bucket[key] += 1;
+          }
+        } else {
+          // Generated views: spread evenly, mostly INFO.
+          const per = Math.floor(listedCount(viewId) / buckets.length);
+          buckets.forEach((b, i) => Object.assign(b, { info: per, warn: i % 7 === 0 ? 3 : 0 }));
+        }
+        return { start: new Date(start).toISOString(), bucketMs, buckets };
       }
       case "close_log_view": {
         const viewId = args?.viewId as number;

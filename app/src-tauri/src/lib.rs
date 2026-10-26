@@ -46,6 +46,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         logs::set_log_filter,
         logs::get_match_positions,
         logs::field_summary,
+        logs::log_timeline,
         logs::start_live,
         logs::load_older,
         ecs::reveal_secret,

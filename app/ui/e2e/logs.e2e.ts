@@ -476,3 +476,28 @@ test("live: new rows fade in briefly", async ({ page }) => {
   await page.getByRole("button", { name: "Pause live tail" }).click();
   await expect(list.locator('[data-fresh="true"]')).toHaveCount(0, { timeout: 3_000 });
 });
+
+test("the timeline shows events over time; dragging across it zooms in", async ({ page }) => {
+  await openLogs(page, "demo-core", "payments-worker");
+  const chart = page.getByRole("img", { name: "Timeline of events" });
+  await expect(chart).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Time window:/ })).toContainText("Last 15 min");
+
+  // Hovering a bar tells its time and counts.
+  const box = await chart.boundingBox();
+  if (!box) throw new Error("no chart");
+  await page.mouse.move(box.x + 3, box.y + box.height - 2);
+  await expect(page.getByRole("tooltip")).toContainText("events");
+
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.6, box.y + 20, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: /^Time window:/ })).not.toContainText(
+    "Last 15 min",
+  );
+  await expect(page.getByText("fixed range")).toBeVisible();
+
+  // It can be hidden (a setting).
+  await page.getByRole("button", { name: "Timeline" }).click();
+  await expect(chart).toHaveCount(0);
+});

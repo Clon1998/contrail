@@ -7,9 +7,10 @@ use std::sync::{Arc, Mutex};
 use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::EcsSource;
+use contrail_core::logs::timeline::{Timeline, timeline};
 use contrail_core::logs::{
-    FieldMapping, FieldSummary, LogBuffer, LogEvent, LogSource, StreamSelection, ViewFilter,
-    VisibleChange, summarize,
+    FieldMapping, FieldSummary, FilterMode, LogBuffer, LogEvent, LogSource, StreamSelection,
+    ViewFilter, VisibleChange, summarize,
 };
 use contrail_core::secrets::SecretSource;
 use contrail_core::timestamp::Timestamp;
@@ -186,6 +187,34 @@ impl LogView {
         match &self.filter {
             Some(filter) => summarize(filter.matched().iter().filter_map(|&i| self.buffer.get(i))),
             None => summarize(self.buffer.iter()),
+        }
+    }
+
+    /// The listed events (the matches when filtering, every event otherwise) counted over time,
+    /// from as far back as events are loaded (a long window loads newest first: what isn't
+    /// loaded yet must not look like "no events") to the end or the newest event, if later.
+    pub fn timeline(&self, max_buckets: u32, utc_offset_minutes: i32) -> Timeline {
+        let newest = self.buffer.iter().last().map(|e| e.timestamp);
+        let to = newest.map_or(self.backfilled_until, |n| n.max(self.backfilled_until));
+        let filtering = self
+            .filter
+            .as_ref()
+            .filter(|f| f.mode == FilterMode::Filter);
+        match filtering {
+            Some(filter) => timeline(
+                filter.matched().iter().filter_map(|&i| self.buffer.get(i)),
+                self.loaded_from,
+                to,
+                max_buckets,
+                utc_offset_minutes,
+            ),
+            None => timeline(
+                self.buffer.iter(),
+                self.loaded_from,
+                to,
+                max_buckets,
+                utc_offset_minutes,
+            ),
         }
     }
 

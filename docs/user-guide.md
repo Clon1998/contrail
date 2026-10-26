@@ -37,6 +37,8 @@ page has the details.
   button) shows only one task; the columns button adds logger, thread or correlation/trace ID. Logger names are
   shortened like Spring Boot does (`c.e.orders.OrderService`); hover for the full name. The wrap button (or **W**)
   wraps long messages instead of cutting them off.
+- **Timeline** (above the list; the chart button in the toolbar hides it): events over time, stacked by level,
+  following the search. Hover a bar for its time and counts; drag across bars to narrow the time window to them.
 - **Time window:** click it in the toolbar (or press **T**) and type what you want: `15m`, `3h`, `2d`, `1w`, `1h30m`,
   `today`, `since 14:00`, `yesterday`, `oct 20`, `9:00-11:30` or `yesterday 9-11`. The picker shows what it understood
   before you press Enter, and whether the window will follow live, open paused or be a fixed range. Quick windows,

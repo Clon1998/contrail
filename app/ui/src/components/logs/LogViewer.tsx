@@ -6,6 +6,7 @@ import {
   Loader2Icon,
   PauseIcon,
   PlayIcon,
+  ChartColumnIcon,
   RefreshCwIcon,
   WrapTextIcon,
 } from "lucide-react";
@@ -41,6 +42,7 @@ import { FieldsPanel } from "./FieldsPanel";
 import { LogList } from "./LogList";
 import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
+import { TimelineChart } from "./TimelineChart";
 import { TimeWindowPicker } from "./TimeWindowPicker";
 import { Hint } from "@/components/ui/tooltip";
 
@@ -235,6 +237,24 @@ function WrapToggle() {
   );
 }
 
+/** Shows or hides the timeline above the list (a setting, the same for every view). */
+function TimelineToggle() {
+  const shown = usePrefs((s) => s.prefs.settings.showTimeline);
+  const updateSettings = usePrefs((s) => s.updateSettings);
+  return (
+    <Button
+      variant={shown ? "secondary" : "ghost"}
+      size="icon-xs"
+      aria-label="Timeline"
+      aria-pressed={shown}
+      tooltip="Events over time, by level; drag across it to zoom in"
+      onClick={() => void updateSettings({ showTimeline: !shown })}
+    >
+      <ChartColumnIcon />
+    </Button>
+  );
+}
+
 /** Radix Select can't use "" as a value, so "all tasks" gets a sentinel. */
 const ALL_TASKS = "__all__";
 
@@ -299,6 +319,7 @@ export function LogViewer() {
     });
   const visible = useLogs((s) => s.visible);
   const fieldsOpen = useLogs((s) => s.fieldsOpen);
+  const showTimeline = usePrefs((s) => s.prefs.settings.showTimeline);
   // The task filter only applies to the service it was set for.
   const taskId = taskFilter && sameService(taskFilter.service, selected) ? taskFilter.taskId : null;
 
@@ -338,6 +359,7 @@ export function LogViewer() {
         {view && <FieldsToggle />}
         <FieldMappingDialog />
         <ExportMenu />
+        <TimelineToggle />
         <WrapToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -377,6 +399,9 @@ export function LogViewer() {
             <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
               <Loader2Icon className="size-4 animate-spin" /> Loading logs…
             </p>
+          )}
+          {!loading && view && view.stats.total > 0 && showTimeline && (
+            <TimelineChart viewId={view.viewId} />
           )}
           {!loading && view && view.stats.total === 0 && (
             <p className="p-4 text-sm text-muted-foreground">No log events in this time window.</p>

@@ -56,6 +56,11 @@ export const commands = {
 	 */
 	fieldSummary: (viewId: number) => typedError<FieldSummary, ApiError>(__TAURI_INVOKE("field_summary", { viewId })),
 	/**
+	 *  The listed events of a view counted over time, by level, in at most about `max_buckets`
+	 *  buckets aligned to the time zone `utc_offset_minutes` ahead of UTC (the timeline).
+	 */
+	logTimeline: (viewId: number, maxBuckets: number, utcOffsetMinutes: number) => typedError<Timeline, ApiError>(__TAURI_INVOKE("log_timeline", { viewId, maxBuckets, utcOffsetMinutes })),
+	/**
 	 *  Starts following a view live (after its backfill). Updates arrive on `on_update`.
 	 * 
 	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
@@ -438,6 +443,16 @@ export type HopDirection = "writes" | "reads";
  *  `Level::Warn > Level::Info` works for "WARN and above" filters).
  */
 export type Level = "TRACE" | "DEBUG" | "INFO" | "WARN" | "ERROR";
+
+/**  The events of one bucket, by level (`none`: lines without a level). */
+export type LevelCounts = {
+	error: number,
+	warn: number,
+	info: number,
+	debug: number,
+	trace: number,
+	none: number,
+};
 
 /**  What the live task is doing, shown in the log view's toolbar. */
 export type LiveState = "connecting" | "live" | 
@@ -881,6 +896,8 @@ export type Settings = {
 	newestFirst: boolean,
 	/**  Long messages wrap onto more lines instead of being cut off at the list's edge. */
 	wrapLines: boolean,
+	/**  The timeline (events over time, by level) is shown above log lists. */
+	showTimeline: boolean,
 	/**  Look for a new Contrail version on start (at most once a day). */
 	checkForUpdates: boolean,
 };
@@ -942,6 +959,15 @@ export type TimeWindow =
 
 /**  How absolute timestamps are shown. */
 export type TimeZone = "local" | "utc";
+
+/**  Event counts over a time range in buckets of equal length, oldest first. */
+export type Timeline = {
+	/**  The start of the first bucket (on a round time, see [`bucket_length`]). */
+	start: Timestamp,
+	/**  The length of every bucket, in milliseconds (at most a week, so it fits a `u32`). */
+	bucketMs: number,
+	buckets: LevelCounts[],
+};
 
 /**
  *  An `OffsetDateTime` that serializes as an RFC 3339 string (`2026-10-22T12:00:00Z`).

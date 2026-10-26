@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   logColumns: [],
   newestFirst: false,
   wrapLines: false,
+  showTimeline: true,
   checkForUpdates: true,
 };
 

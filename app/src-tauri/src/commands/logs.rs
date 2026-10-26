@@ -5,6 +5,7 @@ use std::sync::atomic::Ordering;
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
+use contrail_core::logs::timeline::Timeline;
 use contrail_core::logs::{
     BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LogBuffer, LogEvent, LogLocation,
     TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location, write_events,
@@ -391,6 +392,21 @@ pub fn field_summary(state: State<'_, AppState>, view_id: u32) -> ApiResult<Fiel
     Ok(view.field_summary())
 }
 
+/// The listed events of a view counted over time, by level, in at most about `max_buckets`
+/// buckets aligned to the time zone `utc_offset_minutes` ahead of UTC (the timeline).
+#[tauri::command]
+#[specta::specta]
+pub fn log_timeline(
+    state: State<'_, AppState>,
+    view_id: u32,
+    max_buckets: u32,
+    utc_offset_minutes: i32,
+) -> ApiResult<Timeline> {
+    let views = state.views.lock().expect("views lock poisoned");
+    let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+    Ok(view.timeline(max_buckets, utc_offset_minutes))
+}
+
 /// Frees a view's buffer and stops its live tail.
 #[tauri::command]
 #[specta::specta]
@@ -564,6 +580,40 @@ mod tests {
         assert!(written > 0);
         assert_eq!(text.lines().count(), written as usize);
         assert!(text.lines().all(|l| l.contains(r#""level":"ERROR""#)));
+    }
+
+    #[tokio::test]
+    async fn the_timeline_counts_the_listed_events() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
+        let info = open_logs(&state, ctx, service, LAST_15, None)
+            .await
+            .unwrap();
+        let counted = |state: &AppState, mode| {
+            let spec = FilterSpec {
+                query: "level:ERROR".into(),
+                mode,
+                hidden_levels: vec![],
+                search_raw: false,
+                regex: false,
+                noise: vec![],
+            };
+            apply_filter(state, info.view_id, spec, &[]).unwrap();
+            let timeline = state.views.lock().unwrap()[&info.view_id].timeline(60, 0);
+            assert!(timeline.buckets.len() <= 61);
+            timeline
+                .buckets
+                .iter()
+                .map(|b| (b.total(), b.error))
+                .fold((0, 0), |a, b| (a.0 + b.0, a.1 + b.1))
+        };
+        // Filtering: only the matches, all of them errors.
+        let (total, errors) = counted(&state, FilterMode::Filter);
+        assert!(total > 0);
+        assert_eq!(total, errors);
+        // Highlighting lists every event, so the timeline counts them all.
+        let (total, _) = counted(&state, FilterMode::Highlight);
+        assert_eq!(total, info.stats.total);
     }
 
     #[tokio::test]
