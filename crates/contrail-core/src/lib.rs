@@ -16,3 +16,4 @@ pub mod routes;
 pub mod secrets;
 pub mod sso;
 pub mod timestamp;
+pub mod topology;
