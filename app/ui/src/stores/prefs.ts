@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferSize: 100_000,
   logColumns: [],
   newestFirst: false,
+  wrapLines: false,
   checkForUpdates: true,
 };
 

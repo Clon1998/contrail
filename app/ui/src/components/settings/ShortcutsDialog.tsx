@@ -50,6 +50,7 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [["Right click"], "More level options (level chips)"],
       [["T"], "Change the time window (type 15m, 3h, yesterday…)"],
       [["F"], "Show or hide the fields and their values"],
+      [["W"], "Wrap long messages or cut them off"],
       [["Alt", "Click"], "Exclude a value (Fields panel)"],
     ],
   },

@@ -7,6 +7,7 @@ import {
   PauseIcon,
   PlayIcon,
   RefreshCwIcon,
+  WrapTextIcon,
 } from "lucide-react";
 import { cn } from "cn";
 import type { LiveState, LogColumn, ServiceRef } from "@/bindings";
@@ -205,6 +206,35 @@ function FieldsToggle() {
   );
 }
 
+/** Wraps long messages onto more lines, or cuts them off (a setting, the same for every view). */
+function WrapToggle() {
+  const wrap = usePrefs((s) => s.prefs.settings.wrapLines);
+  const updateSettings = usePrefs((s) => s.updateSettings);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (event.key.toLowerCase() === "w" && plain && !isTyping(event.target)) {
+        event.preventDefault();
+        void updateSettings({ wrapLines: !wrap });
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [wrap, updateSettings]);
+  return (
+    <Button
+      variant={wrap ? "secondary" : "ghost"}
+      size="icon-xs"
+      aria-label="Wrap lines"
+      aria-pressed={wrap}
+      tooltip="Wrap long messages instead of cutting them off (W)"
+      onClick={() => void updateSettings({ wrapLines: !wrap })}
+    >
+      <WrapTextIcon />
+    </Button>
+  );
+}
+
 /** Radix Select can't use "" as a value, so "all tasks" gets a sentinel. */
 const ALL_TASKS = "__all__";
 
@@ -308,6 +338,7 @@ export function LogViewer() {
         {view && <FieldsToggle />}
         <FieldMappingDialog />
         <ExportMenu />
+        <WrapToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon-xs" aria-label="Columns">

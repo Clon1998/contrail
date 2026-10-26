@@ -89,6 +89,11 @@ export interface LogsState {
   fresh: Record<number, true>;
   /** Rows just put in front of the list (`nonce` makes each load count), for keeping the scroll. */
   prepended: { count: number; nonce: number } | null;
+  /**
+   * Where the list was scrolled when it was last hidden (Overview tab, another service tab), so it
+   * comes back there; `null` follows the newest event.
+   */
+  scrollAnchor: ScrollAnchor | null;
   /** The Fields panel is shown (remembered per service for the session, like the search). */
   fieldsOpen: boolean;
   /** Fields whose values the panel lists. */
@@ -127,6 +132,7 @@ export interface LogsState {
   /** Jumps to the next (1) or previous (-1) match after/before `fromIndex`. */
   gotoMatch: (direction: 1 | -1, fromIndex: number) => Promise<void>;
   setTab: (tab: "overview" | "logs") => void;
+  setScrollAnchor: (anchor: ScrollAnchor | null) => void;
   setFieldsOpen: (open: boolean) => void;
   toggleFieldExpanded: (key: string) => void;
   /** Shows only `taskId`'s logs, or all tasks again with `null`. */
@@ -136,6 +142,21 @@ export interface LogsState {
   loadOlder: () => Promise<void>;
   /** Loads older events until the whole window is loaded (or the buffer is full). */
   loadAll: () => Promise<void>;
+}
+
+/** The event at the top of the list (by sequence number) and how far it was scrolled past. */
+export interface ScrollAnchor {
+  seq: number;
+  offset: number;
+}
+
+/** The buffer index of the cached event `seq`, if it is loaded. */
+export function cachedIndexOf(pages: Map<number, LogEvent[]>, seq: number): number | undefined {
+  for (const [page, rows] of pages) {
+    const i = rows.findIndex((e) => e.seq === seq);
+    if (i >= 0) return page * PAGE_SIZE + i;
+  }
+  return undefined;
 }
 
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
@@ -326,6 +347,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     older: NO_OLDER,
     prepended: null,
     fresh: {},
+    scrollAnchor: null,
 
     open: async (ctx, service, timeWindow, taskId) => {
       const mine = ++generation;
@@ -338,6 +360,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         loading: true,
         error: null,
         expanded: {},
+        scrollAnchor: null,
         live: null,
         pages: new Map(),
         matchPositions: [],
@@ -539,6 +562,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     },
 
     setTab: (tab) => set({ tab }),
+    setScrollAnchor: (scrollAnchor) => set({ scrollAnchor }),
     setFieldsOpen: (fieldsOpen) => set({ fieldsOpen }),
     toggleFieldExpanded: (key) => {
       const expanded = get().fieldsExpanded;

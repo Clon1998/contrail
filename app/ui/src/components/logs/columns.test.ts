@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Field, LogEvent } from "@/bindings";
-import { columnValue } from "./columns";
+import { abbreviateLogger, columnText, columnValue } from "./columns";
 
 function event(fields: Field[]): LogEvent {
   const timestamp = "2026-10-23T08:00:00Z";
@@ -47,5 +47,28 @@ describe("correlation column", () => {
       "FsEwYFk0",
     );
     expect(columnValue(event([{ key: "http.trace_id", value: "t-2" }]), "correlation")).toBe("t-2");
+  });
+});
+
+describe("logger column", () => {
+  it("keeps names that fit", () => {
+    expect(abbreviateLogger("com.example.App", 22)).toBe("com.example.App");
+  });
+
+  it("shortens packages from the left until the name fits", () => {
+    expect(abbreviateLogger("com.example.orders.OrderService", 23)).toBe("c.e.orders.OrderService");
+    expect(abbreviateLogger("com.example.orders.OrderService", 20)).toBe("c.e.o.OrderService");
+  });
+
+  it("cuts the front when the class name alone is too long", () => {
+    const short = abbreviateLogger("com.example.VeryLongOrderServiceImplementation", 12);
+    expect(short).toBe("…lementation");
+    expect(short).toHaveLength(12);
+  });
+
+  it("shows the logger shortened but keeps the full value", () => {
+    const e = event([{ key: "log.logger", value: "com.example.pipeline.KafkaConsumer" }]);
+    expect(columnText(e, "logger")).toBe("c.e.p.KafkaConsumer");
+    expect(columnValue(e, "logger")).toBe("com.example.pipeline.KafkaConsumer");
   });
 });

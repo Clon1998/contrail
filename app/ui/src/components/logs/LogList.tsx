@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownToLineIcon, ArrowUpToLineIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { PAGE_SIZE, useLogs } from "@/stores/logs";
+import { cachedIndexOf, PAGE_SIZE, type ScrollAnchor, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
 import { LogRow } from "./LogRow";
@@ -25,6 +25,9 @@ const EDGE_SLACK = 8;
  * The buffer is oldest first. With the "newest first" setting the list shows it the other way
  * round: list position `i` shows buffer index `total - 1 - i` (`toData`; the mapping is its own
  * inverse). Pages, matches and scroll targets stay in buffer indices.
+ *
+ * Hiding the list (the Overview tab, another service tab) unmounts it; it saves where it was
+ * scrolled to (`scrollAnchor`) and comes back there, unless it was following the newest event.
  */
 export function LogList({
   viewId,
@@ -40,6 +43,7 @@ export function LogList({
   const columns = useLogColumns();
   const pages = useLogs((s) => s.pages);
   const scrollTarget = useLogs((s) => s.scrollTarget);
+  const prepended = useLogs((s) => s.prepended);
   const highlightMode = useLogs((s) => s.search.mode === "highlight");
   const positions = useLogs((s) => s.matchPositions);
   const current = useLogs((s) => s.matchPositions[s.currentMatch]);
@@ -48,13 +52,21 @@ export function LogList({
   const newestFirst = usePrefs((s) => s.prefs.settings.newestFirst);
   const toData = (index: number) => (newestFirst ? total - 1 - index : index);
   const row = (index: number) => pages.get(Math.floor(index / PAGE_SIZE))?.[index % PAGE_SIZE];
-  const [atNewest, setAtNewest] = useState(true);
+  const savedAnchor = useLogs((s) => s.scrollAnchor);
+  const setScrollAnchor = useLogs((s) => s.setScrollAnchor);
+  const [atNewest, setAtNewest] = useState(savedAnchor === null);
+  // Kept up to date while scrolling, saved to the store when the list unmounts.
+  const anchor = useRef<ScrollAnchor | null>(savedAnchor);
+  // What the list was last positioned for (view, font size, order); `null` until mounted.
+  const positionedFor = useRef<string | null>(null);
+  // Jumps and prepends from before the list was mounted are done: only new ones move it.
+  const handledTarget = useRef(scrollTarget);
+  const handledPrepend = useRef(prepended);
   // Read inside effects without re-running them when it changes.
   const following = useRef(true);
   following.current = atNewest;
   const previousTotal = useRef(total);
   const loadOlder = useLogs((s) => s.loadOlder);
-  const prepended = useLogs((s) => s.prepended);
   const rowHeight = Math.round(fontSize * 1.6);
 
   // TanStack Virtual decides which rows to render. Rows have a fixed height until expanded;
@@ -90,8 +102,27 @@ export function LogList({
     }
   }, [dataFrom, dataTo, total, pages, fetchRows]);
 
-  // A new view (or font size, or order) starts at the newest event.
+  // Back where it was when it was hidden, if that event is still loaded.
+  const restore = () => {
+    const index = savedAnchor ? cachedIndexOf(pages, savedAnchor.seq) : undefined;
+    const start =
+      index === undefined ? undefined : virtualizer.getOffsetForIndex(toData(index), "start");
+    if (!savedAnchor || !start) return false;
+    virtualizer.scrollToOffset(start[0] + savedAnchor.offset);
+    return true;
+  };
+
+  useEffect(() => () => setScrollAnchor(anchor.current), [setScrollAnchor]);
+
+  // A new view (or font size, or order) starts at the newest event. Right after mounting, the list
+  // goes back to where it was instead. In development React runs effects twice: the second run
+  // finds the same inputs and leaves the list alone.
   useEffect(() => {
+    const inputs = `${viewId}|${fontSize}|${newestFirst}`;
+    if (positionedFor.current === inputs) return;
+    const mounting = positionedFor.current === null;
+    positionedFor.current = inputs;
+    if (mounting && restore()) return;
     if (total > 0) scrollToNewest();
     setAtNewest(true);
     // Only on these changes: new rows must not pull the user back to the newest event.
@@ -100,6 +131,8 @@ export function LogList({
 
   // Jumping to a match (search navigation).
   useEffect(() => {
+    if (scrollTarget === handledTarget.current) return;
+    handledTarget.current = scrollTarget;
     if (scrollTarget) {
       virtualizer.scrollToIndex(toData(scrollTarget.index), { align: "center" });
       setAtNewest(false);
@@ -110,6 +143,8 @@ export function LogList({
   // Older rows put in front (oldest first: at the top) would push what's on screen down: scroll
   // along. Newest first, they are added at the bottom and nothing moves.
   useEffect(() => {
+    if (prepended === handledPrepend.current) return;
+    handledPrepend.current = prepended;
     if (prepended && !newestFirst) {
       virtualizer.scrollToOffset((scrollRef.current?.scrollTop ?? 0) + prepended.count * rowHeight);
     }
@@ -147,11 +182,15 @@ export function LogList({
           const el = e.currentTarget;
           const fromBottom = el.scrollHeight - el.clientHeight - el.scrollTop;
           if ((newestFirst ? fromBottom : el.scrollTop) < OLDER_MARGIN_PX) void loadOlder();
-          setAtNewest(
-            newestFirst
-              ? el.scrollTop <= EDGE_SLACK
-              : el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_SLACK,
-          );
+          const newest = newestFirst
+            ? el.scrollTop <= EDGE_SLACK
+            : el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_SLACK;
+          setAtNewest(newest);
+          const top = virtualizer.getVirtualItemForOffset(el.scrollTop);
+          const event = top && row(toData(top.index));
+          if (newest) anchor.current = null;
+          else if (top && event)
+            anchor.current = { seq: event.seq, offset: el.scrollTop - top.start };
         }}
         className="absolute inset-0 overflow-auto font-mono text-(length:--log-font-size) leading-[1.6]"
       >

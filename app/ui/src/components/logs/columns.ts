@@ -25,8 +25,11 @@ function correlationValue(fields: LogEvent["line"]["fields"]) {
   return undefined;
 }
 
+/** The logger column's width in characters (the list uses a monospace font). */
+const LOGGER_CHARS = 22;
+
 export const OPTIONAL_COLUMNS: { id: LogColumn; label: string; width: string }[] = [
-  { id: "logger", label: "Logger", width: "22ch" },
+  { id: "logger", label: "Logger", width: `${LOGGER_CHARS}ch` },
   { id: "thread", label: "Thread", width: "16ch" },
   { id: "correlation", label: "Correlation / trace ID", width: "18ch" },
 ];
@@ -41,6 +44,32 @@ export function columnValue(event: LogEvent, column: LogColumn): string {
         ? field("process.thread.name")
         : correlationValue(event.line.fields);
   return value === undefined || value === null ? "" : String(value);
+}
+
+/** The text shown in an optional column: the logger name shortened, the others as they are. */
+export function columnText(event: LogEvent, column: LogColumn): string {
+  const value = columnValue(event, column);
+  return column === "logger" ? abbreviateLogger(value, LOGGER_CHARS) : value;
+}
+
+/**
+ * A logger name shortened to `max` characters the way Spring Boot (Logback) does it: package
+ * names become their first letter from the left until it fits (`c.e.orders.OrderService`), the
+ * class name stays whole. If even that is too long, the front is cut off (`…derServiceImpl`),
+ * since the end of a logger name tells the most.
+ */
+export function abbreviateLogger(name: string, max: number): string {
+  if (name.length <= max) return name;
+  const parts = name.split(".");
+  let length = name.length;
+  for (let i = 0; i < parts.length - 1 && length > max; i++) {
+    const part = parts[i] ?? "";
+    if (part.length <= 1) continue;
+    length -= part.length - 1;
+    parts[i] = part.charAt(0);
+  }
+  const short = parts.join(".");
+  return short.length <= max ? short : `…${short.slice(short.length - max + 1)}`;
 }
 
 /** The CSS grid columns of a row: time, level, [task], [optional…], message. */

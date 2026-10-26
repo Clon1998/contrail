@@ -204,6 +204,15 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     Newest first
                   </label>
                 </Row>
+                <Row label="Long lines" hint="Wrap messages instead of cutting them off (W).">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.wrapLines}
+                      onCheckedChange={(checked) => void update({ wrapLines: checked === true })}
+                    />
+                    Wrap lines
+                  </label>
+                </Row>
                 <Row
                   label="Live tail"
                   hint="CloudWatch bills Live Tail per session minute. Paused tails catch up when they resume."

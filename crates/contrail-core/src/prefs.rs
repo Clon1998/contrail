@@ -136,6 +136,8 @@ pub struct Settings {
     pub log_columns: Vec<LogColumn>,
     /// Log lists show the newest event at the top (and follow new events there).
     pub newest_first: bool,
+    /// Long messages wrap onto more lines instead of being cut off at the list's edge.
+    pub wrap_lines: bool,
     /// Look for a new Contrail version on start (at most once a day).
     pub check_for_updates: bool,
 }
@@ -155,6 +157,7 @@ impl Default for Settings {
             buffer_size: DEFAULT_BUFFER_SIZE,
             log_columns: Vec::new(),
             newest_first: false,
+            wrap_lines: false,
             check_for_updates: true,
         }
     }
@@ -188,6 +191,7 @@ impl Settings {
         read(value, "bufferSize", &mut settings.buffer_size);
         read(value, "logColumns", &mut settings.log_columns);
         read(value, "newestFirst", &mut settings.newest_first);
+        read(value, "wrapLines", &mut settings.wrap_lines);
         read(value, "checkForUpdates", &mut settings.check_for_updates);
         settings
     }
@@ -452,6 +456,18 @@ mod tests {
     }
 
     #[test]
+    fn wrapping_lines_is_off_unless_saved() {
+        // Preferences saved before the setting existed.
+        let settings = Prefs::from_json(r#"{"settings":{"newestFirst":true}}"#)
+            .unwrap()
+            .settings;
+        assert!(!settings.wrap_lines);
+        assert!(settings.newest_first);
+        let json = r#"{"settings":{"wrapLines":true}}"#;
+        assert!(Prefs::from_json(json).unwrap().settings.wrap_lines);
+    }
+
+    #[test]
     fn field_mappings_per_service() {
         let mut prefs = Prefs::default();
         let orders = key("dev", "orders");
@@ -542,7 +558,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"checkForUpdates":true}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"checkForUpdates":true}"#
         );
     }
 

@@ -63,7 +63,31 @@ test("optional columns", async ({ page }) => {
   await page.getByRole("button", { name: "Columns" }).click();
   await page.getByRole("menuitemcheckbox", { name: "Logger" }).click();
   await page.keyboard.press("Escape");
-  await expect(list.getByText(/^com\.example\./).first()).toBeVisible();
+  // Packages are shortened like Spring Boot does; the tooltip keeps the full name.
+  const logger = list.locator('[title^="com.example."]').first();
+  await expect(logger).toBeVisible();
+  await expect(logger).toHaveText(/^c\.e\./);
+});
+
+test("long messages wrap with W or the toolbar button", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 700 });
+  const list = await openLogs(page, "demo-core", "payments-worker");
+  await expect(list.getByRole("listitem").first()).toBeVisible();
+  const tallest = () =>
+    list
+      .getByRole("listitem")
+      .evaluateAll((rows) => Math.max(...rows.map((r) => r.getBoundingClientRect().height)));
+  const oneLine = await tallest();
+
+  await page.keyboard.press("w");
+  await expect(page.getByRole("button", { name: "Wrap lines" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect.poll(tallest).toBeGreaterThan(oneLine * 1.5);
+
+  await page.getByRole("button", { name: "Wrap lines" }).click();
+  await expect.poll(tallest).toBeLessThan(oneLine * 1.5);
 });
 
 test("a task's logs from the task list, and back to all tasks", async ({ page }) => {
@@ -134,6 +158,38 @@ test("live: new events arrive, pause stops them, resume continues", async ({ pag
   await expect
     .poll(async () => Number(await list.getAttribute("aria-rowcount")), { timeout: 5_000 })
     .toBeGreaterThan(paused);
+});
+
+test("the list keeps its place and open rows across Overview, Logs and tabs", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  await list.locator("..").evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  const first = list.getByRole("button", { name: /Ingested event #1 / }).first();
+  await first.click();
+  await expect(first).toHaveAttribute("aria-expanded", "true");
+
+  const backAtTheTop = async () => {
+    await expect(list.getByRole("button", { name: /Ingested event #1 / }).first()).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  };
+  await page.getByRole("tab", { name: "Overview" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  await backAtTheTop();
+
+  // Another service's tab and back.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "legacy-gateway" }).click();
+  await expect(page.getByRole("main", { name: "Service legacy-gateway" })).toBeVisible();
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: /event-ingest/ })
+    .click();
+  await backAtTheTop();
 });
 
 test("live: following stops when scrolled up and resumes with Jump to latest", async ({ page }) => {

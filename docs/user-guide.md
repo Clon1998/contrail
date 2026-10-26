@@ -34,7 +34,9 @@ page has the details.
   other field names.
 - The list scrolls smoothly through up to 100,000 lines, starts at the newest, and expands a line into its fields,
   raw JSON, embedded JSON and stack trace (with copy buttons). The task picker in the toolbar (or a task's **Logs**
-  button) shows only one task; the columns button adds logger, thread or correlation/trace ID.
+  button) shows only one task; the columns button adds logger, thread or correlation/trace ID. Logger names are
+  shortened like Spring Boot does (`c.e.orders.OrderService`); hover for the full name. The wrap button (or **W**)
+  wraps long messages instead of cutting them off.
 - **Time window:** click it in the toolbar (or press **T**) and type what you want: `15m`, `3h`, `2d`, `1w`, `1h30m`,
   `today`, `since 14:00`, `yesterday`, `oct 20`, `9:00-11:30` or `yesterday 9-11`. The picker shows what it understood
   before you press Enter, and whether the window will follow live, open paused or be a fixed range. Quick windows,
@@ -85,7 +87,7 @@ screenshots.
 ## Settings and updates
 
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
-  default log time window, newest-first order, timestamps in local time or UTC, and the live tail pause limits.
+  default log time window, newest-first order, wrapping long lines, timestamps in local time or UTC, and the live tail pause limits.
 - Favorites, recent services, the last profile and region overrides are kept in `prefs.json` in Contrail's app
   data folder (never credentials); see [Security & privacy](security.md#what-contrail-stores-and-where).
 - **Updates:** Contrail checks the GitHub releases on start (once a day, can be switched off) and installs a newer

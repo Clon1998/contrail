@@ -44,6 +44,21 @@ export function sameService(a: ServiceRef | null, b: ServiceRef | null): boolean
   return a?.clusterArn === b?.clusterArn && a?.serviceName === b?.serviceName;
 }
 
+/** A service's detail and tasks as last loaded: switching back to its tab shows them at once. */
+interface CachedService {
+  detail: ServiceDetail;
+  tasks: Task[];
+  includeStopped: boolean;
+  loadedAt: number;
+}
+
+/** Cached service data younger than this is shown without loading it again. */
+export const FRESH_MS = 30_000;
+
+function serviceKey(service: ServiceRef): string {
+  return `${service.clusterArn}|${service.serviceName}`;
+}
+
 export function ctxKey(ctx: AwsCtx): string {
   return `${ctx.profile}|${ctx.region ?? ""}`;
 }
@@ -59,6 +74,8 @@ interface EcsState {
   detail: Loadable<ServiceDetail>;
   tasks: Loadable<Task[]>;
   includeStopped: boolean;
+  /** The services opened before, by cluster ARN and name. */
+  cache: Record<string, CachedService>;
 
   /** Switches to `ctx` (clearing everything if it changed) and loads its clusters. */
   activate: (ctx: AwsCtx) => Promise<void>;
@@ -70,8 +87,11 @@ interface EcsState {
   openService: (service: ServiceRef) => Promise<void>;
   /** Shows no service (the last tab was closed). */
   closeService: () => void;
-  /** Reloads the open service's detail and tasks, keeping the old data visible meanwhile. */
-  refreshService: () => Promise<void>;
+  /**
+   * Reloads the open service's detail and tasks, keeping the old data visible meanwhile. `quiet`
+   * (a background refresh) doesn't show it as loading.
+   */
+  refreshService: (options?: { quiet?: boolean }) => Promise<void>;
   setIncludeStopped: (include: boolean) => Promise<void>;
 }
 
@@ -83,6 +103,7 @@ const EMPTY = {
   selected: null,
   detail: IDLE,
   tasks: IDLE,
+  cache: {},
 } satisfies Partial<EcsState>;
 
 export const useEcs = create<EcsState>((set, get) => {
@@ -92,13 +113,24 @@ export const useEcs = create<EcsState>((set, get) => {
     return now !== null && ctxKey(now) === ctxKey(ctx);
   };
 
-  async function loadServiceData(ctx: AwsCtx, service: ServiceRef) {
-    set((s) => ({ detail: loading(s.detail), tasks: loading(s.tasks) }));
+  async function loadServiceData(ctx: AwsCtx, service: ServiceRef, quiet: boolean) {
+    if (!quiet) set((s) => ({ detail: loading(s.detail), tasks: loading(s.tasks) }));
+    const includeStopped = get().includeStopped;
     const [detail, tasks] = await Promise.all([
       commands.describeService(ctx, service),
-      commands.listTasks(ctx, service, get().includeStopped),
+      commands.listTasks(ctx, service, includeStopped),
     ]);
-    if (!current(ctx) || !sameService(get().selected, service)) return;
+    if (!current(ctx)) return;
+    if (detail.status === "ok" && tasks.status === "ok") {
+      const entry = {
+        detail: detail.data,
+        tasks: tasks.data,
+        includeStopped,
+        loadedAt: Date.now(),
+      };
+      set((s) => ({ cache: { ...s.cache, [serviceKey(service)]: entry } }));
+    }
+    if (!sameService(get().selected, service)) return;
     set((s) => ({ detail: settle(s.detail, detail), tasks: settle(s.tasks, tasks) }));
   }
 
@@ -160,24 +192,28 @@ export const useEcs = create<EcsState>((set, get) => {
     openService: async (service) => {
       const ctx = get().ctx;
       if (!ctx) return;
+      const cached = get().cache[serviceKey(service)];
       set((s) => ({
         selected: service,
-        detail: IDLE,
-        tasks: IDLE,
+        detail: cached ? { state: "ok", data: cached.detail } : IDLE,
+        tasks: cached ? { state: "ok", data: cached.tasks } : IDLE,
         expanded: { ...s.expanded, [service.clusterArn]: true },
       }));
       void usePrefs.getState().addRecent(ctx.profile, service);
       if (get().services[service.clusterArn]?.state !== "ok") {
         void get().loadServices(service.clusterArn);
       }
-      await loadServiceData(ctx, service);
+      // Seen a moment ago (switching tabs back and forth): no need to ask AWS again.
+      const fresh =
+        cached?.includeStopped === get().includeStopped && Date.now() - cached.loadedAt < FRESH_MS;
+      if (!fresh) await loadServiceData(ctx, service, cached !== undefined);
     },
 
     closeService: () => set({ selected: null, detail: IDLE, tasks: IDLE }),
 
-    refreshService: async () => {
+    refreshService: async (options) => {
       const { ctx, selected } = get();
-      if (ctx && selected) await loadServiceData(ctx, selected);
+      if (ctx && selected) await loadServiceData(ctx, selected, options?.quiet ?? false);
     },
 
     setIncludeStopped: async (includeStopped) => {
