@@ -445,3 +445,10 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   use and shares it between threads afterwards, like a lazily initialised `static final Pattern` in Java.
   `Regex::new` inside a function would compile the pattern on every call.
 - **Where:** `SECRET_NAME` / `RouteProperty::is_secret` in `crates/contrail-core/src/routes.rs`.
+
+## Methods from a trait that must be in scope (`use base64::Engine`)
+
+- **What:** `STANDARD.decode(…)` only compiles with `use base64::Engine;`: `decode` is a method of the `Engine`
+  trait, and Rust only finds trait methods when the trait is imported (Java has no equivalent: an interface's
+  methods are always visible on the object). The compiler's error says which trait to import.
+- **Where:** `app/src-tauri/src/commands/files.rs`.

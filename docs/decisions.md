@@ -419,3 +419,10 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
 - **Settings on the map:** the scan now sends endpoint settings to the UI, with the values of secrets (from
   Secrets Manager/SSM, or in a variable named like a credential) emptied in Rust first. The search matches
   settings on the system end of a route; secrets can't match, and nothing is ever resolved for it.
+- **Remembered per tab:** a route map tab keeps its scan, search, selection, narrowing, "hide disabled", zoom,
+  position and dragged nodes for the session (`stores/routeMaps.ts`); coming back from another tab shows it as
+  it was, without calling the backend or ELK. Closing the tab forgets it.
+- **Export:** PNG (double resolution) or SVG of the whole map, made in the UI with `html-to-image` 1.11.13
+  (MIT), the approach React Flow documents. All nodes are rendered for the capture (normally only visible ones
+  are). Rust writes the file through `save_image`, which only writes `.png`/`.svg` to the path picked in the
+  save dialog; the image travels as base64 (`base64` crate, already in the lockfile through the AWS SDK).

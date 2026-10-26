@@ -368,6 +368,13 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await map.getByRole("button", { name: "Show disabled" }).click();
   await expect(node("system Example Partner API (disabled)")).toBeVisible();
 
+  // The whole map can be saved as an image.
+  for (const format of ["PNG image (.png)", "SVG image (.svg)"]) {
+    await map.getByRole("button", { name: "Export" }).click();
+    await page.getByRole("menuitem", { name: format }).click();
+    await expect(map.getByRole("status").filter({ hasText: "Saved the map" })).toBeVisible();
+  }
+
   // Right-click narrows the map to what feeds into a node.
   await node("service search-feeder").click({ button: "right" });
   await page.getByRole("menuitem", { name: "Only what feeds into it" }).click();

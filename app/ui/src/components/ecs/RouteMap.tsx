@@ -28,6 +28,7 @@ import {
 } from "@/lib/clusterGraph";
 import { formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { isTyping } from "@/lib/keys";
+import { mapFileName } from "@/lib/mapExport";
 import { useEcs } from "@/stores/ecs";
 import { usePrefs } from "@/stores/prefs";
 import {
@@ -385,6 +386,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
               saved={saved?.canvas ?? null}
               onSave={saveCanvas}
               jump={jump}
+              fileName={mapFileName(nameFromArn(clusterArn))}
             />
           )}
           <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col items-start gap-2">

@@ -1,6 +1,7 @@
 import { createContext, use, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
+  getNodesBounds,
   Handle,
   MiniMap,
   Position as Side,
@@ -15,7 +16,10 @@ import {
   type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
+import { save } from "@tauri-apps/plugin-dialog";
+import { toPng, toSvg } from "html-to-image";
 import {
+  DownloadIcon,
   LayoutGridIcon,
   MaximizeIcon,
   PlugIcon,
@@ -25,7 +29,14 @@ import {
   ZoomOutIcon,
 } from "lucide-react";
 import { cn } from "cn";
+import { commands } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -37,6 +48,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { routePath, type ClusterGraph, type ClusterNode, type PathScope } from "@/lib/clusterGraph";
 import { layoutClusterGraph, NODE_HEIGHT, nodeWidth, type Position } from "@/lib/mapLayout";
+import { dataUrlToBase64 } from "@/lib/mapExport";
 import type { CanvasMemory } from "@/stores/routeMaps";
 import { ConfigList } from "./RouteConfig";
 
@@ -94,12 +106,13 @@ function MapNodeView({ data }: NodeProps<MapNode>) {
         node.kind === "service" && node.transformer && "border-solid",
         node.kind === "system" && "border-border",
         node.disabled && "border-dashed opacity-60",
-        tone === "selected" && "ring-2 ring-primary",
+        // Outlines, not rings (box shadows): an exported image draws those shifted.
+        tone === "selected" && "outline-2 outline-offset-1 outline-primary",
         tone === "upstream" && "border-solid border-[color:var(--map-upstream)]",
         (tone === "downstream" || tone === "both") && "border-solid border-primary",
         tone === "dimmed" && "opacity-30",
-        match !== null && "ring-2 ring-warning/70",
-        current && "bg-warning/15 ring-4 ring-warning",
+        match !== null && "outline-2 outline-offset-1 outline-warning/70",
+        current && "bg-warning/15 outline-4 outline-warning",
       )}
     >
       <Icon className="size-3.5 shrink-0 text-muted-foreground" />
@@ -200,6 +213,8 @@ export function ClusterMapCanvas(props: {
   onSave: (memory: CanvasMemory) => void;
   /** A search match to centre and zoom to (`nonce` makes jumping to it again work). */
   jump: { id: string; nonce: number } | null;
+  /** The name an exported image is offered under (without extension). */
+  fileName: string;
 }) {
   return (
     <ReactFlowProvider>
@@ -222,6 +237,7 @@ function Canvas({
   saved,
   onSave,
   jump,
+  fileName,
 }: Parameters<typeof ClusterMapCanvas>[0]) {
   const flow = useReactFlow();
   const key = useMemo(() => graphKey(graph), [graph]);
@@ -357,6 +373,52 @@ function Canvas({
     );
   }, [jump, flow]);
 
+  // Exporting: the whole map as an image, not just the part on screen. Only visible nodes are
+  // rendered normally, so all of them are rendered while `exporting` is set.
+  const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  async function exportImage(format: "png" | "svg") {
+    const path = await save({
+      defaultPath: `${fileName}.${format}`,
+      filters: [{ name: format.toUpperCase(), extensions: [format] }],
+    });
+    if (!path) return;
+    setExporting(true);
+    // Two frames: React renders the hidden nodes, then the browser lays them out.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    try {
+      const viewport = box.current?.querySelector<HTMLElement>(".react-flow__viewport");
+      if (!viewport) return;
+      const bounds = getNodesBounds(flow.getNodes());
+      const pad = 24;
+      const width = Math.ceil(bounds.width + 2 * pad);
+      const height = Math.ceil(bounds.height + 2 * pad);
+      const options = {
+        backgroundColor: getComputedStyle(document.body).backgroundColor,
+        width,
+        height,
+        style: {
+          width: `${width}px`,
+          height: `${height}px`,
+          transform: `translate(${pad - bounds.x}px, ${pad - bounds.y}px) scale(1)`,
+        },
+      };
+      const url =
+        format === "png"
+          ? await toPng(viewport, { ...options, pixelRatio: 2 })
+          : await toSvg(viewport, options);
+      const result = await commands.saveImage(path, dataUrlToBase64(url));
+      setExportStatus(
+        result.status === "ok" ? "Saved the map" : `Saving failed: ${result.error.message}`,
+      );
+    } catch (error) {
+      setExportStatus(`Saving failed: ${String(error)}`);
+    } finally {
+      setExporting(false);
+      setTimeout(() => setExportStatus(null), 5_000);
+    }
+  }
+
   // Fit once the nodes of a new layout are measured (React Flow needs their sizes for it); a
   // restored canvas goes back to its zoom and position instead.
   const measured = useNodesInitialized();
@@ -429,7 +491,7 @@ function Canvas({
           elementsSelectable={false}
           minZoom={0.05}
           maxZoom={2}
-          onlyRenderVisibleElements
+          onlyRenderVisibleElements={!exporting}
           proOptions={{ hideAttribution: false }}
           className="bg-background"
         >
@@ -489,6 +551,26 @@ function Canvas({
           >
             <LayoutGridIcon /> Re-layout
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="xs" disabled={exporting}>
+                <DownloadIcon /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onSelect={() => void exportImage("png")}>
+                PNG image (.png)
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void exportImage("svg")}>
+                SVG image (.svg)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {exportStatus && (
+            <span role="status" className="self-center px-1 text-xs text-muted-foreground">
+              {exportStatus}
+            </span>
+          )}
         </div>
       </div>
     </Actions>
