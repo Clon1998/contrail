@@ -5,9 +5,9 @@ description: Install Contrail, log in with an AWS SSO profile, open a service an
 
 import { Aside, LinkButton, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-From zero to a service's live logs. You need Contrail, the
-[AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and at
-least one SSO profile in your AWS config.
+From zero to a service's live logs. You need Contrail and at least one SSO profile in your AWS
+config. The [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+is optional: Contrail logs in itself when it isn't installed.
 
 ## Install
 
@@ -43,8 +43,8 @@ least one SSO profile in your AWS config.
    search by name, account ID or region.
 
 2. **Log in.** If the session has expired, **Log in** runs `aws sso login --profile <name>` for
-   you and the browser opens. Contrail only reads when the session expires; the AWS SDK handles
-   the credentials.
+   you and the browser opens. Without the CLI, Contrail opens the login page itself and shows the
+   code to confirm there. The AWS SDK handles the credentials.
 
 3. **Open a service.** Expand a cluster in the sidebar and click a service, or press
    <kbd>Cmd/Ctrl</kbd>+<kbd>K</kbd> and type part of its name. Star it to pin it to the sidebar.

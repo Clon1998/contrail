@@ -8,8 +8,9 @@ has to approve a tool before a team may use it. To report a vulnerability, see [
 - A desktop app with **no server component, no account, no cloud sync and no telemetry**.
 - **Read-only towards AWS.** Contrail never calls an API that changes a resource; the
   [IAM policy](iam-policy.json) lists every action it uses.
-- **Contrail never stores credentials.** Logins go through the AWS CLI, credentials through the AWS SDK's own
-  chain, exactly as for the `aws` command.
+- **Contrail never stores credentials of its own.** Logins go through the AWS CLI, or through Contrail's built-in
+  SSO login, which writes the SSO token to the same cache file the CLI uses (below); credentials come from the
+  AWS SDK's own chain, exactly as for the `aws` command.
 - Secret values of environment variables are read only on an explicit click and never written anywhere.
 - Open source under the [MIT license](../LICENSE): you can read, build and audit every line.
 
@@ -20,6 +21,12 @@ has to approve a tool before a team may use it. To report a vulnerability, see [
 | `~/.aws/config` (or `AWS_CONFIG_FILE`) | The list of profiles, their regions and SSO settings |
 | `~/.aws/credentials` (or `AWS_SHARED_CREDENTIALS_FILE`) | **Only the section names**, so profiles defined there are listed. Key values are never read into Contrail's code or kept |
 | `~/.aws/sso/cache/` | Only the expiry of the SSO token, to show whether a profile is logged in |
+
+**What it writes there:** only the built-in SSO login (used when the AWS CLI isn't installed, or switched on in
+**Settings → AWS**) writes one file, `~/.aws/sso/cache/<SHA-1 of the session name or start URL>.json`: the same
+file, name and format `aws sso login` writes (access token, its expiry and, for `sso-session` profiles, the refresh
+token and client registration). It is written atomically and readable only by you (mode 0600 on macOS and Linux),
+like the CLI's. Logging out works as with the CLI (`aws sso logout`, or delete the file).
 
 On Windows `~` is `%USERPROFILE%`. Credentials themselves are resolved by the AWS SDK for Rust, the same way the
 AWS CLI does it (SSO, assume role, `credential_process`, static keys).
@@ -49,7 +56,9 @@ Only these connections, each started by something you did:
   Store only when you click **Reveal** on a secret. The AWS SDK also talks to the IAM Identity Center portal to turn
   an SSO login into role credentials.
 - **`aws sso login`**, which Contrail starts for you when you click **Log in**: the AWS CLI opens your browser and
-  does the login itself.
+  does the login itself. Without the CLI, Contrail's built-in login talks to IAM Identity Center's OIDC endpoint
+  (`oidc.<sso region>.amazonaws.com`: RegisterClient, StartDeviceAuthorization, CreateToken; unsigned calls that
+  change nothing in the account) and opens the login page in your browser.
 - **The update check**: at most once a day, a download of
   `https://github.com/Clon1998/contrail/releases/latest/download/latest.json`. Switch it off in **Settings →
   About → Updates**.

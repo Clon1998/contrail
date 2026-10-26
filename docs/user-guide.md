@@ -7,9 +7,11 @@ page has the details.
 ## Profiles and login
 
 - Contrail lists the profiles from `~/.aws/config` (or `AWS_CONFIG_FILE`) with their SSO session state.
-- **Log in** runs `aws sso login --profile <name>` for you, so the
-  [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) must be installed.
-  Contrail only reads the expiry of the SSO token cache; the AWS SDK handles credentials.
+- **Log in** runs `aws sso login --profile <name>` for you when the
+  [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) is installed. Without
+  it (or with **Settings → AWS → Log in without the AWS CLI**) Contrail logs in itself: it opens the login page in
+  your browser and shows the code to confirm there, then writes the token to `~/.aws/sso/cache` exactly as the CLI
+  would, so the CLI and other tools share the login. The AWS SDK handles credentials.
 - Switch profiles with **⌘⇧P / Ctrl+Shift+P** (search by name, account ID or region).
 
 ## Clusters and services

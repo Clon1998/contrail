@@ -13,7 +13,7 @@ it makes are billed to your account as usual; see [what it costs](teams.md#what-
 | **macOS** | Apple silicon or Intel, macOS 11 (Big Sur) or newer. |
 | **Windows** | Windows 10 or 11, 64-bit (x64). Uses Microsoft Edge WebView2, which Windows 11 includes; the installer fetches it on Windows 10 if needed. Installs per user, no admin rights needed. |
 | **Linux** | 64-bit (x86_64) with WebKitGTK 4.1, e.g. Ubuntu 22.04, Debian 12, Fedora 39 or newer. `.deb`, `.rpm` or AppImage. |
-| **AWS CLI v2** | For SSO logins (`aws sso login`). |
+| **AWS CLI v2** | Optional: SSO logins use `aws sso login` when it's installed, Contrail's own login otherwise. |
 
 There are no ARM builds for Windows or Linux yet.
 
@@ -44,7 +44,6 @@ Contrail is a focused log viewer for ECS. Not supported (yet):
 - **History**: no long-range search across days of logs; a view holds up to 100,000 events (configurable).
   Use Logs Insights or your log platform for that.
 - **Actions**: no stop, restart, scale or deploy. That's deliberate.
-- **SSO without the AWS CLI**: the login runs `aws sso login`.
 - **Builds**: the installers aren't code-signed; no ARM builds for Windows and Linux.
 
 ## Is it stable?
