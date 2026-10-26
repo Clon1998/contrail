@@ -12,6 +12,7 @@ import {
   type Edge,
   type Node,
   type NodeProps,
+  type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import {
@@ -209,6 +210,12 @@ function Canvas({
   // Bumped by "Re-layout": the same graph laid out again, dragged nodes back in place.
   const [round, setRound] = useState(0);
   const [nodes, setNodes, onNodesChange] = useNodesState<MapNode>([]);
+  // The map's element, and where the map was before an automatic pan (see below).
+  const box = useRef<HTMLDivElement>(null);
+  const restoreRef = useRef<Viewport | null>(null);
+  const userMoved = () => {
+    restoreRef.current = null;
+  };
 
   useEffect(() => {
     let current = true;
@@ -235,6 +242,7 @@ function Canvas({
   // the next one. A new selection only changes how they look (below).
   useEffect(() => {
     if (!layout) return;
+    restoreRef.current = null;
     setNodes(
       layout.graph.nodes.map((node) => ({
         id: node.id,
@@ -246,9 +254,14 @@ function Canvas({
   }, [layout, setNodes]);
   // Selecting a node opens the details next to the map, which gets narrower: if that pushed the
   // node out of view (or it was partly outside already), pan it to the centre, keeping the zoom.
-  const box = useRef<HTMLDivElement>(null);
+  // Closing the details undoes that pan, unless the user moved the map since: `restoreRef` is where
+  // the map was before the first automatic pan, cleared by any move of the user's own.
   useEffect(() => {
-    if (!selected) return;
+    if (!selected) {
+      if (restoreRef.current) void flow.setViewport(restoreRef.current, { duration: 300 });
+      restoreRef.current = null;
+      return;
+    }
     // After the panel has opened and the map has its new width.
     const timer = setTimeout(() => {
       const node = flow.getInternalNode(selected);
@@ -266,6 +279,7 @@ function Canvas({
         left + width * zoom <= element.clientWidth &&
         top + height * zoom <= element.clientHeight;
       if (!visible) {
+        restoreRef.current ??= { x, y, zoom };
         void flow.setCenter(at.x + width / 2, at.y + height / 2, { zoom, duration: 300 });
       }
     }, 50);
@@ -328,6 +342,8 @@ function Canvas({
           nodeTypes={NODE_TYPES}
           onNodesChange={onNodesChange}
           onPaneClick={() => actions.select("")}
+          // Only the user's own moves come with an event (not the automatic pans).
+          onMoveStart={(event) => event && userMoved()}
           nodesConnectable={false}
           nodesFocusable={false}
           edgesFocusable={false}
@@ -357,7 +373,10 @@ function Canvas({
             variant="ghost"
             size="icon-xs"
             aria-label="Zoom in"
-            onClick={() => void flow.zoomIn()}
+            onClick={() => {
+              userMoved();
+              void flow.zoomIn();
+            }}
           >
             <ZoomInIcon />
           </Button>
@@ -365,7 +384,10 @@ function Canvas({
             variant="ghost"
             size="icon-xs"
             aria-label="Zoom out"
-            onClick={() => void flow.zoomOut()}
+            onClick={() => {
+              userMoved();
+              void flow.zoomOut();
+            }}
           >
             <ZoomOutIcon />
           </Button>
@@ -373,7 +395,10 @@ function Canvas({
             variant="ghost"
             size="icon-xs"
             aria-label="Fit the map"
-            onClick={() => void flow.fitView({ padding: 0.1, duration: 200, maxZoom: 1 })}
+            onClick={() => {
+              userMoved();
+              void flow.fitView({ padding: 0.1, duration: 200, maxZoom: 1 });
+            }}
           >
             <MaximizeIcon />
           </Button>

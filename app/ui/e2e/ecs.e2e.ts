@@ -300,17 +300,31 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await expect(routes).not.toContainText("demo-not-a-secret");
   await expect(map.getByText("feeds into the selection")).toBeVisible();
 
-  // The details open beside the map; a node at its right edge moves back into view.
+  // The details open beside the map; a node at its right edge moves into view, and back when
+  // they close, unless the map was moved by hand meanwhile.
   await page.keyboard.press("Escape");
-  await node("system Product Catalog").click();
+  const catalog = node("system Product Catalog");
+  const x = async () => (await catalog.boundingBox())?.x ?? Number.NaN;
+  const before = await x();
+  const inView = async () => {
+    const area = await graph.boundingBox();
+    const box = await catalog.boundingBox();
+    return area && box ? box.x + box.width <= area.x + area.width : false;
+  };
+  await catalog.click();
   await expect(details).toBeVisible();
-  await expect
-    .poll(async () => {
-      const area = await graph.boundingBox();
-      const box = await node("system Product Catalog").boundingBox();
-      return area && box ? box.x + box.width <= area.x + area.width : false;
-    })
-    .toBe(true);
+  await expect.poll(inView).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => Math.round(Math.abs((await x()) - before))).toBeLessThan(2);
+
+  await catalog.click();
+  await expect.poll(inView).toBe(true);
+  await map.getByRole("button", { name: "Zoom out" }).click();
+  await page.waitForTimeout(400);
+  const moved = await x();
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  expect(Math.abs((await x()) - moved)).toBeLessThan(2);
   await map.getByRole("button", { name: "Fit the map" }).click();
 
   // Esc or the toolbar button clears the selection.
