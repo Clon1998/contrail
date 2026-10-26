@@ -455,3 +455,21 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   shared. `sso-session` profiles get the refresh token and client registration too (the SDK renews the token
   like after a CLI login); legacy profiles only the access token, like the CLI writes them. The file is written
   atomically and readable only by the user (0600 on macOS/Linux). Memory-only storage was the alternative.
+
+## 2026-10-26 — M14: shareable links
+
+- **Format:** `contrail://open?profile=…&region=…&cluster=…&service=…&task=…&last=15` (or `from`/`to` in RFC 3339)
+  `&q=…&mode=highlight&regex=1&raw=1`, built and read in Rust (`contrail_core::links`, `url` crate for the
+  percent-encoding) with a property test that every view round-trips. Names only, no credentials.
+- **Opening:** `tauri-plugin-deep-link` 2.6.2 registers the scheme (installers on Windows/macOS; at start for an
+  AppImage and development builds); `tauri-plugin-single-instance` 2.5.4 hands a link opened while Contrail runs
+  to the running app on Windows and Linux. The UI switches to the link's profile and region (setting the region
+  override when it differs from the profile's own), waits for a login if needed (the link stays pending, shown
+  under the top bar), then opens the service with the window, task and search. A profile of that name must exist;
+  otherwise the notice says which one the link is for.
+- **Console links:** the log group, time range, task stream and plain-text search in the CloudWatch console
+  (`logsV2` fragment with the console's `$`-escaping); for a single line its stream ±1 minute. Contrail's field
+  terms and regexes have no console equivalent and are left out. Opened through `open_console`, which only
+  accepts `https://*.console.aws.amazon.com` URLs.
+- **Not yet:** links to a trace tab (plan.md said "a view or a trace tab"); a trace is a search across services
+  and needs its own link kind. Left for later.

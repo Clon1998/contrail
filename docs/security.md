@@ -46,6 +46,15 @@ you ran (the last 50 per service, 100 in all) and the ones you saved, and a sear
 searched for (a correlation ID, an order number). **Clear history** in the search bar's saved-searches menu
 removes the history. Contrail writes no log files; its diagnostics go to the console output only.
 
+## Links
+
+A `contrail://` link (**Share → Copy link**) holds names only: profile, region, cluster ARN, service, task, time
+window and search text. No credentials or tokens; the search text can contain an ID you searched for, so share
+links like any other note about your systems. Installing Contrail registers the `contrail://` scheme with the
+operating system so links open in it. Opening a link only switches profile and region and opens the view: the same
+read-only calls as clicking there yourself. Contrail opens web pages in your browser only for the SSO login and
+for AWS console links (`https://*.console.aws.amazon.com`); it refuses any other address.
+
 ## What goes over the network
 
 Only these connections, each started by something you did:

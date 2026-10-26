@@ -92,6 +92,16 @@ way it took (the services in the order the ID reached them) and every event with
 The [tracing guide](https://clon1998.github.io/contrail/guides/tracing/) walks through it step by step, with
 screenshots.
 
+## Sharing a view
+
+- **Share** (in the log toolbar) → **Copy link** copies a `contrail://` link to the view: the profile, region,
+  service, task, time window and search. Whoever opens it sees the same view in their Contrail, after switching
+  to that profile (and logging in, if needed). They need a profile **of the same name** with access to the account;
+  if they don't have one, Contrail says which profile the link is for.
+- **Copy CloudWatch console link** / **Open in CloudWatch console**: the same log group, time range (and task, and
+  plain-text search) in the AWS console, for teammates without Contrail. An expanded line has a **CloudWatch
+  console** button too: its stream, a minute around it.
+
 ## Settings and updates
 
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
