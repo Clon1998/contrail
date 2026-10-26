@@ -426,3 +426,17 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   (MIT), the approach React Flow documents. All nodes are rendered for the capture (normally only visible ones
   are). Rust writes the file through `save_image`, which only writes `.png`/`.svg` to the path picked in the
   save dialog; the image travels as base64 (`base64` crate, already in the lockfile through the AWS SDK).
+
+## 2026-10-26 — M13: timeline
+
+- **Counted in Rust** over the listed events (the matches when filtering, everything when highlighting, like the
+  list), by level, in buckets of a round length (1 s … 7 days) so the range fits in about one bucket per 5 px
+  of the chart. Buckets are aligned to the time zone shown (setting), so hour and day bars start at :00 and
+  midnight there; a range across a DST change keeps the offset of "now" (good enough for a log view).
+- **Range:** from as far back as events are loaded (long windows load newest first; unloaded time must not
+  look like "no events") to the window's end or the newest event, whichever is later.
+- **Axis:** oldest left, newest right, also with "newest first": a time axis reads that way everywhere; the
+  setting only orders the list.
+- **Live:** the chart asks again when the events, the search or its width change, at most once a second.
+- **Dragging** sets a fixed time range (whole buckets under the drag); the view reloads for it, like picking
+  the range in the time picker. A setting (`showTimeline`, on by default) hides the chart.
