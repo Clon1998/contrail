@@ -491,6 +491,7 @@ round. The numbers stay as they are (they're referenced in commits and docs).
 - "Open in CloudWatch console" for a view or a single event, for teammates without Contrail.
 - **Done when:** link encoding round-trips (property test); links from unknown profiles explain what's
   missing; e2e covers opening a link.
+- **Built 2026-10-26:** view links and console links; links to a trace tab are left for later (see decisions.md).
 
 #### Later in this round (order to be confirmed)
 - **M16 — Context around a line:** "show surrounding lines" on a matching line opens ±N lines of the same

@@ -98,6 +98,21 @@ export const commands = {
 	 *  written, so this can't be used to write anything else.
 	 */
 	saveImage: (path: string, base64: string) => typedError<null, ApiError>(__TAURI_INVOKE("save_image", { path, base64 })),
+	/**  The `contrail://` link of a view. */
+	viewLink: (link: ViewLink) => __TAURI_INVOKE<string>("view_link", { link }),
+	/**  Reads a `contrail://` link (one Contrail was opened with, or one pasted). */
+	parseViewLink: (url: string) => typedError<ViewLink, ApiError>(__TAURI_INVOKE("parse_view_link", { url })),
+	/**
+	 *  The same logs in the CloudWatch console: an open view's log group and time range (its one
+	 *  stream when it shows one task), or one event (`event_seq`) with a minute around it. `region` is
+	 *  the service's region; `filter` the text to search for there, if any.
+	 */
+	consoleLink: (viewId: number, region: string, eventSeq: number | null, filter: string | null) => typedError<string, ApiError>(__TAURI_INVOKE("console_link", { viewId, region, eventSeq, filter })),
+	/**
+	 *  Opens a page of the AWS console (a [`console_link`]) in the browser. Other addresses are
+	 *  refused, so this can't be used to open arbitrary pages.
+	 */
+	openConsole: (url: string) => typedError<null, ApiError>(__TAURI_INVOKE("open_console", { url })),
 	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
@@ -454,6 +469,14 @@ export type LevelCounts = {
 	debug: number,
 	trace: number,
 	none: number,
+};
+
+/**  The search a link carries. */
+export type LinkSearch = {
+	query: string,
+	mode: FilterMode,
+	regex: boolean,
+	raw: boolean,
 };
 
 /**  What the live task is doing, shown in the log view's toolbar. */
@@ -1111,6 +1134,22 @@ export type UpdateProgress = {
 export type ValueCount = {
 	value: string,
 	count: number,
+};
+
+/**
+ *  A log view as a link: which service (or task) of which profile, the time window and the
+ *  search.
+ */
+export type ViewLink = {
+	profile: string,
+	/**  The region the view was opened in (`None`: the profile's own). */
+	region: string | null,
+	clusterArn: string,
+	serviceName: string,
+	/**  One task only (`None`: all tasks). */
+	taskId: string | null,
+	window: TimeWindow,
+	search: LinkSearch | null,
 };
 
 /* Tauri Specta runtime */

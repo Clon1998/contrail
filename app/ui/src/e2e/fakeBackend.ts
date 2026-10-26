@@ -28,6 +28,7 @@ import type {
   ServiceRef,
   ServiceSummary,
   ServiceTopology,
+  ViewLink,
   SessionStatus,
   Task,
   TimeWindow,
@@ -193,6 +194,8 @@ export interface FakeBackendOptions {
   olderDelayMs?: number;
   /** A newer version the update check finds (default: none, up to date). */
   update?: string;
+  /** A `contrail://` link the app was "started with" (the deep-link plugin's `getCurrent`). */
+  link?: string;
 }
 
 /**
@@ -827,6 +830,66 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (!filter) return [];
         return filter.spec.mode === "highlight" ? filter.matched : filter.matched.map((_, i) => i);
       }
+      case "plugin:deep-link|get_current":
+        return options.link ? [options.link] : null;
+      case "view_link": {
+        // Like the Rust side (contrail_core::links::to_url), percent-encoded.
+        const link = args?.link as ViewLink;
+        const params = new URLSearchParams({ profile: link.profile });
+        if (link.region) params.set("region", link.region);
+        params.set("cluster", link.clusterArn);
+        params.set("service", link.serviceName);
+        if (link.taskId) params.set("task", link.taskId);
+        if (link.window.kind === "last") params.set("last", String(link.window.minutes));
+        else {
+          params.set("from", link.window.from);
+          params.set("to", link.window.to);
+        }
+        if (link.search) {
+          params.set("q", link.search.query);
+          if (link.search.mode === "highlight") params.set("mode", "highlight");
+          if (link.search.regex) params.set("regex", "1");
+          if (link.search.raw) params.set("raw", "1");
+        }
+        return `contrail://open?${params.toString()}`;
+      }
+      case "parse_view_link": {
+        const url = args?.url as string;
+        const params = new URLSearchParams(url.split("?")[1] ?? "");
+        const need = (key: string) => {
+          const value = params.get(key);
+          if (!value)
+            throw apiError("invalidInput", `the link has no ${key}`, "Ask for the link again.");
+          return value;
+        };
+        if (!url.startsWith("contrail://open?"))
+          throw apiError("invalidInput", `not a Contrail link: ${url}`);
+        const last = params.get("last");
+        const q = params.get("q");
+        return {
+          profile: need("profile"),
+          region: params.get("region"),
+          clusterArn: need("cluster"),
+          serviceName: need("service"),
+          taskId: params.get("task"),
+          window: last
+            ? { kind: "last", minutes: Number(last) }
+            : { kind: "range", from: need("from"), to: need("to") },
+          search:
+            q === null
+              ? null
+              : {
+                  query: q,
+                  mode: params.get("mode") === "highlight" ? "highlight" : "filter",
+                  regex: params.get("regex") === "1",
+                  raw: params.get("raw") === "1",
+                },
+        } satisfies ViewLink;
+      }
+      case "console_link":
+        return `https://${args?.region as string}.console.aws.amazon.com/cloudwatch/home#logsV2:fake`;
+      case "open_console":
+        return null;
       case "plugin:dialog|save": {
         const options = args?.options as { defaultPath?: string } | undefined;
         exports.push({ path: `/tmp/${options?.defaultPath ?? "export"}` });
@@ -1060,7 +1123,8 @@ let stopInstalled: (() => void) | null = null;
 export function installFakeBackend(options?: FakeBackendOptions) {
   const backend = createFakeBackend(options);
   stopInstalled = backend.stop;
-  mockIPC(backend);
+  // `shouldMockEvents`: the deep-link plugin listens for links with `listen`.
+  mockIPC(backend, { shouldMockEvents: true });
 }
 
 /**

@@ -7,6 +7,7 @@ pub mod app;
 pub mod auth;
 pub mod ecs;
 pub mod files;
+pub mod links;
 pub mod logs;
 pub mod prefs;
 pub mod trace;

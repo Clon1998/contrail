@@ -33,10 +33,16 @@ specta-typescript = { workspace = true }
 tauri-specta = { workspace = true }
 tauri-plugin-dialog = "2.8.3"
 tauri-plugin-opener = "2.7.2"
+tauri-plugin-deep-link = "2.6.2"
 base64 = "0.23.1"
 tauri-plugin-updater = "2.14.0"
 # The updater brings a second TLS stack; `run` picks aws-lc-rs (the AWS SDK's) as the default.
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs"] }
+
+# A link opened while Contrail runs reaches the running app instead of starting a second one
+# (Windows and Linux start a new process per link; macOS delivers it to the running app itself).
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = { version = "2.5.4", features = ["deep-link"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
