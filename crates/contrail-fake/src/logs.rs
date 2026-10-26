@@ -112,6 +112,7 @@ impl LogSource for FakeLogs {
             .flat_map(|stream| generate(stream, service, format, interval, range))
             .collect();
         events.extend(documents(&prefixed, service, format, range));
+        events.extend(startup(&prefixed, service, format, range));
         if let Some(pattern) = &selection.filter_pattern {
             events.retain(|e| e.message.contains(pattern.as_str()));
         }
@@ -488,6 +489,102 @@ fn status_lines(
     }
 }
 
+/// A real service logs its consumers and producers once, when it starts. The fake doesn't know
+/// when its tasks started, so a transformer repeats these lines this often: any window of this
+/// length after a task's start holds them exactly once.
+const STARTUP_EVERY_MS: i64 = 15 * 60_000;
+
+/// The startup lines of the demo's transformer: what it reads (with its consumer group) and
+/// writes. Route services don't need them (their routes are in env vars).
+fn startup_messages(service: &str) -> &'static [&'static str] {
+    match service {
+        "event-enricher" => &[
+            "Creating a raw Kafka consumer for topic 'demo.events'",
+            "Creating a Kafka container for topic: 'demo.events' with concurrency='3' and consumerGroup='event-enricher'",
+            "Creating producer for topic: demo.events.enriched",
+        ],
+        _ => &[],
+    }
+}
+
+fn startup(streams: &[String], service: &str, format: Format, range: TimeRange) -> Vec<RawEvent> {
+    let messages = startup_messages(service);
+    let millis = |t: Timestamp| (t.0.unix_timestamp_nanos() / 1_000_000) as i64;
+    let (start, end) = (millis(range.start), millis(range.end));
+    let mut events = Vec::new();
+    if messages.is_empty() {
+        return events;
+    }
+    let first = start.div_euclid(STARTUP_EVERY_MS);
+    for n in first..=end.div_euclid(STARTUP_EVERY_MS) {
+        for (i, message) in messages.iter().enumerate() {
+            // Each line a few milliseconds after the previous one.
+            let at = n * STARTUP_EVERY_MS + 40 * i as i64;
+            if !(start..end).contains(&at) {
+                continue;
+            }
+            let at = OffsetDateTime::from_unix_timestamp_nanos(i128::from(at) * 1_000_000)
+                .expect("valid demo timestamp");
+            for stream in streams {
+                events.push(RawEvent {
+                    stream: stream.clone(),
+                    timestamp: Timestamp(at),
+                    message: info_line(
+                        service,
+                        format,
+                        "com.example.pipeline.KafkaSetup",
+                        message,
+                        at,
+                    ),
+                });
+            }
+        }
+    }
+    events
+}
+
+/// A plain INFO line of the `main` thread in the service's format.
+fn info_line(
+    service: &str,
+    format: Format,
+    logger: &str,
+    message: &str,
+    at: OffsetDateTime,
+) -> String {
+    match format {
+        Format::Nested => json!({
+            "@timestamp": rfc3339(at),
+            "log": { "level": "INFO", "logger": logger },
+            "process": { "pid": 1, "thread": { "name": "main" } },
+            "service": { "name": service, "version": "4.2.0", "environment": "DEMO", "node": {} },
+            "message": message,
+            "ecs": { "version": "8.11" },
+        })
+        .to_string(),
+        Format::Dotted => json!({
+            "@timestamp": rfc3339(at),
+            "log.level": "INFO",
+            "log.logger": logger,
+            "process.thread.name": "main",
+            "service.name": service,
+            "message": message,
+            "ecs.version": "8.11",
+        })
+        .to_string(),
+        Format::Spring => {
+            let time = at
+                .format(&time::macros::format_description!(
+                    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:3]Z"
+                ))
+                .expect("formattable timestamp");
+            format!(
+                "{time}  INFO 1 --- [{service}] [{:>15}] {logger:<40} : {message}",
+                "main"
+            )
+        }
+    }
+}
+
 fn rfc3339(at: OffsetDateTime) -> String {
     at.format(&Rfc3339).expect("formattable timestamp")
 }
@@ -804,6 +901,32 @@ mod tests {
             assert!(!events.is_empty(), "{service}");
             assert!(events.iter().all(|e| e.line.kind == kind), "{service}");
         }
+    }
+
+    #[tokio::test]
+    async fn the_transformer_logs_its_consumers_and_producers_at_startup() {
+        // Any 15 minutes hold the startup lines once (the fake repeats them).
+        let range = TimeRange {
+            start: Timestamp(datetime!(2026-01-15 12:03 UTC)),
+            end: Timestamp(datetime!(2026-01-15 12:18 UTC)),
+        };
+        let mut sel = selection("event-enricher", &["t1"]);
+        sel.filter_pattern = Some(contrail_core::topology::STARTUP_PHRASE.to_owned());
+        let raw = fake().backfill(&ctx(), &sel, range, 1_000).await.unwrap();
+        let events = contrail_core::logs::process(raw.events);
+        let topology = contrail_core::topology::startup_topology(
+            events.iter().map(|e| e.line.message.as_str()),
+        );
+        assert_eq!(topology.writes, ["demo.events.enriched"]);
+        assert_eq!(topology.reads.len(), 1);
+        assert_eq!(topology.reads[0].group.as_deref(), Some("event-enricher"));
+        assert_eq!(topology.reads[0].concurrency, Some(3));
+
+        // A route service logs none (its routes are in env vars).
+        let mut sel = selection("search-feeder", &["t1"]);
+        sel.filter_pattern = Some(contrail_core::topology::STARTUP_PHRASE.to_owned());
+        let raw = fake().backfill(&ctx(), &sel, range, 1_000).await.unwrap();
+        assert!(raw.events.is_empty());
     }
 
     #[tokio::test]
