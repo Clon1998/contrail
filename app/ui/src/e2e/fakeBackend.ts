@@ -22,6 +22,8 @@ import type {
   Prefs,
   Profile,
   ServiceDetail,
+  SavedSearch,
+  SearchEntry,
   ServiceKey,
   ServiceRef,
   ServiceSummary,
@@ -246,6 +248,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     fieldMappings: {},
     transformers: {},
     lastUpdateCheck: null,
+    searchHistory: { perService: {}, global: [] },
+    savedSearches: [],
     ...options.prefs,
   };
 
@@ -937,6 +941,65 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const noise: Record<string, string[]> = Object.fromEntries(others);
         if (list.length > 0) noise[key] = list;
         prefs = { ...prefs, noise };
+        return prefs;
+      }
+      case "add_search": {
+        // Like the Rust side: trimmed, newest first, no duplicates, 50 per service, 100 in all.
+        const service = args?.service as ServiceRef;
+        const key = `${args?.profile as string}|${service.clusterArn}|${service.serviceName}`;
+        const given = args?.search as SearchEntry;
+        const entry = { ...given, query: given.query.trim() };
+        if (!entry.query) return prefs;
+        const same = (e: SearchEntry) =>
+          e.query === entry.query && e.regex === entry.regex && e.raw === entry.raw;
+        const remember = (list: SearchEntry[], max: number) =>
+          [entry, ...list.filter((e) => !same(e))].slice(0, max);
+        const history = prefs.searchHistory;
+        prefs = {
+          ...prefs,
+          searchHistory: {
+            perService: {
+              ...history.perService,
+              [key]: remember(history.perService[key] ?? [], 50),
+            },
+            global: remember(history.global, 100),
+          },
+        };
+        return prefs;
+      }
+      case "clear_search_history":
+        prefs = { ...prefs, searchHistory: { perService: {}, global: [] } };
+        return prefs;
+      case "save_search": {
+        const name = (args?.name as string).trim();
+        const given = args?.search as SearchEntry;
+        const search = { ...given, query: given.query.trim() };
+        if (!name || !search.query) return prefs;
+        const ref = args?.service as ServiceRef | null;
+        const service = ref ? serviceKey(args?.profile as string, ref) : null;
+        const sameScope = (s: SavedSearch) =>
+          s.service === null ? service === null : service !== null && sameKey(s.service, service);
+        const others = prefs.savedSearches.filter((s) => !(s.name === name && sameScope(s)));
+        const savedSearches = [...others, { name, search, service }].sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) || Number(a.service === null) - Number(b.service === null),
+        );
+        prefs = { ...prefs, savedSearches };
+        return prefs;
+      }
+      case "delete_saved_search": {
+        const name = args?.name as string;
+        const service = args?.service as ServiceKey | null;
+        const savedSearches = prefs.savedSearches.filter(
+          (s) =>
+            !(
+              s.name === name &&
+              (s.service === null
+                ? service === null
+                : service !== null && sameKey(s.service, service))
+            ),
+        );
+        prefs = { ...prefs, savedSearches };
         return prefs;
       }
       case "add_recent": {

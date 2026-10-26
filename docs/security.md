@@ -28,14 +28,16 @@ AWS CLI does it (SSO, assume role, `credential_process`, static keys).
 
 | What | Where |
 |---|---|
-| Last profile, region overrides, favorites, recent services, settings, "hide lines like this" lists, field mappings | `prefs.json` in the app data folder (below) |
+| Last profile, region overrides, favorites, recent services, settings, "hide lines like this" lists, field mappings, transformers' topics, searches run before and saved searches | `prefs.json` in the app data folder (below) |
 | Log events, search results, revealed secret values | Memory only, gone when the view or the app closes |
 | Exported logs (`.log` / `.jsonl`) | Only where you save them |
 
 The app data folder is `~/Library/Application Support/io.github.clon1998.contrail/` on macOS,
 `%APPDATA%\io.github.clon1998.contrail\` on Windows and `~/.local/share/io.github.clon1998.contrail/` on Linux.
-`prefs.json` holds service and profile names, never credentials, tokens or log content. Contrail writes no log
-files; its diagnostics go to the console output only.
+`prefs.json` holds service and profile names, never credentials, tokens or log content. It does hold the searches
+you ran (the last 50 per service, 100 in all) and the ones you saved, and a search can contain an ID you
+searched for (a correlation ID, an order number). **Clear history** in the search bar's saved-searches menu
+removes the history. Contrail writes no log files; its diagnostics go to the console output only.
 
 ## What goes over the network
 

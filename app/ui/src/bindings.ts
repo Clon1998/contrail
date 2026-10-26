@@ -145,6 +145,23 @@ export const commands = {
 	setFieldMapping: (profile: string, service: ServiceRef, mapping: FieldMapping) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_field_mapping", { profile, service, mapping })),
 	/**  Sets what a transformer reads and writes (no topics removes it), for the route maps. */
 	setTransformer: (service: string, transformer: Transformer) => typedError<Prefs, ApiError>(__TAURI_INVOKE("set_transformer", { service, transformer })),
+	/**  Remembers a search run in a service's logs (for the search box's history). */
+	addSearch: (profile: string, service: ServiceRef, search: SearchEntry) => typedError<Prefs, ApiError>(__TAURI_INVOKE("add_search", { profile, service, search })),
+	/**  Forgets every search run before (saved searches stay). */
+	clearSearchHistory: () => typedError<Prefs, ApiError>(__TAURI_INVOKE("clear_search_history")),
+	/**  Keeps a search under a name, for `service` of `profile` or (without a service) for all. */
+	saveSearch: (profile: string, service: {
+	clusterArn: string,
+	serviceName: string,
+} | null, name: string, search: SearchEntry) => typedError<Prefs, ApiError>(__TAURI_INVOKE("save_search", { profile, service, name, search })),
+	/**  Forgets a saved search (`service` as it was saved: a key, or none for a global one). */
+	deleteSavedSearch: (name: string, service: {
+	profile: string,
+	/**  The region the service lives in (from its cluster ARN). */
+	region: string,
+	clusterArn: string,
+	serviceName: string,
+} | null) => typedError<Prefs, ApiError>(__TAURI_INVOKE("delete_saved_search", { name, service })),
 };
 
 /* Types */
@@ -619,6 +636,10 @@ export type Prefs = {
 	transformers: { [key in string]: Transformer },
 	/**  When the automatic update check last ran (Unix seconds). */
 	lastUpdateCheck: number | null,
+	/**  The searches run before (the search box recalls them with the arrow keys). */
+	searchHistory: SearchHistory,
+	/**  Searches kept under a name, sorted by name. */
+	savedSearches: SavedSearch[],
 };
 
 /**  A named AWS profile from `~/.aws/config` (or `~/.aws/credentials`). */
@@ -707,6 +728,32 @@ export type RowWindow = {
 	offset: number,
 	limit: number,
 	fromEnd: boolean,
+};
+
+/**  A search kept under a name, for one service or (without `service`) for every service. */
+export type SavedSearch = {
+	name: string,
+	search: SearchEntry,
+	service: ServiceKey | null,
+};
+
+/**  A search as it was run: the query and how it is read. */
+export type SearchEntry = {
+	query: string,
+	/**  The whole query is one regular expression. */
+	regex: boolean,
+	/**  Searches the whole raw line, not just the message. */
+	raw: boolean,
+};
+
+/**
+ *  The searches run before: per service (by [`ServiceKey::storage_key`]) and across all services.
+ *  (A file without it gets the default through `Stored`; no `#[serde(default)]` here, so the
+ *  TypeScript type keeps both fields required.)
+ */
+export type SearchHistory = {
+	perService: { [key in string]: SearchEntry[] },
+	global: SearchEntry[],
 };
 
 /**  A variable whose value comes from Secrets Manager or SSM Parameter Store. */

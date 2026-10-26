@@ -69,6 +69,10 @@ fn specta_builder() -> Builder<tauri::Wry> {
         prefs::remove_noise,
         prefs::set_field_mapping,
         prefs::set_transformer,
+        prefs::add_search,
+        prefs::clear_search_history,
+        prefs::save_search,
+        prefs::delete_saved_search,
     ])
 }
 

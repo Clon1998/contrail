@@ -414,3 +414,108 @@ test("a document's trace on the route graph, with the services it hasn't reached
   await graph.getByRole("button", { name: "service event-enricher (COMPLETED)" }).click();
   await expect(timeline.getByRole("listitem")).toHaveCount(12);
 });
+
+test("↑ and ↓ recall earlier searches with their flags, this service's first", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  const regex = page.getByRole("button", { name: "Regular expression" });
+
+  await search.fill("timeout");
+  await search.press("Enter");
+  await regex.click();
+  await search.fill("order \\d+");
+  await search.press("Enter");
+  await regex.click();
+  await search.fill("level:ERROR");
+  await search.press("Enter");
+
+  await search.fill("draft");
+  await search.press("ArrowUp");
+  await expect(search).toHaveValue("level:ERROR");
+  await search.press("ArrowUp");
+  await expect(search).toHaveValue("order \\d+");
+  await expect(regex).toHaveAttribute("aria-pressed", "true");
+  await search.press("ArrowUp");
+  await expect(search).toHaveValue("timeout");
+  await expect(regex).toHaveAttribute("aria-pressed", "false");
+  await search.press("ArrowDown");
+  await search.press("ArrowDown");
+  await search.press("ArrowDown");
+  // Past the newest: what was typed before.
+  await expect(search).toHaveValue("draft");
+
+  // Another service: its own searches first, then the ones from orders-api.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "payments-worker" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  const other = page.getByRole("textbox", { name: "Search logs" });
+  await other.fill("settled");
+  await other.press("Enter");
+  await other.fill("");
+  await other.press("ArrowUp");
+  await expect(other).toHaveValue("settled");
+  await other.press("ArrowUp");
+  await expect(other).toHaveValue("level:ERROR");
+});
+
+test("saved searches: for one service or all, applied and deleted", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  const menu = page.getByRole("button", { name: "Saved searches" });
+  const form = page.getByRole("form", { name: "Save the search" });
+
+  await search.fill("level:ERROR");
+  await search.press("Enter");
+  await menu.click();
+  await form.getByLabel("Name").fill("Errors");
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("region", { name: "For orders-api" })).toContainText("Errors");
+  await page.keyboard.press("Escape");
+
+  await search.fill("timeout");
+  await search.press("Enter");
+  await menu.click();
+  await form.getByLabel("Name").fill("Timeouts");
+  await form.getByLabel(/For all services/).check();
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("region", { name: "For all services" })).toContainText("Timeouts");
+
+  // Applying one puts it in the search box.
+  await page.getByRole("button", { name: /^Errors/ }).click();
+  await expect(search).toHaveValue("level:ERROR");
+
+  // Another service sees only the ones for all services.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "payments-worker" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  await menu.click();
+  await expect(page.getByRole("region", { name: "For all services" })).toContainText("Timeouts");
+  await expect(page.getByRole("region", { name: "For payments-worker" })).toHaveCount(0);
+  await expect(page.getByText("Errors")).toHaveCount(0);
+  await page.getByRole("button", { name: "Delete Timeouts" }).click();
+  await expect(page.getByText("No saved searches yet.")).toBeVisible();
+});
+
+test("a saved search runs from ⌘K, opening its service", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  await search.fill("level:ERROR");
+  await search.press("Enter");
+  await page.getByRole("button", { name: "Saved searches" }).click();
+  const form = page.getByRole("form", { name: "Save the search" });
+  await form.getByLabel("Name").fill("Order errors");
+  await form.getByRole("button", { name: "Save" }).click();
+  await page.keyboard.press("Escape");
+
+  // From another service, on its Overview.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "payments-worker" }).click();
+  await page.getByRole("tab", { name: "Overview" }).click();
+  const mod = process.platform === "darwin" ? "Meta" : "Control";
+  await page.keyboard.press(`${mod}+k`);
+  await page.getByRole("dialog").getByRole("combobox").fill("order errors");
+  await page.getByRole("option", { name: /Order errors/ }).click();
+
+  await expect(page.getByRole("main", { name: "Service orders-api" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue("level:ERROR");
+});

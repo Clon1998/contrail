@@ -236,6 +236,47 @@ impl Transformer {
     }
 }
 
+/// How many searches are remembered per service, and across all services (newest first).
+pub const MAX_SERVICE_SEARCHES: usize = 50;
+pub const MAX_GLOBAL_SEARCHES: usize = 100;
+
+/// A search as it was run: the query and how it is read.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchEntry {
+    pub query: String,
+    /// The whole query is one regular expression.
+    pub regex: bool,
+    /// Searches the whole raw line, not just the message.
+    pub raw: bool,
+}
+
+/// The searches run before: per service (by [`ServiceKey::storage_key`]) and across all services.
+/// (A file without it gets the default through `Stored`; no `#[serde(default)]` here, so the
+/// TypeScript type keeps both fields required.)
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchHistory {
+    pub per_service: BTreeMap<String, Vec<SearchEntry>>,
+    pub global: Vec<SearchEntry>,
+}
+
+/// A search kept under a name, for one service or (without `service`) for every service.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SavedSearch {
+    pub name: String,
+    pub search: SearchEntry,
+    pub service: Option<ServiceKey>,
+}
+
+/// `entry` moved to the front of `list` (added if new), keeping at most `max` entries.
+fn remember_search(list: &mut Vec<SearchEntry>, entry: &SearchEntry, max: usize) {
+    list.retain(|e| e != entry);
+    list.insert(0, entry.clone());
+    list.truncate(max);
+}
+
 /// Everything Contrail remembers between starts. Read from disk with [`Prefs::from_json`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -258,6 +299,10 @@ pub struct Prefs {
     pub transformers: BTreeMap<String, Transformer>,
     /// When the automatic update check last ran (Unix seconds).
     pub last_update_check: Option<u32>,
+    /// The searches run before (the search box recalls them with the arrow keys).
+    pub search_history: SearchHistory,
+    /// Searches kept under a name, sorted by name.
+    pub saved_searches: Vec<SavedSearch>,
 }
 
 impl Prefs {
@@ -279,6 +324,8 @@ impl Prefs {
             field_mappings: BTreeMap<String, FieldMapping>,
             transformers: BTreeMap<String, Transformer>,
             last_update_check: Option<u32>,
+            search_history: SearchHistory,
+            saved_searches: Vec<SavedSearch>,
         }
 
         /// Settings are read leniently (see [`Settings::from_saved`]), so an unknown value never
@@ -302,6 +349,8 @@ impl Prefs {
             field_mappings: stored.field_mappings,
             transformers: stored.transformers,
             last_update_check: stored.last_update_check,
+            search_history: stored.search_history,
+            saved_searches: stored.saved_searches,
         })
     }
 
@@ -382,6 +431,46 @@ impl Prefs {
         }
     }
 
+    /// Remembers a search run in a service's logs, for that service and across all services. A
+    /// search run again moves to the front; blank ones aren't kept.
+    pub fn add_search(&mut self, key: &ServiceKey, mut entry: SearchEntry) {
+        entry.query = entry.query.trim().to_owned();
+        if entry.query.is_empty() {
+            return;
+        }
+        let history = &mut self.search_history;
+        let list = history.per_service.entry(key.storage_key()).or_default();
+        remember_search(list, &entry, MAX_SERVICE_SEARCHES);
+        remember_search(&mut history.global, &entry, MAX_GLOBAL_SEARCHES);
+    }
+
+    /// Forgets every search run before (saved searches stay).
+    pub fn clear_search_history(&mut self) {
+        self.search_history = SearchHistory::default();
+    }
+
+    /// Keeps a search under a name. One with the same name for the same service (or for all
+    /// services) is replaced. A blank name or query isn't kept.
+    pub fn save_search(&mut self, mut saved: SavedSearch) {
+        saved.name = saved.name.trim().to_owned();
+        saved.search.query = saved.search.query.trim().to_owned();
+        if saved.name.is_empty() || saved.search.query.is_empty() {
+            return;
+        }
+        self.saved_searches
+            .retain(|s| !(s.name == saved.name && s.service == saved.service));
+        self.saved_searches.push(saved);
+        // Sorted by name, then the service ones before the global ones of the same name.
+        self.saved_searches
+            .sort_by(|a, b| (&a.name, a.service.is_none()).cmp(&(&b.name, b.service.is_none())));
+    }
+
+    /// Forgets the saved search of this name for `service` (or, with `None`, the global one).
+    pub fn delete_saved_search(&mut self, name: &str, service: Option<&ServiceKey>) {
+        self.saved_searches
+            .retain(|s| !(s.name == name && s.service.as_ref() == service));
+    }
+
     /// Moves the service to the front of the recent list (adding it if new), keeping at most
     /// [`MAX_RECENT`] entries.
     pub fn add_recent(&mut self, key: ServiceKey) {
@@ -439,6 +528,120 @@ mod tests {
                 .count(),
             1
         );
+    }
+
+    fn entry(query: &str) -> SearchEntry {
+        SearchEntry {
+            query: query.into(),
+            regex: false,
+            raw: false,
+        }
+    }
+
+    #[test]
+    fn searches_are_remembered_per_service_and_globally_newest_first() {
+        let mut prefs = Prefs::default();
+        let (orders, payments) = (key("dev", "orders"), key("dev", "payments"));
+        prefs.add_search(&orders, entry("timeout"));
+        prefs.add_search(&payments, entry("  level:ERROR "));
+        prefs.add_search(&orders, entry("state:FAILED"));
+        // Run again: moves to the front, not listed twice. Blank: not kept.
+        prefs.add_search(&orders, entry("timeout"));
+        prefs.add_search(&orders, entry("   "));
+        // The same text as a regex is a different search.
+        prefs.add_search(
+            &orders,
+            SearchEntry {
+                regex: true,
+                ..entry("timeout")
+            },
+        );
+
+        let history = &prefs.search_history;
+        let queries =
+            |list: &[SearchEntry]| list.iter().map(|e| e.query.clone()).collect::<Vec<_>>();
+        assert_eq!(
+            queries(&history.per_service[&orders.storage_key()]),
+            ["timeout", "timeout", "state:FAILED"]
+        );
+        assert!(history.per_service[&orders.storage_key()][0].regex);
+        assert_eq!(
+            queries(&history.per_service[&payments.storage_key()]),
+            ["level:ERROR"]
+        );
+        assert_eq!(
+            queries(&history.global),
+            ["timeout", "timeout", "state:FAILED", "level:ERROR"]
+        );
+
+        for i in 0..200 {
+            prefs.add_search(&orders, entry(&format!("q{i}")));
+        }
+        let history = &prefs.search_history;
+        assert_eq!(
+            history.per_service[&orders.storage_key()].len(),
+            MAX_SERVICE_SEARCHES
+        );
+        assert_eq!(history.global.len(), MAX_GLOBAL_SEARCHES);
+        assert_eq!(history.global[0].query, "q199");
+
+        prefs.clear_search_history();
+        assert_eq!(prefs.search_history, SearchHistory::default());
+    }
+
+    #[test]
+    fn saved_searches_are_kept_by_name_and_scope() {
+        let mut prefs = Prefs::default();
+        let orders = key("dev", "orders");
+        let saved = |name: &str, query: &str, service: Option<&ServiceKey>| SavedSearch {
+            name: name.into(),
+            search: entry(query),
+            service: service.cloned(),
+        };
+        prefs.save_search(saved("errors", "level>=WARN", None));
+        prefs.save_search(saved(" errors ", "level:ERROR", Some(&orders)));
+        prefs.save_search(saved("billing", "billing", None));
+        // Same name and scope: replaced. Blank name or query: not kept.
+        prefs.save_search(saved("errors", "level:ERROR", None));
+        prefs.save_search(saved(" ", "x", None));
+        prefs.save_search(saved("empty", " ", None));
+
+        let listed: Vec<_> = prefs
+            .saved_searches
+            .iter()
+            .map(|s| {
+                (
+                    s.name.as_str(),
+                    s.search.query.as_str(),
+                    s.service.is_some(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            listed,
+            [
+                ("billing", "billing", false),
+                ("errors", "level:ERROR", true),
+                ("errors", "level:ERROR", false),
+            ]
+        );
+
+        prefs.delete_saved_search("errors", None);
+        assert_eq!(prefs.saved_searches.len(), 2);
+        assert!(prefs.saved_searches.iter().any(|s| s.service.is_some()));
+    }
+
+    #[test]
+    fn older_preferences_get_an_empty_history() {
+        let prefs = Prefs::from_json(r#"{"lastProfile":"dev","noise":{}}"#).unwrap();
+        assert_eq!(prefs.search_history, SearchHistory::default());
+        assert!(prefs.saved_searches.is_empty());
+        assert_eq!(prefs.last_profile.as_deref(), Some("dev"));
+        // And they survive a save and load.
+        let mut prefs = prefs;
+        prefs.add_search(&key("dev", "orders"), entry("timeout"));
+        let json = serde_json::to_string(&prefs).unwrap();
+        assert_eq!(Prefs::from_json(&json).unwrap(), prefs);
     }
 
     #[test]

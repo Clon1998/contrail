@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { HistoryIcon, Loader2Icon, StarIcon } from "lucide-react";
-import type { ServiceKey } from "@/bindings";
+import { BookmarkIcon, HistoryIcon, Loader2Icon, StarIcon } from "lucide-react";
+import type { SavedSearch, ServiceKey } from "@/bindings";
 import {
   CommandDialog,
   CommandEmpty,
@@ -15,11 +15,34 @@ import { matchWords } from "@/lib/search";
 import { useEcs } from "@/stores/ecs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
+import { useTabs } from "@/stores/tabs";
 import { HealthDot } from "./HealthDot";
 
 /**
+ * Runs a saved search: one saved for a service opens that service first; one for all services
+ * runs in the service tab shown (if any). Either way the Logs tab is shown with the search set.
+ */
+async function runSavedSearch(saved: SavedSearch) {
+  if (saved.service) await openServiceKey(saved.service);
+  const service = useEcs.getState().selected;
+  if (!service) return;
+  // The tab of the service (the app opens it too, a moment later; activating twice is harmless).
+  useTabs.getState().activate(service);
+  const tabs = useTabs.getState();
+  const tab = tabs.tabs.find((t) => t.key === tabs.activeKey);
+  if (tab?.kind !== "service") return;
+  const logs = tab.logs.getState();
+  logs.setTab("logs");
+  await logs.setSearch({
+    query: saved.search.query,
+    regex: saved.search.regex,
+    raw: saved.search.raw,
+  });
+}
+
+/**
  * ⌘K / Ctrl+K: jump to any service of the current profile (all clusters), or to a recently
- * opened one of any profile.
+ * opened one of any profile, or run a saved search.
  */
 export function ServicePalette() {
   const [open, setOpen] = useState(false);
@@ -29,6 +52,10 @@ export function ServicePalette() {
   const loadAllServices = useEcs((s) => s.loadAllServices);
   const recent = usePrefs((s) => s.prefs.recent);
   const favorites = usePrefs((s) => s.prefs.favorites);
+  const savedSearches = usePrefs((s) => s.prefs.savedSearches);
+  // A search for all services needs a service tab to run in.
+  const inService = useTabs((s) => s.tabs.find((t) => t.key === s.activeKey)?.kind === "service");
+  const runnable = savedSearches.filter((s) => s.service !== null || inService);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -59,12 +86,39 @@ export function ServicePalette() {
       open={open}
       onOpenChange={setOpen}
       title="Go to service"
-      description="Search services of this profile and recently opened ones"
+      description="Search services of this profile, recently opened ones and saved searches"
       filter={matchWords}
     >
       <CommandInput placeholder="Go to service…" />
       <CommandList>
         <CommandEmpty>No service found.</CommandEmpty>
+        {runnable.length > 0 && (
+          <CommandGroup heading="Saved searches">
+            {runnable.map((saved) => {
+              const id = `search:${saved.name}:${saved.service?.profile ?? ""}:${saved.service?.clusterArn ?? ""}:${saved.service?.serviceName ?? "*"}`;
+              return (
+                <CommandItem
+                  key={id}
+                  value={id}
+                  keywords={[saved.name, saved.search.query, saved.service?.serviceName ?? "all"]}
+                  onSelect={() => {
+                    setOpen(false);
+                    void runSavedSearch(saved);
+                  }}
+                >
+                  <BookmarkIcon className="text-muted-foreground" />
+                  <span className="truncate">{saved.name}</span>
+                  <span className="truncate font-mono text-xs text-muted-foreground">
+                    {saved.search.query}
+                  </span>
+                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                    {saved.service ? saved.service.serviceName : "this service"}
+                  </span>
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
         {recent.length > 0 && (
           <CommandGroup heading="Recent">
             {recent.map((key) => (
