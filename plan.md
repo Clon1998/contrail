@@ -418,6 +418,45 @@ top of an evaluation branch is rebased onto `main` without it if it's rejected (
 - **Done when:** graph building has unit tests (siblings, disabled routes, transformers by hand); an e2e
   test opens a demo cluster's map; works smoothly with 100+ route services.
 
+#### Team feedback round (2026-10-26)
+
+Patrick's team tried Contrail; these three come before M11, in this order.
+
+#### M10.1 — Log view polish
+- A line-wrap toggle for messages (a setting, also in the log toolbar).
+- A service's log list keeps its scroll position and open rows when switching between Overview and
+  Logs and between tabs.
+- The logger column shortens package names like Spring Boot (`c.e.o.OrderService`) and cuts from the
+  front when that's still too long; hovering shows the full name.
+- Switching back to a loaded service shows its Overview right away: no spinner and no reload while the
+  data is recent; older data is refreshed in the background.
+- Loading states use skeletons instead of spinners, starting with the Overview (the rest as they're
+  touched).
+- **Done when:** unit tests for the logger abbreviation and the per-service cache; e2e covers the wrap
+  toggle and keeping the scroll position across Overview ↔ Logs.
+
+#### M10.2 — Transformer topology from startup logs
+- The framework already logs at startup which topics a service consumes (with concurrency and consumer
+  group) and which it produces to. Contrail reads these lines from the start of the newest task's log
+  stream (`GetLogEvents`, `startFromHead`), caches the result per task definition revision, and draws
+  transformers on the route map without setup.
+- Each edge knows where it came from (env vars, startup logs, entered by hand); hand-entered topics
+  stay an override.
+- **Done when:** the line parser has unit tests (raw and integration consumers, producers, missing
+  container line); the fake logs the same lines; the demo cluster's map shows its transformers.
+
+#### M10.3 — Route map v2 (evaluation)
+- A zoomable, pannable canvas (React Flow, `@xyflow/react`) with an automatic left-to-right layout
+  (`elkjs`) and no fixed column headers; nodes can be dragged, "Re-layout" puts them back.
+- Right-click on a node: only this path, only upstream, only downstream, show config, open service.
+  Hovering a node shows its route configuration.
+- Selecting a node colours upstream and downstream differently, so a target isn't shown as fed by every
+  input of the service that writes its topic.
+- Search covers every route parameter (hosts, users, paths, Kafka topics, queues, …).
+- "Clear selection" in the toolbar (and Esc).
+- **Done when:** layout input and path filtering have unit tests; e2e covers the context menu, search by
+  parameter and clearing the selection; smooth with 100+ route services; Patrick has the screenshots.
+
 #### M11 — Stuck documents
 - **Document keys:** a document is followed by its correlation ID **or its object name** (`fw.objectName`,
   the key under which the framework stores a document). Hops that log only one of the two keys still join
