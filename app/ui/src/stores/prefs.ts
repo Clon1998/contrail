@@ -3,6 +3,7 @@ import {
   type FieldMapping,
   commands,
   type Prefs,
+  type SearchEntry,
   type ServiceKey,
   type ServiceRef,
   type Settings,
@@ -24,6 +25,17 @@ interface PrefsState {
   setTransformer: (service: string, transformer: Transformer) => Promise<void>;
   /** Changes some settings; the rest stay as they are. */
   updateSettings: (change: Partial<Settings>) => Promise<void>;
+  /** Remembers a search run in a service's logs (history of the search box). */
+  addSearch: (profile: string, service: ServiceRef, search: SearchEntry) => Promise<void>;
+  clearSearchHistory: () => Promise<void>;
+  /** Keeps a search under a name, for `service` or (with `null`) for every service. */
+  saveSearch: (
+    profile: string,
+    service: ServiceRef | null,
+    name: string,
+    search: SearchEntry,
+  ) => Promise<void>;
+  deleteSavedSearch: (name: string, service: ServiceKey | null) => Promise<void>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -52,6 +64,8 @@ export const EMPTY_PREFS: Prefs = {
   fieldMappings: {},
   transformers: {},
   lastUpdateCheck: null,
+  searchHistory: { perService: {}, global: [] },
+  savedSearches: [],
 };
 
 /** The key of a service's noise list (same as `ServiceKey::storage_key` in Rust). */
@@ -88,5 +102,10 @@ export const usePrefs = create<PrefsState>((set, get) => {
       apply(commands.setFieldMapping(profile, service, mapping)),
     setTransformer: (service, transformer) => apply(commands.setTransformer(service, transformer)),
     updateSettings: (change) => apply(commands.setSettings({ ...get().prefs.settings, ...change })),
+    addSearch: (profile, service, search) => apply(commands.addSearch(profile, service, search)),
+    clearSearchHistory: () => apply(commands.clearSearchHistory()),
+    saveSearch: (profile, service, name, search) =>
+      apply(commands.saveSearch(profile, service, name, search)),
+    deleteSavedSearch: (name, service) => apply(commands.deleteSavedSearch(name, service)),
   };
 });

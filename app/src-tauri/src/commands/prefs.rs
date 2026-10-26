@@ -2,7 +2,7 @@
 
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::FieldMapping;
-use contrail_core::prefs::{Prefs, ServiceKey, Settings, Transformer};
+use contrail_core::prefs::{Prefs, SavedSearch, SearchEntry, ServiceKey, Settings, Transformer};
 use tauri::State;
 
 use crate::error::ApiResult;
@@ -116,4 +116,57 @@ pub fn set_transformer(
     Ok(state
         .prefs
         .update(|p| p.set_transformer(&service, transformer))?)
+}
+
+/// Remembers a search run in a service's logs (for the search box's history).
+#[tauri::command]
+#[specta::specta]
+pub fn add_search(
+    state: State<'_, AppState>,
+    profile: String,
+    service: ServiceRef,
+    search: SearchEntry,
+) -> ApiResult<Prefs> {
+    let key = ServiceKey::new(&profile, &service);
+    Ok(state.prefs.update(|p| p.add_search(&key, search))?)
+}
+
+/// Forgets every search run before (saved searches stay).
+#[tauri::command]
+#[specta::specta]
+pub fn clear_search_history(state: State<'_, AppState>) -> ApiResult<Prefs> {
+    Ok(state.prefs.update(Prefs::clear_search_history)?)
+}
+
+/// Keeps a search under a name, for `service` of `profile` or (without a service) for all.
+#[tauri::command]
+#[specta::specta]
+pub fn save_search(
+    state: State<'_, AppState>,
+    profile: String,
+    service: Option<ServiceRef>,
+    name: String,
+    search: SearchEntry,
+) -> ApiResult<Prefs> {
+    let service = service.map(|s| ServiceKey::new(&profile, &s));
+    Ok(state.prefs.update(|p| {
+        p.save_search(SavedSearch {
+            name,
+            search,
+            service,
+        })
+    })?)
+}
+
+/// Forgets a saved search (`service` as it was saved: a key, or none for a global one).
+#[tauri::command]
+#[specta::specta]
+pub fn delete_saved_search(
+    state: State<'_, AppState>,
+    name: String,
+    service: Option<ServiceKey>,
+) -> ApiResult<Prefs> {
+    Ok(state
+        .prefs
+        .update(|p| p.delete_saved_search(&name, service.as_ref()))?)
 }
