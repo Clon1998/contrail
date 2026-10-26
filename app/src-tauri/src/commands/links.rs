@@ -90,3 +90,20 @@ pub(crate) fn console_link_of(
     };
     Ok(url)
 }
+
+/// Opens a page of the AWS console (a [`console_link`]) in the browser. Other addresses are
+/// refused, so this can't be used to open arbitrary pages.
+#[tauri::command]
+#[specta::specta]
+pub fn open_console(app: tauri::AppHandle, url: String) -> ApiResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    if !links::is_console_url(&url) {
+        return Err(ApiError::new(
+            ErrorCode::InvalidInput,
+            "not an AWS console page",
+        ));
+    }
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|err| ApiError::new(ErrorCode::Io, format!("can't open the browser: {err}")))
+}

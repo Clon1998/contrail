@@ -195,6 +195,17 @@ pub fn console_url(
     )
 }
 
+/// Whether `url` is a page of the AWS console (`https://….console.aws.amazon.com/…`): the only
+/// pages Contrail opens in the browser on the UI's request.
+pub fn is_console_url(url: &str) -> bool {
+    Url::parse(url).is_ok_and(|u| {
+        u.scheme() == "https"
+            && u.host_str().is_some_and(|host| {
+                host == "console.aws.amazon.com" || host.ends_with(".console.aws.amazon.com")
+            })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
@@ -281,6 +292,23 @@ mod tests {
              $3Fstart$3D1793005200000$26end$3D1793006100000$26filterPattern$3D$2522timeout$2522\
              $26logStreamNameFilter$3Decs$252Forders-api$252Fabc"
         );
+    }
+
+    #[test]
+    fn only_console_pages_count_as_console_links() {
+        assert!(is_console_url(
+            "https://eu-central-1.console.aws.amazon.com/cloudwatch/home?region=eu-central-1"
+        ));
+        assert!(!is_console_url(
+            "http://eu-central-1.console.aws.amazon.com/"
+        ));
+        assert!(!is_console_url(
+            "https://console.aws.amazon.com.evil.example/"
+        ));
+        assert!(!is_console_url(
+            "https://evil.example/?console.aws.amazon.com"
+        ));
+        assert!(!is_console_url("file:///etc/passwd"));
     }
 
     // Arbitrary text for names and queries, including the characters URLs care about.

@@ -109,6 +109,11 @@ export const commands = {
 	 */
 	consoleLink: (viewId: number, region: string, eventSeq: number | null, filter: string | null) => typedError<string, ApiError>(__TAURI_INVOKE("console_link", { viewId, region, eventSeq, filter })),
 	/**
+	 *  Opens a page of the AWS console (a [`console_link`]) in the browser. Other addresses are
+	 *  refused, so this can't be used to open arbitrary pages.
+	 */
+	openConsole: (url: string) => typedError<null, ApiError>(__TAURI_INVOKE("open_console", { url })),
+	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 	 */
