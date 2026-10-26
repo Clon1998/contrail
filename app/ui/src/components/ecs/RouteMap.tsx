@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Loader2Icon,
+  CircleXIcon,
+  FilterIcon,
   NetworkIcon,
   PencilIcon,
   PlusIcon,
@@ -17,18 +18,22 @@ import {
 } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildClusterGraph,
   filterClusterGraph,
   knownTransformers,
+  scopeClusterGraph,
   type ClusterGraph,
+  type PathScope,
 } from "@/lib/clusterGraph";
 import { formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
-import { columnTitles } from "@/lib/routes";
+import { isTyping } from "@/lib/keys";
 import { useEcs } from "@/stores/ecs";
 import { usePrefs } from "@/stores/prefs";
 import type { RoutesTab } from "@/stores/tabs";
-import { GraphView } from "./RouteGraphView";
+import { ClusterMapCanvas, DOWNSTREAM_COLOR, UPSTREAM_COLOR } from "./ClusterMapCanvas";
+import { ConfigList } from "./RouteConfig";
 
 type Scan =
   { kind: "loading" } | { kind: "done"; links: TopicLink[] } | { kind: "error"; error: ApiError };
@@ -42,9 +47,10 @@ type Topology =
 /**
  * A cluster's route map, in a tab of its own: every route service (from the cluster's topic scan,
  * kept for the session) and every transformer (found in its startup lines or entered by hand),
- * linked by topic, each with the
- * external systems at its other end. The search keeps what lies on a path through the matching
- * services, topics or systems; a click on a node highlights its paths and shows what it is.
+ * linked by topic, each with the external systems at its other end, on a canvas to zoom and pan.
+ * The search keeps what lies on a path through the matching services, topics, systems or route
+ * settings; a click on a node colours what feeds into it and what it feeds, and shows its routes.
+ * Right-click narrows the map to one node's path or one side of it.
  */
 export function RouteMap({ tab }: { tab: RoutesTab }) {
   const { clusterArn } = tab;
@@ -56,6 +62,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
   const [topology, setTopology] = useState<Topology>({ kind: "loading" });
   const [query, setQuery] = useState("");
   const [focus, setFocus] = useState<string | null>(null);
+  const [scope, setScope] = useState<{ id: string; scope: PathScope } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const services = useMemo(
     () => (loaded && "data" in loaded ? (loaded.data ?? []) : []).map((s) => s.name),
@@ -128,13 +135,43 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
       ),
     [scan, found, transformers, services],
   );
-  const graph = useMemo(() => filterClusterGraph(whole, query), [whole, query]);
+  const graph = useMemo(() => {
+    const found = filterClusterGraph(whole, query);
+    return scope && found.nodes.some((n) => n.id === scope.id)
+      ? scopeClusterGraph(found, scope.id, scope.scope)
+      : found;
+  }, [whole, query, scope]);
   const topics = useMemo(
     () => whole.nodes.filter((n) => n.kind === "topic").map((n) => n.label),
     [whole],
   );
   const routeServices = whole.nodes.filter((n) => n.kind === "service" && !n.transformer).length;
   const focused = graph.nodes.find((n) => n.id === focus) ?? null;
+  const scopedTo = scope && whole.nodes.find((n) => n.id === scope.id);
+  const openService = useEcs((s) => s.openService);
+  const actions = useMemo(
+    () => ({
+      select: (id: string) => setFocus((current) => (id === "" || id === current ? null : id)),
+      scope: (id: string, next: PathScope) => {
+        setScope({ id, scope: next });
+        setFocus(id);
+      },
+      openService: (name: string) => void openService({ clusterArn, serviceName: name }),
+      editTopics: (name: string) => setEditing(name),
+    }),
+    [clusterArn, openService],
+  );
+
+  // Esc clears the selection first, then the narrowing to one path.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape" || isTyping(event.target)) return;
+      if (focus) setFocus(null);
+      else if (scope) setScope(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [focus, scope]);
 
   return (
     <main
@@ -161,10 +198,15 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
           </span>
         )}
         <div className="ml-auto flex items-center gap-1.5">
+          {focus && (
+            <Button variant="secondary" size="xs" tooltip="Esc" onClick={() => setFocus(null)}>
+              <CircleXIcon /> Clear selection
+            </Button>
+          )}
           <Input
             type="search"
             aria-label="Find in the route map"
-            placeholder="Find a service, topic or system…"
+            placeholder="Find a service, topic, system, host, path…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="h-7 w-64 text-xs"
@@ -193,54 +235,97 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
           </Button>
         </div>
       </header>
-      <div className="min-h-0 flex-1 space-y-3 overflow-auto p-4 text-sm">
+      {(scopedTo || focus) && (
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-1 text-xs">
+          {scopedTo && scope && (
+            <span className="flex items-center gap-1.5">
+              <FilterIcon className="size-3.5 text-muted-foreground" />
+              {scope.scope === "path"
+                ? "Only the path through"
+                : scope.scope === "upstream"
+                  ? "Only what feeds into"
+                  : "Only what is fed by"}{" "}
+              <span className="font-medium">{scopedTo.label}</span>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Show the whole map"
+                onClick={() => setScope(null)}
+              >
+                <XIcon />
+              </Button>
+            </span>
+          )}
+          {focus && (
+            <span className="flex items-center gap-3 text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="h-0.5 w-4 rounded" style={{ background: UPSTREAM_COLOR }} />
+                feeds into the selection
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-0.5 w-4 rounded" style={{ background: DOWNSTREAM_COLOR }} />
+                fed by it
+              </span>
+            </span>
+          )}
+        </div>
+      )}
+      <div className="relative min-h-0 flex-1 text-sm">
         {scan.kind === "loading" && (
-          <p className="flex items-center gap-2 text-muted-foreground">
-            <Loader2Icon className="size-4 animate-spin" /> Reading the routes of the cluster's
-            services…
-          </p>
+          <div aria-label="Reading the routes of the cluster's services" className="h-full">
+            <div className="grid h-full grid-cols-5 gap-6 p-6">
+              {Array.from({ length: 5 }, (_, column) => (
+                <div key={column} className="flex flex-col justify-center gap-3">
+                  {Array.from({ length: 4 + (column % 3) }, (_, i) => (
+                    <Skeleton key={i} className="h-10" />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-        {scan.kind === "error" && <p className="text-destructive">{scan.error.message}</p>}
-        {editing !== null && (
-          <TransformerEditor
-            initial={editing}
-            candidates={services}
-            found={found}
-            topics={topics}
-            onClose={() => setEditing(null)}
-          />
-        )}
+        {scan.kind === "error" && <p className="p-4 text-destructive">{scan.error.message}</p>}
         {scan.kind === "done" && whole.nodes.length === 0 && (
-          <p className="text-muted-foreground">
+          <p className="p-4 text-muted-foreground">
             No service of this cluster has routes. Transformers entered by hand show up here too.
           </p>
         )}
         {scan.kind === "done" && whole.nodes.length > 0 && graph.nodes.length === 0 && (
-          <p className="text-muted-foreground">Nothing matches “{query}”.</p>
+          <p className="p-4 text-muted-foreground">Nothing matches “{query}”.</p>
         )}
         {graph.nodes.length > 0 && (
-          <GraphView
-            graph={graph}
-            label="Cluster route map"
-            columnTitle={columnTitles(graph)}
-            minColumnWidth="9rem"
-            focus={focus}
-            onFocus={(id) => setFocus(focus === id ? null : id)}
-          />
+          <ClusterMapCanvas graph={graph} selected={focus} actions={actions} />
         )}
-        {focused && (
-          <NodeDetails
-            graph={whole}
-            found={found}
-            id={focused.id}
-            clusterArn={clusterArn}
-            onEdit={setEditing}
-            onClose={() => setFocus(null)}
-          />
-        )}
-        {scan.kind === "done" && whole.leftOut.length > 0 && (
-          <LeftOut names={whole.leftOut} onPick={setEditing} />
-        )}
+        <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col items-start gap-2">
+          {editing !== null && (
+            <div className="pointer-events-auto">
+              <TransformerEditor
+                initial={editing}
+                candidates={services}
+                found={found}
+                topics={topics}
+                onClose={() => setEditing(null)}
+              />
+            </div>
+          )}
+          {focused && (
+            <div className="pointer-events-auto max-h-[45%] w-full max-w-3xl overflow-auto">
+              <NodeDetails
+                graph={whole}
+                found={found}
+                id={focused.id}
+                clusterArn={clusterArn}
+                onEdit={setEditing}
+                onClose={() => setFocus(null)}
+              />
+            </div>
+          )}
+          {scan.kind === "done" && whole.leftOut.length > 0 && !focused && editing === null && (
+            <div className="pointer-events-auto rounded-md border border-border bg-card/95 px-3 py-1.5">
+              <LeftOut names={whole.leftOut} onPick={setEditing} />
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
@@ -302,7 +387,7 @@ function NodeDetails({
   return (
     <section
       aria-label="Node details"
-      className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs"
+      className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card/95 px-3 py-2 text-xs shadow-md backdrop-blur"
     >
       <span className="font-medium">{node.label}</span>
       {node.kind === "topic" && (
@@ -350,6 +435,11 @@ function NodeDetails({
       >
         <XIcon />
       </Button>
+      {node.config.length > 0 && (
+        <div className="basis-full border-t border-border pt-2">
+          <ConfigList config={node.config} node={node} />
+        </div>
+      )}
     </section>
   );
 }

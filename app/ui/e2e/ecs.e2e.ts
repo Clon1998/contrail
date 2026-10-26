@@ -279,3 +279,51 @@ test("a cluster's route map, with a transformer found in its startup logs", asyn
   await expect(page.getByRole("main", { name: "Service search-feeder" })).toBeVisible();
   await expect(tabs.getByRole("tab", { name: "Routes demo-edge" })).toBeVisible();
 });
+
+test("the route map: colours, settings, search by setting and narrowing to one side", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "demo-edge" }).hover();
+  await tree.getByRole("button", { name: "Route map of demo-edge" }).click();
+  const map = page.getByRole("main", { name: "Route map demo-edge" });
+  const graph = map.getByRole("group", { name: "Cluster route map" });
+  const node = (name: string) => graph.getByRole("button", { name, exact: true });
+
+  // Selecting a service shows its routes with their settings; secrets stay hidden.
+  await node("service legacy-gateway").click();
+  const details = map.getByRole("region", { name: "Node details" });
+  const routes = details.getByRole("list", { name: "Routes of legacy-gateway" });
+  await expect(routes).toContainText("billing/queue/ORDER_IN");
+  await expect(routes).toContainText("secret");
+  await expect(routes).not.toContainText("demo-not-a-secret");
+  await expect(map.getByText("feeds into the selection")).toBeVisible();
+
+  // Esc or the toolbar button clears the selection.
+  await page.keyboard.press("Escape");
+  await expect(details).toHaveCount(0);
+  await node("service legacy-gateway").click();
+  await map.getByRole("button", { name: "Clear selection" }).click();
+  await expect(details).toHaveCount(0);
+
+  // A setting finds its route: the partner's host leads to the input service writing its topic,
+  // not to the other writer of that topic or its source.
+  const search = map.getByRole("searchbox", { name: "Find in the route map" });
+  await search.fill("sftp.example");
+  await expect(node("system Example Partner")).toContainText("host: sftp.example");
+  await expect(node("service event-ingest")).toBeVisible();
+  await expect(node("service partner-poller")).toHaveCount(0);
+  await expect(node("system Order Portal")).toHaveCount(0);
+  await search.fill("");
+
+  // Right-click narrows the map to what feeds into a node.
+  await node("service search-feeder").click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Only what feeds into it" }).click();
+  await expect(map.getByText("Only what feeds into")).toBeVisible();
+  await expect(node("service event-enricher")).toBeVisible();
+  await expect(node("service audit-archiver")).toHaveCount(0);
+  await expect(node("system Product Catalog")).toHaveCount(0);
+  await map.getByRole("button", { name: "Show the whole map" }).click();
+  await expect(node("service audit-archiver")).toBeVisible();
+});

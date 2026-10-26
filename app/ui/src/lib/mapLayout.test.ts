@@ -59,4 +59,17 @@ describe("map layout", () => {
       expect(x(chain[i] ?? "")).toBeGreaterThan(x(chain[i - 1] ?? ""));
     }
   });
+
+  it("lays out a big cluster quickly (120 route services)", async () => {
+    const links: TopicLink[] = [];
+    for (let i = 0; i < 60; i++) {
+      links.push(link(`in-${i}`, `topic.${i % 40}`, "in", endpoint("sftp", `Source ${i % 25}`)));
+      links.push(link(`out-${i}`, `topic.${i % 40}`, "out", endpoint("http", `Target ${i % 30}`)));
+    }
+    const big = buildClusterGraph(links, {}, []);
+    const started = performance.now();
+    const positions = await layoutClusterGraph(big);
+    expect(positions.size).toBe(big.nodes.length);
+    expect(performance.now() - started).toBeLessThan(5_000);
+  });
 });
