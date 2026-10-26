@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LogEvent } from "@/bindings";
 import {
   applyLiveRows,
+  cachedIndexOf,
   isPageComplete,
   mergeFetchedRows,
   pagesFromBlocks,
@@ -123,5 +124,20 @@ describe("isPageComplete", () => {
     // The last page holds only the rest.
     expect(isPageComplete(rows(20), 4, 4 * PAGE_SIZE + 20)).toBe(true);
     expect(isPageComplete(rows(20), 4, 4 * PAGE_SIZE + 21)).toBe(false);
+  });
+});
+
+describe("cachedIndexOf", () => {
+  const event = (seq: number) => ({ seq }) as LogEvent;
+
+  it("finds a loaded event's buffer index by its sequence number", () => {
+    const cached = new Map<number, LogEvent[]>([
+      [0, [event(10), event(11)]],
+      [3, [event(40), event(41), event(42)]],
+    ]);
+    expect(cachedIndexOf(cached, 11)).toBe(1);
+    expect(cachedIndexOf(cached, 42)).toBe(3 * PAGE_SIZE + 2);
+    // Not loaded (or evicted meanwhile).
+    expect(cachedIndexOf(cached, 7)).toBeUndefined();
   });
 });

@@ -160,6 +160,38 @@ test("live: new events arrive, pause stops them, resume continues", async ({ pag
     .toBeGreaterThan(paused);
 });
 
+test("the list keeps its place and open rows across Overview, Logs and tabs", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  await list.locator("..").evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  const first = list.getByRole("button", { name: /Ingested event #1 / }).first();
+  await first.click();
+  await expect(first).toHaveAttribute("aria-expanded", "true");
+
+  const backAtTheTop = async () => {
+    await expect(list.getByRole("button", { name: /Ingested event #1 / }).first()).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  };
+  await page.getByRole("tab", { name: "Overview" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  await backAtTheTop();
+
+  // Another service's tab and back.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "legacy-gateway" }).click();
+  await expect(page.getByRole("main", { name: "Service legacy-gateway" })).toBeVisible();
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: /event-ingest/ })
+    .click();
+  await backAtTheTop();
+});
+
 test("live: following stops when scrolled up and resumes with Jump to latest", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
