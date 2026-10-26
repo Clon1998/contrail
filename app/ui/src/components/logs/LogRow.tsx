@@ -29,6 +29,7 @@ export function LogRow({
   current?: boolean;
 }) {
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const wrap = usePrefs((s) => s.prefs.settings.wrapLines);
   const expanded = useLogs((s) => s.expanded[event.seq] ?? false);
   const fresh = useLogs((s) => s.fresh[event.seq] ?? false);
   const toggle = useLogs((s) => s.toggleExpanded);
@@ -83,7 +84,7 @@ export function LogRow({
             {columnText(event, c.id)}
           </span>
         ))}
-        <span className="truncate">
+        <span className={wrap ? "wrap-anywhere whitespace-pre-wrap" : "truncate"}>
           {event.status && <StateBadge state={event.status.state} className="mr-1.5 align-[1px]" />}
           {terms.length > 0 ? (
             <Highlighted text={stripAnsi(firstLine)} terms={terms} />

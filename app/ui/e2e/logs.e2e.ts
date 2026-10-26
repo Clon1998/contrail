@@ -63,7 +63,31 @@ test("optional columns", async ({ page }) => {
   await page.getByRole("button", { name: "Columns" }).click();
   await page.getByRole("menuitemcheckbox", { name: "Logger" }).click();
   await page.keyboard.press("Escape");
-  await expect(list.getByText(/^com\.example\./).first()).toBeVisible();
+  // Packages are shortened like Spring Boot does; the tooltip keeps the full name.
+  const logger = list.locator('[title^="com.example."]').first();
+  await expect(logger).toBeVisible();
+  await expect(logger).toHaveText(/^c\.e\./);
+});
+
+test("long messages wrap with W or the toolbar button", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 700 });
+  const list = await openLogs(page, "demo-core", "payments-worker");
+  await expect(list.getByRole("listitem").first()).toBeVisible();
+  const tallest = () =>
+    list
+      .getByRole("listitem")
+      .evaluateAll((rows) => Math.max(...rows.map((r) => r.getBoundingClientRect().height)));
+  const oneLine = await tallest();
+
+  await page.keyboard.press("w");
+  await expect(page.getByRole("button", { name: "Wrap lines" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect.poll(tallest).toBeGreaterThan(oneLine * 1.5);
+
+  await page.getByRole("button", { name: "Wrap lines" }).click();
+  await expect.poll(tallest).toBeLessThan(oneLine * 1.5);
 });
 
 test("a task's logs from the task list, and back to all tasks", async ({ page }) => {

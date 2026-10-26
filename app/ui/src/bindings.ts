@@ -799,6 +799,8 @@ export type Settings = {
 	logColumns: LogColumn[],
 	/**  Log lists show the newest event at the top (and follow new events there). */
 	newestFirst: boolean,
+	/**  Long messages wrap onto more lines instead of being cut off at the list's edge. */
+	wrapLines: boolean,
 	/**  Look for a new Contrail version on start (at most once a day). */
 	checkForUpdates: boolean,
 };

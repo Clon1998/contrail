@@ -235,6 +235,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       bufferSize: 100_000,
       logColumns: [],
       newestFirst: false,
+      wrapLines: false,
       checkForUpdates: true,
     },
     noise: {},
