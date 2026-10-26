@@ -495,3 +495,27 @@ test("saved searches: for one service or all, applied and deleted", async ({ pag
   await page.getByRole("button", { name: "Delete Timeouts" }).click();
   await expect(page.getByText("No saved searches yet.")).toBeVisible();
 });
+
+test("a saved search runs from ⌘K, opening its service", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  await search.fill("level:ERROR");
+  await search.press("Enter");
+  await page.getByRole("button", { name: "Saved searches" }).click();
+  const form = page.getByRole("form", { name: "Save the search" });
+  await form.getByLabel("Name").fill("Order errors");
+  await form.getByRole("button", { name: "Save" }).click();
+  await page.keyboard.press("Escape");
+
+  // From another service, on its Overview.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "payments-worker" }).click();
+  await page.getByRole("tab", { name: "Overview" }).click();
+  const mod = process.platform === "darwin" ? "Meta" : "Control";
+  await page.keyboard.press(`${mod}+k`);
+  await page.getByRole("dialog").getByRole("combobox").fill("order errors");
+  await page.getByRole("option", { name: /Order errors/ }).click();
+
+  await expect(page.getByRole("main", { name: "Service orders-api" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Search logs" })).toHaveValue("level:ERROR");
+});
