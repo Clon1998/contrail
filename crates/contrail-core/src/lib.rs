@@ -8,6 +8,7 @@ pub mod auth;
 pub mod ecs;
 pub mod error;
 mod ini;
+pub mod links;
 pub mod logs;
 pub mod prefs;
 pub mod profile;

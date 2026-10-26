@@ -16,6 +16,7 @@ sha1 = { workspace = true }
 specta = { workspace = true }
 thiserror = { workspace = true }
 time = { workspace = true }
+url = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }

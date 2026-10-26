@@ -1323,6 +1323,7 @@ dependencies = [
  "specta",
  "thiserror 2.0.21",
  "time",
+ "url",
 ]
 
 [[package]]
