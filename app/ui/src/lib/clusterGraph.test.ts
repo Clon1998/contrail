@@ -6,6 +6,7 @@ import {
   knownTransformers,
   routePath,
   scopeClusterGraph,
+  withoutDisabled,
 } from "./clusterGraph";
 
 const endpoint = (kind: string, system: string, enabled = true): Endpoint => ({
@@ -97,6 +98,24 @@ describe("buildClusterGraph", () => {
     expect(node("service:api")?.origin).toBe("manual");
     expect(graph.edges.some((e) => e.from === "service:api" && e.to === "topic:audit")).toBe(true);
     expect(graph.leftOut).toEqual([]);
+  });
+
+  it("leaves switched-off routes out on request", () => {
+    const graph = buildClusterGraph(
+      [...links, link("archiver", "raw", "out", [endpoint("http", "Old API", false)])],
+      {},
+      services,
+    );
+    const on = withoutDisabled(graph);
+    const labels = on.nodes.map((n) => n.label);
+    // The switched-off route service and its topic, and a switched-off target, are gone.
+    expect(labels).not.toContain("gateway");
+    expect(labels).not.toContain("orders");
+    expect(labels).not.toContain("Old API");
+    expect(labels).toContain("archiver");
+    expect(on.edges.every((e) => !e.disabled)).toBe(true);
+    const ids = new Set(on.nodes.map((n) => n.id));
+    expect(on.edges.every((e) => ids.has(e.from) && ids.has(e.to))).toBe(true);
   });
 
   it("finds a service with everything up- and downstream of it", () => {

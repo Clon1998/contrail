@@ -292,3 +292,17 @@ export function filterClusterGraph(graph: ClusterGraph, query: string): ClusterG
     matches,
   };
 }
+
+/**
+ * The graph without switched-off routes: lines and nodes that are off (a node is off when every
+ * route through it is), and lines that no longer connect two remaining nodes.
+ */
+export function withoutDisabled(graph: ClusterGraph): ClusterGraph {
+  const nodes = graph.nodes.filter((n) => !n.disabled);
+  const kept = new Set(nodes.map((n) => n.id));
+  return {
+    ...graph,
+    nodes,
+    edges: graph.edges.filter((e) => !e.disabled && kept.has(e.from) && kept.has(e.to)),
+  };
+}

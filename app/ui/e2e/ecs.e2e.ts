@@ -344,6 +344,13 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await expect(node("system Order Portal")).toHaveCount(0);
   await search.fill("");
 
+  // Switched-off routes can be hidden.
+  await expect(node("system Example Partner API (disabled)")).toBeVisible();
+  await map.getByRole("button", { name: "Hide disabled" }).click();
+  await expect(node("system Example Partner API (disabled)")).toHaveCount(0);
+  await expect(node("system Archive")).toBeVisible();
+  await map.getByRole("button", { name: "Hide disabled" }).click();
+
   // Right-click narrows the map to what feeds into a node.
   await node("service search-feeder").click({ button: "right" });
   await page.getByRole("menuitem", { name: "Only what feeds into it" }).click();

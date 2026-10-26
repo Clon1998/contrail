@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CircleXIcon,
+  EyeOffIcon,
   FilterIcon,
   NetworkIcon,
   PencilIcon,
@@ -18,6 +19,7 @@ import {
   filterClusterGraph,
   knownTransformers,
   scopeClusterGraph,
+  withoutDisabled,
   type ClusterGraph,
   type PathScope,
 } from "@/lib/clusterGraph";
@@ -58,9 +60,10 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
   const [query, setQuery] = useState(saved?.query ?? "");
   const [focus, setFocus] = useState<string | null>(saved?.focus ?? null);
   const [scope, setScope] = useState<{ id: string; scope: PathScope } | null>(saved?.scope ?? null);
+  const [hideDisabled, setHideDisabled] = useState(saved?.hideDisabled ?? false);
   useEffect(() => {
-    rememberRouteMap(tab.key, { scan, topology, query, focus, scope });
-  }, [tab.key, scan, topology, query, focus, scope]);
+    rememberRouteMap(tab.key, { scan, topology, query, focus, scope, hideDisabled });
+  }, [tab.key, scan, topology, query, focus, scope, hideDisabled]);
   const saveCanvas = useCallback(
     (canvas: CanvasMemory) => rememberRouteMap(tab.key, { canvas }),
     [tab.key],
@@ -141,11 +144,11 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
     [scan, found, transformers, services],
   );
   const graph = useMemo(() => {
-    const found = filterClusterGraph(whole, query);
+    const found = filterClusterGraph(hideDisabled ? withoutDisabled(whole) : whole, query);
     return scope && found.nodes.some((n) => n.id === scope.id)
       ? scopeClusterGraph(found, scope.id, scope.scope)
       : found;
-  }, [whole, query, scope]);
+  }, [whole, query, scope, hideDisabled]);
   const topics = useMemo(
     () => whole.nodes.filter((n) => n.kind === "topic").map((n) => n.label),
     [whole],
@@ -216,6 +219,15 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
             onChange={(e) => setQuery(e.target.value)}
             className="h-7 w-64 text-xs"
           />
+          <Button
+            variant={hideDisabled ? "secondary" : "outline"}
+            size="xs"
+            aria-pressed={hideDisabled}
+            tooltip="Hide switched-off routes and the systems only they use"
+            onClick={() => setHideDisabled(!hideDisabled)}
+          >
+            <EyeOffIcon /> Hide disabled
+          </Button>
           <Button
             variant="outline"
             size="xs"
