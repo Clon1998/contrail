@@ -11,6 +11,7 @@ mod error;
 pub mod files;
 pub mod logs;
 pub mod secrets;
+pub mod sso_device;
 mod sts;
 
 pub use auth::AwsAuth;

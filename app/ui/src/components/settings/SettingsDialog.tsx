@@ -25,11 +25,12 @@ import { usePrefs } from "@/stores/prefs";
 import { useUpdate } from "@/stores/update";
 import { MOD } from "@/lib/keys";
 
-type Section = "appearance" | "logs" | "shortcuts" | "about";
+type Section = "appearance" | "logs" | "aws" | "shortcuts" | "about";
 
 const SECTIONS: { value: Section; label: string }[] = [
   { value: "appearance", label: "Appearance" },
   { value: "logs", label: "Logs" },
+  { value: "aws", label: "AWS" },
   { value: "shortcuts", label: "Shortcuts" },
   { value: "about", label: "About" },
 ];
@@ -262,6 +263,23 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                       </Button>
                     ))}
                   </div>
+                </Row>
+              </Rows>
+            )}
+
+            {section === "aws" && (
+              <Rows>
+                <Row
+                  label="SSO login"
+                  hint="Contrail's own login shows a code to confirm in the browser. It's used anyway when the AWS CLI isn't installed; the token goes to ~/.aws/sso/cache, like the CLI's."
+                >
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.builtinLogin}
+                      onCheckedChange={(checked) => void update({ builtinLogin: checked === true })}
+                    />
+                    Log in without the AWS CLI
+                  </label>
                 </Row>
               </Rows>
             )}

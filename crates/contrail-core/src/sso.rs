@@ -1,8 +1,9 @@
 //! SSO session state, derived from the AWS SSO token cache (`~/.aws/sso/cache/*.json`).
 //!
 //! `aws sso login` writes one JSON file per session. Its name is the SHA-1 of the
-//! `[sso-session]` name (or, for legacy profiles, of the start URL). Contrail only reads the
-//! expiry fields; tokens are never kept or sent anywhere.
+//! `[sso-session]` name (or, for legacy profiles, of the start URL). Contrail reads only the
+//! expiry fields; tokens are never kept or sent anywhere. Its built-in login (without the CLI)
+//! writes the same file in the same format ([`cache_entry_json`]).
 
 use serde::{Deserialize, Serialize};
 use sha1::{Digest, Sha1};
@@ -113,6 +114,77 @@ pub fn session_status(token: Option<&CachedToken>, now: OffsetDateTime) -> Sessi
     }
 }
 
+/// A token from the built-in login, to be written to the cache like `aws sso login` does.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NewToken {
+    pub start_url: String,
+    /// The region of IAM Identity Center (`sso_region`).
+    pub region: String,
+    pub access_token: String,
+    pub expires_at: OffsetDateTime,
+    /// Only for `sso-session` profiles (legacy ones can't refresh): the refresh token and the
+    /// client registration the SDK needs to use it.
+    pub refresh: Option<RefreshGrant>,
+}
+
+/// What renewing an access token takes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RefreshGrant {
+    pub refresh_token: String,
+    pub client_id: String,
+    pub client_secret: String,
+    pub registration_expires_at: OffsetDateTime,
+}
+
+/// The cache file's content for `token`, in the AWS CLI's format (camelCase keys, times as
+/// `2026-10-26T20:00:00Z`), so the CLI and the SDKs read it as their own.
+pub fn cache_entry_json(token: &NewToken) -> String {
+    /// The file format. `skip_serializing_if` leaves the refresh fields out entirely for
+    /// legacy profiles, as the CLI does.
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Entry<'a> {
+        start_url: &'a str,
+        region: &'a str,
+        access_token: &'a str,
+        expires_at: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        client_id: Option<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        client_secret: Option<&'a str>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        registration_expires_at: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        refresh_token: Option<&'a str>,
+    }
+    let refresh = token.refresh.as_ref();
+    let entry = Entry {
+        start_url: &token.start_url,
+        region: &token.region,
+        access_token: &token.access_token,
+        expires_at: cli_timestamp(token.expires_at),
+        client_id: refresh.map(|r| r.client_id.as_str()),
+        client_secret: refresh.map(|r| r.client_secret.as_str()),
+        registration_expires_at: refresh.map(|r| cli_timestamp(r.registration_expires_at)),
+        refresh_token: refresh.map(|r| r.refresh_token.as_str()),
+    };
+    serde_json::to_string_pretty(&entry).expect("a token entry serializes")
+}
+
+/// `2026-10-26T20:00:00Z`: UTC to the second, as the CLI writes it.
+fn cli_timestamp(at: OffsetDateTime) -> String {
+    let utc = at.to_offset(time::UtcOffset::UTC);
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        utc.year(),
+        u8::from(utc.month()),
+        utc.day(),
+        utc.hour(),
+        utc.minute(),
+        utc.second()
+    )
+}
+
 /// Parses RFC 3339 timestamps, plus the `2026-10-22T20:00:00UTC` form older CLI versions wrote.
 fn parse_timestamp(value: &str) -> Result<OffsetDateTime, TokenCacheError> {
     use time::format_description::well_known::Rfc3339;
@@ -130,6 +202,45 @@ mod tests {
     use time::macros::datetime;
 
     const NOW: OffsetDateTime = datetime!(2026-10-22 12:00 UTC);
+
+    #[test]
+    fn writes_the_cli_format_and_reads_it_back() {
+        let mut new = NewToken {
+            start_url: "https://example.awsapps.com/start".into(),
+            region: "eu-central-1".into(),
+            access_token: "access".into(),
+            expires_at: datetime!(2026-10-22 20:00:00.250 +02:00),
+            refresh: Some(RefreshGrant {
+                refresh_token: "refresh".into(),
+                client_id: "client".into(),
+                client_secret: "secret".into(),
+                registration_expires_at: datetime!(2027-01-20 12:00 UTC),
+            }),
+        };
+        let json: serde_json::Value = serde_json::from_str(&cache_entry_json(&new)).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "startUrl": "https://example.awsapps.com/start",
+                "region": "eu-central-1",
+                "accessToken": "access",
+                "expiresAt": "2026-10-22T18:00:00Z",
+                "clientId": "client",
+                "clientSecret": "secret",
+                "registrationExpiresAt": "2027-01-20T12:00:00Z",
+                "refreshToken": "refresh",
+            })
+        );
+        let read = parse_cached_token(&cache_entry_json(&new), NOW).unwrap();
+        assert_eq!(read, token(datetime!(2026-10-22 18:00 UTC), true));
+
+        // A legacy profile: no refresh fields at all, so it can't refresh.
+        new.refresh = None;
+        let json: serde_json::Value = serde_json::from_str(&cache_entry_json(&new)).unwrap();
+        assert_eq!(json.as_object().unwrap().len(), 4);
+        let read = parse_cached_token(&cache_entry_json(&new), NOW).unwrap();
+        assert!(!read.can_refresh);
+    }
 
     fn token(expires_at: OffsetDateTime, can_refresh: bool) -> CachedToken {
         CachedToken {

@@ -32,6 +32,7 @@ specta = { workspace = true }
 specta-typescript = { workspace = true }
 tauri-specta = { workspace = true }
 tauri-plugin-dialog = "2.8.3"
+tauri-plugin-opener = "2.7.2"
 base64 = "0.23.1"
 tauri-plugin-updater = "2.14.0"
 # The updater brings a second TLS stack; `run` picks aws-lc-rs (the AWS SDK's) as the default.

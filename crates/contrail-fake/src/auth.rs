@@ -5,7 +5,9 @@ use std::sync::Mutex;
 use std::time::Duration as StdDuration;
 
 use async_trait::async_trait;
-use contrail_core::auth::{AuthError, AuthProvider, AwsCtx, CallerIdentity, LoginProgress};
+use contrail_core::auth::{
+    AuthError, AuthProvider, AwsCtx, CallerIdentity, LoginMethod, LoginProgress,
+};
 use contrail_core::error::SourceError;
 use contrail_core::profile::{Profile, ProfileAuth};
 use contrail_core::sso::{CachedToken, SessionStatus, session_status};
@@ -154,20 +156,31 @@ impl AuthProvider for FakeAuth {
         })
     }
 
+    /// Like a real login, without a browser: the CLI's lines (`Auto`), or the page and code of
+    /// the built-in device flow (`BuiltIn`); either way it completes by itself after a moment.
     async fn login(
         &self,
         profile: &str,
+        method: LoginMethod,
         progress: &(dyn Fn(LoginProgress) + Send + Sync),
     ) -> Result<(), AuthError> {
         let profile = self.profile(profile)?;
         if profile.auth.sso_session().is_none() {
             return Err(AuthError::NotSso(profile.name.clone()));
         }
-        for line in [
-            "Attempting to automatically open the SSO authorization page in your default browser.",
-            "Demo mode: no browser opens, the login completes by itself.",
-        ] {
-            progress(LoginProgress::Output { line: line.into() });
+        match method {
+            LoginMethod::Auto => {
+                for line in [
+                    "Attempting to automatically open the SSO authorization page in your default browser.",
+                    "Demo mode: no browser opens, the login completes by itself.",
+                ] {
+                    progress(LoginProgress::Output { line: line.into() });
+                }
+            }
+            LoginMethod::BuiltIn => progress(LoginProgress::Device {
+                url: format!("{START_URL}#/device?user_code=DEMO-CODE"),
+                code: "DEMO-CODE".into(),
+            }),
         }
         tokio::time::sleep(self.login_delay).await;
 
@@ -227,6 +240,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn the_built_in_login_shows_a_page_and_a_code() {
+        let auth = fake();
+        let seen = Mutex::new(Vec::new());
+        auth.login("demo-prod", LoginMethod::BuiltIn, &|p| {
+            seen.lock().unwrap().push(p)
+        })
+        .await
+        .unwrap();
+        let seen = seen.into_inner().unwrap();
+        assert!(matches!(&seen[0], LoginProgress::Device { code, .. } if code == "DEMO-CODE"));
+        assert!(auth.caller_identity(&ctx("demo-prod")).await.is_ok());
+    }
+
+    #[tokio::test]
     async fn login_makes_an_expired_session_valid() {
         let auth = fake();
         assert!(matches!(
@@ -235,9 +262,11 @@ mod tests {
         ));
 
         let lines = Mutex::new(Vec::new());
-        auth.login("demo-prod", &|p| lines.lock().unwrap().push(p))
-            .await
-            .unwrap();
+        auth.login("demo-prod", LoginMethod::Auto, &|p| {
+            lines.lock().unwrap().push(p)
+        })
+        .await
+        .unwrap();
 
         assert!(matches!(
             auth.session_status("demo-prod").await.unwrap(),
@@ -253,11 +282,11 @@ mod tests {
         let auth = fake();
         let ignore = |_: LoginProgress| {};
         assert_eq!(
-            auth.login("nope", &ignore).await,
+            auth.login("nope", LoginMethod::Auto, &ignore).await,
             Err(AuthError::ProfileNotFound("nope".into()))
         );
         assert_eq!(
-            auth.login("demo-keys", &ignore).await,
+            auth.login("demo-keys", LoginMethod::BuiltIn, &ignore).await,
             Err(AuthError::NotSso("demo-keys".into()))
         );
     }

@@ -159,8 +159,10 @@ mod tests {
 
     impl Recorder {
         fn push(&self, progress: LoginProgress) {
-            let LoginProgress::Output { line } = progress;
-            self.0.lock().unwrap().push(line);
+            // The CLI login only reports lines it printed.
+            if let LoginProgress::Output { line } = progress {
+                self.0.lock().unwrap().push(line);
+            }
         }
 
         fn lines(self) -> Vec<String> {

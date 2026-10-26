@@ -26,13 +26,31 @@ pub struct CallerIdentity {
     pub user_id: String,
 }
 
-/// Progress of a running `aws sso login`, streamed to the UI.
+/// Progress of a running SSO login, streamed to the UI.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Type)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
 pub enum LoginProgress {
     /// One line the login process printed (it contains the URL and code to use when the
     /// browser doesn't open by itself).
     Output { line: String },
+    /// The built-in login waits for the user to confirm `code` on the page `url` (the app opens
+    /// it in the browser).
+    Device { url: String, code: String },
+}
+
+/// How to log in to an SSO profile.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum LoginMethod {
+    /// `aws sso login` when the AWS CLI is installed, the built-in login otherwise.
+    #[default]
+    Auto,
+    /// Always the built-in login (the device flow), even with the CLI installed.
+    BuiltIn,
 }
 
 /// Everything that can go wrong in an [`AuthProvider`].
@@ -49,6 +67,9 @@ pub enum AuthError {
     CliMissing,
     #[error("`aws sso login` failed{}", exit_code.map(|c| format!(" (exit code {c})")).unwrap_or_default())]
     LoginFailed { exit_code: Option<i32> },
+    /// The built-in login didn't finish (denied, timed out, or IAM Identity Center refused it).
+    #[error("SSO login failed: {0}")]
+    DeviceLoginFailed(String),
     #[error("no valid credentials for profile \"{profile}\": {message}")]
     Credentials { profile: String, message: String },
     #[error("AWS error: {0}")]
@@ -97,13 +118,14 @@ pub trait AuthProvider: Send + Sync {
     /// Calls `sts:GetCallerIdentity` to prove the credentials work.
     async fn caller_identity(&self, ctx: &AwsCtx) -> Result<CallerIdentity, AuthError>;
 
-    /// Runs the SSO login for `profile` and returns once it has finished.
+    /// Runs the SSO login for `profile` (see [`LoginMethod`]) and returns once it has finished.
     ///
     /// `progress` is a borrowed callback (`&dyn Fn`): the caller keeps ownership, the provider
     /// may call it any number of times while the login runs.
     async fn login(
         &self,
         profile: &str,
+        method: LoginMethod,
         progress: &(dyn Fn(LoginProgress) + Send + Sync),
     ) -> Result<(), AuthError>;
 }

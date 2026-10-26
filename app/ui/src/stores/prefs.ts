@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS: Settings = {
   newestFirst: false,
   wrapLines: false,
   showTimeline: true,
+  builtinLogin: false,
   checkForUpdates: true,
 };
 

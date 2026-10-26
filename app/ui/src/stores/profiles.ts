@@ -18,11 +18,15 @@ export type IdentityState =
   | { state: "ok"; identity: CallerIdentity }
   | { state: "error"; error: ApiError };
 
-/** A running or finished `aws sso login`, with the lines it printed. */
+/**
+ * A running or finished SSO login: the lines `aws sso login` printed, or the page and code of the
+ * built-in login (without the CLI).
+ */
 export interface LoginState {
   profile: string;
   running: boolean;
   lines: string[];
+  device: { url: string; code: string } | null;
   error: ApiError | null;
 }
 
@@ -46,7 +50,7 @@ interface ProfilesState {
   /** Saves the region override of the selected profile (`null` = the profile's region). */
   setRegion: (region: string | null) => Promise<void>;
   checkIdentity: () => Promise<void>;
-  /** Runs `aws sso login` for the selected profile, then re-checks the session. */
+  /** Logs in to the selected profile's SSO session, then re-checks the session. */
   startLogin: () => Promise<void>;
   dismissLogin: () => void;
 }
@@ -154,13 +158,17 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
   startLogin: async () => {
     const name = get().selected;
     if (!name || get().login?.running) return;
-    set({ login: { profile: name, running: true, lines: [], error: null } });
+    set({ login: { profile: name, running: true, lines: [], device: null, error: null } });
 
-    // Rust sends each line the CLI prints over this channel while the command runs.
+    // Rust sends each line the CLI prints (or the built-in login's page and code) over this
+    // channel while the command runs.
     const channel = new Channel<LoginProgress>((progress) => {
       const login = get().login;
-      if (login?.profile === name) {
+      if (login?.profile !== name) return;
+      if (progress.kind === "output") {
         set({ login: { ...login, lines: [...login.lines, progress.line] } });
+      } else {
+        set({ login: { ...login, device: { url: progress.url, code: progress.code } } });
       }
     });
     const result = await commands.ssoLogin(name, channel);

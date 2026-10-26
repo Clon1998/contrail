@@ -13,6 +13,7 @@ aws-sdk-cloudwatchlogs = { workspace = true }
 aws-sdk-ecs = { workspace = true }
 aws-sdk-secretsmanager = { workspace = true }
 aws-sdk-ssm = { workspace = true }
+aws-sdk-ssooidc = { workspace = true }
 aws-sdk-sts = { workspace = true }
 aws-smithy-types = { workspace = true }
 contrail-core = { workspace = true }
@@ -27,8 +28,11 @@ aws-sdk-cloudwatchlogs = { workspace = true, features = ["test-util"] }
 aws-sdk-ecs = { workspace = true, features = ["test-util"] }
 aws-sdk-secretsmanager = { workspace = true, features = ["test-util"] }
 aws-sdk-ssm = { workspace = true, features = ["test-util"] }
+aws-sdk-ssooidc = { workspace = true, features = ["test-util"] }
 aws-sdk-sts = { workspace = true, features = ["test-util"] }
 tempfile = { workspace = true }
+# Paused clock in tests (`#[tokio::test(start_paused = true)]`): polling waits without waiting.
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true

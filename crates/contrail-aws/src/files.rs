@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use contrail_core::auth::AuthError;
 use contrail_core::profile::{Profile, SsoSessionRef, parse_profiles};
-use contrail_core::sso::{self, CachedToken};
+use contrail_core::sso::{self, CachedToken, NewToken};
 use time::OffsetDateTime;
 
 /// Where the AWS config, credentials and SSO token cache live.
@@ -76,6 +76,38 @@ impl AwsFiles {
             }
         }
     }
+
+    /// Writes a token from the built-in login to the session's cache file, where `aws sso
+    /// login` would put it (the CLI and the SDKs read it from there). Written to a temporary file
+    /// first and renamed, so a reader never sees half a file; readable only by the user.
+    pub fn write_cached_token(
+        &self,
+        session: &SsoSessionRef<'_>,
+        token: &NewToken,
+    ) -> Result<PathBuf, AuthError> {
+        let fail =
+            |err: io::Error| AuthError::Config(format!("can't write the SSO token cache: {err}"));
+        std::fs::create_dir_all(&self.sso_cache_dir).map_err(fail)?;
+        let path = self.sso_cache_dir.join(sso::cache_file_name(session));
+        let temporary = path.with_extension("json.contrail-tmp");
+        write_private(&temporary, sso::cache_entry_json(token).as_bytes()).map_err(fail)?;
+        std::fs::rename(&temporary, &path).map_err(fail)?;
+        Ok(path)
+    }
+}
+
+/// Writes a file only its owner can read (0600 on macOS and Linux, where the CLI does the same;
+/// on Windows the user's profile folder is private already).
+fn write_private(path: &Path, contents: &[u8]) -> io::Result<()> {
+    use std::io::Write;
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options.open(path)?.write_all(contents)
 }
 
 /// Reads a text file, returning `Ok(None)` if it doesn't exist.
@@ -114,6 +146,39 @@ mod tests {
         let files = AwsFiles::resolve(home, Some("/etc/aws.cfg".into()), Some("/etc/creds".into()));
         assert_eq!(files.config, Path::new("/etc/aws.cfg"));
         assert_eq!(files.credentials, Path::new("/etc/creds"));
+    }
+
+    #[test]
+    fn writes_a_token_where_the_cli_reads_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let files = files_in(dir.path());
+        let session = SsoSessionRef {
+            start_url: "https://example.awsapps.com/start",
+            session_name: Some("corp"),
+        };
+        let token = NewToken {
+            start_url: session.start_url.into(),
+            region: "eu-central-1".into(),
+            access_token: "access".into(),
+            expires_at: NOW + time::Duration::hours(8),
+            refresh: None,
+        };
+        let path = files.write_cached_token(&session, &token).unwrap();
+
+        assert_eq!(
+            path,
+            files.sso_cache_dir.join(sso::cache_file_name(&session))
+        );
+        let read = files.cached_token(&session, NOW).unwrap();
+        assert_eq!(read.expires_at, NOW + time::Duration::hours(8));
+        // No temporary file is left behind, and only the user can read the token.
+        assert_eq!(std::fs::read_dir(&files.sso_cache_dir).unwrap().count(), 1);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
     }
 
     #[test]

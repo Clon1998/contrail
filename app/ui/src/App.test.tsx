@@ -107,8 +107,8 @@ describe("App", () => {
     expect(await within(tree).findByRole("treeitem", { name: "demo-core" })).toBeTruthy();
   });
 
-  it("explains a missing AWS CLI", async () => {
-    installFakeBackend({ cliMissing: true });
+  it("shows the code to confirm when logging in without the AWS CLI", async () => {
+    installFakeBackend({ noCli: true, loginDelayMs: 200 });
     render(<App />);
     await screen.findByText("DemoReadOnly");
 
@@ -118,8 +118,8 @@ describe("App", () => {
     );
 
     const output = await screen.findByRole("region", { name: "Login output" });
-    expect(within(output).getByText(/AWS CLI \(`aws`\) was not found/)).toBeTruthy();
-    expect(within(output).getByText(/Install AWS CLI v2/)).toBeTruthy();
+    expect(await within(output).findByText("DEMO-CODE")).toBeTruthy();
+    expect(within(output).getByText(/Check that the browser shows this code/)).toBeTruthy();
   });
 
   it("shows why a misconfigured profile can't be used", async () => {
