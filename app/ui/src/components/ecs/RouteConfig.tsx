@@ -17,11 +17,15 @@ function sharedGroup(config: EndpointConfig[]): string | null {
   return groups.size === 1 ? (only ?? null) : null;
 }
 
+/** The hover card lists at most this many routes; the details panel has all of them. */
+const HOVER_ROUTES = 6;
+
 /**
  * The route ends at a node of the route map with their settings, one block per route: for a
  * service its own routes, for a system the routes of every service using it. Each block's title
  * runs in the direction the data flows (`system → topic` into Kafka, `topic → system` out of it).
- * `compact` (the hover card) leaves out the settings of switched-off routes.
+ * `compact` (the hover card) is a summary: one line per route without settings, the first few
+ * routes. A service can have many routes, and a system several services use is one node.
  */
 export function ConfigList({
   config,
@@ -33,6 +37,7 @@ export function ConfigList({
   compact?: boolean;
 }) {
   const group = node.kind === "service" ? sharedGroup(config) : null;
+  const settings = !compact;
   return (
     <div className="flex flex-col gap-2 text-xs">
       {compact && (
@@ -44,17 +49,20 @@ export function ConfigList({
           </span>
         </header>
       )}
-      <ul aria-label={`Routes of ${node.label}`} className="flex flex-col gap-1.5">
-        {config.map((c, i) => (
+      <ul
+        aria-label={`Routes of ${node.label}`}
+        className={cn("flex flex-col", settings ? "gap-1.5" : "gap-1")}
+      >
+        {(compact ? config.slice(0, HOVER_ROUTES) : config).map((c, i) => (
           <li
             key={i}
             className={cn(
-              "rounded-md border border-border bg-muted/40 px-2 py-1.5",
+              settings && "rounded-md border border-border bg-muted/40 px-2 py-1.5",
               !c.enabled && "opacity-60",
             )}
           >
             <RouteTitle config={c} node={node} showGroup={group === null} />
-            {c.properties.length > 0 && !(compact && !c.enabled) && (
+            {c.properties.length > 0 && settings && (
               <dl className="mt-1 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-0.5 font-mono text-[11px]">
                 {c.properties.map((p) => (
                   <div key={p.variable} className="contents">
@@ -75,6 +83,12 @@ export function ConfigList({
           </li>
         ))}
       </ul>
+      {compact && (
+        <p className="text-muted-foreground">
+          {config.length > HOVER_ROUTES && `+${config.length - HOVER_ROUTES} more · `}
+          Click for the settings
+        </p>
+      )}
     </div>
   );
 }

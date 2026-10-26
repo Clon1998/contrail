@@ -270,62 +270,65 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
           )}
         </div>
       )}
-      <div className="relative min-h-0 flex-1 text-sm">
-        {scan.kind === "loading" && (
-          <div aria-label="Reading the routes of the cluster's services" className="h-full">
-            <div className="grid h-full grid-cols-5 gap-6 p-6">
-              {Array.from({ length: 5 }, (_, column) => (
-                <div key={column} className="flex flex-col justify-center gap-3">
-                  {Array.from({ length: 4 + (column % 3) }, (_, i) => (
-                    <Skeleton key={i} className="h-10" />
-                  ))}
-                </div>
-              ))}
+      <div className="flex min-h-0 flex-1">
+        <div className="relative min-h-0 min-w-0 flex-1 text-sm">
+          {scan.kind === "loading" && (
+            <div aria-label="Reading the routes of the cluster's services" className="h-full">
+              <div className="grid h-full grid-cols-5 gap-6 p-6">
+                {Array.from({ length: 5 }, (_, column) => (
+                  <div key={column} className="flex flex-col justify-center gap-3">
+                    {Array.from({ length: 4 + (column % 3) }, (_, i) => (
+                      <Skeleton key={i} className="h-10" />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+          {scan.kind === "error" && <p className="p-4 text-destructive">{scan.error.message}</p>}
+          {scan.kind === "done" && whole.nodes.length === 0 && (
+            <p className="p-4 text-muted-foreground">
+              No service of this cluster has routes. Transformers entered by hand show up here too.
+            </p>
+          )}
+          {scan.kind === "done" && whole.nodes.length > 0 && graph.nodes.length === 0 && (
+            <p className="p-4 text-muted-foreground">Nothing matches “{query}”.</p>
+          )}
+          {graph.nodes.length > 0 && (
+            <ClusterMapCanvas graph={graph} selected={focus} actions={actions} />
+          )}
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col items-start gap-2">
+            {editing !== null && (
+              <div className="pointer-events-auto">
+                <TransformerEditor
+                  initial={editing}
+                  candidates={services}
+                  found={found}
+                  topics={topics}
+                  onClose={() => setEditing(null)}
+                />
+              </div>
+            )}
+            {scan.kind === "done" && whole.leftOut.length > 0 && editing === null && (
+              <div className="pointer-events-auto rounded-md border border-border bg-card/95 px-3 py-1.5">
+                <LeftOut names={whole.leftOut} onPick={setEditing} />
+              </div>
+            )}
           </div>
-        )}
-        {scan.kind === "error" && <p className="p-4 text-destructive">{scan.error.message}</p>}
-        {scan.kind === "done" && whole.nodes.length === 0 && (
-          <p className="p-4 text-muted-foreground">
-            No service of this cluster has routes. Transformers entered by hand show up here too.
-          </p>
-        )}
-        {scan.kind === "done" && whole.nodes.length > 0 && graph.nodes.length === 0 && (
-          <p className="p-4 text-muted-foreground">Nothing matches “{query}”.</p>
-        )}
-        {graph.nodes.length > 0 && (
-          <ClusterMapCanvas graph={graph} selected={focus} actions={actions} />
-        )}
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 flex flex-col items-start gap-2">
-          {editing !== null && (
-            <div className="pointer-events-auto">
-              <TransformerEditor
-                initial={editing}
-                candidates={services}
-                found={found}
-                topics={topics}
-                onClose={() => setEditing(null)}
-              />
-            </div>
-          )}
-          {focused && (
-            <div className="pointer-events-auto max-h-[45%] w-full max-w-3xl overflow-auto">
-              <NodeDetails
-                graph={whole}
-                found={found}
-                id={focused.id}
-                clusterArn={clusterArn}
-                onEdit={setEditing}
-                onClose={() => setFocus(null)}
-              />
-            </div>
-          )}
-          {scan.kind === "done" && whole.leftOut.length > 0 && !focused && editing === null && (
-            <div className="pointer-events-auto rounded-md border border-border bg-card/95 px-3 py-1.5">
-              <LeftOut names={whole.leftOut} onPick={setEditing} />
-            </div>
-          )}
         </div>
+        {/* Beside the map, not over it: the map gets narrower, nothing is hidden. */}
+        {focused && (
+          <aside className="w-96 shrink-0 overflow-y-auto border-l border-border bg-card/40">
+            <NodeDetails
+              graph={whole}
+              found={found}
+              id={focused.id}
+              clusterArn={clusterArn}
+              onEdit={setEditing}
+              onClose={() => setFocus(null)}
+            />
+          </aside>
+        )}
       </div>
     </main>
   );
@@ -385,10 +388,7 @@ function NodeDetails({
   const startup = node.origin === "logs" ? found.find((t) => t.service === node.label) : undefined;
 
   return (
-    <section
-      aria-label="Node details"
-      className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card/95 px-3 py-2 text-xs shadow-md backdrop-blur"
-    >
+    <section aria-label="Node details" className="flex flex-wrap items-center gap-2 p-3 text-xs">
       <span className="font-medium">{node.label}</span>
       {node.kind === "topic" && (
         <span className="text-muted-foreground">
