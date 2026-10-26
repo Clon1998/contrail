@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CircleAlertIcon, Loader2Icon, RefreshCwIcon, StarIcon } from "lucide-react";
+import { CircleAlertIcon, RefreshCwIcon, StarIcon } from "lucide-react";
 import { LogViewer } from "@/components/logs/LogViewer";
 import { TraceView } from "@/components/logs/TraceView";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
 import { tabKey, useTabs } from "@/stores/tabs";
 import { HealthDot } from "./HealthDot";
-import { Overview } from "./Overview";
+import { Overview, OverviewSkeleton } from "./Overview";
 import { RouteMap } from "./RouteMap";
 import { ServiceTabs } from "./ServiceTabs";
 
@@ -79,11 +79,7 @@ function ServicePane() {
               </span>
             </p>
           )}
-          {!data && detail.state === "loading" && (
-            <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" /> Loading service…
-            </p>
-          )}
+          {!data && detail.state !== "error" && <OverviewSkeleton />}
           {data && <Overview detail={data} />}
         </TabsContent>
         <TabsContent value="logs" className="flex min-h-0 flex-col">

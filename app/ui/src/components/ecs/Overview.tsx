@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Hint } from "@/components/ui/tooltip";
 import { useNow } from "@/hooks/useNow";
 import { formatAgo, formatDateTime, groupEvents, shortTaskId } from "@/lib/ecs";
@@ -20,6 +21,33 @@ import { usePrefs } from "@/stores/prefs";
 import { Environment } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
 import { Routes } from "./Routes";
+
+/** The Overview's layout with placeholders, while a service is loaded for the first time. */
+export function OverviewSkeleton() {
+  const lines = (count: number) =>
+    Array.from({ length: count }, (_, i) => (
+      <Skeleton key={i} className={cn("h-4", i % 3 === 2 ? "w-2/3" : "w-full")} />
+    ));
+  const card = (title: string, count: number) => (
+    <OverviewCard title={title}>
+      <div className="flex flex-col gap-2.5">{lines(count)}</div>
+    </OverviewCard>
+  );
+  return (
+    <div role="status" aria-label="Loading service" aria-busy className="flex flex-col gap-4 p-4">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {card("Tasks", 4)}
+          {card("Deployments", 2)}
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          {card("Details", 5)}
+          {card("Events", 3)}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * The Overview tab: tasks and deployments in the main column, the service's details and its
