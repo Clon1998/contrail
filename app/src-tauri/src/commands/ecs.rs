@@ -2,8 +2,12 @@
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{ClusterSummary, ServiceDetail, ServiceRef, ServiceSummary, Task};
+use contrail_core::logs::{StreamSelection, TimeRange, process, resolve_log_location};
 use contrail_core::routes::Endpoint;
+use contrail_core::timestamp::Timestamp;
+use contrail_core::topology::{ConsumedTopic, STARTUP_PHRASE, startup_topology as read_startup};
 use tauri::State;
+use time::{Duration, OffsetDateTime};
 
 use crate::error::ApiResult;
 use crate::route_index::{ClusterRoutes, ServiceRoutes};
@@ -132,6 +136,159 @@ pub async fn cluster_routes(
     scan: TopicScan,
 ) -> ApiResult<Option<Vec<TopicLink>>> {
     find_topic_links(&state, &ctx, &cluster_arn, None, "", scan).await
+}
+
+/// What a service of the cluster reads and writes according to its startup lines.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ServiceTopology {
+    pub service: String,
+    /// The revision (`family:revision`) whose task was read.
+    pub task_definition: String,
+    /// The task whose log stream the lines came from, and when it started.
+    pub task_id: String,
+    pub started_at: Timestamp,
+    pub reads: Vec<ConsumedTopic>,
+    pub writes: Vec<String>,
+}
+
+/// How long after a task's start its startup lines are looked for.
+const STARTUP_WINDOW: Duration = Duration::minutes(15);
+/// At most this many events are read from that window (only lines with [`STARTUP_PHRASE`]).
+const STARTUP_EVENTS: usize = 1_000;
+
+/// The topics the cluster's services without route variables (transformers) read and write,
+/// from the lines the framework logs when they start. `None` when only the cache was asked and
+/// the cluster wasn't scanned yet. Services that logged no such lines are left out.
+#[tauri::command]
+#[specta::specta]
+pub async fn startup_topology(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    cluster_arn: String,
+    scan: TopicScan,
+) -> ApiResult<Option<Vec<ServiceTopology>>> {
+    find_startup_topology(&state, &ctx, &cluster_arn, scan).await
+}
+
+pub(crate) async fn find_startup_topology(
+    state: &AppState,
+    ctx: &AwsCtx,
+    cluster_arn: &str,
+    scan: TopicScan,
+) -> ApiResult<Option<Vec<ServiceTopology>>> {
+    let found = match scan {
+        TopicScan::Cached => state.topology.clusters.get(ctx, cluster_arn),
+        TopicScan::Fresh => {
+            let found = scan_startup_topology(state, ctx, cluster_arn).await?;
+            Some(state.topology.clusters.insert(ctx, cluster_arn, found))
+        }
+    };
+    Ok(found.map(|found| found.to_vec()))
+}
+
+/// Reads the startup lines of every service of the cluster that has no routes in its env vars.
+async fn scan_startup_topology(
+    state: &AppState,
+    ctx: &AwsCtx,
+    cluster_arn: &str,
+) -> ApiResult<Vec<ServiceTopology>> {
+    use futures::StreamExt;
+
+    let routes = match state.routes.get(ctx, cluster_arn) {
+        Some(routes) => routes,
+        None => {
+            let routes = scan_cluster(state, ctx, cluster_arn).await?;
+            state.routes.insert(ctx, cluster_arn, routes)
+        }
+    };
+    let services = state.ecs.list_services(ctx, cluster_arn).await?;
+    let mut found: Vec<ServiceTopology> = futures::stream::iter(
+        services
+            .into_iter()
+            .filter(|s| !routes.iter().any(|r| r.service == s.name)),
+    )
+    .map(|service| async move {
+        let found = service_topology(state, ctx, cluster_arn, &service).await;
+        (service.name, found)
+    })
+    .buffer_unordered(TOPIC_SCAN_PARALLEL)
+    .filter_map(|(service, found)| async move {
+        // A service whose logs can't be read is skipped: the others still count.
+        found
+            .inspect_err(|err| tracing::warn!(%service, err = %err.message, "skipping service in topology scan"))
+            .ok()
+            .flatten()
+    })
+    .collect()
+    .await;
+    found.sort_by(|a, b| a.service.cmp(&b.service));
+    Ok(found)
+}
+
+/// The startup lines of the most recently started task of the service's current revision, read
+/// once per revision. `None` if they say nothing (not a framework app, or the start of the
+/// stream is past the log group's retention).
+async fn service_topology(
+    state: &AppState,
+    ctx: &AwsCtx,
+    cluster_arn: &str,
+    service: &ServiceSummary,
+) -> ApiResult<Option<ServiceTopology>> {
+    if let Some(known) = state.topology.revision(&service.task_definition_arn) {
+        // Two services can run the same revision.
+        return Ok(Some(ServiceTopology {
+            service: service.name.clone(),
+            ..known
+        }));
+    }
+    let service_ref = ServiceRef {
+        cluster_arn: cluster_arn.to_owned(),
+        service_name: service.name.clone(),
+    };
+    let tasks = state.ecs.list_tasks(ctx, &service_ref, true).await?;
+    let Some((task, started)) = tasks
+        .iter()
+        .filter(|t| t.task_definition == service.task_definition)
+        .filter_map(|t| Some((t, t.started_at?)))
+        .max_by_key(|(_, started)| *started)
+    else {
+        return Ok(None);
+    };
+    let definition = state
+        .ecs
+        .task_definition(ctx, &service.task_definition_arn)
+        .await?;
+    let location = resolve_log_location(&definition)?;
+    let selection = StreamSelection {
+        filter_pattern: Some(STARTUP_PHRASE.to_owned()),
+        ..location.selection(std::slice::from_ref(task), None, false)
+    };
+    let range = TimeRange {
+        start: started,
+        end: Timestamp((started.0 + STARTUP_WINDOW).min(OffsetDateTime::now_utc())),
+    };
+    let backfill = state
+        .logs
+        .backfill(ctx, &selection, range, STARTUP_EVENTS)
+        .await?;
+    let events = process(backfill.events);
+    let topology = read_startup(events.iter().map(|e| e.line.message.as_str()));
+    if topology.is_empty() {
+        return Ok(None);
+    }
+    let found = ServiceTopology {
+        service: service.name.clone(),
+        task_definition: service.task_definition.clone(),
+        task_id: task.id.clone(),
+        started_at: started,
+        reads: topology.reads,
+        writes: topology.writes,
+    };
+    state
+        .topology
+        .insert_revision(&service.task_definition_arn, found.clone());
+    Ok(Some(found))
 }
 
 /// The links of the cluster's services on `topics` (all topics with `None`), except `exclude`'s.
@@ -352,6 +509,62 @@ mod tests {
             self.record("list_tasks");
             self.inner.list_tasks(ctx, service, include_stopped).await
         }
+    }
+
+    #[tokio::test]
+    async fn transformers_are_found_from_their_startup_lines() {
+        let state = AppState::demo();
+        assert_eq!(
+            find_startup_topology(&state, &ctx(), EDGE, TopicScan::Cached)
+                .await
+                .unwrap(),
+            None,
+            "nothing scanned yet"
+        );
+        let found = find_startup_topology(&state, &ctx(), EDGE, TopicScan::Fresh)
+            .await
+            .unwrap()
+            .unwrap();
+        // Only the service without route variables; route services are left alone.
+        let [enricher] = found.as_slice() else {
+            panic!("expected only event-enricher, got {found:?}");
+        };
+        assert_eq!(enricher.service, "event-enricher");
+        assert_eq!(enricher.writes, ["demo.events.enriched"]);
+        let reads: Vec<_> = enricher
+            .reads
+            .iter()
+            .map(|r| (r.topic.as_str(), r.group.as_deref(), r.concurrency))
+            .collect();
+        assert_eq!(reads, [("demo.events", Some("event-enricher"), Some(3))]);
+        assert!(enricher.task_definition.starts_with("event-enricher:"));
+        // The same result from the cache.
+        assert_eq!(
+            find_startup_topology(&state, &ctx(), EDGE, TopicScan::Cached)
+                .await
+                .unwrap(),
+            Some(found)
+        );
+    }
+
+    #[tokio::test]
+    async fn a_revisions_startup_lines_are_read_once() {
+        let mut state = AppState::demo();
+        let ecs = Arc::new(Counting {
+            inner: contrail_fake::FakeEcs::new(Arc::new(contrail_fake::FakeAuth::new())),
+            calls: Mutex::default(),
+        });
+        state.ecs = ecs.clone();
+        let first = find_startup_topology(&state, &ctx(), EDGE, TopicScan::Fresh)
+            .await
+            .unwrap();
+        assert!(ecs.take().contains(&"list_tasks"));
+        // Scanning again lists the services, but the revision didn't change: no task is read.
+        let again = find_startup_topology(&state, &ctx(), EDGE, TopicScan::Fresh)
+            .await
+            .unwrap();
+        assert_eq!(ecs.take(), ["list_services"]);
+        assert_eq!(first, again);
     }
 
     #[tokio::test]

@@ -2226,5 +2226,27 @@
         ]
       }
     ]
+  },
+  "topology": {
+    "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-batch": [],
+    "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core": [],
+    "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-edge": [
+      {
+        "service": "event-enricher",
+        "taskDefinition": "event-enricher:7",
+        "taskId": "25a2b491b67a7993f15143b5b775c0ea",
+        "startedAt": "2026-01-01T11:30:00Z",
+        "reads": [
+          {
+            "topic": "demo.events",
+            "group": "event-enricher",
+            "concurrency": 3
+          }
+        ],
+        "writes": [
+          "demo.events.enriched"
+        ]
+      }
+    ]
   }
 }

@@ -440,8 +440,8 @@ Patrick's team tried Contrail; these three come before M11, in this order.
   group) and which it produces to. Contrail reads these lines from the start of the newest task's log
   stream (`GetLogEvents`, `startFromHead`), caches the result per task definition revision, and draws
   transformers on the route map without setup.
-- Each edge knows where it came from (env vars, startup logs, entered by hand); hand-entered topics
-  stay an override.
+- Each transformer shows where its topics came from (startup logs of which task, or entered by hand);
+  hand-entered topics stay an override.
 - **Done when:** the line parser has unit tests (raw and integration consumers, producers, missing
   container line); the fake logs the same lines; the demo cluster's map shows its transformers.
 

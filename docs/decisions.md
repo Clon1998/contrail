@@ -368,3 +368,32 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
 - **Branch:** built on top of `feat/m9-trace-on-route-graph`, because the demo's transformer comes from M9's
   demo data. If M9 isn't merged, M10 is rebased onto `main` keeping only M9's demo and data commits
   (nothing of either branch is pushed before that).
+
+## 2026-10-26 — Team feedback: log view polish (M10.1)
+
+- **Logger column:** shortened like Logback's class name abbreviation (packages to their first letter from the
+  left until it fits, then cut from the front), full name in the tooltip.
+- **Wrap lines:** a setting (`wrapLines`), toggled from the toolbar or with W. Only a row's first line wraps;
+  multi-line messages (stack traces) stay in the expanded row.
+- **Keeping the list's place:** hiding the list unmounts it. It saves the event at its top (sequence number and
+  pixel offset) in the tab's logs store and goes back there when shown again, unless it was following the
+  newest event. Jumps and "older rows added" that happened before the list mounted are not replayed.
+- **Overview cache:** service detail and tasks are cached per service for the session. Data younger than 30 s
+  is shown without a call; older data is shown and refreshed quietly. The 30 s timer refreshes quietly too.
+- **Loading states:** skeletons (shimmer) instead of spinners, starting with the Overview.
+
+## 2026-10-26 — Transformers from their startup lines (M10.2)
+
+- **No framework change needed:** the framework already logs, when a service starts, each Kafka consumer (raw
+  and integration topics), its listener container (topic, concurrency, consumer group) and each producer.
+  Contrail reads those lines instead of the topology event sketched for the M10 follow-up.
+- **Which services:** only those without route variables (route services have theirs in env vars). For each,
+  the most recently started task of the current revision, read with `FilterLogEvents` over its first 15
+  minutes with the filter phrase `Creating` (no new permission). Nothing found (not a framework app, stream
+  start past retention) → the service stays undrawn, as before.
+- **Caching:** per task definition ARN for the session (a revision never changes), plus the last result per
+  cluster like the route scan. "Scan again" lists the services again but reads only new revisions.
+- **Precedence:** topics entered by hand win over the startup lines; the details show where the topics of a
+  transformer come from (startup logs of which task, or by hand). Origin is per transformer, not per edge.
+- **Demo:** the fake can't know when its tasks started (events are a pure function of stream and time), so
+  `event-enricher` repeats its startup lines every 15 minutes; any 15-minute window holds them once.

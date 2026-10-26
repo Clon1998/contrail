@@ -25,6 +25,7 @@ import type {
   ServiceKey,
   ServiceRef,
   ServiceSummary,
+  ServiceTopology,
   SessionStatus,
   Task,
   TimeWindow,
@@ -60,6 +61,8 @@ interface RecordedEcs {
   services: Record<string, ServiceSummary[]>;
   details: Record<string, ServiceDetail>;
   tasks: Record<string, Task[]>;
+  /** What the transformers' startup lines say, by cluster ARN. */
+  topology: Record<string, ServiceTopology[]>;
 }
 
 /** A whole string that is an ISO timestamp (not a log line that merely starts with one). */
@@ -518,6 +521,15 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         }
         links.sort((a, b) => `${a.topic}|${a.service}`.localeCompare(`${b.topic}|${b.service}`));
         return links;
+      }
+      case "startup_topology": {
+        // Like the routes: kept for the session once scanned.
+        const ctx = args?.ctx as AwsCtx;
+        const clusterArn = args?.clusterArn as string;
+        const key = `topology|${ctx.profile}|${ctx.region ?? ""}|${clusterArn}`;
+        if (args?.scan === "fresh") scannedClusters.add(key);
+        else if (!scannedClusters.has(key)) return null;
+        return ecs(ctx).topology[clusterArn] ?? [];
       }
       case "check_for_update": {
         if (!options.update) return null;

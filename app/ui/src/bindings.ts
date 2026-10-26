@@ -80,6 +80,12 @@ export const commands = {
 	 */
 	clusterRoutes: (ctx: AwsCtx, clusterArn: string, scan: TopicScan) => typedError<TopicLink[] | null, ApiError>(__TAURI_INVOKE("cluster_routes", { ctx, clusterArn, scan })),
 	/**
+	 *  The topics the cluster's services without route variables (transformers) read and write,
+	 *  from the lines the framework logs when they start. `None` when only the cache was asked and
+	 *  the cluster wasn't scanned yet. Services that logged no such lines are left out.
+	 */
+	startupTopology: (ctx: AwsCtx, clusterArn: string, scan: TopicScan) => typedError<ServiceTopology[] | null, ApiError>(__TAURI_INVOKE("startup_topology", { ctx, clusterArn, scan })),
+	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 	 */
@@ -202,6 +208,15 @@ export type ClusterSummary = {
 export type ColorMode = "system" | "light" | 
 /**  Contrail is dark-first. */
 "dark";
+
+/**  A topic a service consumes. */
+export type ConsumedTopic = {
+	topic: string,
+	/**  The consumer group, from the line about its listener container (if there was one). */
+	group: string | null,
+	/**  How many consumers the container runs in parallel. */
+	concurrency: number | null,
+};
 
 export type ContainerDefinitionInfo = {
 	name: string,
@@ -744,6 +759,18 @@ export type ServiceSummary = {
 	taskDefinition: string,
 	/**  Its full ARN, for [`EcsSource::task_definition`]. */
 	taskDefinitionArn: string,
+};
+
+/**  What a service of the cluster reads and writes according to its startup lines. */
+export type ServiceTopology = {
+	service: string,
+	/**  The revision (`family:revision`) whose task was read. */
+	taskDefinition: string,
+	/**  The task whose log stream the lines came from, and when it started. */
+	taskId: string,
+	startedAt: Timestamp,
+	reads: ConsumedTopic[],
+	writes: string[],
 };
 
 /**  What the trace shows of one service. */

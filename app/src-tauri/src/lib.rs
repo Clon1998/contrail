@@ -51,6 +51,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         ecs::reveal_secret,
         ecs::services_on_topics,
         ecs::cluster_routes,
+        ecs::startup_topology,
         trace::trace_id,
         update::check_for_update,
         update::install_update,

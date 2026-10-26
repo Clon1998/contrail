@@ -8,11 +8,22 @@ import {
   SquareArrowOutUpRightIcon,
   XIcon,
 } from "lucide-react";
-import { commands, type ApiError, type TopicLink } from "@/bindings";
+import {
+  commands,
+  type ApiError,
+  type ServiceTopology,
+  type TopicLink,
+  type Transformer,
+} from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { buildClusterGraph, filterClusterGraph, type ClusterGraph } from "@/lib/clusterGraph";
-import { nameFromArn } from "@/lib/ecs";
+import {
+  buildClusterGraph,
+  filterClusterGraph,
+  knownTransformers,
+  type ClusterGraph,
+} from "@/lib/clusterGraph";
+import { formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { columnTitles } from "@/lib/routes";
 import { useEcs } from "@/stores/ecs";
 import { usePrefs } from "@/stores/prefs";
@@ -22,9 +33,16 @@ import { GraphView } from "./RouteGraphView";
 type Scan =
   { kind: "loading" } | { kind: "done"; links: TopicLink[] } | { kind: "error"; error: ApiError };
 
+/** The transformers found in startup lines (read after the routes, it takes longer). */
+type Topology =
+  | { kind: "loading" }
+  | { kind: "done"; found: ServiceTopology[] }
+  | { kind: "error"; error: ApiError };
+
 /**
  * A cluster's route map, in a tab of its own: every route service (from the cluster's topic scan,
- * kept for the session) and every transformer entered by hand, linked by topic, each with the
+ * kept for the session) and every transformer (found in its startup lines or entered by hand),
+ * linked by topic, each with the
  * external systems at its other end. The search keeps what lies on a path through the matching
  * services, topics or systems; a click on a node highlights its paths and shows what it is.
  */
@@ -35,6 +53,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
   const loadServices = useEcs((s) => s.loadServices);
   const transformers = usePrefs((s) => s.prefs.transformers);
   const [scan, setScan] = useState<Scan>({ kind: "loading" });
+  const [topology, setTopology] = useState<Topology>({ kind: "loading" });
   const [query, setQuery] = useState("");
   const [focus, setFocus] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -62,17 +81,52 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
     },
     [ctx, clusterArn],
   );
+  /** The transformers' startup lines, the same way: this session's scan or a new one. */
+  const loadTopology = useCallback(
+    async (fresh: boolean): Promise<Topology> => {
+      if (!ctx) return { kind: "loading" };
+      let result = await commands.startupTopology(ctx, clusterArn, fresh ? "fresh" : "cached");
+      if (result.status === "ok" && result.data === null) {
+        result = await commands.startupTopology(ctx, clusterArn, "fresh");
+      }
+      return result.status === "ok"
+        ? { kind: "done", found: result.data ?? [] }
+        : { kind: "error", error: result.error };
+    },
+    [ctx, clusterArn],
+  );
+  /**
+   * Routes first (the map shows them right away), then the transformers' startup lines. The
+   * results are only shown while `isCurrent()` holds (the tab may have closed meanwhile).
+   */
+  const scanAll = useCallback(
+    (fresh: boolean, isCurrent: () => boolean) =>
+      load(fresh).then(async (routes) => {
+        if (!isCurrent()) return;
+        setScan(routes);
+        if (routes.kind !== "done") return;
+        const found = await loadTopology(fresh);
+        if (isCurrent()) setTopology(found);
+      }),
+    [load, loadTopology],
+  );
   useEffect(() => {
     let current = true;
-    void load(false).then((result) => current && setScan(result));
+    void scanAll(false, () => current);
     return () => {
       current = false;
     };
-  }, [load]);
+  }, [scanAll]);
 
+  const found = useMemo(() => (topology.kind === "done" ? topology.found : []), [topology]);
   const whole = useMemo(
-    () => buildClusterGraph(scan.kind === "done" ? scan.links : [], transformers, services),
-    [scan, transformers, services],
+    () =>
+      buildClusterGraph(
+        scan.kind === "done" ? scan.links : [],
+        knownTransformers(found, transformers),
+        services,
+      ),
+    [scan, found, transformers, services],
   );
   const graph = useMemo(() => filterClusterGraph(whole, query), [whole, query]);
   const topics = useMemo(
@@ -94,6 +148,16 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
           <span className="text-sm text-muted-foreground">
             {routeServices} route {routeServices === 1 ? "service" : "services"} · {topics.length}{" "}
             {topics.length === 1 ? "topic" : "topics"}
+          </span>
+        )}
+        {scan.kind === "done" && topology.kind === "loading" && (
+          <span className="animate-pulse text-xs text-muted-foreground">
+            Reading the transformers' startup logs…
+          </span>
+        )}
+        {topology.kind === "error" && (
+          <span className="text-xs text-destructive" title={topology.error.message}>
+            Startup logs couldn't be read
           </span>
         )}
         <div className="ml-auto flex items-center gap-1.5">
@@ -120,7 +184,8 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
             tooltip="Look through the cluster's services again (kept for the session)"
             onClick={() => {
               setScan({ kind: "loading" });
-              void load(true).then(setScan);
+              setTopology({ kind: "loading" });
+              void scanAll(true, () => true);
             }}
           >
             <RefreshCwIcon className={scan.kind === "loading" ? "animate-spin" : undefined} />
@@ -140,6 +205,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
           <TransformerEditor
             initial={editing}
             candidates={services}
+            found={found}
             topics={topics}
             onClose={() => setEditing(null)}
           />
@@ -165,6 +231,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
         {focused && (
           <NodeDetails
             graph={whole}
+            found={found}
             id={focused.id}
             clusterArn={clusterArn}
             onEdit={setEditing}
@@ -210,12 +277,14 @@ function LeftOut({ names, onPick }: { names: string[]; onPick: (name: string) =>
 /** What the clicked node is: a service to open (or edit, for a transformer), a topic's sides. */
 function NodeDetails({
   graph,
+  found,
   id,
   clusterArn,
   onEdit,
   onClose,
 }: {
   graph: ClusterGraph;
+  found: ServiceTopology[];
   id: string;
   clusterArn: string;
   onEdit: (service: string) => void;
@@ -228,6 +297,7 @@ function NodeDetails({
     ids.map((i) => graph.nodes.find((n) => n.id === i)?.label ?? i).join(", ") || "—";
   const writers = graph.edges.filter((e) => e.to === id).map((e) => e.from);
   const readers = graph.edges.filter((e) => e.from === id).map((e) => e.to);
+  const startup = node.origin === "logs" ? found.find((t) => t.service === node.label) : undefined;
 
   return (
     <section
@@ -244,6 +314,10 @@ function NodeDetails({
       {node.kind === "service" && (
         <>
           <span className="text-muted-foreground">{node.detail}</span>
+          {startup && <StartupSource topology={startup} />}
+          {node.origin === "manual" && (
+            <span className="text-muted-foreground">· topics entered by hand</span>
+          )}
           <Button
             variant="outline"
             size="xs"
@@ -252,8 +326,17 @@ function NodeDetails({
             <SquareArrowOutUpRightIcon /> Open {node.label}
           </Button>
           {node.transformer && (
-            <Button variant="outline" size="xs" onClick={() => onEdit(node.label)}>
-              <PencilIcon /> Edit topics
+            <Button
+              variant="outline"
+              size="xs"
+              tooltip={
+                node.origin === "logs"
+                  ? "Enter the topics by hand instead of reading them from the startup logs"
+                  : undefined
+              }
+              onClick={() => onEdit(node.label)}
+            >
+              <PencilIcon /> {node.origin === "logs" ? "Override topics" : "Edit topics"}
             </Button>
           )}
         </>
@@ -271,6 +354,20 @@ function NodeDetails({
   );
 }
 
+/** Where a transformer's topics were read: which task's startup, and the consumer groups. */
+function StartupSource({ topology }: { topology: ServiceTopology }) {
+  const groups = topology.reads
+    .filter((r) => r.group)
+    .map((r) => `${r.topic}: ${r.group}${r.concurrency ? ` ×${r.concurrency}` : ""}`);
+  return (
+    <span className="text-muted-foreground">
+      · from the startup logs of task {shortTaskId(topology.taskId)} ({topology.taskDefinition},
+      started {formatDateTime(topology.startedAt)})
+      {groups.length > 0 && <> · consumer groups {groups.join(", ")}</>}
+    </span>
+  );
+}
+
 const splitTopics = (text: string) =>
   text
     .split(/[,\s]+/)
@@ -284,11 +381,14 @@ const splitTopics = (text: string) =>
 function TransformerEditor({
   initial,
   candidates,
+  found,
   topics,
   onClose,
 }: {
   initial: string;
   candidates: string[];
+  /** Topics found in startup lines: the starting point when nothing was entered yet. */
+  found: ServiceTopology[];
   topics: string[];
   onClose: () => void;
 }) {
@@ -296,14 +396,22 @@ function TransformerEditor({
   const setTransformer = usePrefs((s) => s.setTransformer);
   const [service, setService] = useState(initial);
   const existing = saved[service];
-  const [reads, setReads] = useState(existing?.reads.join(", ") ?? "");
-  const [writes, setWrites] = useState(existing?.writes.join(", ") ?? "");
+  /** What was entered for `name`, or else what its startup lines say. */
+  const startingPoint = (name: string): Transformer | undefined => {
+    const fromLogs = found.find((t) => t.service === name);
+    return (
+      saved[name] ??
+      (fromLogs && { reads: fromLogs.reads.map((r) => r.topic), writes: fromLogs.writes })
+    );
+  };
+  const [reads, setReads] = useState(startingPoint(initial)?.reads.join(", ") ?? "");
+  const [writes, setWrites] = useState(startingPoint(initial)?.writes.join(", ") ?? "");
 
-  /** Picking another service shows what was saved for it. */
+  /** Picking another service shows what was saved for it (or found in its startup lines). */
   const pick = (name: string) => {
     setService(name);
-    setReads(saved[name]?.reads.join(", ") ?? "");
-    setWrites(saved[name]?.writes.join(", ") ?? "");
+    setReads(startingPoint(name)?.reads.join(", ") ?? "");
+    setWrites(startingPoint(name)?.writes.join(", ") ?? "");
   };
   const save = async () => {
     await setTransformer(service, { reads: splitTopics(reads), writes: splitTopics(writes) });
@@ -321,8 +429,8 @@ function TransformerEditor({
     >
       <p className="col-span-2 text-muted-foreground">
         A transformer reads and writes topics from its code, so its routes aren't in its task
-        definition. Enter its topics (comma-separated); they apply to the service of this name in
-        every cluster.
+        definition. Contrail reads them from its startup logs when it can; topics entered here
+        (comma-separated) take their place for the service of this name in every cluster.
       </p>
       <label htmlFor="transformer-service">Service</label>
       <select

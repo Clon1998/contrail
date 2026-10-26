@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Endpoint, TopicLink } from "@/bindings";
-import { buildClusterGraph, filterClusterGraph } from "./clusterGraph";
+import { buildClusterGraph, filterClusterGraph, knownTransformers } from "./clusterGraph";
 
 const endpoint = (kind: string, system: string, enabled = true): Endpoint => ({
   kind,
@@ -55,7 +55,9 @@ describe("buildClusterGraph", () => {
     expect(graph.nodes.find((n) => n.id === "service:enricher")).toMatchObject({
       transformer: true,
       detail: "transformer",
+      origin: "manual",
     });
+    expect(graph.nodes.find((n) => n.id === "service:feeder")?.origin).toBeNull();
     expect(graph.nodes.some((n) => n.label === "elsewhere")).toBe(false);
     // One archive, used by two services.
     expect(graph.nodes.filter((n) => n.label === "Archive")).toHaveLength(1);
@@ -64,6 +66,31 @@ describe("buildClusterGraph", () => {
     expect(graph.nodes.find((n) => n.id === "service:gateway")?.disabled).toBe(true);
     expect(graph.nodes.find((n) => n.id === "topic:orders")?.disabled).toBe(true);
     expect(graph.leftOut).toEqual(["api"]);
+  });
+
+  it("draws transformers found in startup lines; entered by hand wins", () => {
+    const found = (service: string, reads: string[], writes: string[]) => ({
+      service,
+      taskDefinition: `${service}:3`,
+      taskId: "abc",
+      startedAt: "2026-10-26T08:00:00Z",
+      reads: reads.map((topic) => ({ topic, group: service, concurrency: 1 })),
+      writes,
+    });
+    const known = knownTransformers(
+      [found("enricher", ["raw"], ["enriched"]), found("api", ["orders"], ["raw"])],
+      { api: { reads: ["orders"], writes: ["raw", "audit"] } },
+    );
+    expect(known).toEqual({
+      enricher: { reads: ["raw"], writes: ["enriched"], origin: "logs" },
+      api: { reads: ["orders"], writes: ["raw", "audit"], origin: "manual" },
+    });
+    const graph = buildClusterGraph(links, known, services);
+    const node = (id: string) => graph.nodes.find((n) => n.id === id);
+    expect(node("service:enricher")).toMatchObject({ transformer: true, origin: "logs" });
+    expect(node("service:api")?.origin).toBe("manual");
+    expect(graph.edges.some((e) => e.from === "service:api" && e.to === "topic:audit")).toBe(true);
+    expect(graph.leftOut).toEqual([]);
   });
 
   it("finds a service with everything up- and downstream of it", () => {
