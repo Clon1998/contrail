@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useMemo, useState } from "react";
+import { createContext, use, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   Handle,
@@ -244,6 +244,34 @@ function Canvas({
       })),
     );
   }, [layout, setNodes]);
+  // Selecting a node opens the details next to the map, which gets narrower: if that pushed the
+  // node out of view (or it was partly outside already), pan it to the centre, keeping the zoom.
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!selected) return;
+    // After the panel has opened and the map has its new width.
+    const timer = setTimeout(() => {
+      const node = flow.getInternalNode(selected);
+      const element = box.current;
+      if (!node || !element) return;
+      const { x, y, zoom } = flow.getViewport();
+      const at = node.internals.positionAbsolute;
+      const width = node.measured.width ?? 0;
+      const height = node.measured.height ?? 0;
+      const left = at.x * zoom + x;
+      const top = at.y * zoom + y;
+      const visible =
+        left >= 0 &&
+        top >= 0 &&
+        left + width * zoom <= element.clientWidth &&
+        top + height * zoom <= element.clientHeight;
+      if (!visible) {
+        void flow.setCenter(at.x + width / 2, at.y + height / 2, { zoom, duration: 300 });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [selected, flow]);
+
   // Fit once the nodes of a new layout are measured (React Flow needs their sizes for it).
   const measured = useNodesInitialized();
   useEffect(() => {
@@ -289,6 +317,7 @@ function Canvas({
   return (
     <Actions value={actions}>
       <div
+        ref={box}
         role="group"
         aria-label="Cluster route map"
         className="relative h-full [--map-upstream:oklch(0.7_0.17_300)]"

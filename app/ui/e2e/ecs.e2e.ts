@@ -300,6 +300,19 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await expect(routes).not.toContainText("demo-not-a-secret");
   await expect(map.getByText("feeds into the selection")).toBeVisible();
 
+  // The details open beside the map; a node at its right edge moves back into view.
+  await page.keyboard.press("Escape");
+  await node("system Product Catalog").click();
+  await expect(details).toBeVisible();
+  await expect
+    .poll(async () => {
+      const area = await graph.boundingBox();
+      const box = await node("system Product Catalog").boundingBox();
+      return area && box ? box.x + box.width <= area.x + area.width : false;
+    })
+    .toBe(true);
+  await map.getByRole("button", { name: "Fit the map" }).click();
+
   // Esc or the toolbar button clears the selection.
   await page.keyboard.press("Escape");
   await expect(details).toHaveCount(0);
