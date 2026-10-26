@@ -138,6 +138,12 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
 
+    /// Writing a script while another test starts one fails now and then on Linux with "Text
+    /// file busy" (ETXTBSY): the child forked for the other test briefly holds our still-open
+    /// write handle. Tests that write or start scripts take this lock, so they never overlap.
+    /// A tokio mutex, so async tests can hold it across `.await` (sync ones use `blocking_lock`).
+    static SCRIPTS: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
     #[cfg(unix)]
     fn write_script(dir: &Path, name: &str, body: &str) -> PathBuf {
         use std::os::unix::fs::PermissionsExt;
@@ -165,6 +171,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn finds_executable_on_path_before_fallbacks() {
+        let _scripts = SCRIPTS.blocking_lock();
         let path_dir = tempfile::tempdir().unwrap();
         let fallback_dir = tempfile::tempdir().unwrap();
         let on_path = write_script(path_dir.path(), "aws", "true");
@@ -178,6 +185,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn falls_back_to_known_locations_and_skips_non_executables() {
+        let _scripts = SCRIPTS.blocking_lock();
         let path_dir = tempfile::tempdir().unwrap();
         let fallback_dir = tempfile::tempdir().unwrap();
         // A non-executable file on PATH must be ignored.
@@ -201,6 +209,7 @@ mod tests {
     #[cfg(unix)]
     #[tokio::test]
     async fn streams_output_and_succeeds() {
+        let _scripts = SCRIPTS.lock().await;
         let dir = tempfile::tempdir().unwrap();
         let aws = write_script(
             dir.path(),
@@ -229,6 +238,7 @@ exit 0"#,
     #[cfg(unix)]
     #[tokio::test]
     async fn non_zero_exit_is_login_failed() {
+        let _scripts = SCRIPTS.lock().await;
         let dir = tempfile::tempdir().unwrap();
         let aws = write_script(
             dir.path(),
@@ -250,6 +260,7 @@ exit 0"#,
 
     #[tokio::test]
     async fn missing_cli_is_cli_missing() {
+        let _scripts = SCRIPTS.lock().await;
         let result = sso_login(Path::new("/definitely/not/here/aws"), "dev", &|_| {}).await;
         assert_eq!(result, Err(AuthError::CliMissing));
     }
