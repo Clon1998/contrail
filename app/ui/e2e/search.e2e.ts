@@ -457,3 +457,41 @@ test("↑ and ↓ recall earlier searches with their flags, this service's first
   await other.press("ArrowUp");
   await expect(other).toHaveValue("level:ERROR");
 });
+
+test("saved searches: for one service or all, applied and deleted", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  const menu = page.getByRole("button", { name: "Saved searches" });
+  const form = page.getByRole("form", { name: "Save the search" });
+
+  await search.fill("level:ERROR");
+  await search.press("Enter");
+  await menu.click();
+  await form.getByLabel("Name").fill("Errors");
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("region", { name: "For orders-api" })).toContainText("Errors");
+  await page.keyboard.press("Escape");
+
+  await search.fill("timeout");
+  await search.press("Enter");
+  await menu.click();
+  await form.getByLabel("Name").fill("Timeouts");
+  await form.getByLabel(/For all services/).check();
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("region", { name: "For all services" })).toContainText("Timeouts");
+
+  // Applying one puts it in the search box.
+  await page.getByRole("button", { name: /^Errors/ }).click();
+  await expect(search).toHaveValue("level:ERROR");
+
+  // Another service sees only the ones for all services.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "payments-worker" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  await menu.click();
+  await expect(page.getByRole("region", { name: "For all services" })).toContainText("Timeouts");
+  await expect(page.getByRole("region", { name: "For payments-worker" })).toHaveCount(0);
+  await expect(page.getByText("Errors")).toHaveCount(0);
+  await page.getByRole("button", { name: "Delete Timeouts" }).click();
+  await expect(page.getByText("No saved searches yet.")).toBeVisible();
+});

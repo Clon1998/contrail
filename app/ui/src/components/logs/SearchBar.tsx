@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  BookmarkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CircleHelpIcon,
   EyeOffIcon,
   SearchIcon,
+  Trash2Icon,
   XIcon,
 } from "lucide-react";
 import { cn } from "cn";
-import type { Level } from "@/bindings";
+import type { Level, SavedSearch } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -23,7 +25,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { recallList } from "@/lib/searchHistory";
-import { noiseKey, usePrefs } from "@/stores/prefs";
+import { isSameService, noiseKey, usePrefs } from "@/stores/prefs";
+import { Input } from "@/components/ui/input";
 import { hiddenForAtLeast, hiddenForOnly, LEVEL_TONE, LEVELS, toggleLevel } from "./levels";
 import { Hint } from "@/components/ui/tooltip";
 
@@ -67,6 +70,136 @@ function SyntaxHelp() {
           earlier searches. With
           <span className="font-mono"> .*</span> on, the whole search is one regular expression.
         </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/**
+ * Saved searches: save the current one under a name (for this service or all of them), apply or
+ * delete saved ones, and clear the history of the ↑/↓ keys.
+ */
+function SavedSearchesMenu({ onApply }: { onApply: (saved: SavedSearch) => void }) {
+  const service = useLogs((s) => s.service);
+  const profile = useLogs((s) => s.profile);
+  const search = useLogs((s) => s.search);
+  const saved = usePrefs((s) => s.prefs.savedSearches);
+  const historyCount = usePrefs((s) => s.prefs.searchHistory.global.length);
+  const saveSearch = usePrefs((s) => s.saveSearch);
+  const deleteSavedSearch = usePrefs((s) => s.deleteSavedSearch);
+  const clearSearchHistory = usePrefs((s) => s.clearSearchHistory);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [forAll, setForAll] = useState(false);
+  if (!service || !profile) return null;
+
+  const mine = saved.filter((s) => s.service && isSameService(s.service, profile, service));
+  const global = saved.filter((s) => s.service === null);
+  const canSave = name.trim() !== "" && search.query.trim() !== "";
+  const save = async () => {
+    if (!canSave) return;
+    await saveSearch(profile, forAll ? null : service, name, {
+      query: search.query,
+      regex: search.regex,
+      raw: search.raw,
+    });
+    setName("");
+  };
+  const list = (title: string, items: SavedSearch[]) =>
+    items.length > 0 && (
+      <section aria-label={title} className="space-y-0.5">
+        <p className="font-medium text-muted-foreground">{title}</p>
+        <ul className="space-y-0.5">
+          {items.map((item) => (
+            <li
+              key={`${item.name}|${item.service ? "service" : "all"}`}
+              className="flex items-center gap-1"
+            >
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-baseline gap-2 rounded px-1.5 py-1 text-left hover:bg-accent"
+                onClick={() => {
+                  onApply(item);
+                  setOpen(false);
+                }}
+              >
+                <span className="shrink-0 font-medium">{item.name}</span>
+                <span
+                  className="truncate font-mono text-muted-foreground"
+                  title={item.search.query}
+                >
+                  {item.search.regex && "/"}
+                  {item.search.query}
+                  {item.search.regex && "/"}
+                </span>
+              </button>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Delete ${item.name}`}
+                onClick={() => void deleteSavedSearch(item.name, item.service)}
+              >
+                <Trash2Icon />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon-xs" aria-label="Saved searches" tooltip="Saved searches">
+          <BookmarkIcon className={cn(mine.length + global.length > 0 && "fill-current")} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[26rem] space-y-3 text-xs">
+        <form
+          aria-label="Save the search"
+          className="space-y-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+        >
+          <p className="font-medium">Save the current search</p>
+          <div className="flex gap-1.5">
+            <Input
+              aria-label="Name"
+              placeholder={
+                search.query.trim() ? "Name, e.g. Failed documents" : "Search for something first"
+              }
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={!search.query.trim()}
+              className="h-7 text-xs"
+            />
+            <Button type="submit" size="xs" disabled={!canSave}>
+              Save
+            </Button>
+          </div>
+          <label className="flex items-center gap-2 text-muted-foreground">
+            <Checkbox checked={forAll} onCheckedChange={(c) => setForAll(c === true)} />
+            For all services (not just {service.serviceName})
+          </label>
+        </form>
+        {list(`For ${service.serviceName}`, mine)}
+        {list("For all services", global)}
+        {mine.length + global.length === 0 && (
+          <p className="text-muted-foreground">No saved searches yet.</p>
+        )}
+        <div className="flex items-center justify-between border-t border-border pt-2 text-muted-foreground">
+          <span>↑ / ↓ in the search box: earlier searches</span>
+          <Button
+            variant="ghost"
+            size="xs"
+            disabled={historyCount === 0}
+            onClick={() => void clearSearchHistory()}
+          >
+            Clear history
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -344,6 +477,17 @@ export function SearchBar() {
           </button>
         </Hint>
         <SyntaxHelp />
+        <SavedSearchesMenu
+          onApply={(item) => {
+            setText(item.search.query);
+            setRecall(null);
+            void setSearch({
+              query: item.search.query,
+              regex: item.search.regex,
+              raw: item.search.raw,
+            });
+          }}
+        />
         <div
           role="radiogroup"
           aria-label="Search mode"
