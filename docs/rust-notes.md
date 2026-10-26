@@ -430,3 +430,11 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   (`is_writer`). A `match` on it must handle both cases (the compiler checks), and the serialized form is
   readable (`"writes"` / `"reads"` in TypeScript). Like a Java enum without fields.
 - **Where:** `HopDirection` and `direction()` in `crates/contrail-core/src/logs/trace.rs`.
+
+## A generic struct, and `Default` written by hand
+
+- **What:** the session cache of a cluster's scans is `ClusterIndex<T>`, generic over what a scan found, like a
+  Java `ClusterIndex<T>`. `type RouteIndex = ClusterIndex<ClusterRoutes>` gives one use a name (a type alias,
+  no new type). `#[derive(Default)]` on a generic struct adds the bound `T: Default` to the generated impl, even
+  though an empty map needs no default `T`; writing `impl<T> Default for ClusterIndex<T>` by hand avoids that.
+- **Where:** `app/src-tauri/src/route_index.rs` (routes and the transformers' startup topology).
