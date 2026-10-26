@@ -3,6 +3,7 @@ import type { StoreApi } from "zustand/vanilla";
 import type { ServiceRef } from "@/bindings";
 import { createLogsStore, type LogsState } from "./logs";
 import { usePrefs } from "./prefs";
+import { forgetRouteMap } from "./routeMaps";
 import { createTraceStore, type TraceRequest, type TraceState } from "./trace";
 
 /** More open tabs than this: opening another closes the one used longest ago. */
@@ -100,12 +101,13 @@ export function routesKey(clusterArn: string): string {
   return `routes|${clusterArn}`;
 }
 
-/** Ends what a tab keeps running (a service's log view and live tail). */
+/** Ends what a tab keeps running (a service's log view and live tail) or remembers (a map). */
 function release(tab: Tab) {
   if (tab.kind === "service") {
     remember(tab);
     void tab.logs.getState().close();
   }
+  if (tab.kind === "routes") forgetRouteMap(tab.key);
 }
 
 /** `tabs` with room for one more: beyond the limit, the tab used longest ago is closed. */

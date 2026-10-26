@@ -279,3 +279,144 @@ test("a cluster's route map, with a transformer found in its startup logs", asyn
   await expect(page.getByRole("main", { name: "Service search-feeder" })).toBeVisible();
   await expect(tabs.getByRole("tab", { name: "Routes demo-edge" })).toBeVisible();
 });
+
+test("the route map: colours, settings, search by setting and narrowing to one side", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "demo-edge" }).hover();
+  await tree.getByRole("button", { name: "Route map of demo-edge" }).click();
+  const map = page.getByRole("main", { name: "Route map demo-edge" });
+  const graph = map.getByRole("group", { name: "Cluster route map" });
+  const node = (name: string) => graph.getByRole("button", { name, exact: true });
+
+  // Selecting a service shows its routes with their settings; secrets stay hidden.
+  await node("service legacy-gateway").click();
+  const details = map.getByRole("region", { name: "Node details" });
+  const routes = details.getByRole("list", { name: "Routes of legacy-gateway" });
+  await expect(routes).toContainText("billing/queue/ORDER_IN");
+  await expect(routes).toContainText("secret");
+  await expect(routes).not.toContainText("demo-not-a-secret");
+  await expect(map.getByText("feeds into the selection")).toBeVisible();
+
+  // The details open beside the map; a node at its right edge moves into view, and back when
+  // they close, unless the map was moved by hand meanwhile.
+  await page.keyboard.press("Escape");
+  const catalog = node("system Product Catalog");
+  const x = async () => (await catalog.boundingBox())?.x ?? Number.NaN;
+  const before = await x();
+  const inView = async () => {
+    const area = await graph.boundingBox();
+    const box = await catalog.boundingBox();
+    return area && box ? box.x + box.width <= area.x + area.width : false;
+  };
+  await catalog.click();
+  await expect(details).toBeVisible();
+  await expect.poll(inView).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => Math.round(Math.abs((await x()) - before))).toBeLessThan(2);
+
+  await catalog.click();
+  await expect.poll(inView).toBe(true);
+  await map.getByRole("button", { name: "Zoom out" }).click();
+  await page.waitForTimeout(400);
+  const moved = await x();
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  expect(Math.abs((await x()) - moved)).toBeLessThan(2);
+  await map.getByRole("button", { name: "Fit the map" }).click();
+
+  // Esc or the toolbar button clears the selection.
+  await page.keyboard.press("Escape");
+  await expect(details).toHaveCount(0);
+  await node("service legacy-gateway").click();
+  await map.getByRole("button", { name: "Clear selection" }).click();
+  await expect(details).toHaveCount(0);
+
+  // A setting finds its route: the partner's host leads to the input service writing its topic,
+  // not to the other writer of that topic or its source.
+  const search = map.getByRole("searchbox", { name: "Find in the route map" });
+  await search.fill("sftp.example");
+  await expect(node("system Example Partner")).toContainText("host: sftp.example");
+  await expect(node("service event-ingest")).toBeVisible();
+  await expect(node("service partner-poller")).toHaveCount(0);
+  await expect(node("system Order Portal")).toHaveCount(0);
+
+  // Enter and Shift+Enter step through the matches.
+  await search.fill("example.com");
+  const count = map.getByLabel("Matches");
+  await expect(count).toHaveText(/^– \/ \d+$/);
+  await search.press("Enter");
+  await expect(count).toHaveText(/^1 \/ \d+$/);
+  await search.press("Enter");
+  await expect(count).toHaveText(/^2 \/ \d+$/);
+  await search.press("Shift+Enter");
+  await expect(count).toHaveText(/^1 \/ \d+$/);
+  await search.fill("");
+  // "/" goes to the search from the map.
+  await search.blur();
+  await page.keyboard.press("/");
+  await expect(search).toBeFocused();
+  await search.blur();
+
+  // Switched-off routes can be hidden.
+  await expect(node("system Example Partner API (disabled)")).toBeVisible();
+  await map.getByRole("button", { name: "Hide disabled" }).click();
+  await expect(node("system Example Partner API (disabled)")).toHaveCount(0);
+  await expect(node("system Archive")).toBeVisible();
+  await map.getByRole("button", { name: "Show disabled" }).click();
+  await expect(node("system Example Partner API (disabled)")).toBeVisible();
+
+  // The whole map can be saved as an image.
+  for (const format of ["PNG image (.png)", "SVG image (.svg)"]) {
+    await map.getByRole("button", { name: "Export" }).click();
+    await page.getByRole("menuitem", { name: format }).click();
+    await expect(map.getByRole("status").filter({ hasText: "Saved the map" })).toBeVisible();
+  }
+
+  // Right-click narrows the map to what feeds into a node.
+  await node("service search-feeder").click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Only what feeds into it" }).click();
+  await expect(map.getByText("Only what feeds into")).toBeVisible();
+  await expect(node("service event-enricher")).toBeVisible();
+  await expect(node("service audit-archiver")).toHaveCount(0);
+  await expect(node("system Product Catalog")).toHaveCount(0);
+  await map.getByRole("button", { name: "Show the whole map" }).click();
+  await expect(node("service audit-archiver")).toBeVisible();
+});
+
+test("the route map comes back as it was after another tab", async ({ page }) => {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "demo-edge" }).hover();
+  await tree.getByRole("button", { name: "Route map of demo-edge" }).click();
+  const map = page.getByRole("main", { name: "Route map demo-edge" });
+  const graph = map.getByRole("group", { name: "Cluster route map" });
+  const gateway = graph.getByRole("button", { name: "service legacy-gateway", exact: true });
+
+  await map.getByRole("searchbox", { name: "Find in the route map" }).fill("demo");
+  await gateway.click();
+  await map.getByRole("button", { name: "Zoom in" }).click();
+  await page.waitForTimeout(400);
+  const before = await gateway.boundingBox();
+
+  await tree.getByRole("treeitem", { name: "demo-edge" }).getByRole("button").first().click();
+  await tree.getByRole("treeitem", { name: "legacy-gateway" }).click();
+  await expect(page.getByRole("main", { name: "Service legacy-gateway" })).toBeVisible();
+  await page
+    .getByRole("tablist", { name: "Open tabs" })
+    .getByRole("tab", { name: /Routes/ })
+    .click();
+
+  await expect(map.getByRole("searchbox", { name: "Find in the route map" })).toHaveValue("demo");
+  await expect(map.getByRole("region", { name: "Node details" })).toContainText("legacy-gateway");
+  await expect
+    .poll(async () => {
+      const after = await gateway.boundingBox();
+      return after && before
+        ? Math.round(Math.abs(after.x - before.x) + Math.abs(after.y - before.y))
+        : -1;
+    })
+    .toBeLessThan(2);
+});

@@ -86,6 +86,12 @@ export const commands = {
 	 */
 	startupTopology: (ctx: AwsCtx, clusterArn: string, scan: TopicScan) => typedError<ServiceTopology[] | null, ApiError>(__TAURI_INVOKE("startup_topology", { ctx, clusterArn, scan })),
 	/**
+	 *  Writes an image to `path`, which the user chose in a save dialog. `base64` is the file's
+	 *  content, base64-encoded (a PNG's bytes or an SVG's text). Only `.png` and `.svg` files are
+	 *  written, so this can't be used to write anything else.
+	 */
+	saveImage: (path: string, base64: string) => typedError<null, ApiError>(__TAURI_INVOKE("save_image", { path, base64 })),
+	/**
 	 *  Searches `services` for `id` in `window` and merges what they logged about it. With
 	 *  `insights`, one Logs Insights query covers up to 50 services (faster, billed per GB scanned).
 	 */
@@ -913,7 +919,8 @@ export type TopicLink = {
 	enabled: boolean,
 	/**
 	 *  Where that service's route gets its data from (input) or sends it to (outputs): type,
-	 *  system and whether it is on. Their properties are left out; the graph doesn't show them.
+	 *  system, whether it is on and its settings (for the map's details and search). Values of
+	 *  secrets are left out (see [`RouteProperty::masked`]): they never reach the UI.
 	 */
 	endpoints: Endpoint[],
 };

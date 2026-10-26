@@ -40,6 +40,7 @@ import type {
   TraceHit,
   UpdateInfo,
 } from "@/bindings";
+import { looksSecret } from "@/lib/ecs";
 import { splitTerms } from "@/lib/queryTerms";
 import recorded from "./demo-ecs.json";
 import recordedLogs from "./demo-logs.json";
@@ -510,9 +511,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
                   direction: route.input ? "in" : "out",
                   group: route.group,
                   enabled: route.enabled,
+                  // Values of secrets are left out, like the Rust side does.
                   endpoints: (route.input ? [route.input] : route.outputs).map((e) => ({
                     ...e,
-                    properties: [],
+                    properties: e.properties.map((p) => ({
+                      ...p,
+                      value: p.valueFrom || looksSecret(p.variable) ? "" : p.value,
+                    })),
                   })),
                 });
               }
@@ -819,6 +824,16 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const options = args?.options as { defaultPath?: string } | undefined;
         exports.push({ path: `/tmp/${options?.defaultPath ?? "export"}` });
         return exports.at(-1)?.path;
+      }
+      case "save_image": {
+        // Like the Rust side: only images, and something must have been drawn.
+        const path = args?.path as string;
+        const base64 = args?.base64 as string;
+        if (!/\.(png|svg)$/i.test(path)) throw apiError("invalidInput", "only .png and .svg");
+        if (!base64 || base64.length < 100) throw apiError("invalidInput", "empty image");
+        const last = exports.at(-1);
+        if (last) Object.assign(last, { format: path.split(".").at(-1), count: base64.length });
+        return null;
       }
       case "export_log_view": {
         const rows = listed(args?.viewId as number);

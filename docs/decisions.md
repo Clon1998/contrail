@@ -400,3 +400,29 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   transformer come from (startup logs of which task, or by hand). Origin is per transformer, not per edge.
 - **Demo:** the fake can't know when its tasks started (events are a pure function of stream and time), so
   `event-enricher` repeats its startup lines every 15 minutes; any 15-minute window holds them once.
+
+## 2026-10-26 — Route map v2 on React Flow and ELK (M10.3, evaluation)
+
+- **Why:** the team found the column layout of a big cluster's map messy: no zoom, and fixed column headers that
+  are wrong once a transformer chain shifts nodes by a column. This replaces "Zoom was left out" of M10.
+- **Libraries (Patrick approved both):** `@xyflow/react` 12.12.0 (MIT) for the canvas (zoom, pan, dragging,
+  custom nodes, edges, minimap); `elkjs` 0.12.0 for the layered left-to-right layout (Eclipse Layout Kernel
+  compiled to JS). Hand-rolling zoom, pan and dragging would be a lot of fiddly code for a worse result.
+- **elkjs licence:** EPL-2.0 (or GPL-3.0). Contrail stays MIT: elkjs is used unmodified as a separate library,
+  and EPL's copyleft only covers changes to its own files. Its licence ships with the package.
+- **Scope:** only the cluster route map moves to the canvas. The per-service route graph and the trace graph keep
+  the column view, where the columns do mean the same thing on every row.
+- **Following routes, not services:** lines carry the routes they belong to. Inside a route service only lines
+  of the same route connect (a source leads only to its own route's topic, a topic only to its own route's
+  targets), so selecting a target no longer lights every source of the service writing its topic. Transformers
+  connect everything they touch (their reads and writes aren't paired).
+- **Settings on the map:** the scan now sends endpoint settings to the UI, with the values of secrets (from
+  Secrets Manager/SSM, or in a variable named like a credential) emptied in Rust first. The search matches
+  settings on the system end of a route; secrets can't match, and nothing is ever resolved for it.
+- **Remembered per tab:** a route map tab keeps its scan, search, selection, narrowing, "hide disabled", zoom,
+  position and dragged nodes for the session (`stores/routeMaps.ts`); coming back from another tab shows it as
+  it was, without calling the backend or ELK. Closing the tab forgets it.
+- **Export:** PNG (double resolution) or SVG of the whole map, made in the UI with `html-to-image` 1.11.13
+  (MIT), the approach React Flow documents. All nodes are rendered for the capture (normally only visible ones
+  are). Rust writes the file through `save_image`, which only writes `.png`/`.svg` to the path picked in the
+  save dialog; the image travels as base64 (`base64` crate, already in the lockfile through the AWS SDK).
