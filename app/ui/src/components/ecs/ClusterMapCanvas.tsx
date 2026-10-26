@@ -64,7 +64,10 @@ type MapNode = Node<MapNodeData, "map">;
 
 const NODE_ICON = { system: PlugIcon, service: ServerIcon, topic: WavesIcon } as const;
 
-/** One service, topic or system: its route settings on hover, its options on right-click. */
+/**
+ * One service, topic or system: its route settings on hover, its options on right-click. Every
+ * node has the same height (for the layout); one-line nodes (topics) are centred in it.
+ */
 function MapNodeView({ data }: NodeProps<MapNode>) {
   const { node, tone, match } = data;
   const actions = use(Actions);
@@ -77,7 +80,7 @@ function MapNodeView({ data }: NodeProps<MapNode>) {
       onClick={() => actions?.select(node.id)}
       style={{ width: nodeWidth(node), height: NODE_HEIGHT }}
       className={cn(
-        "flex min-w-0 items-start gap-2 border bg-card px-2.5 py-1.5 text-left text-xs transition-opacity duration-150 hover:bg-accent",
+        "flex min-w-0 items-center gap-2 border bg-card px-2.5 py-1.5 text-left text-xs transition-opacity duration-150 hover:bg-accent",
         node.kind === "topic" ? "rounded-full border-primary/40 bg-primary/5" : "rounded-md",
         node.kind === "service" && "border-dashed border-border",
         node.kind === "service" && node.transformer && "border-solid",
@@ -90,7 +93,7 @@ function MapNodeView({ data }: NodeProps<MapNode>) {
         match !== null && "ring-2 ring-warning/70",
       )}
     >
-      <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="flex min-w-0 flex-col">
         <span
           className={cn(
