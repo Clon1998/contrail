@@ -60,6 +60,10 @@ page has the details.
 - Search the loaded logs: `timeout level>=WARN trace.id:abc123 -healthcheck`, regular expressions, field globs and
   comparisons (or one regular expression with `.*`), as a filter or highlighted with next/previous (Enter, F3).
   See [Search syntax](query-syntax.md).
+- **Earlier searches:** ↑ / ↓ in the search box step through the searches run before, this service's first, with
+  their regex and whole-line settings. A search is remembered when you press Enter or leave the box.
+- **Saved searches** (bookmark button next to the search): save the current search under a name, for this service
+  or for all services; click one to run it. ⌘K lists them too: one saved for another service opens that service.
 - Level chips hide levels (middle click: only this level; right click: more); "Hide lines like this" builds a
   per-service noise list.
 - **Fields** (or F) opens a panel with every field of the matching events and its most common values; a click
