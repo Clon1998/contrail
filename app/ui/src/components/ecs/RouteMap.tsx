@@ -3,6 +3,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CircleXIcon,
+  EyeIcon,
   EyeOffIcon,
   FilterIcon,
   NetworkIcon,
@@ -279,14 +280,19 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
               </Button>
             </span>
           )}
+          {/* Says what a click does (no pressed state: the label changes instead). */}
           <Button
             variant={hideDisabled ? "secondary" : "outline"}
             size="xs"
-            aria-pressed={hideDisabled}
-            tooltip="Hide switched-off routes and the systems only they use"
+            tooltip={
+              hideDisabled
+                ? "Show the switched-off routes again"
+                : "Hide switched-off routes and the systems only they use"
+            }
             onClick={() => setHideDisabled(!hideDisabled)}
           >
-            <EyeOffIcon /> Hide disabled
+            {hideDisabled ? <EyeIcon /> : <EyeOffIcon />}
+            {hideDisabled ? "Show disabled" : "Hide disabled"}
           </Button>
           <Button
             variant="outline"

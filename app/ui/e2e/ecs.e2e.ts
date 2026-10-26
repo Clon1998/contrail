@@ -365,7 +365,8 @@ test("the route map: colours, settings, search by setting and narrowing to one s
   await map.getByRole("button", { name: "Hide disabled" }).click();
   await expect(node("system Example Partner API (disabled)")).toHaveCount(0);
   await expect(node("system Archive")).toBeVisible();
-  await map.getByRole("button", { name: "Hide disabled" }).click();
+  await map.getByRole("button", { name: "Show disabled" }).click();
+  await expect(node("system Example Partner API (disabled)")).toBeVisible();
 
   // Right-click narrows the map to what feeds into a node.
   await node("service search-feeder").click({ button: "right" });
