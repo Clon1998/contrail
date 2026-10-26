@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { nameFromArn } from "@/lib/ecs";
-import { useEcs } from "@/stores/ecs";
+import { FRESH_MS, useEcs } from "@/stores/ecs";
 import { LogsContext, useLogs } from "@/stores/logs";
 import { isSameService, usePrefs } from "@/stores/prefs";
 import { useProfiles } from "@/stores/profiles";
@@ -15,9 +15,6 @@ import { HealthDot } from "./HealthDot";
 import { Overview } from "./Overview";
 import { RouteMap } from "./RouteMap";
 import { ServiceTabs } from "./ServiceTabs";
-
-/** The open service is refreshed this often (only while it is shown). */
-const REFRESH_MS = 30_000;
 
 /** The active tab: the selected service inside the logs store of its tab, a trace or a map. */
 export function ServiceView() {
@@ -47,7 +44,8 @@ function ServicePane() {
   const setTab = useLogs((s) => s.setTab);
 
   useEffect(() => {
-    const timer = setInterval(() => void refresh(), REFRESH_MS);
+    // The open service is refreshed in the background (only while it is shown).
+    const timer = setInterval(() => void refresh({ quiet: true }), FRESH_MS);
     return () => clearInterval(timer);
   }, [refresh, selected]);
 
