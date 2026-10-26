@@ -457,16 +457,10 @@ Patrick's team tried Contrail; these three come before M11, in this order.
 - **Done when:** layout input and path filtering have unit tests; e2e covers the context menu, search by
   parameter and clearing the selection; smooth with 100+ route services; Patrick has the screenshots.
 
-#### M11 — Stuck documents
-- **Document keys:** a document is followed by its correlation ID **or its object name** (`fw.objectName`,
-  the key under which the framework stores a document). Hops that log only one of the two keys still join
-  the same document, as long as some event carries both. The trace tab accepts either key.
-- **Stuck documents** for a view or a trace's services: documents whose last state isn't terminal
-  (no COMPLETED or FAILED) and is older than a threshold (setting, default 15 min). Each one shows its key,
-  its last state, the service, the age, and a button to open its trace.
-- Runs in Rust over the buffer, updated incrementally while a live tail runs.
-- **Done when:** unit and property tests for joining keys and for the stuck rule; demo data includes stuck
-  documents; an e2e test covers listing them and opening a trace from the list.
+#### Order after the team feedback (Patrick, 2026-10-26)
+
+M10.1–M10.3 are merged. Next: **M12 → M13 → M15 → M14**; M11 (stuck documents) moves to the end of this
+round. The numbers stay as they are (they're referenced in commits and docs).
 
 #### M12 — Saved queries & history
 - History of the search box (per service and global, de-duplicated) with arrow-key recall.
@@ -480,14 +474,6 @@ Patrick's team tried Contrail; these three come before M11, in this order.
 - **Done when:** bucketing has unit tests (time zones, empty buckets, newest-first order); live updates
   stay smooth at 100k lines; e2e covers zooming in by dragging.
 
-#### M14 — Shareable links
-- A `contrail://` link (Tauri deep-link plugin) encoding profile, region, cluster, service, task, time
-  window and query, made from "Copy link" in a view or a trace tab. Opening the link shows the same view,
-  or asks to log in first.
-- "Open in CloudWatch console" for a view or a single event, for teammates without Contrail.
-- **Done when:** link encoding round-trips (property test); links from unknown profiles explain what's
-  missing; e2e covers opening a link.
-
 #### M15 — Login without the AWS CLI
 - Profiles and `sso-session` sections are still read from `~/.aws/config` as now. Only the login changes:
   when the AWS CLI isn't installed (or by a setting), Contrail runs the SSO device flow itself
@@ -498,6 +484,14 @@ Patrick's team tried Contrail; these three come before M11, in this order.
   describe it.
 - **Done when:** the flow is covered by an HTTP mock test; demo mode simulates it; Patrick logs into a
   real profile on a machine without the CLI.
+
+#### M14 — Shareable links
+- A `contrail://` link (Tauri deep-link plugin) encoding profile, region, cluster, service, task, time
+  window and query, made from "Copy link" in a view or a trace tab. Opening the link shows the same view,
+  or asks to log in first.
+- "Open in CloudWatch console" for a view or a single event, for teammates without Contrail.
+- **Done when:** link encoding round-trips (property test); links from unknown profiles explain what's
+  missing; e2e covers opening a link.
 
 #### Later in this round (order to be confirmed)
 - **M16 — Context around a line:** "show surrounding lines" on a matching line opens ±N lines of the same
@@ -518,7 +512,19 @@ Patrick's team tried Contrail; these three come before M11, in this order.
   (M17) or since a chosen time are marked; FAILED status events are grouped by their message.
   Done when: templating has unit and property tests (stable templates, no merging of unrelated lines) and
   stays fast at 100k lines; e2e covers hiding a group and filtering to one.
-- A v0.2.0 release once M9–M15 are merged and Patrick has smoke-tested them.
+
+#### M11 — Stuck documents (moved to the end of this round)
+- **Document keys:** a document is followed by its correlation ID **or its object name** (`fw.objectName`,
+  the key under which the framework stores a document). Hops that log only one of the two keys still join
+  the same document, as long as some event carries both. The trace tab accepts either key.
+- **Stuck documents** for a view or a trace's services: documents whose last state isn't terminal
+  (no COMPLETED or FAILED) and is older than a threshold (setting, default 15 min). Each one shows its key,
+  its last state, the service, the age, and a button to open its trace.
+- Runs in Rust over the buffer, updated incrementally while a live tail runs.
+- **Done when:** unit and property tests for joining keys and for the stuck rule; demo data includes stuck
+  documents; an e2e test covers listing them and opening a trace from the list.
+
+- A v0.2.0 release once M9, M10.x and M12–M15 are merged and Patrick has smoke-tested them.
 
 ---
 
