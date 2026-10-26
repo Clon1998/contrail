@@ -37,6 +37,7 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
     title: "Search",
     keys: [
       [[MOD, "F"], "Focus the search"],
+      [["↑", "↓"], "Earlier searches (in the search box)"],
       [["Enter"], "Next match (Shift: previous)"],
       [["F3"], "Next match (Shift: previous)"],
       [["Esc"], "Clear the search"],

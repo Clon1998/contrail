@@ -22,6 +22,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
+import { recallList } from "@/lib/searchHistory";
 import { noiseKey, usePrefs } from "@/stores/prefs";
 import { hiddenForAtLeast, hiddenForOnly, LEVEL_TONE, LEVELS, toggleLevel } from "./levels";
 import { Hint } from "@/components/ui/tooltip";
@@ -62,7 +63,8 @@ function SyntaxHelp() {
           ))}
         </dl>
         <p className="mt-2 text-muted-foreground">
-          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous. With
+          All terms must match. Enter / F3: next match, Shift+Enter / Shift+F3: previous. ↑ / ↓:
+          earlier searches. With
           <span className="font-mono"> .*</span> on, the whole search is one regular expression.
         </p>
       </PopoverContent>
@@ -208,6 +210,38 @@ export function SearchBar() {
   const selected = useEcs((s) => s.selected);
   const [text, setText] = useState(search.query);
   const input = useRef<HTMLInputElement>(null);
+  const service = useLogs((s) => s.service);
+  const profile = useLogs((s) => s.profile);
+  const history = usePrefs((s) => s.prefs.searchHistory);
+  const addSearch = usePrefs((s) => s.addSearch);
+  // Stepping through earlier searches with ↑/↓: where in the list, and what was typed before.
+  const [recall, setRecall] = useState<{ index: number; typed: string } | null>(null);
+
+  /** Remembers the search as it is now (Enter, or leaving the box with a search set). */
+  const remember = (query: string) => {
+    if (profile && service && query.trim()) {
+      void addSearch(profile, service, { query, regex: search.regex, raw: search.raw });
+    }
+  };
+  /** ↑ (older) or ↓ (newer): shows that earlier search, with its regex and whole-line flags. */
+  const stepHistory = (direction: 1 | -1) => {
+    if (!profile || !service) return false;
+    const list = recallList(history, noiseKey(profile, service));
+    const index = (recall?.index ?? -1) + direction;
+    if (list.length === 0 || index >= list.length || (index < 0 && !recall)) return false;
+    if (index < 0) {
+      // Past the newest: back to what was typed.
+      setText(recall?.typed ?? "");
+      setRecall(null);
+      return true;
+    }
+    const entry = list[index];
+    if (!entry) return false;
+    setRecall({ index, typed: recall?.typed ?? text });
+    setText(entry.query);
+    void setSearch({ query: entry.query, regex: entry.regex, raw: entry.raw });
+    return true;
+  };
 
   // Typing → search after a short pause.
   useEffect(() => {
@@ -266,11 +300,20 @@ export function SearchBar() {
                   : "Search: timeout level>=WARN trace.id:abc -health …"
             }
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setRecall(null);
+            }}
+            onBlur={() => {
+              if (text === search.query) remember(text);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
+                remember(text);
                 void setSearch({ query: text }).then(() => step(e.shiftKey ? -1 : 1));
+              } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                if (stepHistory(e.key === "ArrowUp" ? 1 : -1)) e.preventDefault();
               } else if (e.key === "Escape") {
                 setText("");
                 void setSearch({ query: "" });

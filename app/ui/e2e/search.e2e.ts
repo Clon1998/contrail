@@ -414,3 +414,46 @@ test("a document's trace on the route graph, with the services it hasn't reached
   await graph.getByRole("button", { name: "service event-enricher (COMPLETED)" }).click();
   await expect(timeline.getByRole("listitem")).toHaveCount(12);
 });
+
+test("↑ and ↓ recall earlier searches with their flags, this service's first", async ({ page }) => {
+  await openLogs(page, "demo-core", "orders-api");
+  const search = page.getByRole("textbox", { name: "Search logs" });
+  const regex = page.getByRole("button", { name: "Regular expression" });
+
+  await search.fill("timeout");
+  await search.press("Enter");
+  await regex.click();
+  await search.fill("order \\d+");
+  await search.press("Enter");
+  await regex.click();
+  await search.fill("level:ERROR");
+  await search.press("Enter");
+
+  await search.fill("draft");
+  await search.press("ArrowUp");
+  await expect(search).toHaveValue("level:ERROR");
+  await search.press("ArrowUp");
+  await expect(search).toHaveValue("order \\d+");
+  await expect(regex).toHaveAttribute("aria-pressed", "true");
+  await search.press("ArrowUp");
+  await expect(search).toHaveValue("timeout");
+  await expect(regex).toHaveAttribute("aria-pressed", "false");
+  await search.press("ArrowDown");
+  await search.press("ArrowDown");
+  await search.press("ArrowDown");
+  // Past the newest: what was typed before.
+  await expect(search).toHaveValue("draft");
+
+  // Another service: its own searches first, then the ones from orders-api.
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "payments-worker" }).click();
+  await page.getByRole("tab", { name: "Logs" }).click();
+  const other = page.getByRole("textbox", { name: "Search logs" });
+  await other.fill("settled");
+  await other.press("Enter");
+  await other.fill("");
+  await other.press("ArrowUp");
+  await expect(other).toHaveValue("settled");
+  await other.press("ArrowUp");
+  await expect(other).toHaveValue("level:ERROR");
+});
