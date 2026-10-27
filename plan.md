@@ -469,8 +469,8 @@ round. The numbers stay as they are (they're referenced in commits and docs).
 
 #### M13 — Timeline
 - A bar chart above the log list showing event counts over the view's window, stacked by level, computed
-  in Rust from the buffer and from the active filter. Dragging over it narrows the time window; it updates
-  live.
+  in Rust from the buffer and from the active filter. Clicking or dragging over it focuses the list on that part
+  of the window (the window and loaded events stay; see decisions.md 2026-10-27); it updates live.
 - **Done when:** bucketing has unit tests (time zones, empty buckets, newest-first order); live updates
   stay smooth at 100k lines; e2e covers zooming in by dragging.
 
