@@ -8,7 +8,8 @@ use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::timeline::Timeline;
 use contrail_core::logs::{
     BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LogBuffer, LogEvent, LogLocation,
-    TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location, write_events,
+    TimeRange, TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location,
+    write_events,
 };
 use contrail_core::prefs::ServiceKey;
 use contrail_core::query::{MatchOptions, QueryError, parse_query, parse_regex_query};
@@ -252,6 +253,9 @@ pub struct FilterSpec {
     pub regex: bool,
     /// The service's "hide noise" texts, when hiding noise is on.
     pub noise: Vec<String>,
+    /// Lists only the events in this part of the window (picked on the timeline); the loaded
+    /// events stay, so clearing it is instant.
+    pub focus: Option<TimeRange>,
 }
 
 /// The outcome of setting a search.
@@ -339,6 +343,7 @@ fn apply_filter(
     let mut views = state.views.lock().expect("views lock poisoned");
     let view = views.get_mut(&view_id).ok_or_else(|| closed(view_id))?;
     view.set_filter(Some(filter));
+    view.focus = spec.focus;
     let count = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
     let visible = view.visible_len();
     let rows = windows
@@ -370,13 +375,8 @@ fn apply_filter(
 pub fn get_match_positions(state: State<'_, AppState>, view_id: u32) -> ApiResult<Vec<u32>> {
     let views = state.views.lock().expect("views lock poisoned");
     let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
-    let positions = match &view.filter {
-        Some(filter) if filter.mode == FilterMode::Highlight => filter.matched().to_vec(),
-        // When filtering, every listed row matches.
-        Some(filter) => (0..filter.match_count()).collect(),
-        None => Vec::new(),
-    };
-    Ok(positions
+    Ok(view
+        .match_positions()
         .into_iter()
         .map(|i| u32::try_from(i).unwrap_or(u32::MAX))
         .collect())
@@ -567,6 +567,7 @@ mod tests {
             search_raw: false,
             regex: false,
             noise: vec![],
+            focus: None,
         };
         apply_filter(&state, info.view_id, spec, &[]).unwrap();
 
@@ -643,6 +644,7 @@ mod tests {
                 search_raw: false,
                 regex: false,
                 noise: vec![],
+                focus: None,
             };
             apply_filter(state, info.view_id, spec, &[]).unwrap();
             let timeline = state.views.lock().unwrap()[&info.view_id].timeline(60, 0);
@@ -686,6 +688,7 @@ mod tests {
             search_raw: false,
             regex: false,
             noise: vec![],
+            focus: None,
         };
         apply_filter(&state, info.view_id, spec, &[]).unwrap();
         let failed = summary(&state);
@@ -786,6 +789,7 @@ mod tests {
             search_raw: false,
             regex: false,
             noise: Vec::new(),
+            focus: None,
         }
     }
 

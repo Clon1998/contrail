@@ -460,3 +460,12 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   2024 this needed nested `if let` blocks. Like a Java `if (x instanceof Device d && !demo)` with a second check
   that can use `d`.
 - **Where:** the `sso_login` command in `app/src-tauri/src/commands/auth.rs`.
+
+## `Range<usize>` as a value
+
+- **What:** `start..end` is an ordinary value of type `std::ops::Range<usize>`: it can be returned, stored,
+  asked for its `len()`, iterated (`events.filter_map(…)`) and used to slice (`&matched[range]`, a view into the
+  vector without copying, like `List.subList` in Java). The timeline focus is computed once as a range of the
+  listing and every read (rows, counts, match positions) goes through it. `Range` isn't `Copy` (it is an
+  iterator), hence the occasional `.clone()`.
+- **Where:** `LogView::focused_events` / `listed` in `app/src-tauri/src/state.rs`, `ViewFilter::matches_within`.

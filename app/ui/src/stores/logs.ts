@@ -13,6 +13,7 @@ import {
   type LogViewInfo,
   type QueryError,
   type ServiceRef,
+  type TimeRange,
   type TimeWindow,
 } from "@/bindings";
 import { liveMode } from "@/lib/logs";
@@ -77,6 +78,11 @@ export interface LogsState {
   scrollTarget: { index: number; nonce: number } | null;
   /** The time window the view was opened with. */
   timeWindow: TimeWindow;
+  /**
+   * The part of the window the list is narrowed to (picked on the timeline), or `null`. Rust keeps
+   * every loaded event, so clearing it is instant; the time window itself stays as it is.
+   */
+  focus: TimeRange | null;
   /** Which tab of the service view is shown. */
   tab: "overview" | "logs";
   /** A task to show alone, set from the task list ("Logs" on a task row). */
@@ -119,6 +125,8 @@ export interface LogsState {
     taskId: string | null,
   ) => Promise<void>;
   setWindow: (timeWindow: TimeWindow) => void;
+  /** Narrows the list to a part of the window (`null`: the whole window again). */
+  setFocus: (focus: TimeRange | null) => Promise<void>;
   close: () => Promise<void>;
   /** Makes sure the rows `from..=to` are (being) loaded. */
   fetchRows: (from: number, to: number) => void;
@@ -338,6 +346,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     currentMatch: -1,
     scrollTarget: null,
     timeWindow,
+    focus: null,
     tab: "overview",
     taskFilter: null,
     fieldsOpen: false,
@@ -361,6 +370,8 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         error: null,
         expanded: {},
         scrollAnchor: null,
+        // A focus belongs to the window it was picked in.
+        focus: null,
         live: null,
         pages: new Map(),
         matchPositions: [],
@@ -433,6 +444,10 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     },
 
     setWindow: (timeWindow) => set({ timeWindow }),
+    setFocus: async (focus) => {
+      set({ focus });
+      await get().applySearch();
+    },
 
     close: async () => {
       generation++;
@@ -492,7 +507,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     },
 
     applySearch: async () => {
-      const { view, service, search, profile } = get();
+      const { view, service, search, profile, focus } = get();
       if (!view || !service) return;
       const noise =
         search.hideNoise && profile
@@ -511,6 +526,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
           searchRaw: search.raw,
           regex: search.regex,
           noise,
+          focus,
         },
         [
           { offset: from, limit: span, fromEnd: false },

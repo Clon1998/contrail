@@ -32,7 +32,7 @@ it keeps no credentials of its own.
   Secrets Manager and SSM values only on **Reveal**).
 - **Logs that read well.** ECS JSON (nested or dotted), Spring Boot's console pattern and plain text are parsed;
   stack traces split into one event per line are joined again. 100,000 lines scroll smoothly; parsing, buffering
-  and search run in Rust. A **timeline** above the list shows events over time by level; drag across it to zoom in.
+  and search run in Rust. A **timeline** above the list shows events over time by level; click or drag across it to focus the list on a part of the window.
 - **Live tail** with CloudWatch Live Tail (or polling without the permission), paused automatically while you
   don't look, because it is billed per minute.
 - **Search** as you type: words, phrases, fields, levels, comparisons and regular expressions, as a filter or

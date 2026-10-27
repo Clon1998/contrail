@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { commands, type LevelCounts, type Timeline } from "@/bindings";
-import { bucketRange, selectionRange, timelineLabel, utcOffsetMinutes } from "@/lib/timeline";
+import {
+  bucketRange,
+  rangePixels,
+  selectionRange,
+  timelineLabel,
+  utcOffsetMinutes,
+} from "@/lib/timeline";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 
@@ -25,13 +31,15 @@ const total = (b: LevelCounts) => b.error + b.warn + b.info + b.debug + b.trace 
 
 /**
  * Events over time above the log list, stacked by level, counted in Rust from the listed events
- * (it follows the search). Dragging across it narrows the time window to the bars under the drag.
+ * (it follows the search). Clicking a bar, or dragging across bars, focuses the list on that part
+ * of the window; the chart keeps showing the whole window, so another part can be picked.
  */
 export function TimelineChart({ viewId }: { viewId: number }) {
   const total_ = useLogs((s) => s.view?.stats.total ?? 0);
   const visible = useLogs((s) => s.visible);
   const revision = useLogs((s) => s.searchRevision);
-  const setWindow = useLogs((s) => s.setWindow);
+  const focus = useLogs((s) => s.focus);
+  const setFocus = useLogs((s) => s.setFocus);
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -76,6 +84,10 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const localX = (clientX: number) => clientX - (box.current?.getBoundingClientRect().left ?? 0);
   const spansDays = timeline ? count * timeline.bucketMs >= 86_400_000 : false;
   const hovered = hover !== null && timeline ? timeline.buckets[hover] : undefined;
+  const focused = focus && timeline && count > 0 ? rangePixels(timeline, focus, width) : null;
+  const outsideFocus = (i: number) =>
+    focused !== null &&
+    ((i + 1) * barWidth <= focused.left || i * barWidth >= focused.left + focused.width);
 
   return (
     <div className="border-b border-border px-4 pt-1.5 pb-1 text-[11px] text-muted-foreground">
@@ -98,8 +110,11 @@ export function TimelineChart({ viewId }: { viewId: number }) {
         }}
         onPointerLeave={() => setHover(null)}
         onPointerUp={() => {
-          if (drag && timeline && Math.abs(drag.to - drag.from) > 4) {
-            setWindow({ kind: "range", ...selectionRange(timeline, drag.from, drag.to, width) });
+          // A click focuses the bar under it, a drag the bars under the drag.
+          if (drag && timeline && count > 0) {
+            const dragged = Math.abs(drag.to - drag.from) > 4;
+            const x1 = dragged ? drag.to : drag.from;
+            void setFocus(selectionRange(timeline, drag.from, x1, width));
           }
           setDrag(null);
         }}
@@ -108,7 +123,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
           {timeline?.buckets.map((bucket, i) => {
             let y = BARS_HEIGHT;
             return (
-              <g key={i} opacity={hover === null || hover === i ? 1 : 0.7}>
+              <g key={i} opacity={outsideFocus(i) ? 0.3 : hover === null || hover === i ? 1 : 0.7}>
                 {STACK.map(({ key, fill }) => {
                   const height = (bucket[key] / highest) * (BARS_HEIGHT - 2);
                   if (height <= 0) return null;
@@ -128,6 +143,13 @@ export function TimelineChart({ viewId }: { viewId: number }) {
             );
           })}
         </svg>
+        {focused && !drag && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 rounded-sm border border-primary/60 bg-primary/10"
+            style={{ left: focused.left, width: Math.max(2, focused.width) }}
+          />
+        )}
         {drag && Math.abs(drag.to - drag.from) > 4 && (
           <div
             aria-hidden
@@ -160,7 +182,9 @@ export function TimelineChart({ viewId }: { viewId: number }) {
       {timeline && count > 0 && (
         <div className="flex justify-between tabular-nums">
           <span>{timelineLabel(bucketRange(timeline, 0)[0], timeZone, spansDays)}</span>
-          <span>Drag to zoom in</span>
+          <span>
+            {focus ? "Click or drag to focus elsewhere" : "Click or drag to focus the list"}
+          </span>
           <span>{timelineLabel(bucketRange(timeline, count - 1)[1], timeZone, spansDays)}</span>
         </div>
       )}

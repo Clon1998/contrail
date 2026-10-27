@@ -477,7 +477,9 @@ test("live: new rows fade in briefly", async ({ page }) => {
   await expect(list.locator('[data-fresh="true"]')).toHaveCount(0, { timeout: 3_000 });
 });
 
-test("the timeline shows events over time; dragging across it zooms in", async ({ page }) => {
+test("the timeline shows events over time; clicking or dragging focuses the list", async ({
+  page,
+}) => {
   await openLogs(page, "demo-core", "payments-worker");
   const chart = page.getByRole("img", { name: "Timeline of events" });
   await expect(chart).toBeVisible();
@@ -492,10 +494,16 @@ test("the timeline shows events over time; dragging across it zooms in", async (
   await page.mouse.down();
   await page.mouse.move(box.x + box.width * 0.6, box.y + 20, { steps: 5 });
   await page.mouse.up();
-  await expect(page.getByRole("button", { name: /^Time window:/ })).not.toContainText(
-    "Last 15 min",
-  );
-  await expect(page.getByText("fixed range")).toBeVisible();
+  // The list is focused on the dragged part; the time window stays as it was.
+  const clear = page.getByRole("button", { name: "Show the whole time window" });
+  await expect(clear).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Time window:/ })).toContainText("Last 15 min");
+  await clear.click();
+  await expect(clear).toHaveCount(0);
+
+  // A click focuses the bar under it.
+  await page.mouse.click(box.x + box.width - 3, box.y + box.height - 2);
+  await expect(clear).toBeVisible();
 
   // It can be hidden (a setting).
   await page.getByRole("button", { name: "Timeline" }).click();

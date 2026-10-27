@@ -1,5 +1,7 @@
 //! A view's search: which events match, kept up to date as events arrive.
 
+use std::ops::Range;
+
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
@@ -171,6 +173,14 @@ impl ViewFilter {
         }
     }
 
+    /// Positions in [`Self::matched`] of the matches whose buffer index is in `events` (the
+    /// matches inside a focused time range). `matched` is sorted, so two binary searches do it.
+    pub fn matches_within(&self, events: Range<usize>) -> Range<usize> {
+        let start = self.matched.partition_point(|&i| i < events.start);
+        let end = self.matched.partition_point(|&i| i < events.end);
+        start..end
+    }
+
     /// The number of matching events.
     pub fn match_count(&self) -> usize {
         self.matched.len()
@@ -307,5 +317,21 @@ mod tests {
         assert!(!f.is_trivial());
         f.rebuild(&buffer);
         assert_eq!(messages(&f, &buffer), ["order created"]);
+    }
+
+    #[test]
+    fn finds_the_matches_within_a_range_of_events() {
+        let mut buffer = LogBuffer::new(100);
+        buffer.insert([
+            event(1, "ERROR", "boom"),
+            event(2, "INFO", "ok"),
+            event(3, "INFO", "ok"),
+            event(4, "ERROR", "boom"),
+        ]);
+        let mut f = filter("boom", FilterMode::Filter);
+        f.rebuild(&buffer);
+        assert_eq!(f.matches_within(0..4), 0..2);
+        assert_eq!(f.matches_within(1..4), 1..2);
+        assert_eq!(f.matches_within(1..3), 1..1);
     }
 }

@@ -450,6 +450,11 @@ export type FilterSpec = {
 	regex: boolean,
 	/**  The service's "hide noise" texts, when hiding noise is on. */
 	noise: string[],
+	/**
+	 *  Lists only the events in this part of the window (picked on the timeline); the loaded
+	 *  events stay, so clearing it is instant.
+	 */
+	focus: TimeRange | null,
 };
 
 /**  Whether a service wrote the document to a topic or read it from one. */
@@ -985,6 +990,12 @@ export type TaskDefinitionInfo = {
 	cpu: string | null,
 	memory: string | null,
 	containers: ContainerDefinitionInfo[],
+};
+
+/**  A time range, start inclusive, end exclusive. */
+export type TimeRange = {
+	start: Timestamp,
+	end: Timestamp,
 };
 
 /**  The time window a log view is opened for, as the UI picks it. */

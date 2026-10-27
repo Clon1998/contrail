@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatFullTime,
   formatLogTime,
   formatShortTime,
+  isToday,
   fromDateTimeLocal,
   liveHint,
   liveMode,
@@ -12,6 +14,17 @@ import {
 describe("log helpers", () => {
   it("formats times with milliseconds in UTC", () => {
     expect(formatLogTime("2026-01-15T09:12:01.768108328Z", "utc")).toBe("09:12:01.768");
+  });
+
+  it("puts the date in front when asked, keeping one width", () => {
+    expect(formatLogTime("2026-01-05T09:12:01.7Z", "utc", true)).toBe("01-05 09:12:01.700");
+    expect(formatFullTime("2026-01-05T09:12:01.7Z", "utc")).toBe("2026-01-05 09:12:01.700 UTC");
+  });
+
+  it("knows whether a time is today", () => {
+    const now = Date.parse("2026-10-27T10:00:00Z");
+    expect(isToday(Date.parse("2026-10-27T00:00:00Z"), "utc", now)).toBe(true);
+    expect(isToday(Date.parse("2026-10-26T23:59:59Z"), "utc", now)).toBe(false);
   });
 
   it("strips ANSI colour codes", () => {
