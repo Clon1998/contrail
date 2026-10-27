@@ -443,6 +443,9 @@ test("↑ and ↓ recall earlier searches with their flags, this service's first
   await search.press("ArrowDown");
   // Past the newest: what was typed before.
   await expect(search).toHaveValue("draft");
+  // Cleared before leaving: leaving the box with a search set remembers it, and whether "draft"
+  // was searched for yet depends on the typing pause (timing).
+  await search.fill("");
 
   // Another service: its own searches first, then the ones from orders-api.
   const tree = page.getByRole("tree", { name: "Clusters" });
