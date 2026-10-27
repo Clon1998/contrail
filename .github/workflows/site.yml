@@ -10,9 +10,9 @@ name: Site
 on:
   push:
     branches: [main]
-    paths: ["site/**", "docs/**", "assets/icon.svg", ".github/workflows/site.yml"]
+    paths: ["site/**", "docs/**", "assets/icon.svg", "assets/icon-small.svg", ".github/workflows/site.yml"]
   pull_request:
-    paths: ["site/**", "docs/**", "assets/icon.svg", ".github/workflows/site.yml"]
+    paths: ["site/**", "docs/**", "assets/icon.svg", "assets/icon-small.svg", ".github/workflows/site.yml"]
   release:
     types: [published]
   workflow_dispatch:

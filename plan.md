@@ -165,7 +165,7 @@ contrail/
 │  └─ ui/                     # React + Vite SPA (own package.json, vite.config.ts, lint/test config)
 │     ├─ src/                 # components, components/ui (shadcn), stores, lib; *.test.ts(x) beside the code
 │     └─ e2e/                 # Playwright (UI with mocked IPC)
-├─ assets/                    # source artwork (icon.svg)
+├─ assets/                    # source artwork (icon.svg, icon-small.svg for ≤ 64 px)
 └─ docs/                      # architecture.md, rust-notes.md, decisions.md, iam-policy.json, query-syntax.md
 ```
 

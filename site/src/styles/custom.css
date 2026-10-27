@@ -1,5 +1,5 @@
 /* Contrail's look: a night sky over a log terminal. Navy-tinted grays, the sky blue of the app
-   icon (assets/icon.svg) as the accent, the log levels' amber as a second color, sharp corners
+   icon's trails (assets/icon.svg) as the accent, the log levels' amber as a second color, sharp corners
    and a monospace voice for labels. Dark mode is Starlight's default (`:root`), light mode
    overrides it. The fonts are self-hosted (@fontsource-variable, imported in astro.config.mjs). */
 :root {

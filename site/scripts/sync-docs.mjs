@@ -74,8 +74,9 @@ function convert({ file, slug }) {
 
 DOCS.forEach(convert);
 
-// The app icon is the logo and favicon; assets/ stays its only copy in git.
-fs.copyFileSync(path.join(REPO_DIR, "assets/icon.svg"), path.join(SITE_DIR, "public/favicon.svg"));
-fs.copyFileSync(path.join(REPO_DIR, "assets/icon.svg"), path.join(SITE_DIR, "src/assets/logo.svg"));
+// The small app icon is the logo and favicon (both render at 16-32px); assets/ stays its only
+// copy in git.
+fs.copyFileSync(path.join(REPO_DIR, "assets/icon-small.svg"), path.join(SITE_DIR, "public/favicon.svg"));
+fs.copyFileSync(path.join(REPO_DIR, "assets/icon-small.svg"), path.join(SITE_DIR, "src/assets/logo.svg"));
 
 console.log(`sync-docs: ${DOCS.length} pages from docs/`);

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Small-size variant of the v4.1 icon (favicon, website header): edge-to-edge tile,
+       a bigger plane and only the two engine trails, so it stays readable at 16-32px. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1230"/>
+      <stop offset="1" stop-color="#050818"/>
+    </linearGradient>
+    <linearGradient id="trail" gradientUnits="userSpaceOnUse" x1="-560" y1="0" x2="-40" y2="0">
+      <stop offset="0" stop-color="#22e5ff"/>
+      <stop offset="0.5" stop-color="#3b7bff"/>
+      <stop offset="1" stop-color="#9b7bff"/>
+    </linearGradient>
+    <clipPath id="tile">
+      <rect width="1024" height="1024" rx="230"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+
+  <g clip-path="url(#tile)">
+    <g transform="translate(600 420) rotate(-35) scale(1.6)">
+      <g stroke="url(#trail)" stroke-width="56" stroke-linecap="round" fill="none">
+        <path d="M -80 -85 H -170 M -240 -85 H -600"/>
+        <path d="M -80 85 H -250 M -320 85 H -600"/>
+      </g>
+      <path fill="#f5f7ff" d="M 200 0
+               C 200 -16, 186 -24, 160 -24
+               L 60 -24 L -40 -180 L -76 -180 L -24 -24
+               L -112 -24 L -150 -80 L -174 -80 L -160 -14
+               L -180 0
+               L -160 14 L -174 80 L -150 80 L -112 24
+               L -24 24 L -76 180 L -40 180 L 60 24
+               L 160 24
+               C 186 24, 200 16, 200 0 Z"/>
+    </g>
+  </g>
+</svg>
