@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.svg" width="96" alt="Contrail logo: two contrails across the sky">
+  <img src="assets/icon.svg" width="96" alt="Contrail logo: an aircraft trailing log lines across the night sky">
 </p>
 
 <h1 align="center">Contrail</h1>

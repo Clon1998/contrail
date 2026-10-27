@@ -124,7 +124,7 @@ test("social preview card", async ({ page }) => {
     <style>
       body { margin: 0; width: 1200px; height: 630px; overflow: hidden; color: #fff;
         font-family: -apple-system, "Segoe UI", Inter, sans-serif;
-        background: radial-gradient(ellipse at 20% 0%, #0c4a6e, #05080f 70%); }
+        background: radial-gradient(ellipse at 20% 0%, #232a7a, #050818 70%); }
       .text { position: absolute; left: 72px; top: 96px; width: 470px; }
       .brand { display: flex; align-items: center; gap: 18px; font-size: 44px; font-weight: 700; }
       .brand img { width: 84px; height: 84px; margin: -10px; }
