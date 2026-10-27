@@ -218,6 +218,91 @@ export function pathThrough(graph: Graph, id: string): { nodes: Set<string>; edg
 }
 
 /**
+ * The endpoints a system node stands for: this service's inputs (left) or outputs (right) of
+ * that type and system, with their routes.
+ */
+export function systemEndpoints(
+  node: RouteNode,
+  routes: Route[],
+): { route: Route; endpoint: Endpoint }[] {
+  return routes
+    .filter((route) => node.routes.includes(route.index))
+    .flatMap((route) =>
+      (node.column === 0 ? (route.input ? [route.input] : []) : route.outputs)
+        .filter(
+          (e) =>
+            (e.system ?? e.kind ?? "?") === node.label &&
+            (e.system ? e.kind : null) === node.detail,
+        )
+        .map((endpoint) => ({ route, endpoint })),
+    );
+}
+
+/**
+ * What in `node` contains `needle` (lower case), and the routes it belongs to: `name` for its
+ * name or second line (every route through it), else for a system the first setting of this
+ * service's routes to it (`host: sftp.example.com`; the routes with that setting). Values of
+ * secrets are empty, so they never match.
+ */
+export function routeNodeMatch(
+  node: RouteNode,
+  routes: Route[],
+  needle: string,
+): { what: string; routes: number[] } | null {
+  const named =
+    node.label.toLowerCase().includes(needle) || node.detail?.toLowerCase().includes(needle);
+  if (named) return { what: "name", routes: node.routes };
+  if (node.kind !== "system") return null;
+  let what: string | null = null;
+  const matched: number[] = [];
+  for (const { route, endpoint } of systemEndpoints(node, routes)) {
+    const p = endpoint.properties.find((p) => p.value && p.value.toLowerCase().includes(needle));
+    if (!p) continue;
+    what ??= `${p.key}: ${p.value}`;
+    matched.push(route.index);
+  }
+  return what === null ? null : { what, routes: matched };
+}
+
+/**
+ * The part of a service's graph on the routes through a node matching `query` (case-insensitive),
+ * up- and downstream of it, as on the cluster's route map; `matches` says what matched. Only the
+ * lines of the matching routes are followed, so a match on one route doesn't bring in the
+ * service's other routes. An empty query keeps the whole graph.
+ */
+export function filterRouteGraph(
+  graph: RouteGraph,
+  routes: Route[],
+  query: string,
+): { graph: RouteGraph; matches: Map<string, string> } {
+  const matches = new Map<string, string>();
+  const needle = query.trim().toLowerCase();
+  if (!needle) return { graph, matches };
+  const nodes = new Set<string>();
+  const edges = new Set<string>();
+  for (const n of graph.nodes) {
+    const match = routeNodeMatch(n, routes, needle);
+    if (match === null) continue;
+    matches.set(n.id, match.what);
+    const onRoutes = {
+      ...graph,
+      edges: graph.edges.filter((e) => e.routes.some((r) => match.routes.includes(r))),
+    };
+    const path = pathThrough(onRoutes, n.id);
+    path.nodes.forEach((id) => nodes.add(id));
+    path.edges.forEach((id) => edges.add(id));
+  }
+  return {
+    graph: {
+      ...graph,
+      nodes: graph.nodes.filter((n) => nodes.has(n.id)),
+      edges: graph.edges.filter((e) => edges.has(e.id)),
+    },
+    matches,
+  };
+}
+
+/**
  * Columns for a graph whose paths can be longer than the five fixed columns of one service's
  * routes (input → topic → transformer → topic → output): every node goes one column right of the
  * furthest node leading to it (the longest path from a start), so lines always run left to right.
