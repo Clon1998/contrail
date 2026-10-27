@@ -302,6 +302,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
 
   /** The time range each view's list is focused on (picked on the timeline). */
   const focuses = new Map<number, TimeRange>();
+  /** How many rows a focused view listed at its last live update. */
+  const focusedCounts = new Map<number, number>();
 
   /** Whether an event is inside a view's focus (every event is without one). */
   function inFocus(viewId: number, e: LogEvent): boolean {
@@ -409,13 +411,24 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       }
       filter.checked = events.length;
     }
-    const visible = filter?.spec.mode === "filter" ? filter.matched.length : total;
+    // Like the Rust side, counts and changes are of the listed rows, inside the focus.
+    const visible = listedCount(viewId);
+    const focused = focuses.has(viewId) && Array.isArray(events);
+    if (focused) {
+      // New events land after a focus picked earlier: the listed rows change only if they grew.
+      firstChanged = visible !== (focusedCounts.get(viewId) ?? visible) ? 0 : null;
+      focusedCounts.set(viewId, visible);
+    }
     const update: LiveUpdate = {
       state,
       sampled: false,
       stats: Array.isArray(events) ? statsOf(events) : { ...emptyStats(), total, info: total },
       visible,
-      matches: filter ? filter.matched.length : null,
+      matches: filter
+        ? focused
+          ? filter.matched.filter((i) => events[i] && inFocus(viewId, events[i])).length
+          : filter.matched.length
+        : null,
       firstChanged,
       evicted: 0,
       // Like the Rust side: a few changed rows travel with the update.
@@ -810,6 +823,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const events = views.get(viewId);
         if (spec.focus) focuses.set(viewId, spec.focus);
         else focuses.delete(viewId);
+        focusedCounts.delete(viewId);
         const trivial =
           spec.query.trim() === "" && spec.hiddenLevels.length === 0 && spec.noise.length === 0;
         if (trivial || !Array.isArray(events)) {

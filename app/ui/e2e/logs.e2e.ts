@@ -498,6 +498,8 @@ test("the timeline shows events over time; clicking or dragging focuses the list
   const clear = page.getByRole("button", { name: "Show the whole time window" });
   await expect(clear).toBeVisible();
   await expect(page.getByRole("button", { name: /^Time window:/ })).toContainText("Last 15 min");
+  // The fake tail adds an event per second: the focused list must stay usable across updates.
+  await page.waitForTimeout(1_500);
   await clear.click();
   await expect(clear).toHaveCount(0);
 
