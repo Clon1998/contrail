@@ -3,7 +3,7 @@ import { cn } from "cn";
 import type { LogEvent } from "@/bindings";
 import { shortTaskId } from "@/lib/ecs";
 import { highlightSegments } from "@/lib/highlight";
-import { formatLogTime, stripAnsi } from "@/lib/logs";
+import { formatFullTime, formatLogTime, stripAnsi } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { Ansi } from "./Ansi";
@@ -17,12 +17,15 @@ export function LogRow({
   event,
   grid,
   showTask,
+  withDate = false,
   marked = false,
   current = false,
 }: {
   event: LogEvent;
   grid: string;
   showTask: boolean;
+  /** Show the date in front of the time (the list decides for all its rows). */
+  withDate?: boolean;
   /** A search match in highlight mode. */
   marked?: boolean;
   /** The match last jumped to. */
@@ -56,8 +59,11 @@ export function LogRow({
         <ChevronRightIcon
           className={cn("size-3 self-center text-muted-foreground", expanded && "rotate-90")}
         />
-        <span className="text-muted-foreground tabular-nums">
-          {formatLogTime(event.timestamp, timeZone)}
+        <span
+          className="text-muted-foreground tabular-nums"
+          title={formatFullTime(event.timestamp, timeZone)}
+        >
+          {formatLogTime(event.timestamp, timeZone, withDate)}
         </span>
         <span
           className={cn(

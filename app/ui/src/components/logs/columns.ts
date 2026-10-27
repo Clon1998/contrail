@@ -73,10 +73,10 @@ export function abbreviateLogger(name: string, max: number): string {
 }
 
 /** The CSS grid columns of a row: time, level, [task], [optional…], message. */
-export function gridTemplate(showTask: boolean, columns: LogColumn[]): string {
+export function gridTemplate(showTask: boolean, columns: LogColumn[], withDate = false): string {
   return [
     "1.2em",
-    "12.5ch",
+    withDate ? "18.5ch" : "12.5ch",
     "6ch",
     ...(showTask ? ["10.5ch"] : []),
     ...OPTIONAL_COLUMNS.filter((c) => columns.includes(c.id)).map((c) => c.width),

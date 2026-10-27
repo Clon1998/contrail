@@ -122,15 +122,37 @@ export function isToday(ms: number, timeZone: TimeZone, now = Date.now()): boole
   return day(ms) === day(now);
 }
 
-/** `12:34:56.789` in local time or UTC (the time zone setting). */
-export function formatLogTime(timestamp: string, timeZone: "local" | "utc"): string {
+/** An instant's date and time parts, in local time or UTC. */
+function timeParts(timestamp: string, timeZone: TimeZone) {
   const date = new Date(timestamp);
-  const pad = (n: number, width = 2) => String(n).padStart(width, "0");
-  const [h, m, s, ms] =
-    timeZone === "utc"
-      ? [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds(), date.getUTCMilliseconds()]
-      : [date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()];
-  return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}`;
+  const utc = timeZone === "utc";
+  return {
+    year: utc ? date.getUTCFullYear() : date.getFullYear(),
+    month: (utc ? date.getUTCMonth() : date.getMonth()) + 1,
+    day: utc ? date.getUTCDate() : date.getDate(),
+    hour: utc ? date.getUTCHours() : date.getHours(),
+    minute: utc ? date.getUTCMinutes() : date.getMinutes(),
+    second: utc ? date.getUTCSeconds() : date.getSeconds(),
+    ms: utc ? date.getUTCMilliseconds() : date.getMilliseconds(),
+  };
+}
+
+const pad = (n: number, width = 2) => String(n).padStart(width, "0");
+
+/**
+ * `12:34:56.789` in local time or UTC (the time zone setting); `10-26 12:34:56.789` with
+ * `withDate` (a list decides once for all its rows, so the column keeps one width).
+ */
+export function formatLogTime(timestamp: string, timeZone: TimeZone, withDate = false): string {
+  const t = timeParts(timestamp, timeZone);
+  const time = `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}.${pad(t.ms, 3)}`;
+  return withDate ? `${pad(t.month)}-${pad(t.day)} ${time}` : time;
+}
+
+/** `2026-10-26 12:34:56.789 UTC` (or `local`): the whole timestamp, for the details. */
+export function formatFullTime(timestamp: string, timeZone: TimeZone): string {
+  const year = timeParts(timestamp, timeZone).year;
+  return `${year}-${formatLogTime(timestamp, timeZone, true)} ${timeZone === "utc" ? "UTC" : "local"}`;
 }
 
 /** The text without ANSI colour codes (the debug view shows plain text). */

@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownToLineIcon, ArrowUpToLineIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { isToday } from "@/lib/logs";
 import { cachedIndexOf, PAGE_SIZE, type ScrollAnchor, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
@@ -41,6 +42,9 @@ export function LogList({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fontSize = usePrefs((s) => s.prefs.settings.logFontSize);
   const columns = useLogColumns();
+  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  // Where the listed events start: the focus, or as far back as events are loaded.
+  const from = useLogs((s) => s.focus?.start ?? s.view?.loadedFrom ?? null);
   const pages = useLogs((s) => s.pages);
   const scrollTarget = useLogs((s) => s.scrollTarget);
   const prepended = useLogs((s) => s.prepended);
@@ -184,7 +188,10 @@ export function LogList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total, virtualizer]);
 
-  const grid = gridTemplate(showTask, columns);
+  // Once the listed events reach back before today, every row shows its date: one format (and
+  // column width) for the whole list.
+  const withDate = from !== null && !isToday(Date.parse(from), timeZone);
+  const grid = gridTemplate(showTask, columns, withDate);
 
   return (
     <div className="relative min-h-0 flex-1">
@@ -232,6 +239,7 @@ export function LogList({
                   <LogRow
                     event={event}
                     grid={grid}
+                    withDate={withDate}
                     showTask={showTask}
                     marked={matchSet?.has(index) ?? false}
                     current={current === index}

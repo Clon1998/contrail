@@ -11,6 +11,7 @@ import { commands, type LogEvent } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import {
   classifyTrace,
+  formatFullTime,
   prettyJson,
   splitEmbeddedJson,
   tokenizeJson,
@@ -217,6 +218,7 @@ export function EventBody({
   onField?: (term: string) => void;
 }) {
   const { line } = event;
+  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   const embedded = splitEmbeddedJson(line.message, line.jsonSpan);
   const embeddedPretty = embedded ? prettyJson(embedded.json) : null;
   const rawPretty = line.kind === "ecs" || line.kind === "json" ? prettyJson(event.raw) : null;
@@ -248,32 +250,35 @@ export function EventBody({
         </div>
       )}
 
-      {line.fields.length > 0 && (
-        <dl
-          aria-label="Fields"
-          className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-0.5"
-        >
-          {line.fields.map((field) => (
-            <div key={field.key} className="contents">
-              <dt className="text-muted-foreground">{field.key}</dt>
-              <dd className="break-all">
-                {onField ? (
-                  <button
-                    type="button"
-                    title="Add to the search"
-                    onClick={() => onField(fieldTerm(field.key, String(field.value)))}
-                    className="text-left hover:text-primary hover:underline"
-                  >
-                    {String(field.value)}
-                  </button>
-                ) : (
-                  String(field.value)
-                )}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      <dl
+        aria-label="Fields"
+        className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-0.5"
+      >
+        {/* The event's time with its date, whatever the line's format (the list shows less). */}
+        <div className="contents">
+          <dt className="text-muted-foreground">time</dt>
+          <dd className="tabular-nums">{formatFullTime(event.timestamp, timeZone)}</dd>
+        </div>
+        {line.fields.map((field) => (
+          <div key={field.key} className="contents">
+            <dt className="text-muted-foreground">{field.key}</dt>
+            <dd className="break-all">
+              {onField ? (
+                <button
+                  type="button"
+                  title="Add to the search"
+                  onClick={() => onField(fieldTerm(field.key, String(field.value)))}
+                  className="text-left hover:text-primary hover:underline"
+                >
+                  {String(field.value)}
+                </button>
+              ) : (
+                String(field.value)
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
 
       {rawPretty && (
         <details>
