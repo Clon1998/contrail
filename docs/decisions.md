@@ -500,3 +500,11 @@ prefix); the Kafka container line (consumers) and `Starting FrameworkProducer fo
 integration consumer's and a producer's topic prefixed with `integration.` when it lacks it (producers only write
 integration topics for now) and a raw consumer's topic kept as logged. The startup scan searches once per phrase
 (`Creating`, `FrameworkProducer`): a CloudWatch filter pattern matches one phrase.
+
+## 2026-10-27 — The timeline focuses the list instead of changing the time window
+
+Patrick: dragging on the timeline changed the time window, which reloaded the view and couldn't be undone.
+**Decision:** a click or drag sets a *focus*, a time range applied in Rust over the loaded buffer (two binary
+searches on the time-ordered events and on the matches): the list, its counts, match positions and the Fields
+panel cover only the focus, while the timeline keeps the whole window. A chip next to the time window shows it;
+its × brings the whole window back without reloading. Opening another window clears the focus.
