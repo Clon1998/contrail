@@ -42,6 +42,7 @@ import { ExportMenu } from "./ExportMenu";
 import { FieldMappingDialog } from "./FieldMappingDialog";
 import { FieldsPanel } from "./FieldsPanel";
 import { LogList } from "./LogList";
+import { LogListSkeleton } from "./LogListSkeleton";
 import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
 import { ShareMenu } from "./ShareMenu";
@@ -427,11 +428,7 @@ export function LogViewer() {
       )}
       <div className="flex min-h-0 flex-1">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {loading && (
-            <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" /> Loading logs…
-            </p>
-          )}
+          {loading && <LogListSkeleton timeline={showTimeline} label="Loading logs" />}
           {!loading && view && view.stats.total > 0 && showTimeline && (
             <TimelineChart viewId={view.viewId} />
           )}

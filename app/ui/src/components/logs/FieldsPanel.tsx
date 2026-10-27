@@ -11,6 +11,7 @@ import {
 } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   fieldTerm,
   hasTerm,
@@ -116,7 +117,15 @@ export function FieldsPanel() {
           </p>
         )}
         {summary?.pipeline && <PipelineSection pipeline={summary.pipeline} terms={terms} />}
-        {summary && <FieldList summary={summary} terms={terms} />}
+        {summary ? (
+          <FieldList summary={summary} terms={terms} />
+        ) : (
+          <div role="status" aria-label="Counting fields" className="flex flex-col gap-2.5 p-3">
+            {["w-1/3", "w-2/3", "w-1/2", "w-1/4", "w-3/5", "w-2/5"].map((width) => (
+              <Skeleton key={width} className={cn("h-3.5", width)} />
+            ))}
+          </div>
+        )}
       </div>
     </aside>
   );

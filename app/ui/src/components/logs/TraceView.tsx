@@ -25,6 +25,7 @@ import { hitKey, TRACE_SPANS, type TraceState } from "@/stores/trace";
 import { Ansi } from "./Ansi";
 import { LEVEL_TONE } from "./levels";
 import { EventBody, StatusSummary } from "./LogDetails";
+import { LogListSkeleton } from "./LogListSkeleton";
 import { StateBadge } from "./StateBadge";
 import { TraceGraph } from "./TraceGraph";
 
@@ -101,10 +102,12 @@ export function TraceView({ tab }: { tab: TraceTab }) {
             </p>
           )}
           {result.kind === "loading" && (
-            <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-              <Loader2Icon className="size-4 animate-spin" /> Searching {chosen.length}{" "}
-              {chosen.length === 1 ? "service" : "services"}…
-            </p>
+            <div>
+              <p className="px-4 pt-3 text-sm text-muted-foreground">
+                Searching {chosen.length} {chosen.length === 1 ? "service" : "services"}…
+              </p>
+              <LogListSkeleton timeline={false} label="Searching" />
+            </div>
           )}
           {result.kind === "error" && (
             <p className="m-4 text-sm text-destructive">

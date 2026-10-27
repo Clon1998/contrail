@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2Icon, NetworkIcon, SquareArrowOutUpRightIcon, XIcon } from "lucide-react";
 import { cn } from "cn";
 import {
@@ -12,7 +12,15 @@ import {
 } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { buildRouteGraph, type RouteGraph, type RouteNode } from "@/lib/routes";
+import { Input } from "@/components/ui/input";
+import { MOD } from "@/lib/keys";
+import {
+  buildRouteGraph,
+  filterRouteGraph,
+  systemEndpoints,
+  type RouteGraph,
+  type RouteNode,
+} from "@/lib/routes";
 import { useEcs } from "@/stores/ecs";
 import { SecretValue, Value } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
@@ -28,7 +36,8 @@ const columnTitle = (column: number) => COLUMN_TITLES[column] ?? null;
  * reading them, each system once. The service itself is selected at first, so its paths stand
  * out; on request the other services on its topics join in. That scan is kept for the session
  * (in Rust, per cluster), so the next service through the graph shows them right away. A click on
- * a topic or one of its systems shows the settings.
+ * a topic or one of its systems shows the settings. The search (⌘F / Ctrl+F) keeps the routes
+ * through the matching topics, services and systems (also by a setting, like a host).
  */
 export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }) {
   const routes = useMemo(() => containers.flatMap((c) => c.routes?.routes ?? []), [containers]);
@@ -46,6 +55,12 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
   const graph = useMemo(
     () => buildRouteGraph(self, routes, links.kind === "done" ? links.links : []),
     [self, routes, links],
+  );
+  const [query, setQuery] = useState("");
+  const searchBox = useRef<HTMLInputElement>(null);
+  const { graph: shown, matches } = useMemo(
+    () => filterRouteGraph(graph, routes, query),
+    [graph, routes, query],
   );
   const topics = useMemo(
     () => [...new Set(routes.flatMap((r) => (r.topic ? [r.topic] : [])))],
@@ -75,9 +90,25 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
     };
   }, [ctx, selected, topics]);
 
+  // ⌘F / Ctrl+F goes to the search (the log view, with its own, isn't shown meanwhile).
+  useEffect(() => {
+    if (routes.length === 0) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        searchBox.current?.focus();
+        searchBox.current?.select();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [routes.length]);
+
   if (routes.length === 0) return null;
-  const focus = picked === undefined ? graph.selfId : picked;
-  const focused = graph.nodes.find((n) => n.id === focus) ?? null;
+  const chosen = picked === undefined ? graph.selfId : picked;
+  // A node the search hides is no longer selected.
+  const focused = shown.nodes.find((n) => n.id === chosen) ?? null;
+  const focus = focused?.id ?? null;
 
   const find = async () => {
     if (!ctx || !selected) return;
@@ -101,20 +132,37 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
       title="Routes"
       count={routes.length}
       action={
-        <Button
-          variant="outline"
-          size="xs"
-          disabled={links.kind === "loading"}
-          tooltip={
-            links.kind === "done"
-              ? "Look through the cluster's services again (they're kept for the session)"
-              : "Look through the cluster's services for routes on the same topics"
-          }
-          onClick={() => void find()}
-        >
-          {links.kind === "loading" ? <Loader2Icon className="animate-spin" /> : <NetworkIcon />}
-          Find connected services
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Input
+            ref={searchBox}
+            type="search"
+            aria-label="Find in the routes"
+            placeholder={`Find a topic, service, system, host… (${MOD}F)`}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && query !== "") {
+                e.preventDefault();
+                setQuery("");
+              }
+            }}
+            className="h-7 w-60 text-xs"
+          />
+          <Button
+            variant="outline"
+            size="xs"
+            disabled={links.kind === "loading"}
+            tooltip={
+              links.kind === "done"
+                ? "Look through the cluster's services again (they're kept for the session)"
+                : "Look through the cluster's services for routes on the same topics"
+            }
+            onClick={() => void find()}
+          >
+            {links.kind === "loading" ? <Loader2Icon className="animate-spin" /> : <NetworkIcon />}
+            Find connected services
+          </Button>
+        </div>
       }
     >
       {links.kind === "error" && (
@@ -145,12 +193,19 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
           </>
         )}
       </p>
-      <GraphView
-        graph={graph}
-        columnTitle={columnTitle}
-        focus={focus}
-        onFocus={(id) => setPicked(focus === id ? null : id)}
-      />
+      {shown.nodes.length === 0 ? (
+        <p className="py-4 text-center text-xs text-muted-foreground">
+          Nothing in the routes matches “{query}”.
+        </p>
+      ) : (
+        <GraphView
+          graph={shown}
+          columnTitle={columnTitle}
+          focus={focus}
+          onFocus={(id) => setPicked(focus === id ? null : id)}
+          matches={matches}
+        />
+      )}
       {focused && !focused.self ? (
         <NodeDetails node={focused} graph={graph} routes={routes} onClose={() => setPicked(null)} />
       ) : (
@@ -260,15 +315,7 @@ const sameProperty = (a: RouteProperty, b: RouteProperty) =>
  * its topic and what differs (a queue, a path).
  */
 function SystemDetails({ node, routes }: { node: RouteNode; routes: Route[] }) {
-  // The endpoints this node stands for: inputs or outputs of that type and system.
-  const uses = routes.flatMap((route) =>
-    (node.column === 0 ? (route.input ? [route.input] : []) : route.outputs)
-      .filter(
-        (e) =>
-          (e.system ?? e.kind ?? "?") === node.label && (e.system ? e.kind : null) === node.detail,
-      )
-      .map((endpoint) => ({ route, endpoint })),
-  );
+  const uses = systemEndpoints(node, routes);
   const first = uses[0]?.endpoint;
   if (!first) return null;
   const shared = first.properties.filter((p) =>

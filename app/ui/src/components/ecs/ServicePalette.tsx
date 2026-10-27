@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { BookmarkIcon, HistoryIcon, Loader2Icon, StarIcon } from "lucide-react";
+import { BookmarkIcon, HistoryIcon, StarIcon } from "lucide-react";
+import { cn } from "cn";
 import type { SavedSearch, ServiceKey } from "@/bindings";
 import {
   CommandDialog,
@@ -9,6 +10,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Skeleton } from "@/components/ui/skeleton";
 import { nameFromArn } from "@/lib/ecs";
 import { openServiceKey } from "@/lib/navigation";
 import { matchWords } from "@/lib/search";
@@ -169,8 +171,14 @@ export function ServicePalette() {
               });
             })}
             {loading && (
-              <div className="flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground">
-                <Loader2Icon className="size-3 animate-spin" /> Loading services…
+              <div
+                role="status"
+                aria-label="Loading services"
+                className="flex flex-col gap-2.5 px-2 py-2"
+              >
+                {["w-2/3", "w-1/2", "w-3/5"].map((width) => (
+                  <Skeleton key={width} className={cn("h-4", width)} />
+                ))}
               </div>
             )}
           </CommandGroup>

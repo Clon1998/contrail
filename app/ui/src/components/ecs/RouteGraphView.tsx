@@ -27,6 +27,7 @@ export function GraphView({
   columnTitle,
   focus,
   onFocus,
+  matches,
 }: {
   graph: Graph;
   /** The accessible name of the whole graph. */
@@ -37,6 +38,8 @@ export function GraphView({
   columnTitle: (column: number) => string | null;
   focus: string | null;
   onFocus: (id: string) => void;
+  /** Search matches by node id, with what matched (`name`, or a setting). */
+  matches?: ReadonlyMap<string, string>;
 }) {
   const container = useRef<HTMLDivElement>(null);
   // Refs to the node elements by node id, filled while rendering (a callback ref per node).
@@ -130,6 +133,7 @@ export function GraphView({
                   else nodeElements.current.delete(node.id);
                 }}
                 selected={focus === node.id}
+                match={matches?.get(node.id) ?? null}
                 dimmed={active ? !active.nodes.has(node.id) : false}
                 onClick={() => onFocus(node.id)}
                 onHover={(on) => setHovered(on ? node.id : null)}
@@ -148,6 +152,7 @@ function GraphNodeButton({
   node,
   ref,
   selected,
+  match,
   dimmed,
   onClick,
   onHover,
@@ -155,6 +160,7 @@ function GraphNodeButton({
   node: GraphNode;
   ref: (element: HTMLButtonElement | null) => void;
   selected: boolean;
+  match: string | null;
   dimmed: boolean;
   onClick: () => void;
   onHover: (on: boolean) => void;
@@ -180,6 +186,7 @@ function GraphNodeButton({
         node.self && "border-primary/60 bg-primary/10",
         node.disabled && "border-dashed opacity-60",
         node.missing && "border-dashed border-warning/60 bg-transparent",
+        match !== null && "outline-2 outline-offset-1 outline-warning/70",
         selected && "ring-2 ring-primary",
         dimmed && "opacity-40",
       )}
@@ -195,6 +202,9 @@ function GraphNodeButton({
         >
           {node.label}
         </span>
+        {match !== null && match !== "name" && (
+          <span className="truncate text-[11px] text-warning">{match}</span>
+        )}
         {node.state && <StateBadge state={node.state} className="mt-0.5 self-start" />}
         {(node.detail !== null || node.disabled || node.self) && (
           <span

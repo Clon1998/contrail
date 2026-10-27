@@ -428,6 +428,15 @@ test("a long window that fits on screen loads its older events right away", asyn
   await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
 });
 
+test("while logs load, placeholders in the shape of the list show", async ({ page }) => {
+  await page.goto("/?loadDelay=800");
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  const loading = page.getByRole("status", { name: "Loading logs" });
+  await expect(loading).toBeVisible();
+  await expect(list).toBeVisible();
+  await expect(loading).toHaveCount(0);
+});
+
 test("the end of the list says whether older events are loading, missing or all there", async ({
   page,
 }) => {

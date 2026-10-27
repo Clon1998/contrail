@@ -62,6 +62,13 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [["Esc"], "Clear the selection, then the narrowing to one path"],
     ],
   },
+  {
+    title: "A service's routes",
+    keys: [
+      [[MOD, "F"], "Find a topic, service or system, also by a setting"],
+      [["Esc"], "Clear the search (in the search box)"],
+    ],
+  },
 ];
 
 /** All shortcuts by group (the "?" dialog and the settings show the same list). */

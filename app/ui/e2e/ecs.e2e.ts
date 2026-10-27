@@ -221,6 +221,21 @@ test("routes of a routing-framework service as a graph, and the services on the 
   await expect(gatewayRoutes.getByRole("region", { name: "Output 2" })).toContainText("disabled");
   await expect(gatewayRoutes).not.toContainText("demo-not-a-secret");
 
+  // ⌘F / Ctrl+F finds a route by a setting: only that route's part of the graph stays.
+  await page.keyboard.press("ControlOrMeta+F");
+  const find = gatewayRoutes.getByRole("searchbox", { name: "Find in the routes" });
+  await expect(find).toBeFocused();
+  await find.fill("SHIPMENT_IN");
+  await expect(gatewayGraph.getByRole("button", { name: "system Billing" })).toContainText(
+    "billing/queue/SHIPMENT_IN",
+  );
+  await expect(
+    gatewayGraph.getByRole("button", { name: "topic shipments.dispatched" }),
+  ).toBeVisible();
+  await expect(gatewayGraph.getByRole("button", { name: "topic demo.events" })).toHaveCount(0);
+  await find.press("Escape");
+  await expect(gatewayGraph.getByRole("button", { name: "topic demo.events" })).toBeVisible();
+
   // Back on the first tab, its connected services are still there.
   await page
     .getByRole("tablist", { name: "Open tabs" })

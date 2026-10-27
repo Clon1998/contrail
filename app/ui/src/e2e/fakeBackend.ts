@@ -191,6 +191,8 @@ export interface FakeBackendOptions {
   rejectedSessions?: string[];
   /** Delay of row fetches, like the real IPC round trip (default: none). */
   rowsDelayMs?: number;
+  /** Delay of opening a log view (default: none). */
+  loadDelayMs?: number;
   /** Delay of `load_older` (default: none). */
   olderDelayMs?: number;
   /** A newer version the update check finds (default: none, up to date). */
@@ -700,6 +702,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         return args?.includeStopped ? tasks : tasks.filter((t) => t.lastStatus !== "STOPPED");
       }
       case "open_service_logs": {
+        if (options.loadDelayMs) await new Promise((r) => setTimeout(r, options.loadDelayMs));
         const ctx = args?.ctx as AwsCtx;
         const service = args?.service as ServiceRef;
         const account = checkCredentials(ctx);

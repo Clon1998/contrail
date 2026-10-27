@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Endpoint, Route, TopicLink } from "@/bindings";
-import { buildRouteGraph, layerColumns, pathThrough } from "./routes";
+import { buildRouteGraph, filterRouteGraph, layerColumns, pathThrough } from "./routes";
 
 const endpoint = (kind: string, system: string, enabled = true): Endpoint => ({
   kind,
@@ -155,6 +155,45 @@ describe("pathThrough", () => {
     ]);
     // The other reader of the same topic isn't on the way.
     expect(path.edges.has("topic:events->service:3:auditor")).toBe(false);
+  });
+});
+
+describe("filterRouteGraph", () => {
+  const routes = [
+    route(0, "events", {
+      outputs: [
+        {
+          ...endpoint("sftp", "Archive"),
+          properties: [
+            { key: "host", value: "files.example.com", valueFrom: null, variable: "R0_HOST" },
+          ],
+        },
+      ],
+    }),
+    route(1, "orders", { outputs: [endpoint("http", "Index")] }),
+  ];
+  const graph = buildRouteGraph("gateway", routes, [
+    link("ingest", "in", [endpoint("sftp", "Partner")]),
+  ]);
+  const labels = (g: typeof graph) => g.nodes.map((n) => n.label).sort();
+
+  it("keeps the paths through a node matching by name, and says what matched", () => {
+    const { graph: found, matches } = filterRouteGraph(graph, routes, "ORDERS");
+    // The other route of the service stays out.
+    expect(labels(found)).toEqual(["Index", "gateway", "orders"]);
+    expect([...matches]).toEqual([["topic:orders", "name"]]);
+    expect(found.edges.every((e) => found.nodes.some((n) => n.id === e.to))).toBe(true);
+  });
+
+  it("finds a system by a setting of the routes to it", () => {
+    const { graph: found, matches } = filterRouteGraph(graph, routes, "files.example");
+    expect(labels(found)).toEqual(["Archive", "Partner", "events", "gateway", "ingest"]);
+    expect([...matches.values()]).toEqual(["host: files.example.com"]);
+  });
+
+  it("keeps the whole graph without a query, and nothing when nothing matches", () => {
+    expect(filterRouteGraph(graph, routes, "  ").graph).toBe(graph);
+    expect(filterRouteGraph(graph, routes, "nope").graph.nodes).toEqual([]);
   });
 });
 
