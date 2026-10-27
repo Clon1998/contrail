@@ -58,7 +58,8 @@ fn a_transformers_start_names_the_topics_it_reads() {
     let topology = startup_topology(parsed.iter().map(|line| line.message.as_str()));
 
     // The configured name of the consumer line and the Kafka name of the container line are one
-    // integration topic; the Kafka client's own lines and the status lines don't count.
+    // integration topic; the other "Creating" line, the Kafka client's own lines and the status
+    // lines don't count.
     assert_eq!(
         topology.reads,
         [ConsumedTopic {
