@@ -1,5 +1,5 @@
 /** M3/M4: the log viewer — rows, expanding, copying, columns, task view, 100k lines. */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 async function openLogs(page: Page, cluster: string, service: string) {
   const tree = page.getByRole("tree", { name: "Clusters" });
@@ -7,6 +7,21 @@ async function openLogs(page: Page, cluster: string, service: string) {
   await tree.getByRole("treeitem", { name: service }).click();
   await page.getByRole("tab", { name: "Logs" }).click();
   return page.getByRole("list", { name: "Log events" });
+}
+
+/**
+ * Scrolls the list to `fraction` of its height (0: the oldest row) until `until` shows. While a
+ * view follows live, a new event arriving before the scroll registers (or the list's first move
+ * to the newest event) puts it back at the newest; a person scrolls gradually, a test jumps in
+ * one step.
+ */
+async function scrollList(list: Locator, fraction: number, until: Locator) {
+  await expect(async () => {
+    await list.locator("..").evaluate((el, f) => {
+      el.scrollTop = el.scrollHeight * f;
+    }, fraction);
+    await expect(until).toBeVisible({ timeout: 1_000 });
+  }).toPass();
 }
 
 /** Opens the time picker, types `text` (e.g. `1h`) and applies it with Enter. */
@@ -126,11 +141,7 @@ test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", a
   await expect(list).toHaveAttribute("aria-rowcount", "100000");
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
 
-  const scroller = list.locator("..");
-  await scroller.evaluate((el) => {
-    el.scrollTop = 0;
-  });
-  await expect(list.getByText("Ingested event #1 ", { exact: false }).first()).toBeVisible();
+  await scrollList(list, 0, list.getByText("Ingested event #1 ", { exact: false }).first());
   // Only a window of rows exists in the DOM.
   expect(await list.getByRole("listitem").count()).toBeLessThan(200);
 
@@ -161,19 +172,14 @@ test("live: new events arrive, pause stops them, resume continues", async ({ pag
 });
 
 test("the list keeps a place in the middle across Overview, Logs and tabs", async ({ page }) => {
-  page.on("console", (m) => m.text().startsWith("DBG") && console.log(m.text()));
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
-  const scroller = list.locator("..");
-  await scroller.evaluate((el) => {
-    el.scrollTop = el.scrollHeight / 2;
-  });
   const row = list.getByRole("button", { name: /Ingested event #5\d{4} / }).nth(5);
+  await scrollList(list, 0.5, row);
   const name = (await row.innerText()).match(/Ingested event #\d+/)?.[0] ?? "";
   await row.click();
   const top = async () => (await row.boundingBox())?.y;
   const before = await top();
-  console.log("DBG before", before, name, await scroller.evaluate((el) => el.scrollTop));
 
   const samePlace = async () => {
     const back = list.getByRole("button", { name: new RegExp(`${name} `) });
@@ -197,10 +203,8 @@ test("the list keeps a place in the middle across Overview, Logs and tabs", asyn
 test("the list keeps its place and open rows across Overview, Logs and tabs", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
-  await list.locator("..").evaluate((el) => {
-    el.scrollTop = 0;
-  });
   const first = list.getByRole("button", { name: /Ingested event #1 / }).first();
+  await scrollList(list, 0, first);
   await first.click();
   await expect(first).toHaveAttribute("aria-expanded", "true");
 
@@ -229,15 +233,7 @@ test("the list keeps its place and open rows across Overview, Logs and tabs", as
 test("live: following stops when scrolled up and resumes with Jump to latest", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
-  // Scrolled up; again if the list's first move to the newest event came after it.
-  await expect(async () => {
-    await list.locator("..").evaluate((el) => {
-      el.scrollTop = 0;
-    });
-    await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible({
-      timeout: 1_000,
-    });
-  }).toPass();
+  await scrollList(list, 0, page.getByRole("button", { name: "Jump to latest" }));
   // New events (the generated view grows while live) don't pull the list down.
   const before = Number(await list.getAttribute("aria-rowcount"));
   await expect
