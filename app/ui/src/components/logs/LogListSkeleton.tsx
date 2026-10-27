@@ -13,7 +13,7 @@ export function LogListSkeleton({ timeline, label }: { timeline: boolean; label:
       <span className="sr-only">{label}…</span>
       {timeline && (
         <div className="border-b border-border px-4 pt-1.5 pb-1">
-          <Skeleton className="h-10" />
+          <Skeleton className="h-7" />
           <div className="h-[15px]" />
         </div>
       )}
