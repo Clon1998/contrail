@@ -7,6 +7,7 @@ import {
   timelineLabel,
   utcOffsetMinutes,
 } from "@/lib/timeline";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 
@@ -126,6 +127,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
           setDrag(null);
         }}
       >
+        {!timeline && <Skeleton className="absolute inset-0" />}
         <svg width={width} height={BARS_HEIGHT} aria-hidden className="block">
           {timeline?.buckets.map((bucket, i) => {
             let y = BARS_HEIGHT;

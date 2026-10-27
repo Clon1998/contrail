@@ -1,15 +1,9 @@
 import { useEffect, useState } from "react";
-import {
-  ChevronRightIcon,
-  Loader2Icon,
-  NetworkIcon,
-  RefreshCwIcon,
-  SearchIcon,
-  StarIcon,
-} from "lucide-react";
+import { ChevronRightIcon, NetworkIcon, RefreshCwIcon, SearchIcon, StarIcon } from "lucide-react";
 import { cn } from "cn";
 import type { ServiceRef } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { nameFromArn } from "@/lib/ecs";
 import { openServiceKey } from "@/lib/navigation";
@@ -104,9 +98,15 @@ export function Sidebar() {
       </div>
 
       {clusters.state === "loading" && !clusters.data && (
-        <p className="flex items-center gap-2 px-3 py-1 text-muted-foreground">
-          <Loader2Icon className="size-3 animate-spin" /> Loading clusters…
-        </p>
+        <div
+          role="status"
+          aria-label="Loading clusters"
+          className="flex flex-col gap-2 px-3 py-1.5"
+        >
+          {["w-3/4", "w-1/2", "w-2/3"].map((width) => (
+            <Skeleton key={width} className={cn("h-4", width)} />
+          ))}
+        </div>
       )}
       {clusters.state === "error" && (
         <p className="px-3 py-1 text-xs text-destructive">{clusters.error.message}</p>
@@ -180,8 +180,13 @@ function ClusterNode({ arn, query }: { arn: string; query: string }) {
       {expanded && (
         <ul role="group">
           {services?.state === "loading" && !services.data && (
-            <li className="flex items-center gap-2 py-1 pl-8 text-xs text-muted-foreground">
-              <Loader2Icon className="size-3 animate-spin" /> Loading…
+            <li
+              role="status"
+              aria-label="Loading services"
+              className="flex flex-col gap-1.5 py-1 pr-3 pl-8"
+            >
+              <Skeleton className="h-3.5 w-3/4" />
+              <Skeleton className="h-3.5 w-1/2" />
             </li>
           )}
           {services?.state === "error" && (

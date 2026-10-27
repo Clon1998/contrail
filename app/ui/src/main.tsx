@@ -16,6 +16,7 @@ const ready =
           loginDelayMs: 600,
           // `?rowsDelay=30` simulates the IPC latency of row fetches (scrolling checks).
           rowsDelayMs: Number(new URLSearchParams(location.search).get("rowsDelay") ?? 0),
+          loadDelayMs: Number(new URLSearchParams(location.search).get("loadDelay") ?? 0),
           olderDelayMs: Number(new URLSearchParams(location.search).get("olderDelay") ?? 0),
           update: new URLSearchParams(location.search).get("update") ?? undefined,
           // `?link=contrail://…`: a link Contrail was started with.
