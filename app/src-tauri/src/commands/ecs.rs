@@ -82,6 +82,9 @@ pub struct TopicLink {
     pub direction: TopicDirection,
     /// The consumer group of an output route.
     pub group: Option<String>,
+    /// The topic is a plain Kafka topic (an output route with `rawTopic`), not the framework's
+    /// integration topic `integration.<topic>`.
+    pub raw: bool,
     /// The route is switched on.
     pub enabled: bool,
     /// Where that service's route gets its data from (input) or sends it to (outputs): type,
@@ -372,6 +375,7 @@ fn topic_links(
                 service: service.clone(),
                 direction,
                 group: route.group.clone(),
+                raw: route.input.is_none() && route.raw_topic,
                 enabled: route.enabled,
                 endpoints: endpoints
                     .iter()
@@ -544,13 +548,16 @@ mod tests {
             panic!("expected only event-enricher, got {found:?}");
         };
         assert_eq!(enricher.service, "event-enricher");
-        assert_eq!(enricher.writes, ["demo.events.enriched"]);
+        assert_eq!(enricher.writes, ["integration.demo.events.enriched"]);
         let reads: Vec<_> = enricher
             .reads
             .iter()
             .map(|r| (r.topic.as_str(), r.group.as_deref(), r.concurrency))
             .collect();
-        assert_eq!(reads, [("demo.events", Some("event-enricher"), Some(3))]);
+        assert_eq!(
+            reads,
+            [("integration.demo.events", Some("event-enricher"), Some(3))]
+        );
         assert!(enricher.task_definition.starts_with("event-enricher:"));
         // The same result from the cache.
         assert_eq!(

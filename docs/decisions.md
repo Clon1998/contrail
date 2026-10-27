@@ -480,3 +480,14 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
 more, so the plugin doesn't compile there (macOS and Windows don't build that code). The lockfile pins `rust-ini`
 to 0.21.1 (`cargo update -p rust-ini --precise 0.21.1`; 0.21.2 is yanked) until the plugin is fixed. A
 `cargo update` must keep that pin.
+
+## 2026-10-27 — Topic kinds on the route map
+
+Patrick: a route's `topic` is a logical name; on Kafka the framework uses `integration.<topic>`, unless an output
+route sets `rawTopic: true` and reads the plain Kafka topic. Transformers' startup lines log the real Kafka names.
+**Decision:** routes get `raw_topic` (parsed from `…_RAWTOPIC`), topic links carry `raw`; the route map keys topic
+nodes by kind and logical name (`topic:x` for the integration topic, `topic:kafka:x` for the plain one), shows the
+logical name with the kind on a second line, and reads transformer topics (startup lines and entered by hand) as
+Kafka names: `integration.x` is the integration topic x, anything else a plain Kafka topic. Search also matches
+a topic's Kafka name. Before, a transformer reading `integration.x` was drawn next to, not on, the routes' `x`.
+Not changed yet: the per-service route graph and "Find connected services" match topics by name only.

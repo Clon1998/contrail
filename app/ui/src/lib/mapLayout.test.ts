@@ -15,6 +15,7 @@ const link = (service: string, topic: string, direction: "in" | "out", e: Endpoi
   service,
   direction,
   group: null,
+  raw: false,
   enabled: true,
   endpoints: [e],
 });
@@ -24,7 +25,7 @@ const graph = buildClusterGraph(
     link("ingest", "raw", "in", endpoint("sftp", "Partner")),
     link("feeder", "enriched", "out", endpoint("http", "Catalog")),
   ],
-  { enricher: { reads: ["raw"], writes: ["enriched"] } },
+  { enricher: { reads: ["integration.raw"], writes: ["integration.enriched"] } },
   ["ingest", "feeder", "enricher"],
 );
 

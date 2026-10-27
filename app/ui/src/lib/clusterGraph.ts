@@ -1,6 +1,39 @@
 import type { Endpoint, RouteProperty, ServiceTopology, TopicLink, Transformer } from "@/bindings";
 import { layerColumns, type Graph, type GraphEdge, type GraphNode } from "./routes";
 
+/**
+ * The pipeline framework prefixes the topics of route services on Kafka: a route's `topic` x is
+ * the Kafka topic `integration.x`, unless the route reads the plain topic (`rawTopic`).
+ */
+export const INTEGRATION_PREFIX = "integration.";
+
+/** An integration topic of the framework, or a plain Kafka topic. */
+export type TopicKind = "integration" | "kafka";
+
+/** A topic by kind and the name the routes use (without the integration prefix). */
+export interface TopicRef {
+  kind: TopicKind;
+  name: string;
+}
+
+/**
+ * A topic as named on Kafka (startup lines, topics entered by hand): `integration.x` is the
+ * integration topic x, anything else a plain Kafka topic.
+ */
+export function kafkaTopic(name: string): TopicRef {
+  return name.startsWith(INTEGRATION_PREFIX)
+    ? { kind: "integration", name: name.slice(INTEGRATION_PREFIX.length) }
+    : { kind: "kafka", name };
+}
+
+/** A topic node's name on Kafka: with the integration prefix for integration topics. */
+export const kafkaName = (node: Pick<ClusterNode, "label" | "detail">) =>
+  node.detail === "integration" ? `${INTEGRATION_PREFIX}${node.label}` : node.label;
+
+/** The node of a topic: integration topics by name, plain ones marked (`topic:kafka:x`). */
+export const topicNodeId = (topic: TopicRef) =>
+  topic.kind === "integration" ? `topic:${topic.name}` : `topic:kafka:${topic.name}`;
+
 /** Where a transformer's topics come from: its startup log lines, or entered by hand. */
 export type TransformerOrigin = "logs" | "manual";
 
@@ -72,9 +105,10 @@ export const clusterServiceId = (name: string) => `service:${name}`;
  * A whole cluster's routes as one graph: input services write topics, output services read them,
  * transformers (from their startup lines or entered by hand) read one topic and write the next,
  * each service with the external systems at its other end. A system several services use is one
- * node, so the graph shows who shares it. `services` are the cluster's services: transformers of
- * other clusters are left out, and the services that are neither route services nor transformers
- * are counted in `leftOut`.
+ * node, so the graph shows who shares it. Topics are matched by kind and name: a route's topic is
+ * an integration topic (unless `raw`), a transformer's is named as on Kafka (see [`kafkaTopic`]).
+ * `services` are the cluster's services: transformers of other clusters are left out, and the
+ * services that are neither route services nor transformers are counted in `leftOut`.
  */
 export function buildClusterGraph(
   links: TopicLink[],
@@ -103,10 +137,11 @@ export function buildClusterGraph(
       if (route && !existing.routes.includes(route)) existing.routes.push(route);
     } else edges.set(id, { id, from, to, disabled, routes: route ? [route] : [] });
   };
-  const topic = (name: string, disabled: boolean) =>
+  // Shown by the name routes use; the second line says which kind of topic it is.
+  const topic = (ref: TopicRef, disabled: boolean) =>
     node(
-      `topic:${name}`,
-      { kind: "topic", label: name, detail: null, transformer: false },
+      topicNodeId(ref),
+      { kind: "topic", label: ref.name, detail: ref.kind, transformer: false },
       disabled,
     );
   const system = (side: "source" | "target", e: Endpoint, disabled: boolean) => {
@@ -121,7 +156,7 @@ export function buildClusterGraph(
   for (const link of links) {
     const off = !link.enabled;
     const route = `${link.service}|${link.topic}|${link.direction}`;
-    const t = topic(link.topic, off);
+    const t = topic({ kind: link.raw ? "kafka" : "integration", name: link.topic }, off);
     const service = node(
       clusterServiceId(link.service),
       {
@@ -170,8 +205,10 @@ export function buildClusterGraph(
       existing.detail = "transformer";
       existing.origin = transformer.origin ?? "manual";
     }
-    for (const read of transformer.reads) edge(topic(read, false), service, false);
-    for (const written of transformer.writes) edge(service, topic(written, false), false);
+    for (const read of transformer.reads) edge(topic(kafkaTopic(read), false), service, false);
+    for (const written of transformer.writes) {
+      edge(service, topic(kafkaTopic(written), false), false);
+    }
   }
 
   const columns = layerColumns([...nodes.keys()], [...edges.values()]);
@@ -252,6 +289,8 @@ export function scopeClusterGraph(graph: ClusterGraph, id: string, scope: PathSc
  */
 export function nodeMatch(node: ClusterNode, needle: string): string | null {
   if (node.label.toLowerCase().includes(needle)) return "name";
+  // A topic also by its name on Kafka (`integration.x`).
+  if (node.kind === "topic" && kafkaName(node).toLowerCase().includes(needle)) return "name";
   for (const c of node.config) {
     if (node.kind === "service") {
       if (c.group?.toLowerCase().includes(needle)) return `group: ${c.group}`;

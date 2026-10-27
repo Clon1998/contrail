@@ -46,6 +46,7 @@ const link = (
   service,
   direction,
   group: direction === "out" ? service : null,
+  raw: false,
   enabled,
   endpoints,
 });

@@ -27,6 +27,7 @@ const link = (
   service,
   direction,
   group: direction === "out" ? service : null,
+  raw: false,
   enabled,
   endpoints,
 });
@@ -46,9 +47,9 @@ describe("buildClusterGraph", () => {
     const graph = buildClusterGraph(
       links,
       {
-        enricher: { reads: ["raw"], writes: ["enriched"] },
+        enricher: { reads: ["integration.raw"], writes: ["integration.enriched"] },
         // Not a service of this cluster.
-        elsewhere: { reads: ["raw"], writes: ["other"] },
+        elsewhere: { reads: ["integration.raw"], writes: ["integration.other"] },
       },
       services,
     );
@@ -85,12 +86,19 @@ describe("buildClusterGraph", () => {
       writes,
     });
     const known = knownTransformers(
-      [found("enricher", ["raw"], ["enriched"]), found("api", ["orders"], ["raw"])],
-      { api: { reads: ["orders"], writes: ["raw", "audit"] } },
+      [
+        found("enricher", ["integration.raw"], ["integration.enriched"]),
+        found("api", ["integration.orders"], ["integration.raw"]),
+      ],
+      { api: { reads: ["integration.orders"], writes: ["integration.raw", "integration.audit"] } },
     );
     expect(known).toEqual({
-      enricher: { reads: ["raw"], writes: ["enriched"], origin: "logs" },
-      api: { reads: ["orders"], writes: ["raw", "audit"], origin: "manual" },
+      enricher: { reads: ["integration.raw"], writes: ["integration.enriched"], origin: "logs" },
+      api: {
+        reads: ["integration.orders"],
+        writes: ["integration.raw", "integration.audit"],
+        origin: "manual",
+      },
     });
     const graph = buildClusterGraph(links, known, services);
     const node = (id: string) => graph.nodes.find((n) => n.id === id);
@@ -118,10 +126,42 @@ describe("buildClusterGraph", () => {
     expect(on.edges.every((e) => ids.has(e.from) && ids.has(e.to))).toBe(true);
   });
 
+  it("matches topics by kind: integration topics and plain Kafka topics", () => {
+    const graph = buildClusterGraph(
+      [
+        // Writes the integration topic `integration.orders`.
+        link("orders-in", "orders", "in", [endpoint("http", "Shop")]),
+        // Reads the plain Kafka topic `orders` (`rawTopic`).
+        { ...link("orders-raw-out", "orders", "out", [endpoint("s3", "Lake")]), raw: true },
+      ],
+      { pipeline: { reads: ["integration.orders"], writes: ["orders"], origin: "logs" } },
+      ["orders-in", "orders-raw-out", "pipeline"],
+    );
+    const topics = graph.nodes
+      .filter((n) => n.kind === "topic")
+      .map((n) => `${n.id} ${n.label} (${n.detail})`)
+      .sort();
+    expect(topics).toEqual([
+      "topic:kafka:orders orders (kafka)",
+      "topic:orders orders (integration)",
+    ]);
+    const has = (from: string, to: string) =>
+      graph.edges.some((e) => e.from === from && e.to === to);
+    // The transformer reads what the input service writes, and writes what the raw reader reads.
+    expect(has("service:orders-in", "topic:orders")).toBe(true);
+    expect(has("topic:orders", "service:pipeline")).toBe(true);
+    expect(has("service:pipeline", "topic:kafka:orders")).toBe(true);
+    expect(has("topic:kafka:orders", "service:orders-raw-out")).toBe(true);
+    // Searching the Kafka name finds the integration topic.
+    expect(filterClusterGraph(graph, "integration.orders").matches?.get("topic:orders")).toBe(
+      "name",
+    );
+  });
+
   it("finds a service with everything up- and downstream of it", () => {
     const graph = buildClusterGraph(
       links,
-      { enricher: { reads: ["raw"], writes: ["enriched"] } },
+      { enricher: { reads: ["integration.raw"], writes: ["integration.enriched"] } },
       services,
     );
     const labels = (query: string) =>

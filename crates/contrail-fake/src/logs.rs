@@ -499,9 +499,11 @@ const STARTUP_EVERY_MS: i64 = 15 * 60_000;
 fn startup_messages(service: &str) -> &'static [&'static str] {
     match service {
         "event-enricher" => &[
-            "Creating a raw Kafka consumer for topic 'demo.events'",
-            "Creating a Kafka container for topic: 'demo.events' with concurrency='3' and consumerGroup='event-enricher'",
-            "Creating producer for topic: demo.events.enriched",
+            // The framework logs real topic names: route services' topics are integration
+            // topics (`integration.` + the configured name).
+            "Creating an integration consumer for topic 'integration.demo.events'",
+            "Creating a Kafka container for topic: 'integration.demo.events' with concurrency='3' and consumerGroup='event-enricher'",
+            "Creating producer for topic: integration.demo.events.enriched",
         ],
         _ => &[],
     }
@@ -917,7 +919,7 @@ mod tests {
         let topology = contrail_core::topology::startup_topology(
             events.iter().map(|e| e.line.message.as_str()),
         );
-        assert_eq!(topology.writes, ["demo.events.enriched"]);
+        assert_eq!(topology.writes, ["integration.demo.events.enriched"]);
         assert_eq!(topology.reads.len(), 1);
         assert_eq!(topology.reads[0].group.as_deref(), Some("event-enricher"));
         assert_eq!(topology.reads[0].concurrency, Some(3));

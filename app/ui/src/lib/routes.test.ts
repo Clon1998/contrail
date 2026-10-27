@@ -14,6 +14,7 @@ const route = (index: number, topic: string, extra: Partial<Route> = {}): Route 
   topic,
   enabled: true,
   group: null,
+  rawTopic: false,
   input: null,
   outputs: [],
   settings: [],
@@ -28,6 +29,7 @@ const link = (
 ): TopicLink => ({
   topic: "events",
   service,
+  raw: false,
   direction,
   group: direction === "out" ? service : null,
   enabled: true,
