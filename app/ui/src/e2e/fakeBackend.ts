@@ -517,6 +517,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
               if (route.topic && (topics === null || topics.includes(route.topic))) {
                 links.push({
                   topic: route.topic,
+                  // Like the Rust side: only an output route can read a raw topic.
+                  raw: !route.input && route.rawTopic,
                   service: summary.name,
                   direction: route.input ? "in" : "out",
                   group: route.group,

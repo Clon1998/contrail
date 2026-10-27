@@ -79,6 +79,9 @@ pub struct Route {
     pub enabled: bool,
     /// The consumer group (output routes).
     pub group: Option<String>,
+    /// An output route reads the plain Kafka topic `topic` (`rawTopic: true`) instead of the
+    /// framework's integration topic (`integration.<topic>`, the default).
+    pub raw_topic: bool,
     pub input: Option<Endpoint>,
     pub outputs: Vec<Endpoint>,
     /// Other settings of the route (`keyexpression`, `concurrency`, …).
@@ -188,6 +191,8 @@ pub fn parse_routes(env: &[EnvVar], secrets: &[SecretRef]) -> Option<RouteConfig
                 ("TOPIC", None) => route.topic = Some(var.value.to_owned()),
                 ("ENABLED", None) => route.enabled = flag(var.value),
                 ("GROUP", None) => route.group = Some(var.value.to_owned()),
+                // `rawTopic` in env-var form (Spring's relaxed binding drops the case).
+                ("RAWTOPIC" | "RAW_TOPIC", None) => route.raw_topic = flag(var.value),
                 (other, _) => route.settings.push(property(&var, other)),
             }
         }
@@ -287,6 +292,28 @@ mod tests {
             route.outputs[0].properties[0].variable,
             "ROUTES_0_OUTPUTS_0_PROPERTIES_BUCKETNAMEORARN"
         );
+    }
+
+    #[test]
+    fn an_output_route_can_read_a_raw_topic() {
+        let config = parse_routes(
+            &env(&[
+                ("ROUTES_0_TOPIC", "orders.events"),
+                ("ROUTES_0_GROUP", "orders-out"),
+                ("ROUTES_0_RAWTOPIC", "true"),
+                ("ROUTES_0_OUTPUTS_0_TYPE", "s3"),
+                ("ROUTES_1_TOPIC", "orders.other"),
+                ("ROUTES_1_GROUP", "orders-out"),
+                ("ROUTES_1_OUTPUTS_0_TYPE", "s3"),
+            ]),
+            &[],
+        )
+        .unwrap();
+        assert!(config.routes[0].raw_topic);
+        // Not a setting of its own anymore.
+        assert!(config.routes[0].settings.is_empty());
+        // Default: the integration topic.
+        assert!(!config.routes[1].raw_topic);
     }
 
     #[test]

@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildClusterGraph,
   filterClusterGraph,
+  kafkaName,
   knownTransformers,
   scopeClusterGraph,
   withoutDisabled,
@@ -156,8 +157,9 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
       ? scopeClusterGraph(found, scope.id, scope.scope)
       : found;
   }, [whole, query, scope, hideDisabled]);
+  // As named on Kafka: what a transformer's topics are entered as.
   const topics = useMemo(
-    () => whole.nodes.filter((n) => n.kind === "topic").map((n) => n.label),
+    () => whole.nodes.filter((n) => n.kind === "topic").map(kafkaName),
     [whole],
   );
   const routeServices = whole.nodes.filter((n) => n.kind === "service" && !n.transformer).length;
@@ -612,7 +614,10 @@ function TransformerEditor({
       <p className="col-span-2 text-muted-foreground">
         A transformer reads and writes topics from its code, so its routes aren't in its task
         definition. Contrail reads them from its startup logs when it can; topics entered here
-        (comma-separated) take their place for the service of this name in every cluster.
+        (comma-separated) take their place for the service of this name in every cluster. Enter them
+        as named on Kafka: <span className="font-mono">integration.orders</span> for the integration
+        topic route services call <span className="font-mono">orders</span>, a name without that
+        prefix for a plain Kafka topic.
       </p>
       <label htmlFor="transformer-service">Service</label>
       <select

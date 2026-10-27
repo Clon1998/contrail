@@ -548,6 +548,7 @@
                   "topic": "demo.events",
                   "enabled": true,
                   "group": "audit-archiver",
+                  "rawTopic": false,
                   "input": null,
                   "outputs": [
                     {
@@ -782,6 +783,7 @@
                   "topic": "demo.events",
                   "enabled": true,
                   "group": null,
+                  "rawTopic": false,
                   "input": {
                     "kind": "sftp",
                     "system": "Example Partner",
@@ -1048,6 +1050,7 @@
                   "topic": "demo.events",
                   "enabled": true,
                   "group": "legacy-gateway",
+                  "rawTopic": false,
                   "input": null,
                   "outputs": [
                     {
@@ -1090,6 +1093,7 @@
                   "topic": "orders.created",
                   "enabled": true,
                   "group": "legacy-gateway",
+                  "rawTopic": false,
                   "input": null,
                   "outputs": [
                     {
@@ -1138,6 +1142,7 @@
                   "topic": "orders.cancelled",
                   "enabled": true,
                   "group": "legacy-gateway",
+                  "rawTopic": false,
                   "input": null,
                   "outputs": [
                     {
@@ -1186,6 +1191,7 @@
                   "topic": "shipments.dispatched",
                   "enabled": true,
                   "group": "legacy-gateway",
+                  "rawTopic": false,
                   "input": null,
                   "outputs": [
                     {
@@ -1341,6 +1347,7 @@
                   "topic": "demo.events",
                   "enabled": true,
                   "group": null,
+                  "rawTopic": false,
                   "input": {
                     "kind": "http",
                     "system": "Order Portal",
@@ -1473,6 +1480,7 @@
                   "topic": "demo.events.enriched",
                   "enabled": true,
                   "group": "search-feeder",
+                  "rawTopic": false,
                   "input": null,
                   "outputs": [
                     {
@@ -2238,13 +2246,13 @@
         "startedAt": "2026-01-01T11:30:00Z",
         "reads": [
           {
-            "topic": "demo.events",
+            "topic": "integration.demo.events",
             "group": "event-enricher",
             "concurrency": 3
           }
         ],
         "writes": [
-          "demo.events.enriched"
+          "integration.demo.events.enriched"
         ]
       }
     ]

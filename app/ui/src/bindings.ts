@@ -734,6 +734,11 @@ export type Route = {
 	enabled: boolean,
 	/**  The consumer group (output routes). */
 	group: string | null,
+	/**
+	 *  An output route reads the plain Kafka topic `topic` (`rawTopic: true`) instead of the
+	 *  framework's integration topic (`integration.<topic>`, the default).
+	 */
+	rawTopic: boolean,
 	input: Endpoint | null,
 	outputs: Endpoint[],
 	/**  Other settings of the route (`keyexpression`, `concurrency`, …). */
@@ -1020,6 +1025,11 @@ export type TopicLink = {
 	direction: TopicDirection,
 	/**  The consumer group of an output route. */
 	group: string | null,
+	/**
+	 *  The topic is a plain Kafka topic (an output route with `rawTopic`), not the framework's
+	 *  integration topic `integration.<topic>`.
+	 */
+	raw: boolean,
 	/**  The route is switched on. */
 	enabled: boolean,
 	/**

@@ -255,13 +255,16 @@ test("a cluster's route map, with a transformer found in its startup logs", asyn
   await enricher.click();
   const details = map.getByRole("region", { name: "Node details" });
   await expect(details).toContainText("from the startup logs of task");
-  await expect(details).toContainText("demo.events: event-enricher ×3");
+  await expect(details).toContainText("integration.demo.events: event-enricher ×3");
 
   // Entered by hand, its topics take the place of what the logs say.
   await details.getByRole("button", { name: "Override topics" }).click();
   const form = map.getByRole("form", { name: "Transformer" });
-  await expect(form.getByLabel("Reads")).toHaveValue("demo.events");
-  await form.getByLabel("Writes").fill("demo.events.enriched, demo.events.audit");
+  // As named on Kafka: the integration topics have their prefix.
+  await expect(form.getByLabel("Reads")).toHaveValue("integration.demo.events");
+  await form
+    .getByLabel("Writes")
+    .fill("integration.demo.events.enriched, integration.demo.events.audit");
   await form.getByRole("button", { name: "Save" }).click();
   await expect(graph.getByRole("button", { name: "topic demo.events.audit" })).toBeVisible();
   await expect(details).toContainText("topics entered by hand");
