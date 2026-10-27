@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 import { nameFromArn } from "@/lib/ecs";
 import { formatLogTime, formatShortTime, prettyJson } from "@/lib/logs";
 import { useEcs } from "@/stores/ecs";
@@ -115,6 +116,12 @@ export function TraceView({ tab }: { tab: TraceTab }) {
               {result.error.hint && (
                 <span className="block text-muted-foreground">{result.error.hint}</span>
               )}
+              <span className="mt-1.5 block empty:hidden">
+                <LoginAgain
+                  error={result.error}
+                  onLoggedIn={() => ctx && void store.getState().search(ctx)}
+                />
+              </span>
             </p>
           )}
           {result.kind === "done" && <TraceResult store={store} trace={result.trace} />}

@@ -62,6 +62,9 @@ export function isRejected(identity: { state: string; error?: ApiError }): boole
   return identity.state === "error" && identity.error?.code === "credentials";
 }
 
+/** Whether an error comes from an expired or revoked session (logging in again fixes it). */
+export const sessionExpired = (error: ApiError | null | undefined) => error?.code === "credentials";
+
 /** Whether Contrail can log in for this profile (only SSO profiles). */
 export function canLogin(profile: Profile | undefined): boolean {
   return profile?.auth.kind === "sso";

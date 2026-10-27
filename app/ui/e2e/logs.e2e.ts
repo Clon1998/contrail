@@ -428,6 +428,30 @@ test("a long window that fits on screen loads its older events right away", asyn
   await expect(page.getByRole("button", { name: "Load older" })).toHaveCount(0);
 });
 
+test("a session that ran out offers to log in where loading failed, then loads again", async ({
+  page,
+}) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list).toBeVisible();
+  await page.evaluate(() =>
+    (
+      window as unknown as {
+        __TAURI_INTERNALS__: { invoke: (cmd: string, args: unknown) => Promise<unknown> };
+      }
+    ).__TAURI_INTERNALS__.invoke("fake_revoke_session", { profile: "demo-dev" }),
+  );
+  await page.getByRole("button", { name: "Reload logs" }).click();
+
+  const view = page.getByRole("main", { name: "Service event-ingest" });
+  await expect(view).toContainText("Session token not found or invalid");
+  // The top bar knows right away, without a refresh.
+  await expect(page.getByRole("banner").getByRole("button", { name: "Log in" })).toBeVisible();
+  await view.getByRole("button", { name: "Log in" }).click();
+  await expect(list).toBeVisible();
+  await expect(view).not.toContainText("Session token not found or invalid");
+  await expect(page.getByRole("banner").getByRole("button", { name: "Log in" })).toHaveCount(0);
+});
+
 test("while logs load, placeholders in the shape of the list show", async ({ page }) => {
   await page.goto("/?loadDelay=800");
   const list = await openLogs(page, "demo-edge", "event-ingest");

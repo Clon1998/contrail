@@ -49,6 +49,7 @@ import { ShareMenu } from "./ShareMenu";
 import { TimelineChart } from "./TimelineChart";
 import { TimeWindowPicker } from "./TimeWindowPicker";
 import { Hint } from "@/components/ui/tooltip";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 
 const LIVE_LABEL: Record<LiveState, string> = {
   connecting: "Connecting…",
@@ -163,6 +164,9 @@ function LiveFailure() {
   const retry = useLogs((s) => s.retryLive);
   if (live?.state !== "failed") return null;
   const login = /credentials|token/i.test(live.message ?? "");
+  const expired = login
+    ? { code: "credentials" as const, message: live.message ?? "", hint: null }
+    : null;
   return (
     <div
       role="alert"
@@ -173,10 +177,11 @@ function LiveFailure() {
         Live tail stopped: {live.message}
         <span className="block text-muted-foreground">
           {login
-            ? "Log in again with the button in the top bar, then retry."
+            ? "Log in again, then the tail resumes."
             : "The role lacks a permission (docs/iam-policy.json lists them). Retry once it's fixed."}
         </span>
       </span>
+      <LoginAgain error={expired} onLoggedIn={retry} />
       <Button variant="outline" size="xs" onClick={retry}>
         <RefreshCwIcon /> Retry
       </Button>
@@ -423,6 +428,12 @@ export function LogViewer() {
           <span>
             {error.message}
             {error.hint && <span className="block text-muted-foreground">{error.hint}</span>}
+            <span className="mt-1.5 block empty:hidden">
+              <LoginAgain
+                error={error}
+                onLoggedIn={() => ctx && selected && void open(ctx, selected, timeWindow, taskId)}
+              />
+            </span>
           </span>
         </p>
       )}

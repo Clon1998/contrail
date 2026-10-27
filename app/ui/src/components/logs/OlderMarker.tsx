@@ -2,6 +2,7 @@ import { CircleAlertIcon, FlagIcon, HardDriveIcon, HistoryIcon, Loader2Icon } fr
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Hint } from "@/components/ui/tooltip";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 import { formatShortTime } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -44,9 +45,12 @@ export function OlderMarker() {
       </Hint>
     );
     actions = (
-      <Button variant="outline" size="xs" onClick={() => void loadOlder()}>
-        Retry
-      </Button>
+      <>
+        <LoginAgain error={older.error} onLoggedIn={() => void loadOlder()} />
+        <Button variant="outline" size="xs" onClick={() => void loadOlder()}>
+          Retry
+        </Button>
+      </>
     );
   } else if (view.complete) {
     label = (

@@ -5,6 +5,7 @@ import { TraceView } from "@/components/logs/TraceView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 import { nameFromArn } from "@/lib/ecs";
 import { FRESH_MS, useEcs } from "@/stores/ecs";
 import { LogsContext, useLogs } from "@/stores/logs";
@@ -76,6 +77,9 @@ function ServicePane() {
                 {detail.error.hint && (
                   <span className="block text-muted-foreground">{detail.error.hint}</span>
                 )}
+                <span className="mt-1.5 block empty:hidden">
+                  <LoginAgain error={detail.error} onLoggedIn={() => void refresh()} />
+                </span>
               </span>
             </p>
           )}
