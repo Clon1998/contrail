@@ -46,6 +46,9 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
+  // Where the pointer went down, for the handlers: they must not wait for a render (a quick click
+  // on a busy machine ends before the state set on pointer down is rendered).
+  const dragStart = useRef<number | null>(null);
   const lastFetch = useRef(0);
 
   // The chart's width decides how many buckets fit.
@@ -101,21 +104,25 @@ export function TimelineChart({ viewId }: { viewId: number }) {
           if (!timeline) return;
           e.currentTarget.setPointerCapture(e.pointerId);
           const x = localX(e.clientX);
+          dragStart.current = x;
           setDrag({ from: x, to: x });
         }}
         onPointerMove={(e) => {
           const x = localX(e.clientX);
           if (count > 0) setHover(indexAt(x));
-          if (drag) setDrag({ ...drag, to: x });
+          const from = dragStart.current;
+          if (from !== null) setDrag({ from, to: x });
         }}
         onPointerLeave={() => setHover(null)}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
           // A click focuses the bar under it, a drag the bars under the drag.
-          if (drag && timeline && count > 0) {
-            const dragged = Math.abs(drag.to - drag.from) > 4;
-            const x1 = dragged ? drag.to : drag.from;
-            void setFocus(selectionRange(timeline, drag.from, x1, width));
+          const from = dragStart.current;
+          const to = localX(e.clientX);
+          if (from !== null && timeline && count > 0) {
+            const x1 = Math.abs(to - from) > 4 ? to : from;
+            void setFocus(selectionRange(timeline, from, x1, width));
           }
+          dragStart.current = null;
           setDrag(null);
         }}
       >
