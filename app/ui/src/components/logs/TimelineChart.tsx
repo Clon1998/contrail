@@ -13,10 +13,15 @@ import { markersBetween } from "@/lib/markers";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 
-/** The chart's height in pixels (bars plus the labels under them). */
-const BARS_HEIGHT = 40;
+/** The bars' height in pixels: a strip above the list, not a chart of its own. */
+const BARS_HEIGHT = 28;
 /** A bar is at least this wide, so the number of buckets follows the chart's width. */
 const MIN_BAR_PX = 5;
+/**
+ * A bar is at most this wide, centred in its bucket: few buckets (a short or sparse window)
+ * would otherwise draw blocks.
+ */
+const MAX_BAR_PX = 6;
 /** While events arrive live, the timeline is asked again at most this often. */
 const REFRESH_MS = 1_000;
 
@@ -87,6 +92,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const count = timeline?.buckets.length ?? 0;
   const highest = timeline ? Math.max(1, ...timeline.buckets.map(total)) : 1;
   const barWidth = count > 0 ? width / count : 0;
+  const drawnWidth = Math.max(1, Math.min(MAX_BAR_PX, barWidth - 1));
   const indexAt = (x: number) => Math.min(count - 1, Math.max(0, Math.floor(x / barWidth)));
   const localX = (clientX: number) => clientX - (box.current?.getBoundingClientRect().left ?? 0);
   const spansDays = timeline ? count * timeline.bucketMs >= 86_400_000 : false;
@@ -158,9 +164,9 @@ export function TimelineChart({ viewId }: { viewId: number }) {
                   return (
                     <rect
                       key={key}
-                      x={i * barWidth}
+                      x={i * barWidth + (barWidth - drawnWidth) / 2}
                       y={y}
-                      width={Math.max(1, barWidth - 1)}
+                      width={drawnWidth}
                       height={height}
                       className={fill}
                     />
