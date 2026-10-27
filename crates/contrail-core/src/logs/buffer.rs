@@ -7,6 +7,7 @@ use serde::Serialize;
 use specta::Type;
 
 use super::{Level, LogEvent};
+use crate::timestamp::Timestamp;
 
 /// The default number of events a view keeps (the oldest are evicted beyond that).
 pub const DEFAULT_CAPACITY: usize = 100_000;
@@ -77,13 +78,7 @@ fn dedupe_key(event: &LogEvent) -> u64 {
 }
 
 /// The sort order: event time, then CloudWatch time, then arrival.
-fn order_key(
-    event: &LogEvent,
-) -> (
-    crate::timestamp::Timestamp,
-    crate::timestamp::Timestamp,
-    u32,
-) {
+fn order_key(event: &LogEvent) -> (Timestamp, Timestamp, u32) {
     (event.timestamp, event.cw_timestamp, event.seq)
 }
 
@@ -177,6 +172,15 @@ impl LogBuffer {
         self.events.iter()
     }
 
+    /// The index of the first event at or after `at` (`len()` if all are earlier).
+    ///
+    /// The events are sorted by time, so this is a binary search: `partition_point` returns the
+    /// first index where the predicate turns false (like `Collections.binarySearch` in Java, but
+    /// without the negative "insertion point" encoding).
+    pub fn index_at(&self, at: Timestamp) -> usize {
+        self.events.partition_point(|e| e.timestamp < at)
+    }
+
     /// Up to `limit` events starting at `offset` (oldest first), for the UI's visible window.
     pub fn window(&self, offset: usize, limit: usize) -> Vec<LogEvent> {
         self.events
@@ -192,7 +196,6 @@ impl LogBuffer {
 mod tests {
     use super::*;
     use crate::logs::RawEvent;
-    use crate::timestamp::Timestamp;
     use time::Duration;
     use time::macros::datetime;
 
@@ -306,5 +309,17 @@ mod tests {
         buffer.insert((0..5).map(|i| event("a", i, &format!("m{i}"))));
         assert_eq!(buffer.window(3, 10).len(), 2);
         assert!(buffer.window(9, 10).is_empty());
+    }
+
+    #[test]
+    fn finds_the_first_event_at_or_after_a_time() {
+        let mut buffer = LogBuffer::new(10);
+        buffer.insert([(0, "a"), (2, "b"), (2, "c"), (5, "d")].map(|(i, m)| event("a", i, m)));
+        let at = |second| Timestamp(datetime!(2026-01-15 12:00 UTC) + Duration::seconds(second));
+        assert_eq!(buffer.index_at(at(-1)), 0);
+        assert_eq!(buffer.index_at(at(1)), 1);
+        assert_eq!(buffer.index_at(at(2)), 1);
+        assert_eq!(buffer.index_at(at(3)), 3);
+        assert_eq!(buffer.index_at(at(9)), 4);
     }
 }

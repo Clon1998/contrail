@@ -9,6 +9,7 @@ import {
   ChartColumnIcon,
   RefreshCwIcon,
   WrapTextIcon,
+  XIcon,
 } from "lucide-react";
 import { cn } from "cn";
 import type { LiveState, LogColumn, ServiceRef } from "@/bindings";
@@ -31,7 +32,8 @@ import {
 } from "@/components/ui/select";
 import { formatDateTime, shortTaskId } from "@/lib/ecs";
 import { isTyping } from "@/lib/keys";
-import { formatLogTime, liveHint, liveMode } from "@/lib/logs";
+import { formatLogTime, isToday, liveHint, liveMode } from "@/lib/logs";
+import { timelineLabel } from "@/lib/timeline";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
@@ -238,6 +240,33 @@ function WrapToggle() {
   );
 }
 
+/**
+ * The part of the window the list is focused on (picked on the timeline), with a way back to the
+ * whole window. It sits in the toolbar so it stays in sight when the timeline is hidden.
+ */
+function FocusChip() {
+  const focus = useLogs((s) => s.focus);
+  const setFocus = useLogs((s) => s.setFocus);
+  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  if (!focus) return null;
+  const [start, end] = [Date.parse(focus.start), Date.parse(focus.end)];
+  const withDate = !isToday(start, timeZone);
+  return (
+    <span className="flex items-center gap-1 rounded-md border border-primary/50 bg-primary/10 py-0.5 pr-0.5 pl-2 tabular-nums">
+      Focus {timelineLabel(start, timeZone, withDate)} – {timelineLabel(end, timeZone, false)}
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Show the whole time window"
+        tooltip="Show the whole time window again"
+        onClick={() => void setFocus(null)}
+      >
+        <XIcon />
+      </Button>
+    </span>
+  );
+}
+
 /** Shows or hides the timeline above the list (a setting, the same for every view). */
 function TimelineToggle() {
   const shown = usePrefs((s) => s.prefs.settings.showTimeline);
@@ -333,6 +362,7 @@ export function LogViewer() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-1.5 text-xs">
         <TimeWindowPicker value={timeWindow} onChange={setWindow} />
+        <FocusChip />
         <Button
           variant="ghost"
           size="icon-xs"

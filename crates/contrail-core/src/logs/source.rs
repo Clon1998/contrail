@@ -34,7 +34,7 @@ pub struct StreamSelection {
 }
 
 /// A time range, start inclusive, end exclusive.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Type)]
 pub struct TimeRange {
     pub start: Timestamp,
     pub end: Timestamp,

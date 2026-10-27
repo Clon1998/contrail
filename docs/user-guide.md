@@ -40,7 +40,7 @@ page has the details.
   shortened like Spring Boot does (`c.e.orders.OrderService`); hover for the full name. The wrap button (or **W**)
   wraps long messages instead of cutting them off.
 - **Timeline** (above the list; the chart button in the toolbar hides it): events over time, stacked by level,
-  following the search. Hover a bar for its time and counts; drag across bars to narrow the time window to them.
+  following the search. Hover a bar for its time and counts; click a bar, or drag across bars, to focus the list on that part of the window. The time window and the loaded events stay as they are: the chip next to the time window shows the focus, and its × brings back the whole window instantly.
 - **Time window:** click it in the toolbar (or press **T**) and type what you want: `15m`, `3h`, `2d`, `1w`, `1h30m`,
   `today`, `since 14:00`, `yesterday`, `oct 20`, `9:00-11:30` or `yesterday 9-11`. The picker shows what it understood
   before you press Enter, and whether the window will follow live, open paused or be a fixed range. Quick windows,

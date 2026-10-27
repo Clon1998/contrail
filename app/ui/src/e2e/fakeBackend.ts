@@ -7,6 +7,7 @@ import type {
   ValueCount,
   FilterResult,
   FilterSpec,
+  TimeRange,
   Level,
   AppInfo,
   LiveState,
@@ -299,14 +300,28 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     }
   >();
 
-  /** The events a view lists: the matches when filtering, all otherwise. */
+  /** The time range each view's list is focused on (picked on the timeline). */
+  const focuses = new Map<number, TimeRange>();
+
+  /** Whether an event is inside a view's focus (every event is without one). */
+  function inFocus(viewId: number, e: LogEvent): boolean {
+    const focus = focuses.get(viewId);
+    const at = Date.parse(e.timestamp);
+    return !focus || (at >= Date.parse(focus.start) && at < Date.parse(focus.end));
+  }
+
+  /** The events a view lists: the matches when filtering, all otherwise; inside the focus. */
   function listed(
     viewId: number,
   ): LogEvent[] | ((offset: number, limit: number) => LogEvent[]) | undefined {
     const events = views.get(viewId);
     const filter = filters.get(viewId);
-    if (!Array.isArray(events) || !filter || filter.spec.mode !== "filter") return events;
-    return filter.matched.map((i) => events[i]).filter((e): e is LogEvent => e !== undefined);
+    if (!Array.isArray(events)) return events;
+    const searched =
+      filter?.spec.mode === "filter"
+        ? filter.matched.map((i) => events[i]).filter((e): e is LogEvent => e !== undefined)
+        : events;
+    return searched.filter((e) => inFocus(viewId, e));
   }
 
   /** The rows of `windows` in a view's current listing, like `set_log_filter` returns them. */
@@ -793,11 +808,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           return { kind: "invalid", error: compiled.error } satisfies FilterResult;
         }
         const events = views.get(viewId);
+        if (spec.focus) focuses.set(viewId, spec.focus);
+        else focuses.delete(viewId);
         const trivial =
           spec.query.trim() === "" && spec.hiddenLevels.length === 0 && spec.noise.length === 0;
         if (trivial || !Array.isArray(events)) {
           filters.delete(viewId);
-          const visible = Array.isArray(events) ? events.length : bigVisible(viewId);
+          const visible = listedCount(viewId);
           return {
             kind: "applied",
             visible,
@@ -814,8 +831,8 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         filters.set(viewId, { spec, accepts, matched, checked: events.length });
         return {
           kind: "applied",
-          visible: spec.mode === "filter" ? matched.length : events.length,
-          matches: matched.length,
+          visible: listedCount(viewId),
+          matches: matched.filter((i) => events[i] && inFocus(viewId, events[i])).length,
           highlightTerms: compiled.terms,
           rows: rowBlocks(viewId, args?.windows as RowWindow[]),
         } satisfies FilterResult;
@@ -825,12 +842,17 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const events = views.get(viewId);
         if (!Array.isArray(events)) return summarize([]);
         const filter = filters.get(viewId);
-        return summarize(filter ? filter.matched.flatMap((i) => events[i] ?? []) : events);
+        const matching = filter ? filter.matched.flatMap((i) => events[i] ?? []) : events;
+        return summarize(matching.filter((e) => inFocus(viewId, e)));
       }
       case "get_match_positions": {
-        const filter = filters.get(args?.viewId as number);
-        if (!filter) return [];
-        return filter.spec.mode === "highlight" ? filter.matched : filter.matched.map((_, i) => i);
+        const viewId = args?.viewId as number;
+        const filter = filters.get(viewId);
+        const rows = listed(viewId);
+        if (!filter || !Array.isArray(rows)) return [];
+        return rows.flatMap((e, i) =>
+          filter.spec.mode === "filter" || filter.accepts(e) ? [i] : [],
+        );
       }
       case "plugin:deep-link|get_current":
         return options.link ? [options.link] : null;

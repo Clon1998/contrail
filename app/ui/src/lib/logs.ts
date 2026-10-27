@@ -111,6 +111,17 @@ export function formatShortTime(timestamp: string, timeZone: TimeZone, now = Dat
   return `${dayMonth}, ${time}`;
 }
 
+/** Whether `ms` falls on today's date, in local time or UTC. */
+export function isToday(ms: number, timeZone: TimeZone, now = Date.now()): boolean {
+  const day = (t: number) => {
+    const d = new Date(t);
+    return timeZone === "utc"
+      ? d.toISOString().slice(0, 10)
+      : `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  };
+  return day(ms) === day(now);
+}
+
 /** `12:34:56.789` in local time or UTC (the time zone setting). */
 export function formatLogTime(timestamp: string, timeZone: "local" | "utc"): string {
   const date = new Date(timestamp);
