@@ -33,3 +33,39 @@ fn plain_spring_default() {
 fn plain_stacktrace_split_lines() {
     insta::assert_json_snapshot!(parse_fixture("plain-stacktrace-split.log"));
 }
+
+#[test]
+fn transformer_startup() {
+    insta::assert_json_snapshot!(parse_fixture("transformer-startup.log"));
+}
+
+/// The startup scan on a transformer's start: like the app, only the events with one of the
+/// startup phrases (CloudWatch's filter), parsed, then read for topics.
+#[test]
+fn a_transformers_start_names_the_topics_it_reads() {
+    use contrail_core::topology::{ConsumedTopic, STARTUP_PHRASES, startup_topology};
+
+    let path = format!(
+        "{}/tests/fixtures/transformer-startup.log",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let text = std::fs::read_to_string(&path).unwrap();
+    let parsed: Vec<_> = text
+        .lines()
+        .filter(|line| STARTUP_PHRASES.iter().any(|phrase| line.contains(phrase)))
+        .map(parse_line)
+        .collect();
+    let topology = startup_topology(parsed.iter().map(|line| line.message.as_str()));
+
+    // The configured name of the consumer line and the Kafka name of the container line are one
+    // integration topic; the Kafka client's own lines and the status lines don't count.
+    assert_eq!(
+        topology.reads,
+        [ConsumedTopic {
+            topic: "integration.orders.order-events".into(),
+            group: Some("orders-transformer".into()),
+            concurrency: Some(2),
+        }]
+    );
+    assert!(topology.writes.is_empty(), "{:?}", topology.writes);
+}

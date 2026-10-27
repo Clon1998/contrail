@@ -1,0 +1,669 @@
+---
+source: crates/contrail-core/tests/parse_fixtures.rs
+expression: "parse_fixture(\"transformer-startup.log\")"
+---
+[
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:01.104Z",
+    "level": "INFO",
+    "message": "Starting OrdersTransformerApplication v1.4.0 using Java 21.0.5 with PID 1 (/app/app.jar started by root in /app)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.o.OrdersTransformerApplication"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:01.19Z",
+    "level": "INFO",
+    "message": "The following 1 profile is active: \"demo\"",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.o.OrdersTransformerApplication"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:09.88Z",
+    "level": "INFO",
+    "message": "Tomcat initialized with port 8080 (http)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.s.b.w.embedded.tomcat.TomcatWebServer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:20.415Z",
+    "level": "INFO",
+    "message": "Bucket 'demo-pipeline-orders.order-events' for topic 'orders.order-events' exists!",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkEndpoint"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:20.802Z",
+    "level": "INFO",
+    "message": "Creating consumer for topic: orders.order-events",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkEndpoint"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:20.802Z",
+    "level": "INFO",
+    "message": "Creating an integration consumer for topic 'orders.order-events'",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkEndpoint"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:21.19Z",
+    "level": "INFO",
+    "message": "ProducerConfig values: ",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.a.k.clients.producer.ProducerConfig"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\tacks = -1",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\tbootstrap.servers = [b-1.demo-kafka.example:9098]",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\tclient.id = producer-1",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\tenable.idempotence = true",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:22.371Z",
+    "level": "INFO",
+    "message": "[Producer clientId=producer-1] Instantiated an idempotent producer.",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.a.k.clients.producer.KafkaProducer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:23.044Z",
+    "level": "INFO",
+    "message": "Creating a Kafka container for topic: 'integration.orders.order-events' with concurrency='2' and consumerGroup='orders-transformer'",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkConsumer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:23.512Z",
+    "level": "INFO",
+    "message": "Starting to listen for topic: 'integration.orders.order-events'",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkConsumer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:23.53Z",
+    "level": "INFO",
+    "message": "ConsumerConfig values: ",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.a.k.clients.consumer.ConsumerConfig"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\tallow.auto.create.topics = true",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\tgroup.id = orders-transformer",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "plain",
+    "timestamp": null,
+    "level": null,
+    "message": "\texclude.internal.topics = true",
+    "fields": [],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:24.601Z",
+    "level": "INFO",
+    "message": "[Consumer clientId=consumer-orders-transformer-1, groupId=orders-transformer] Subscribed to topic(s): integration.orders.order-events",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.a.k.c.c.i.ClassicKafkaConsumer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:31.288Z",
+    "level": "INFO",
+    "message": "Started listener for topic: 'integration.orders.order-events'",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkConsumer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:31.29Z",
+    "level": "INFO",
+    "message": "Routes startup (total:1)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.a.c.impl.engine.AbstractCamelContext"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:31.291Z",
+    "level": "INFO",
+    "message": "    Started route1 (fw://orders.order-events)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "o.a.c.impl.engine.AbstractCamelContext"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:00:31.297Z",
+    "level": "INFO",
+    "message": "Started OrdersTransformerApplication in 31.02 seconds (process running for 33.4)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "main"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.o.OrdersTransformerApplication"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:05:12.016Z",
+    "level": "INFO",
+    "message": "Received a record from topic: 'integration.orders.order-events'",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "rs-transformer-0-C-1"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.c.f.FrameworkIntegrationConsumer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:05:12.204Z",
+    "level": "INFO",
+    "message": "Document status change: [ID:4f1c2e8a90b7] PUBLISHED -> CONSUMING (Record consumed from Kafka topic)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "rs-transformer-0-C-1"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.s.StatusManagerService"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:05:12.731Z",
+    "level": "INFO",
+    "message": "Exchange completed successfully for topic: 'integration.orders.order-events' and record (0#1042)",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "Camel (camel-1)"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.camel.fw.FrameworkConsumer"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  },
+  {
+    "kind": "spring",
+    "timestamp": "2026-01-15T08:05:12.733Z",
+    "level": "INFO",
+    "message": "Document status change: [ID:4f1c2e8a90b7] CONSUMING -> COMPLETED (Processing completed successfully )",
+    "fields": [
+      {
+        "key": "log.level",
+        "value": "INFO"
+      },
+      {
+        "key": "process.pid",
+        "value": 1
+      },
+      {
+        "key": "service.name",
+        "value": "orders-transformer"
+      },
+      {
+        "key": "process.thread.name",
+        "value": "Camel (camel-1)"
+      },
+      {
+        "key": "log.logger",
+        "value": "c.e.p.s.StatusManagerService"
+      }
+    ],
+    "error": null,
+    "jsonSpan": null
+  }
+]
