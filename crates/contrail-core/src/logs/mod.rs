@@ -22,7 +22,7 @@ use specta::Type;
 
 use crate::timestamp::Timestamp;
 
-pub use buffer::{BufferStats, LogBuffer};
+pub use buffer::{BufferStats, LineContext, LogBuffer};
 pub use export::{ExportFormat, write_events};
 pub use fields::{FieldSummary, summarize};
 pub use filter::{FilterMode, ViewFilter, VisibleChange};
