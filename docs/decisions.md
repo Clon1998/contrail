@@ -491,3 +491,12 @@ logical name with the kind on a second line, and reads transformer topics (start
 Kafka names: `integration.x` is the integration topic x, anything else a plain Kafka topic. Search also matches
 a topic's Kafka name. Before, a transformer reading `integration.x` was drawn next to, not on, the routes' `x`.
 Not changed yet: the per-service route graph and "Find connected services" match topics by name only.
+
+## 2026-10-27 — Transformer topics from the lines with Kafka names
+
+Patrick: the consumer lines and "Creating producer" can log a topic's configured name (without the integration
+prefix); the Kafka container line (consumers) and `Starting FrameworkProducer for topic: …, bucket: …`
+(producers) log the real Kafka name. **Decision:** those two are the source; the others are a fallback, with an
+integration consumer's and a producer's topic prefixed with `integration.` when it lacks it (producers only write
+integration topics for now) and a raw consumer's topic kept as logged. The startup scan searches once per phrase
+(`Creating`, `FrameworkProducer`): a CloudWatch filter pattern matches one phrase.

@@ -499,11 +499,13 @@ const STARTUP_EVERY_MS: i64 = 15 * 60_000;
 fn startup_messages(service: &str) -> &'static [&'static str] {
     match service {
         "event-enricher" => &[
-            // The framework logs real topic names: route services' topics are integration
-            // topics (`integration.` + the configured name).
-            "Creating an integration consumer for topic 'integration.demo.events'",
+            // Like the framework: the consumer and "Creating producer" lines log the configured
+            // name, the container and FrameworkProducer lines the Kafka name (route services'
+            // topics are integration topics: `integration.` + the configured name).
+            "Creating an integration consumer for topic 'demo.events'",
             "Creating a Kafka container for topic: 'integration.demo.events' with concurrency='3' and consumerGroup='event-enricher'",
-            "Creating producer for topic: integration.demo.events.enriched",
+            "Creating producer for topic: demo.events.enriched",
+            "Starting FrameworkProducer for  topic: integration.demo.events.enriched, bucket: demo-documents",
         ],
         _ => &[],
     }
@@ -912,10 +914,20 @@ mod tests {
             start: Timestamp(datetime!(2026-01-15 12:03 UTC)),
             end: Timestamp(datetime!(2026-01-15 12:18 UTC)),
         };
-        let mut sel = selection("event-enricher", &["t1"]);
-        sel.filter_pattern = Some(contrail_core::topology::STARTUP_PHRASE.to_owned());
-        let raw = fake().backfill(&ctx(), &sel, range, 1_000).await.unwrap();
-        let events = contrail_core::logs::process(raw.events);
+        // One search per phrase, like the app.
+        let mut lines = Vec::new();
+        for phrase in contrail_core::topology::STARTUP_PHRASES {
+            let mut sel = selection("event-enricher", &["t1"]);
+            sel.filter_pattern = Some(phrase.to_owned());
+            lines.extend(
+                fake()
+                    .backfill(&ctx(), &sel, range, 1_000)
+                    .await
+                    .unwrap()
+                    .events,
+            );
+        }
+        let events = contrail_core::logs::process(lines);
         let topology = contrail_core::topology::startup_topology(
             events.iter().map(|e| e.line.message.as_str()),
         );
@@ -925,10 +937,12 @@ mod tests {
         assert_eq!(topology.reads[0].concurrency, Some(3));
 
         // A route service logs none (its routes are in env vars).
-        let mut sel = selection("search-feeder", &["t1"]);
-        sel.filter_pattern = Some(contrail_core::topology::STARTUP_PHRASE.to_owned());
-        let raw = fake().backfill(&ctx(), &sel, range, 1_000).await.unwrap();
-        assert!(raw.events.is_empty());
+        for phrase in contrail_core::topology::STARTUP_PHRASES {
+            let mut sel = selection("search-feeder", &["t1"]);
+            sel.filter_pattern = Some(phrase.to_owned());
+            let raw = fake().backfill(&ctx(), &sel, range, 1_000).await.unwrap();
+            assert!(raw.events.is_empty());
+        }
     }
 
     #[tokio::test]

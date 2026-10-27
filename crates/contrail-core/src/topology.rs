@@ -32,11 +32,24 @@ impl StartupTopology {
     }
 }
 
-/// A phrase every startup line contains: the log source filters on it, so only these lines
-/// (and a few others) are read.
-pub const STARTUP_PHRASE: &str = "Creating";
+/// Phrases the startup lines contain: the log source is searched for each of them, so only these
+/// lines (and a few others) are read.
+pub const STARTUP_PHRASES: [&str; 2] = ["Creating", "FrameworkProducer"];
 
-/// What one startup line says.
+/// The framework's integration topics carry this prefix on Kafka.
+const INTEGRATION_PREFIX: &str = "integration.";
+
+/// `topic` as an integration topic's Kafka name (some lines log the name without its prefix).
+fn integration(topic: &str) -> String {
+    if topic.starts_with(INTEGRATION_PREFIX) {
+        topic.to_owned()
+    } else {
+        format!("{INTEGRATION_PREFIX}{topic}")
+    }
+}
+
+/// What one startup line says. Every topic is its name on Kafka (with the integration prefix for
+/// integration topics), so lines about the same topic match.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum StartupLine {
     /// A consumer of a topic (raw or integration topic, the framework logs them differently).
@@ -63,31 +76,50 @@ fn quoted_after<'a>(message: &'a str, marker: &str) -> Option<&'a str> {
 }
 
 /// Reads one log message; `None` for anything that isn't a startup line.
+///
+/// The container line and the `FrameworkProducer` line log the topic's real Kafka name. The
+/// consumer lines and "Creating producer" may log the configured name without the integration
+/// prefix: an integration consumer's and a producer's topic get it (producers only write
+/// integration topics for now), a raw consumer's is a plain Kafka topic as logged.
 fn parse_line(message: &str) -> Option<StartupLine> {
     const RAW_CONSUMER: &str = "Creating a raw Kafka consumer for topic ";
     const INTEGRATION_CONSUMER: &str = "Creating an integration consumer for topic ";
     const CONTAINER: &str = "Creating a Kafka container for topic: ";
+    const FRAMEWORK_PRODUCER: &str = "Starting FrameworkProducer for";
     const PRODUCER: &str = "Creating producer for topic: ";
 
-    let topic = |marker| quoted_after(message, marker).map(str::to_owned);
+    let quoted = |marker| quoted_after(message, marker);
     if message.contains(RAW_CONSUMER) {
-        return topic(RAW_CONSUMER).map(|topic| StartupLine::Consumer { topic });
+        return quoted(RAW_CONSUMER).map(|t| StartupLine::Consumer {
+            topic: t.to_owned(),
+        });
     }
     if message.contains(INTEGRATION_CONSUMER) {
-        return topic(INTEGRATION_CONSUMER).map(|topic| StartupLine::Consumer { topic });
+        return quoted(INTEGRATION_CONSUMER).map(|t| StartupLine::Consumer {
+            topic: integration(t),
+        });
     }
     if message.contains(CONTAINER) {
-        return topic(CONTAINER).map(|topic| StartupLine::Container {
-            topic,
+        return quoted(CONTAINER).map(|topic| StartupLine::Container {
+            topic: topic.to_owned(),
             concurrency: quoted_after(message, "concurrency=").and_then(|n| n.parse().ok()),
             group: quoted_after(message, "consumerGroup=").map(str::to_owned),
+        });
+    }
+    // `Starting FrameworkProducer for  topic: <topic>, bucket: <bucket>` (unquoted).
+    if let Some((_, rest)) = message.split_once(FRAMEWORK_PRODUCER) {
+        let (_, rest) = rest.split_once("topic:")?;
+        let topic = rest.split(", bucket:").next().unwrap_or_default().trim();
+        let topic = topic.trim_matches('\'');
+        return (!topic.is_empty()).then(|| StartupLine::Producer {
+            topic: topic.to_owned(),
         });
     }
     // The producer's topic isn't quoted: it's the rest of the line.
     let (_, rest) = message.split_once(PRODUCER)?;
     let topic = rest.trim().trim_matches('\'');
     (!topic.is_empty()).then(|| StartupLine::Producer {
-        topic: topic.to_owned(),
+        topic: integration(topic),
     })
 }
 
@@ -151,7 +183,8 @@ mod tests {
         let topology = startup_topology([
             "Creating a raw Kafka consumer for topic 'demo.events'",
             "Creating a Kafka container for topic: 'demo.events' with concurrency='3' and consumerGroup='event-enricher'",
-            "Creating an integration consumer for topic 'integration.demo.orders'",
+            // The consumer line logs the configured name, the container line the Kafka name.
+            "Creating an integration consumer for topic 'demo.orders'",
             "Creating a Kafka container for topic: 'integration.demo.orders' with concurrency='1' and consumerGroup='enricher-orders'",
             "Started EventEnricherApplication in 12.3 seconds",
         ]);
@@ -166,18 +199,35 @@ mod tests {
     }
 
     #[test]
-    fn producers_with_or_without_quotes() {
+    fn producers_by_their_kafka_names() {
         let topology = startup_topology([
+            // The configured name, and the Kafka name of the same producer: one topic.
             "Creating producer for topic: demo.events.enriched",
+            "Starting FrameworkProducer for  topic: integration.demo.events.enriched, bucket: demo-bucket",
             "Creating producer for topic: 'demo.events.audit' ",
             // Logged again by a second task: listed once.
             "Creating producer for topic: demo.events.enriched",
+            "Starting FrameworkProducer for topic: integration.demo.events.other",
         ]);
         assert_eq!(
             topology.writes,
-            ["demo.events.audit", "demo.events.enriched"]
+            [
+                "integration.demo.events.audit",
+                "integration.demo.events.enriched",
+                "integration.demo.events.other",
+            ]
         );
         assert!(topology.reads.is_empty());
+    }
+
+    #[test]
+    fn an_integration_consumer_without_its_container_line_gets_the_prefix() {
+        let topology =
+            startup_topology(["Creating an integration consumer for topic 'demo.orders'"]);
+        assert_eq!(
+            topology.reads,
+            [read("integration.demo.orders", None, None)]
+        );
     }
 
     #[test]
@@ -201,6 +251,7 @@ mod tests {
             "Creating bean 'kafkaTemplate'",
             "Creating a raw Kafka consumer for topic ",
             "Creating producer for topic:   ",
+            "Starting FrameworkProducer for  topic: , bucket: b",
             "",
         ]);
         assert!(topology.is_empty());
@@ -213,7 +264,7 @@ mod tests {
             "[main] Creating producer for topic: demo.out",
             "[main] Creating a raw Kafka consumer for topic 'demo.in'",
         ]);
-        assert_eq!(topology.writes, ["demo.out"]);
+        assert_eq!(topology.writes, ["integration.demo.out"]);
         assert_eq!(topology.reads, [read("demo.in", None, None)]);
     }
 }
