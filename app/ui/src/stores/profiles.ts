@@ -50,6 +50,11 @@ interface ProfilesState {
   /** Saves the region override of the selected profile (`null` = the profile's region). */
   setRegion: (region: string | null) => Promise<void>;
   checkIdentity: () => Promise<void>;
+  /**
+   * An AWS call of the selected profile failed for want of valid credentials (the session ran
+   * out or was revoked): the top bar offers to log in without waiting for the next check.
+   */
+  sessionRejected: (error: ApiError) => void;
   /** Logs in to the selected profile's SSO session, then re-checks the session. */
   startLogin: () => Promise<void>;
   dismissLogin: () => void;
@@ -183,6 +188,12 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
     if (result.status === "ok" && get().selected === name) {
       await get().checkIdentity();
     }
+  },
+
+  sessionRejected: (error) => {
+    if (!get().selected || get().identity.state === "error") return;
+    set({ identity: { state: "error", error } });
+    void get().refreshStatuses();
   },
 
   dismissLogin: () => set({ login: null }),

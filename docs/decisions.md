@@ -490,7 +490,8 @@ nodes by kind and logical name (`topic:x` for the integration topic, `topic:kafk
 logical name with the kind on a second line, and reads transformer topics (startup lines and entered by hand) as
 Kafka names: `integration.x` is the integration topic x, anything else a plain Kafka topic. Search also matches
 a topic's Kafka name. Before, a transformer reading `integration.x` was drawn next to, not on, the routes' `x`.
-Not changed yet: the per-service route graph and "Find connected services" match topics by name only.
+The per-service route graph (Routes card, "Find connected services") followed on the same day: its topic nodes
+use the same ids and second line, and only services on a topic of the same kind join it.
 
 ## 2026-10-27 — Transformer topics from the lines with Kafka names
 

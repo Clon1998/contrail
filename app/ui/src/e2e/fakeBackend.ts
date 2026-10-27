@@ -518,6 +518,11 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         });
         return null;
       }
+      // Not a real command: tests call it to end a session behind the app's back (expired or
+      // revoked while the app runs).
+      case "fake_revoke_session":
+        rejected.add(args?.profile as string);
+        return null;
       case "list_clusters":
         return ecs(args?.ctx as AwsCtx).clusters;
       case "list_services": {

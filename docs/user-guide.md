@@ -12,6 +12,9 @@ page has the details.
   it (or with **Settings → AWS → Log in without the AWS CLI**) Contrail logs in itself: it opens the login page in
   your browser and shows the code to confirm there, then writes the token to `~/.aws/sso/cache` exactly as the CLI
   would, so the CLI and other tools share the login. The AWS SDK handles credentials.
+- When a session runs out or is revoked while you work, whatever failed (the cluster list, a service, its logs, a
+  live tail, a trace) shows **Log in** right next to the error, and the top bar shows it too. After the login,
+  what failed loads again.
 - Switch profiles with **⌘⇧P / Ctrl+Shift+P** (search by name, account ID or region).
 
 ## Clusters and services

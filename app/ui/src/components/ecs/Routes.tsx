@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 import { MOD } from "@/lib/keys";
 import {
   buildRouteGraph,
@@ -166,9 +167,12 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
       }
     >
       {links.kind === "error" && (
-        <p className="mb-2 text-xs text-destructive">{links.error.message}</p>
+        <div className="mb-2 flex items-center gap-2 text-xs text-destructive">
+          <p>{links.error.message}</p>
+          <LoginAgain error={links.error} onLoggedIn={() => void find()} />
+        </div>
       )}
-      {links.kind === "done" && links.links.length === 0 && (
+      {links.kind === "done" && !graph.nodes.some((n) => n.kind === "service" && !n.self) && (
         <p className="mb-2 text-xs text-muted-foreground">
           No other service of the cluster uses these topics.
         </p>

@@ -51,10 +51,10 @@ describe("buildRouteGraph", () => {
     expect(graph.direction).toBe("out");
     expect(graph.ownGroup).toBe("gateway");
     expect(shape(graph)).toEqual([
-      [2, "topic", "orders.created", null],
+      [2, "topic", "orders.created", "integration"],
       [3, "service", "gateway", "group gateway"],
       [4, "system", "Billing", "mq"],
-      [2, "topic", "orders.cancelled", null],
+      [2, "topic", "orders.cancelled", "integration"],
     ]);
     expect(graph.nodes.find((n) => n.id === graph.selfId)?.self).toBe(true);
     expect(graph.edges.map((e) => [e.from, e.to])).toEqual([
@@ -70,10 +70,29 @@ describe("buildRouteGraph", () => {
     ]);
     expect(graph.direction).toBe("in");
     expect(shape(graph)).toEqual([
-      [2, "topic", "events", null],
+      [2, "topic", "events", "integration"],
       [1, "service", "ingest", null],
       [0, "system", "Partner", "sftp"],
     ]);
+  });
+
+  it("keeps a plain Kafka topic apart from the integration topic of the same name", () => {
+    const graph = buildRouteGraph(
+      "mirror",
+      [route(0, "events", { rawTopic: true, group: "mirror" })],
+      [
+        link("ingest", "in", []),
+        link("archiver", "out", []),
+        link("raw-reader", "out", [], { raw: true }),
+      ],
+    );
+    // Only the other reader of the plain topic joins; the integration topic's services don't.
+    expect(shape(graph)).toEqual([
+      [2, "topic", "events", "kafka"],
+      [3, "service", "mirror", "group mirror"],
+      [3, "service", "raw-reader", "group raw-reader"],
+    ]);
+    expect(graph.nodes[0]?.id).toBe("topic:kafka:events");
   });
 
   it("shows groups on topics only when the service's routes differ", () => {
@@ -83,8 +102,8 @@ describe("buildRouteGraph", () => {
     ]);
     expect(graph.ownGroup).toBeNull();
     expect(graph.nodes.filter((n) => n.kind === "topic").map((n) => n.detail)).toEqual([
-      "group first",
-      "group second",
+      "integration · group first",
+      "integration · group second",
     ]);
   });
 
@@ -116,7 +135,7 @@ describe("buildRouteGraph", () => {
       ],
     );
     expect(shape(graph)).toEqual([
-      [2, "topic", "events", null],
+      [2, "topic", "events", "integration"],
       [1, "service", "ingest", null],
       [0, "system", "Partner", "sftp"],
       [3, "service", "archiver", "group archiver"],
@@ -189,6 +208,11 @@ describe("filterRouteGraph", () => {
     const { graph: found, matches } = filterRouteGraph(graph, routes, "files.example");
     expect(labels(found)).toEqual(["Archive", "Partner", "events", "gateway", "ingest"]);
     expect([...matches.values()]).toEqual(["host: files.example.com"]);
+  });
+
+  it("finds an integration topic by its name on Kafka", () => {
+    const { matches } = filterRouteGraph(graph, routes, "integration.orders");
+    expect([...matches.keys()]).toEqual(["topic:orders"]);
   });
 
   it("keeps the whole graph without a query, and nothing when nothing matches", () => {

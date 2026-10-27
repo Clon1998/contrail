@@ -16,6 +16,7 @@ import {
 import { commands, type ServiceTopology, type Transformer } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildClusterGraph,
@@ -374,7 +375,19 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
               </div>
             </div>
           )}
-          {scan.kind === "error" && <p className="p-4 text-destructive">{scan.error.message}</p>}
+          {scan.kind === "error" && (
+            <div className="space-y-2 p-4 text-destructive">
+              <p>{scan.error.message}</p>
+              <LoginAgain
+                error={scan.error}
+                onLoggedIn={() => {
+                  setScan({ kind: "loading" });
+                  setTopology({ kind: "loading" });
+                  void scanAll(true, () => true);
+                }}
+              />
+            </div>
+          )}
           {scan.kind === "done" && whole.nodes.length === 0 && (
             <p className="p-4 text-muted-foreground">
               No service of this cluster has routes. Transformers entered by hand show up here too.

@@ -4,6 +4,7 @@ import { cn } from "cn";
 import type { ServiceRef } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoginAgain } from "@/components/profile/LoginAgain";
 import { Input } from "@/components/ui/input";
 import { nameFromArn } from "@/lib/ecs";
 import { openServiceKey } from "@/lib/navigation";
@@ -109,7 +110,11 @@ export function Sidebar() {
         </div>
       )}
       {clusters.state === "error" && (
-        <p className="px-3 py-1 text-xs text-destructive">{clusters.error.message}</p>
+        <div className="space-y-1 px-3 py-1 text-xs text-destructive">
+          <p>{clusters.error.message}</p>
+          {/* Logging in browses the profile again by itself. */}
+          <LoginAgain error={clusters.error} />
+        </div>
       )}
       {"data" in clusters && clusters.data?.length === 0 && (
         <p className="px-3 py-1 text-muted-foreground">No clusters in this region.</p>
@@ -136,6 +141,7 @@ function ClusterNode({ arn, query }: { arn: string; query: string }) {
   const userExpanded = useEcs((s) => s.expanded[arn] ?? false);
   const services = useEcs((s) => s.services[arn]);
   const toggle = useEcs((s) => s.toggleCluster);
+  const loadServices = useEcs((s) => s.loadServices);
   if (!cluster) return null;
 
   const all = services && "data" in services ? (services.data ?? null) : null;
@@ -190,7 +196,10 @@ function ClusterNode({ arn, query }: { arn: string; query: string }) {
             </li>
           )}
           {services?.state === "error" && (
-            <li className="py-1 pr-2 pl-8 text-xs text-destructive">{services.error.message}</li>
+            <li className="space-y-1 py-1 pr-2 pl-8 text-xs text-destructive">
+              <p>{services.error.message}</p>
+              <LoginAgain error={services.error} onLoggedIn={() => void loadServices(arn)} />
+            </li>
           )}
           {all?.length === 0 && (
             <li className="py-1 pl-8 text-xs text-muted-foreground">No services</li>
