@@ -9,7 +9,7 @@ const features: { icon: StarlightIcon; title: string; text: string; link?: strin
   {
     icon: "approve-check",
     title: "SSO profiles, one keystroke away",
-    text: "Your profiles from ~/.aws/config with their session state. Log in runs aws sso login for you; Cmd/Ctrl+Shift+P switches.",
+    text: "Your profiles from ~/.aws/config with their session state. Log in runs aws sso login for you, or logs in itself without the CLI; Cmd/Ctrl+Shift+P switches.",
     link: "quick-start/",
   },
   {
@@ -25,12 +25,12 @@ const features: { icon: StarlightIcon; title: string; text: string; link?: strin
   {
     icon: "document",
     title: "Logs you can read",
-    text: "ECS JSON (nested or dotted), Spring Boot's console pattern and plain text. Java stack traces split into one event per line are joined again.",
+    text: "ECS JSON (nested or dotted), Spring Boot's console pattern and plain text, stack traces joined again. A timeline by level above the list; drag to zoom in.",
   },
   {
     icon: "magnifier",
     title: "Search that knows fields",
-    text: "level>=WARN trace.id:abc123 -healthcheck, regular expressions and globs, as a filter or highlighted. Hide noise per service.",
+    text: "level>=WARN trace.id:abc123 -healthcheck, regular expressions and globs, as a filter or highlighted. ↑ recalls earlier searches; save the ones you need again.",
     link: "search-syntax/",
   },
   {
@@ -45,13 +45,13 @@ const features: { icon: StarlightIcon; title: string; text: string; link?: strin
   },
   {
     icon: "download",
-    title: "Export the evidence",
-    text: "The listed lines as .log or .jsonl, for the incident ticket. Copy a line's fields, raw JSON or stack trace with one click.",
+    title: "Share and export",
+    text: "A link that opens the same view in a teammate's Contrail, the same logs in the CloudWatch console, or the lines as .log or .jsonl for the ticket.",
   },
   {
     icon: "padlock",
     title: "Read-only, no credentials",
-    text: "Contrail never changes anything in AWS and never stores credentials. Secret values are read only when you click Reveal.",
+    text: "Contrail never changes anything in AWS and keeps no credentials of its own. Secret values are read only when you click Reveal.",
     link: "permissions/",
   },
 ];

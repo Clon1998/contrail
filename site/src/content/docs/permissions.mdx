@@ -20,7 +20,8 @@ permission sets.
 
 <Code code={policy} lang="json" title="docs/iam-policy.json" />
 
-<Aside type="note" title="Nothing is stored">
-  Contrail never stores credentials. It reads the expiry of the SSO token cache to show whether a
-  profile is logged in; the AWS SDK handles everything else.
+<Aside type="note" title="No credentials of its own">
+  Contrail keeps no credentials of its own. It reads the expiry of the SSO token cache to show whether a
+  profile is logged in; its built-in login (used without the AWS CLI) writes the token there, exactly as
+  `aws sso login` would. The AWS SDK handles everything else.
 </Aside>

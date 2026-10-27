@@ -20,26 +20,30 @@
 Contrail replaces the round trip through the AWS console when you want to know what a service is doing: switch AWS
 SSO profiles, browse clusters and services, and follow their logs live as readable, searchable lines. It is built
 with Rust, Tauri 2 and React. There is no account, no server and no telemetry, it never changes anything in AWS, and
-it never stores credentials.
+it keeps no credentials of its own.
 
 ## Features
 
 - **Profiles and SSO.** All profiles from `~/.aws/config` with their login state; **Log in** runs
-  `aws sso login` for you. Switch with Cmd/Ctrl+Shift+P, jump to any service with Cmd/Ctrl+K.
+  `aws sso login` for you, or logs in itself when the AWS CLI isn't installed (the token goes to the CLI's cache,
+  so both share it). Switch with Cmd/Ctrl+Shift+P, jump to any service with Cmd/Ctrl+K.
 - **Everything about a service on one page**: running and recently stopped tasks with stop reasons and exit codes,
   deployments, the task definition, recent events and environment variables (secret-looking values masked;
   Secrets Manager and SSM values only on **Reveal**).
 - **Logs that read well.** ECS JSON (nested or dotted), Spring Boot's console pattern and plain text are parsed;
   stack traces split into one event per line are joined again. 100,000 lines scroll smoothly; parsing, buffering
-  and search run in Rust.
+  and search run in Rust. A **timeline** above the list shows events over time by level; drag across it to zoom in.
 - **Live tail** with CloudWatch Live Tail (or polling without the permission), paused automatically while you
   don't look, because it is billed per minute.
 - **Search** as you type: words, phrases, fields, levels, comparisons and regular expressions, as a filter or
   highlighted. Level chips and "Hide lines like this" remove the noise. The **Fields** panel counts the most common
-  values of every field in the matching events; a click on one narrows the search. [Search syntax](docs/query-syntax.md)
+  values of every field in the matching events; a click on one narrows the search. ↑ / ↓ recall earlier
+  searches; **saved searches** (per service or for all) are a click or Cmd/Ctrl+K away. [Search syntax](docs/query-syntax.md)
 - **Tracing across services**: follow a correlation or trace ID through the services of a cluster, on a timeline.
-- Tabs per service, time windows (relative or fixed), export as `.log` or `.jsonl`, field mapping for other JSON
-  layouts, dark and light themes, keyboard-first.
+- **Share a view**: a `contrail://` link opens the same service, time window and search in a teammate's Contrail;
+  or open the same logs in the CloudWatch console for those without it.
+- Tabs per service (each keeps its place), time windows (relative or fixed), wrapped or cut-off lines, export as
+  `.log` or `.jsonl`, field mapping for other JSON layouts, dark and light themes, keyboard-first.
 - **Updates itself**: a signed update check once a day (can be switched off), installed only when you say so.
 
 Not supported (yet): EKS, Lambda and other non-ECS log groups, log drivers other than `awslogs`, long-range

@@ -20,7 +20,7 @@ There are no ARM builds for Windows or Linux yet.
 ## Is it safe to point at production?
 
 Contrail is read-only: it never stops, restarts, scales or deploys anything, and a role with only the
-[IAM policy](iam-policy.json) can't, whatever the app does. It never stores credentials. Details:
+[IAM policy](iam-policy.json) can't, whatever the app does. It keeps no credentials of its own. Details:
 [Security & privacy](security.md).
 
 ## Is my data sent anywhere?
