@@ -88,9 +88,10 @@ test("long messages wrap with W or the toolbar button", async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 700 });
   const list = await openLogs(page, "demo-core", "payments-worker");
   await expect(list.getByRole("listitem").first()).toBeVisible();
+  // The rows themselves (a row can carry a service event's line too).
   const tallest = () =>
     list
-      .getByRole("listitem")
+      .locator("button[aria-expanded]")
       .evaluateAll((rows) => Math.max(...rows.map((r) => r.getBoundingClientRect().height)));
   const oneLine = await tallest();
 
@@ -465,6 +466,25 @@ test("surrounding lines: the lines of the same task around an expanded line", as
   await dialog.getByRole("button", { name: "Earlier lines" }).click();
   await expect(lines.getByRole("listitem")).toHaveCount(51);
   await expect(lines).toContainText(`Ingested event #${100000 - 6 * 50} `);
+});
+
+test("deployments, stopped tasks and service events show between the lines", async ({ page }) => {
+  await openLogs(page, "demo-core", "payments-worker");
+  const stopped = page
+    .getByRole("group", { name: "Service events" })
+    .getByRole("note")
+    .filter({ hasText: "Task cc996ddd stopped" });
+  await expect(stopped).toContainText("payments-worker exited with 1");
+  // "Steady state" events are left out.
+  await expect(page.getByRole("list", { name: "Log events" })).not.toContainText("steady state");
+
+  // A stopped task's line shows its logs.
+  await stopped.getByRole("button", { name: "Its logs" }).click();
+  await expect(page.getByText("/ecs/payments-worker · 1 stream")).toBeVisible();
+
+  // The toolbar switches them off (and on again).
+  await page.getByRole("button", { name: "Service events" }).click();
+  await expect(page.getByRole("group", { name: "Service events" })).toHaveCount(0);
 });
 
 test("while logs load, placeholders in the shape of the list show", async ({ page }) => {

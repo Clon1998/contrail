@@ -250,6 +250,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       newestFirst: false,
       wrapLines: false,
       showTimeline: true,
+      showMarkers: true,
       builtinLogin: false,
       checkForUpdates: true,
     },

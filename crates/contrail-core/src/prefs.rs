@@ -140,6 +140,9 @@ pub struct Settings {
     pub wrap_lines: bool,
     /// The timeline (events over time, by level) is shown above log lists.
     pub show_timeline: bool,
+    /// Deployments, stopped tasks and service events are marked between the log lines and on
+    /// the timeline.
+    pub show_markers: bool,
     /// Log in to SSO with Contrail's own login (device flow) even when the AWS CLI is installed.
     pub builtin_login: bool,
     /// Look for a new Contrail version on start (at most once a day).
@@ -163,6 +166,7 @@ impl Default for Settings {
             newest_first: false,
             wrap_lines: false,
             show_timeline: true,
+            show_markers: true,
             builtin_login: false,
             check_for_updates: true,
         }
@@ -199,6 +203,7 @@ impl Settings {
         read(value, "newestFirst", &mut settings.newest_first);
         read(value, "wrapLines", &mut settings.wrap_lines);
         read(value, "showTimeline", &mut settings.show_timeline);
+        read(value, "showMarkers", &mut settings.show_markers);
         read(value, "builtinLogin", &mut settings.builtin_login);
         read(value, "checkForUpdates", &mut settings.check_for_updates);
         settings
@@ -674,6 +679,7 @@ mod tests {
             .settings;
         assert!(!settings.wrap_lines);
         assert!(settings.show_timeline, "on unless switched off");
+        assert!(settings.show_markers, "on unless switched off");
         assert!(settings.newest_first);
         let json = r#"{"settings":{"wrapLines":true}}"#;
         assert!(Prefs::from_json(json).unwrap().settings.wrap_lines);
@@ -770,7 +776,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"builtinLogin":false,"checkForUpdates":true}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true}"#
         );
     }
 

@@ -8,6 +8,8 @@ import {
   utcOffsetMinutes,
 } from "@/lib/timeline";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useServiceMarkers } from "./useServiceMarkers";
+import { markersBetween } from "@/lib/markers";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 
@@ -41,6 +43,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const revision = useLogs((s) => s.searchRevision);
   const focus = useLogs((s) => s.focus);
   const setFocus = useLogs((s) => s.setFocus);
+  const markers = useServiceMarkers();
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
@@ -89,6 +92,21 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const spansDays = timeline ? count * timeline.bucketMs >= 86_400_000 : false;
   const hovered = hover !== null && timeline ? timeline.buckets[hover] : undefined;
   const focused = focus && timeline && count > 0 ? rangePixels(timeline, focus, width) : null;
+  // Where the chart starts and ends, for the markers' positions.
+  const [start, end] =
+    timeline && count > 0
+      ? [bucketRange(timeline, 0)[0], bucketRange(timeline, count - 1)[1]]
+      : [0, 0];
+  const shownMarkers = end > start ? markersBetween(markers, start - 1, end) : [];
+  const markerX = (at: number) => ((at - start) / (end - start)) * width;
+  const hoveredMarkers =
+    hover !== null && timeline
+      ? markersBetween(
+          shownMarkers,
+          bucketRange(timeline, hover)[0] - 1,
+          bucketRange(timeline, hover)[1],
+        )
+      : [];
   const outsideFocus = (i: number) =>
     focused !== null &&
     ((i + 1) * barWidth <= focused.left || i * barWidth >= focused.left + focused.width);
@@ -151,6 +169,24 @@ export function TimelineChart({ viewId }: { viewId: number }) {
               </g>
             );
           })}
+          {shownMarkers.map((m) => (
+            <line
+              key={`${m.kind}-${m.at}-${m.title}`}
+              x1={markerX(m.at)}
+              x2={markerX(m.at)}
+              y1={0}
+              y2={BARS_HEIGHT}
+              strokeWidth={1.5}
+              strokeDasharray="3 2"
+              className={
+                m.failed
+                  ? "stroke-destructive"
+                  : m.kind === "deployment"
+                    ? "stroke-primary"
+                    : "stroke-muted-foreground/70"
+              }
+            />
+          ))}
         </svg>
         {focused && !drag && (
           <div
@@ -183,6 +219,14 @@ export function TimelineChart({ viewId }: { viewId: number }) {
             {STACK.filter(({ key }) => hovered[key] > 0).map(({ key, label }) => (
               <p key={key} className="tabular-nums">
                 {label} {hovered[key].toLocaleString()}
+              </p>
+            ))}
+            {hoveredMarkers.map((m) => (
+              <p
+                key={`${m.kind}-${m.at}-${m.title}`}
+                className={m.failed ? "text-destructive" : "text-primary"}
+              >
+                {m.title}
               </p>
             ))}
           </div>

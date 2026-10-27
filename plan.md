@@ -500,6 +500,9 @@ round. The numbers stay as they are (they're referenced in commits and docs).
   side, more on request).
 - **M17 — ECS events & stopped tasks (evaluation):** service events and deployments as markers in the log
   list and the timeline; recently stopped tasks with their stop reason and exit codes, and their logs.
+  **Built 2026-10-27** (Patrick asked for it without the evaluation round): markers from the overview's data
+  (no extra AWS calls), "steady state" events left out, a stopped task's marker opens its logs; a toolbar
+  toggle (saved setting) hides them.
 - **M18 — Route health:** for the time window, counts of COMPLETED / FAILED / RETRYING per topic and
   consumer group, the failure rate and a throughput sparkline, on the Routes card and the route map.
 - **M19 — Partitions & offsets (evaluation):** link dead-letter events to the originals by partition and

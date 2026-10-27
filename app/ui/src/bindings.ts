@@ -957,6 +957,11 @@ export type Settings = {
 	wrapLines: boolean,
 	/**  The timeline (events over time, by level) is shown above log lists. */
 	showTimeline: boolean,
+	/**
+	 *  Deployments, stopped tasks and service events are marked between the log lines and on
+	 *  the timeline.
+	 */
+	showMarkers: boolean,
 	/**  Log in to SSO with Contrail's own login (device flow) even when the AWS CLI is installed. */
 	builtinLogin: boolean,
 	/**  Look for a new Contrail version on start (at most once a day). */
