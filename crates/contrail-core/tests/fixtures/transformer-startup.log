@@ -1,27 +1,22 @@
 2026-01-15T08:00:01.104Z  INFO 1 --- [orders-transformer] [           main] c.e.o.OrdersTransformerApplication       : Starting OrdersTransformerApplication v1.4.0 using Java 21.0.5 with PID 1 (/app/app.jar started by root in /app)
 2026-01-15T08:00:01.190Z  INFO 1 --- [orders-transformer] [           main] c.e.o.OrdersTransformerApplication       : The following 1 profile is active: "demo"
 2026-01-15T08:00:09.880Z  INFO 1 --- [orders-transformer] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
-2026-01-15T08:00:20.415Z  INFO 1 --- [orders-transformer] [           main] c.e.p.camel.fw.FrameworkEndpoint         : Bucket 'demo-pipeline-orders.order-events' for topic 'orders.order-events' exists!
-2026-01-15T08:00:20.802Z  INFO 1 --- [orders-transformer] [           main] c.e.p.camel.fw.FrameworkEndpoint         : Creating consumer for topic: orders.order-events
-2026-01-15T08:00:20.802Z  INFO 1 --- [orders-transformer] [           main] c.e.p.camel.fw.FrameworkEndpoint         : Creating an integration consumer for topic 'orders.order-events'
+2026-01-15T08:00:20.415Z  INFO 1 --- [orders-transformer] [           main] c.e.p.storage.DocumentStore              : Creating document store client for 'demo-documents'
+2026-01-15T08:00:20.802Z  INFO 1 --- [orders-transformer] [           main] c.e.p.kafka.TopicEndpoints               : Creating an integration consumer for topic 'orders.order-events'
 2026-01-15T08:00:21.190Z  INFO 1 --- [orders-transformer] [           main] o.a.k.clients.producer.ProducerConfig    : ProducerConfig values: 
 	acks = -1
 	bootstrap.servers = [b-1.demo-kafka.example:9098]
 	client.id = producer-1
 	enable.idempotence = true
 2026-01-15T08:00:22.371Z  INFO 1 --- [orders-transformer] [           main] o.a.k.clients.producer.KafkaProducer     : [Producer clientId=producer-1] Instantiated an idempotent producer.
-2026-01-15T08:00:23.044Z  INFO 1 --- [orders-transformer] [           main] c.e.p.camel.fw.FrameworkConsumer         : Creating a Kafka container for topic: 'integration.orders.order-events' with concurrency='2' and consumerGroup='orders-transformer'
-2026-01-15T08:00:23.512Z  INFO 1 --- [orders-transformer] [           main] c.e.p.camel.fw.FrameworkConsumer         : Starting to listen for topic: 'integration.orders.order-events'
+2026-01-15T08:00:23.044Z  INFO 1 --- [orders-transformer] [           main] c.e.p.kafka.TopicListeners               : Creating a Kafka container for topic: 'integration.orders.order-events' with concurrency='2' and consumerGroup='orders-transformer'
 2026-01-15T08:00:23.530Z  INFO 1 --- [orders-transformer] [           main] o.a.k.clients.consumer.ConsumerConfig    : ConsumerConfig values: 
 	allow.auto.create.topics = true
 	group.id = orders-transformer
 	exclude.internal.topics = true
 2026-01-15T08:00:24.601Z  INFO 1 --- [orders-transformer] [           main] o.a.k.c.c.i.ClassicKafkaConsumer         : [Consumer clientId=consumer-orders-transformer-1, groupId=orders-transformer] Subscribed to topic(s): integration.orders.order-events
-2026-01-15T08:00:31.288Z  INFO 1 --- [orders-transformer] [           main] c.e.p.camel.fw.FrameworkConsumer         : Started listener for topic: 'integration.orders.order-events'
 2026-01-15T08:00:31.290Z  INFO 1 --- [orders-transformer] [           main] o.a.c.impl.engine.AbstractCamelContext   : Routes startup (total:1)
-2026-01-15T08:00:31.291Z  INFO 1 --- [orders-transformer] [           main] o.a.c.impl.engine.AbstractCamelContext   :     Started route1 (fw://orders.order-events)
+2026-01-15T08:00:31.291Z  INFO 1 --- [orders-transformer] [           main] o.a.c.impl.engine.AbstractCamelContext   :     Started route1 (pipeline://orders.order-events)
 2026-01-15T08:00:31.297Z  INFO 1 --- [orders-transformer] [           main] c.e.o.OrdersTransformerApplication       : Started OrdersTransformerApplication in 31.02 seconds (process running for 33.4)
-2026-01-15T08:05:12.016Z  INFO 1 --- [orders-transformer] [rs-transformer-0-C-1] c.e.p.c.f.FrameworkIntegrationConsumer   : Received a record from topic: 'integration.orders.order-events'
-2026-01-15T08:05:12.204Z  INFO 1 --- [orders-transformer] [rs-transformer-0-C-1] c.e.p.s.StatusManagerService             : Document status change: [ID:4f1c2e8a90b7] PUBLISHED -> CONSUMING (Record consumed from Kafka topic)
-2026-01-15T08:05:12.731Z  INFO 1 --- [orders-transformer] [Camel (camel-1)] c.e.p.camel.fw.FrameworkConsumer         : Exchange completed successfully for topic: 'integration.orders.order-events' and record (0#1042)
-2026-01-15T08:05:12.733Z  INFO 1 --- [orders-transformer] [Camel (camel-1)] c.e.p.s.StatusManagerService             : Document status change: [ID:4f1c2e8a90b7] CONSUMING -> COMPLETED (Processing completed successfully )
+2026-01-15T08:05:12.204Z  INFO 1 --- [orders-transformer] [rs-transformer-0-C-1] c.e.pipeline.StatusManager               : Document status change: [event] PUBLISHED -> CONSUMING
+2026-01-15T08:05:12.733Z  INFO 1 --- [orders-transformer] [Camel (camel-1)] c.e.pipeline.StatusManager               : Document status change: [event] CONSUMING -> COMPLETED

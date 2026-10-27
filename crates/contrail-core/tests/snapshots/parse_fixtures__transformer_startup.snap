@@ -97,7 +97,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
     "kind": "spring",
     "timestamp": "2026-01-15T08:00:20.415Z",
     "level": "INFO",
-    "message": "Bucket 'demo-pipeline-orders.order-events' for topic 'orders.order-events' exists!",
+    "message": "Creating document store client for 'demo-documents'",
     "fields": [
       {
         "key": "log.level",
@@ -117,37 +117,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
       },
       {
         "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkEndpoint"
-      }
-    ],
-    "error": null,
-    "jsonSpan": null
-  },
-  {
-    "kind": "spring",
-    "timestamp": "2026-01-15T08:00:20.802Z",
-    "level": "INFO",
-    "message": "Creating consumer for topic: orders.order-events",
-    "fields": [
-      {
-        "key": "log.level",
-        "value": "INFO"
-      },
-      {
-        "key": "process.pid",
-        "value": 1
-      },
-      {
-        "key": "service.name",
-        "value": "orders-transformer"
-      },
-      {
-        "key": "process.thread.name",
-        "value": "main"
-      },
-      {
-        "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkEndpoint"
+        "value": "c.e.p.storage.DocumentStore"
       }
     ],
     "error": null,
@@ -177,7 +147,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
       },
       {
         "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkEndpoint"
+        "value": "c.e.p.kafka.TopicEndpoints"
       }
     ],
     "error": null,
@@ -303,37 +273,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
       },
       {
         "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkConsumer"
-      }
-    ],
-    "error": null,
-    "jsonSpan": null
-  },
-  {
-    "kind": "spring",
-    "timestamp": "2026-01-15T08:00:23.512Z",
-    "level": "INFO",
-    "message": "Starting to listen for topic: 'integration.orders.order-events'",
-    "fields": [
-      {
-        "key": "log.level",
-        "value": "INFO"
-      },
-      {
-        "key": "process.pid",
-        "value": 1
-      },
-      {
-        "key": "service.name",
-        "value": "orders-transformer"
-      },
-      {
-        "key": "process.thread.name",
-        "value": "main"
-      },
-      {
-        "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkConsumer"
+        "value": "c.e.p.kafka.TopicListeners"
       }
     ],
     "error": null,
@@ -428,36 +368,6 @@ expression: "parse_fixture(\"transformer-startup.log\")"
   },
   {
     "kind": "spring",
-    "timestamp": "2026-01-15T08:00:31.288Z",
-    "level": "INFO",
-    "message": "Started listener for topic: 'integration.orders.order-events'",
-    "fields": [
-      {
-        "key": "log.level",
-        "value": "INFO"
-      },
-      {
-        "key": "process.pid",
-        "value": 1
-      },
-      {
-        "key": "service.name",
-        "value": "orders-transformer"
-      },
-      {
-        "key": "process.thread.name",
-        "value": "main"
-      },
-      {
-        "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkConsumer"
-      }
-    ],
-    "error": null,
-    "jsonSpan": null
-  },
-  {
-    "kind": "spring",
     "timestamp": "2026-01-15T08:00:31.29Z",
     "level": "INFO",
     "message": "Routes startup (total:1)",
@@ -490,7 +400,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
     "kind": "spring",
     "timestamp": "2026-01-15T08:00:31.291Z",
     "level": "INFO",
-    "message": "    Started route1 (fw://orders.order-events)",
+    "message": "    Started route1 (pipeline://orders.order-events)",
     "fields": [
       {
         "key": "log.level",
@@ -548,39 +458,9 @@ expression: "parse_fixture(\"transformer-startup.log\")"
   },
   {
     "kind": "spring",
-    "timestamp": "2026-01-15T08:05:12.016Z",
-    "level": "INFO",
-    "message": "Received a record from topic: 'integration.orders.order-events'",
-    "fields": [
-      {
-        "key": "log.level",
-        "value": "INFO"
-      },
-      {
-        "key": "process.pid",
-        "value": 1
-      },
-      {
-        "key": "service.name",
-        "value": "orders-transformer"
-      },
-      {
-        "key": "process.thread.name",
-        "value": "rs-transformer-0-C-1"
-      },
-      {
-        "key": "log.logger",
-        "value": "c.e.p.c.f.FrameworkIntegrationConsumer"
-      }
-    ],
-    "error": null,
-    "jsonSpan": null
-  },
-  {
-    "kind": "spring",
     "timestamp": "2026-01-15T08:05:12.204Z",
     "level": "INFO",
-    "message": "Document status change: [ID:4f1c2e8a90b7] PUBLISHED -> CONSUMING (Record consumed from Kafka topic)",
+    "message": "Document status change: [event] PUBLISHED -> CONSUMING",
     "fields": [
       {
         "key": "log.level",
@@ -600,37 +480,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
       },
       {
         "key": "log.logger",
-        "value": "c.e.p.s.StatusManagerService"
-      }
-    ],
-    "error": null,
-    "jsonSpan": null
-  },
-  {
-    "kind": "spring",
-    "timestamp": "2026-01-15T08:05:12.731Z",
-    "level": "INFO",
-    "message": "Exchange completed successfully for topic: 'integration.orders.order-events' and record (0#1042)",
-    "fields": [
-      {
-        "key": "log.level",
-        "value": "INFO"
-      },
-      {
-        "key": "process.pid",
-        "value": 1
-      },
-      {
-        "key": "service.name",
-        "value": "orders-transformer"
-      },
-      {
-        "key": "process.thread.name",
-        "value": "Camel (camel-1)"
-      },
-      {
-        "key": "log.logger",
-        "value": "c.e.p.camel.fw.FrameworkConsumer"
+        "value": "c.e.pipeline.StatusManager"
       }
     ],
     "error": null,
@@ -640,7 +490,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
     "kind": "spring",
     "timestamp": "2026-01-15T08:05:12.733Z",
     "level": "INFO",
-    "message": "Document status change: [ID:4f1c2e8a90b7] CONSUMING -> COMPLETED (Processing completed successfully )",
+    "message": "Document status change: [event] CONSUMING -> COMPLETED",
     "fields": [
       {
         "key": "log.level",
@@ -660,7 +510,7 @@ expression: "parse_fixture(\"transformer-startup.log\")"
       },
       {
         "key": "log.logger",
-        "value": "c.e.p.s.StatusManagerService"
+        "value": "c.e.pipeline.StatusManager"
       }
     ],
     "error": null,
