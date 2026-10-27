@@ -162,12 +162,24 @@ export function buildRouteGraph(
 
   for (const route of routes) {
     const off = !route.enabled;
-    const topic = route.topic ? `topic:${route.topic}` : `topic:#${route.index}`;
-    const detail = groups.size > 1 && route.group ? `group ${route.group}` : null;
-    node(topic, { column: 2, kind: "topic", label: route.topic ?? "—", detail }, route.index, off);
+    // By kind and name, as on the cluster's route map (`topicNodeId`): an integration topic
+    // (`integration.x` on Kafka), or the plain Kafka topic an output route reads with `rawTopic`.
+    const kind = route.rawTopic ? "kafka" : "integration";
+    const topic = !route.topic
+      ? `topic:#${route.index}`
+      : route.rawTopic
+        ? `topic:kafka:${route.topic}`
+        : `topic:${route.topic}`;
+    const group = groups.size > 1 && route.group ? ` · group ${route.group}` : "";
+    node(
+      topic,
+      { column: 2, kind: "topic", label: route.topic ?? "—", detail: `${kind}${group}` },
+      route.index,
+      off,
+    );
     const endpoints = route.input ? [route.input] : route.outputs;
     service(self, direction, route.group, endpoints, topic, route.index, off);
-    for (const link of links.filter((l) => l.topic === route.topic)) {
+    for (const link of links.filter((l) => l.topic === route.topic && l.raw === route.rawTopic)) {
       const disabled = off || !link.enabled;
       service(
         link.service,
@@ -240,7 +252,7 @@ export function systemEndpoints(
 
 /**
  * What in `node` contains `needle` (lower case), and the routes it belongs to: `name` for its
- * name or second line (every route through it), else for a system the first setting of this
+ * name, a topic's Kafka name or its second line (every route through it), else for a system the first setting of this
  * service's routes to it (`host: sftp.example.com`; the routes with that setting). Values of
  * secrets are empty, so they never match.
  */
@@ -251,7 +263,12 @@ export function routeNodeMatch(
 ): { what: string; routes: number[] } | null {
   const named =
     node.label.toLowerCase().includes(needle) || node.detail?.toLowerCase().includes(needle);
-  if (named) return { what: "name", routes: node.routes };
+  // A topic also by its name on Kafka (`integration.x`).
+  const kafka =
+    node.kind === "topic" &&
+    !node.id.startsWith("topic:kafka:") &&
+    `integration.${node.label}`.toLowerCase().includes(needle);
+  if (named || kafka) return { what: "name", routes: node.routes };
   if (node.kind !== "system") return null;
   let what: string | null = null;
   const matched: number[] = [];

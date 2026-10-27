@@ -168,7 +168,7 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
       {links.kind === "error" && (
         <p className="mb-2 text-xs text-destructive">{links.error.message}</p>
       )}
-      {links.kind === "done" && links.links.length === 0 && (
+      {links.kind === "done" && !graph.nodes.some((n) => n.kind === "service" && !n.self) && (
         <p className="mb-2 text-xs text-muted-foreground">
           No other service of the cluster uses these topics.
         </p>
