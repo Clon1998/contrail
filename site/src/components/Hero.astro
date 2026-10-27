@@ -3,7 +3,7 @@
  * Replaces Starlight's hero (astro.config.mjs → `components.Hero`); only the landing page has
  * `hero` in its front matter. Custom, so the links can use the base path and the download
  * button can name the visitor's OS. Next to the text: a small live tail (LiveTail.astro);
- * behind it: the two contrails of the app icon.
+ * behind it: the app icon's trails of log lines, with a warning and an error among them.
  */
 import { LinkButton } from "@astrojs/starlight/components";
 import { REPO } from "../../site.config.mjs";
@@ -18,13 +18,20 @@ const release = await latestRelease();
 <div class="hero not-content">
   <svg class="trails" viewBox="0 0 1200 600" preserveAspectRatio="none" aria-hidden="true">
     <defs>
+      <!-- The icon's trail colors: cyan into blue into violet, fading in from the left. -->
       <linearGradient id="trail" x1="0" y1="1" x2="1" y2="0">
-        <stop offset="0" style="stop-color: var(--sl-color-accent); stop-opacity: 0"></stop>
-        <stop offset="1" style="stop-color: var(--sl-color-accent); stop-opacity: 0.55"></stop>
+        <stop offset="0" stop-color="#22e5ff" stop-opacity="0"></stop>
+        <stop offset="0.45" stop-color="#3b7bff" stop-opacity="0.28"></stop>
+        <stop offset="1" stop-color="#9b7bff" stop-opacity="0.55"></stop>
       </linearGradient>
     </defs>
-    <path d="M-40 560 C 300 470, 640 300, 1240 40"></path>
-    <path d="M-40 600 C 320 510, 660 340, 1240 92"></path>
+    <!-- Dashes of different lengths read as log lines, like the icon's trails. -->
+    <path class="line" d="M-40 560 C 300 470, 640 300, 1240 40"></path>
+    <path class="line second" d="M-40 600 C 320 510, 660 340, 1240 92"></path>
+    <path class="line third" d="M-40 520 C 280 430, 620 262, 1240 -12"></path>
+    <!-- Zero-length round strokes: dots that stay round however the drawing is stretched. -->
+    <path class="dot warn" d="M306 444 h0.01"></path>
+    <path class="dot error" d="M286 498 h0.01"></path>
   </svg>
 
   <div class="top">
@@ -91,15 +98,34 @@ const release = await latestRelease();
     z-index: -1;
     pointer-events: none;
   }
-  .trails path {
+  .trails .line {
     fill: none;
     stroke: url(#trail);
     stroke-width: 10;
     stroke-linecap: round;
+    stroke-dasharray: 90 26 34 26 140 26 56 26;
     vector-effect: non-scaling-stroke;
   }
-  .trails path + path {
+  .trails .second {
     opacity: 0.6;
+    stroke-dasharray: 48 24 120 24 30 24 84 24;
+  }
+  .trails .third {
+    opacity: 0.35;
+    stroke-width: 6;
+    stroke-dasharray: 26 22 70 22;
+  }
+  .trails .dot {
+    stroke-width: 11;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    opacity: 0.9;
+  }
+  .trails .warn {
+    stroke: var(--ct-warn);
+  }
+  .trails .error {
+    stroke: var(--ct-error);
   }
   .top {
     display: grid;
