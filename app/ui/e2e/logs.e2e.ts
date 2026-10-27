@@ -229,10 +229,15 @@ test("the list keeps its place and open rows across Overview, Logs and tabs", as
 test("live: following stops when scrolled up and resumes with Jump to latest", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
-  await list.locator("..").evaluate((el) => {
-    el.scrollTop = 0;
-  });
-  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+  // Scrolled up; again if the list's first move to the newest event came after it.
+  await expect(async () => {
+    await list.locator("..").evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass();
   // New events (the generated view grows while live) don't pull the list down.
   const before = Number(await list.getAttribute("aria-rowcount"));
   await expect
