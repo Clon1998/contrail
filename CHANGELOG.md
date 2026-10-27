@@ -75,6 +75,7 @@ All notable changes to Contrail. Generated from the commit history ([Conventiona
 - **e2e:** Count focused rows in the fake's live updates
 - **logs:** Read the timeline drag start from a ref
 - **routes:** Tell integration and plain Kafka topics apart in a service's graph
+- **logs:** A slimmer timeline with thin bars
 
 ### Documentation
 
