@@ -2,6 +2,123 @@
 
 All notable changes to Contrail. Generated from the commit history ([Conventional Commits](https://www.conventionalcommits.org)).
 
+## 0.2.0 — 2026-10-27
+
+### Features
+
+- **logs:** Read the consumer group of status events
+- **trace:** The topics a document went through, per service
+- **fake:** Demo documents that pass through demo-edge
+- **trace:** Complete a document once every topic it reached was read
+- **fake:** Keep demo-edge's status events to its documents
+- **ui:** Build a trace's graph from its hops
+- **ui:** Targets next to their service in a trace's graph
+- **ui:** Draw a trace on the route graph
+- **ecs:** Every route of a cluster for its route map
+- **prefs:** Transformers entered by hand
+- **ui:** Build a cluster's route graph with its transformers
+- **ui:** Move a graph's starting nodes next to where they lead
+- **ui:** A cluster's route map in a tab of its own
+- **logs:** Shorten logger names like Spring Boot
+- **logs:** Wrap long messages with a toggle
+- **logs:** Keep the list's place when it's hidden and shown again
+- **ecs:** Show a service seen before right away
+- **ui:** A skeleton instead of a spinner while a service loads
+- **routes:** Read the topics a service uses from its startup lines
+- **fake:** The demo transformer logs its consumers and producers
+- **ecs:** Find a cluster's transformers from their startup lines
+- **ui:** Draw transformers found in their startup logs
+- **ecs:** Route settings on the cluster map, without secrets
+- **ui:** Follow routes through services and search their settings
+- **ui:** Lay out the route map with ELK
+- **ui:** The cluster route map on a zoomable canvas
+- **ui:** A structured route card on the route map
+- **ui:** Node details beside the route map, a short hover card
+- **ui:** Keep the selected node in view when its details open
+- **ui:** Move the route map back when the details close
+- **ui:** The route map comes back as it was after another tab
+- **ui:** Hide switched-off routes on the route map
+- **ui:** Step through the route map's search matches
+- **ui:** Export the route map as a PNG or SVG image
+- **prefs:** Search history and saved searches
+- **logs:** Recall earlier searches with the arrow keys
+- **logs:** Saved searches in the search bar
+- **ui:** Run saved searches from ⌘K
+- **logs:** Count a view's events over time for the timeline
+- **logs:** A timeline of events above the log list
+- **auth:** Log in to SSO without the AWS CLI
+- **links:** Links to a log view and to the CloudWatch console
+- **links:** Open contrail:// links and make console links
+- **links:** Open AWS console pages, and only those
+- **ui:** Share a view as a link or in the CloudWatch console
+- **logs:** Focus the list on a part of the window from the timeline
+- **logs:** Show the date with row times when events predate today
+- **routes:** Find in the route map with Ctrl/Cmd+F
+- **routes:** Find in a service's route graph with Ctrl/Cmd+F
+- **ui:** Show skeletons instead of spinners while content loads
+- **profiles:** Offer to log in where a call failed for an expired session
+- **logs:** Find the lines of the same stream around an event
+- **logs:** Show the lines of the same task around an expanded line
+- **logs:** Turn a service's deployments, stopped tasks and events into markers
+- **logs:** Show deployments, stopped tasks and service events between the lines
+- **brand:** New aircraft-and-log-trail logo
+- **site:** The full logo in the header and its log-line trails in the hero
+
+### Fixes
+
+- **logs:** Keep the list's place in the middle of a long view
+- **ui:** Centre one-line nodes on the route map vertically
+- **ui:** The disabled-routes toggle says what a click does
+- **build:** Pin rust-ini 0.21.1 for the deep-link plugin on Linux
+- **ui:** Match the route map's topics by kind, integration or Kafka
+- **routes:** Take transformer topics from the lines with Kafka names
+- **e2e:** Count focused rows in the fake's live updates
+- **logs:** Read the timeline drag start from a ref
+- **routes:** Tell integration and plain Kafka topics apart in a service's graph
+
+### Documentation
+
+- **plan:** Milestones M9–M20 after v0.1.0
+- **plan:** Schedule grouping similar lines, drop environment compare
+- Record how a trace is drawn on the route graph
+- Record the cluster route map and its transformers
+- **rust-notes:** Optional slices as filters and a direction enum
+- **plan:** Log view polish, transformer topology and route map v2
+- **site:** Refresh screenshots with the wrap toggle
+- Record the log view polish and transformers from startup lines
+- Record route-following and settings on the route map
+- **plan:** Saved queries, timeline, SSO login and links next
+- Earlier and saved searches, and what that stores
+- **site:** Refresh screenshots with the saved searches button
+- The timeline, and refreshed screenshots
+- The built-in SSO login writes the CLI's token cache
+- The AWS CLI is optional now
+- **rust-notes:** Let chains
+- Sharing views as links and in the console
+- Today's features in the README and on the website
+- **site:** Refresh the app screenshots
+- Record that the timeline focuses the list instead of the window
+
+### Refactoring
+
+- **ui:** Move the route graph view into its own component
+- **ui:** Lay out graphs of any length in columns
+
+### Tests
+
+- **e2e:** Trace the recorded demo documents through their cluster
+- **aws:** Run the tests that write and start scripts one at a time
+- **e2e:** Clear the search before leaving it in the recall test
+- **routes:** A transformer's start as a parser fixture
+- **routes:** Neutral names in the transformer startup fixture
+- **e2e:** Remove two races behind retried CI failures
+- **e2e:** Scroll a live list again until the row shows
+
+### Build and CI
+
+- **ui:** Add React Flow and elkjs for the route map
+- Fail the UI flows when a test passes only on retry
+
 ## 0.1.0 — 2026-10-24
 
 ### Features
@@ -178,6 +295,7 @@ All notable changes to Contrail. Generated from the commit history ([Conventiona
 - **site:** Add a step-by-step tracing guide
 - Keep the status-event framework out of the public docs
 - Install, first run, demo mode, screenshots and known limitations
+- Describe updates and releases as set up
 
 ### Refactoring
 
@@ -242,6 +360,7 @@ All notable changes to Contrail. Generated from the commit history ([Conventiona
 - Build and publish releases for v* tags
 - Publish -rc tags as pre-releases
 - Sign updater artifacts and upload latest.json in releases
+- **release:** Redeploy the website after publishing a release
 
 ### Chores
 
