@@ -473,3 +473,10 @@ Built on `feat/m9-trace-on-route-graph`; merged only if Patrick finds it useful 
   accepts `https://*.console.aws.amazon.com` URLs.
 - **Not yet:** links to a trace tab (plan.md said "a view or a trace tab"); a trace is a search across services
   and needs its own link kind. Left for later.
+
+## 2026-10-27 — `rust-ini` pinned to 0.21.1
+
+`tauri-plugin-deep-link` 2.6.2 builds `ini::ParseOption` with two fields on Linux; `rust-ini` 0.21.3 added two
+more, so the plugin doesn't compile there (macOS and Windows don't build that code). The lockfile pins `rust-ini`
+to 0.21.1 (`cargo update -p rust-ini --precise 0.21.1`; 0.21.2 is yanked) until the plugin is fixed. A
+`cargo update` must keep that pin.
