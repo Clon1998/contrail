@@ -448,6 +448,25 @@ test("a session that ran out offers to log in where loading failed, then loads a
   await expect(page.getByRole("banner").getByRole("button", { name: "Log in" })).toHaveCount(0);
 });
 
+test("surrounding lines: the lines of the same task around an expanded line", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await list.getByRole("button", { name: /Ingested event #100000 / }).click();
+  await list.getByRole("button", { name: "Surrounding lines" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Surrounding lines" });
+  const lines = dialog.getByRole("list", { name: "Surrounding lines" });
+  await expect(lines.locator("[aria-current]")).toContainText("Ingested event #100000 ");
+  // Its task logs every sixth event of this service: the others are another task's.
+  await expect(lines).toContainText("Ingested event #99994 ");
+  await expect(lines).not.toContainText("Ingested event #99999 ");
+  // The newest line: 25 before it, none after.
+  await expect(lines.getByRole("listitem")).toHaveCount(26);
+  await expect(dialog.getByRole("button", { name: "Later lines" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Earlier lines" }).click();
+  await expect(lines.getByRole("listitem")).toHaveCount(51);
+  await expect(lines).toContainText(`Ingested event #${100000 - 6 * 50} `);
+});
+
 test("while logs load, placeholders in the shape of the list show", async ({ page }) => {
   await page.goto("/?loadDelay=800");
   const list = await openLogs(page, "demo-edge", "event-ingest");

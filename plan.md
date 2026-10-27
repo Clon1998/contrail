@@ -496,6 +496,8 @@ round. The numbers stay as they are (they're referenced in commits and docs).
 #### Later in this round (order to be confirmed)
 - **M16 — Context around a line:** "show surrounding lines" on a matching line opens ±N lines of the same
   task around it, without the filter, with the matching line marked.
+  **Built 2026-10-27:** a dialog from the expanded line, from the events loaded in the view (25 lines each
+  side, more on request).
 - **M17 — ECS events & stopped tasks (evaluation):** service events and deployments as markers in the log
   list and the timeline; recently stopped tasks with their stop reason and exit codes, and their logs.
 - **M18 — Route health:** for the time window, counts of COMPLETED / FAILED / RETRYING per topic and

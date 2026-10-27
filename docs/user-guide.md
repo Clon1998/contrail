@@ -43,6 +43,9 @@ page has the details.
   shortened like Spring Boot does (`c.e.orders.OrderService`); hover for the full name. The wrap button (or **W**)
   wraps long messages instead of cutting them off. Times show the date too (`10-26 14:03:22.123`) on every row once
   the listed events reach back before today; hover a time, or expand the line, for the full timestamp.
+- **Surrounding lines** on an expanded line shows the lines of the same task just before and after it, without
+  the search (what happened right before an error the search found), with the line marked; more lines load on
+  request.
 - **Timeline** (above the list; the chart button in the toolbar hides it): events over time, stacked by level,
   following the search. Hover a bar for its time and counts; click a bar, or drag across bars, to focus the list on
   that part of the window. The time window and the loaded events stay as they are: the chip next to the time window

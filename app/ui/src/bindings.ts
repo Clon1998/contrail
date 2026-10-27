@@ -38,6 +38,11 @@ export const commands = {
 	openServiceLogs: (ctx: AwsCtx, service: ServiceRef, window: TimeWindow, taskId: string | null) => typedError<LogViewInfo, ApiError>(__TAURI_INVOKE("open_service_logs", { ctx, service, window, taskId })),
 	/**  Up to `limit` events of a view from `offset` (oldest first). */
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
+	/**
+	 *  The lines around event `seq` of a view in its own stream (task), ignoring the search: up to
+	 *  `before` older and `after` newer ones.
+	 */
+	logContext: (viewId: number, seq: number, before: number, after: number) => typedError<LineContext, ApiError>(__TAURI_INVOKE("log_context", { viewId, seq, before, after })),
 	/**  Frees a view's buffer and stops its live tail. */
 	closeLogView: (viewId: number) => __TAURI_INVOKE<void>("close_log_view", { viewId }),
 	/**
@@ -474,6 +479,20 @@ export type LevelCounts = {
 	debug: number,
 	trace: number,
 	none: number,
+};
+
+/**
+ *  What [`LogBuffer::insert`] did, so the UI knows which of its cached rows are stale.
+ *  The lines around one event of a view, from its own stream (see [`LogBuffer::around`]).
+ */
+export type LineContext = {
+	/**  Oldest first, the event itself included. */
+	events: LogEvent[],
+	/**  Where the event is in `events`. */
+	line: number,
+	/**  More events of the stream are loaded before the first / after the last of `events`. */
+	moreBefore: boolean,
+	moreAfter: boolean,
 };
 
 /**  The search a link carries. */
