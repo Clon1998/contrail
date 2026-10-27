@@ -271,7 +271,10 @@ test("a cluster's route map, with a transformer found in its startup logs", asyn
   await enricher.click();
 
   // Finding a service keeps what lies on its paths: the way to it, not its siblings.
-  await map.getByRole("searchbox", { name: "Find in the route map" }).fill("search-feeder");
+  // ⌘F / Ctrl+F goes to the search, like anywhere else.
+  await page.keyboard.press("ControlOrMeta+F");
+  await expect(map.getByRole("searchbox", { name: "Find in the route map" })).toBeFocused();
+  await page.keyboard.type("search-feeder");
   await expect(graph.getByRole("button", { name: "service event-enricher" })).toBeVisible();
   await expect(graph.getByRole("button", { name: "service event-ingest" })).toBeVisible();
   await expect(graph.getByRole("button", { name: "service legacy-gateway" })).toHaveCount(0);

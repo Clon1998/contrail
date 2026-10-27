@@ -55,6 +55,13 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [["Alt", "Click"], "Exclude a value (Fields panel)"],
     ],
   },
+  {
+    title: "Route map",
+    keys: [
+      [[MOD, "F"], "Find a service, topic or endpoint (also /)"],
+      [["Esc"], "Clear the selection, then the narrowing to one path"],
+    ],
+  },
 ];
 
 /** All shortcuts by group (the "?" dialog and the settings show the same list). */

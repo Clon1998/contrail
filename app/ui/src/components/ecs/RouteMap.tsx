@@ -28,7 +28,7 @@ import {
   type PathScope,
 } from "@/lib/clusterGraph";
 import { formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
-import { isTyping } from "@/lib/keys";
+import { isTyping, MOD } from "@/lib/keys";
 import { mapFileName } from "@/lib/mapExport";
 import { useEcs } from "@/stores/ecs";
 import { usePrefs } from "@/stores/prefs";
@@ -190,12 +190,15 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
     [clusterArn, openService],
   );
 
-  // Esc clears the selection first, then the narrowing to one path; "/" goes to the search.
+  // Esc clears the selection first, then the narrowing to one path; "/" or ⌘F / Ctrl+F goes to
+  // the search.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "/" && !isTyping(event.target)) {
+      const find = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f";
+      if (find || (event.key === "/" && !isTyping(event.target))) {
         event.preventDefault();
         searchBox.current?.focus();
+        searchBox.current?.select();
         return;
       }
       if (event.key !== "Escape" || isTyping(event.target)) return;
@@ -240,7 +243,7 @@ export function RouteMap({ tab }: { tab: RoutesTab }) {
             ref={searchBox}
             type="search"
             aria-label="Find in the route map"
-            placeholder="Find a service, topic, system, host, path… (/)"
+            placeholder={`Find a service, topic, system, host, path… (/ or ${MOD}F)`}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
