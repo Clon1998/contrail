@@ -5,7 +5,7 @@ use contrail_core::ecs::{ClusterSummary, ServiceDetail, ServiceRef, ServiceSumma
 use contrail_core::logs::{StreamSelection, TimeRange, process, resolve_log_location};
 use contrail_core::routes::{Endpoint, RouteProperty};
 use contrail_core::timestamp::Timestamp;
-use contrail_core::topology::{ConsumedTopic, STARTUP_PHRASE, startup_topology as read_startup};
+use contrail_core::topology::{ConsumedTopic, STARTUP_PHRASES, startup_topology as read_startup};
 use tauri::State;
 use time::{Duration, OffsetDateTime};
 
@@ -158,7 +158,7 @@ pub struct ServiceTopology {
 
 /// How long after a task's start its startup lines are looked for.
 const STARTUP_WINDOW: Duration = Duration::minutes(15);
-/// At most this many events are read from that window (only lines with [`STARTUP_PHRASE`]).
+/// At most this many events are read from that window per phrase of [`STARTUP_PHRASES`].
 const STARTUP_EVENTS: usize = 1_000;
 
 /// The topics the cluster's services without route variables (transformers) read and write,
@@ -264,19 +264,26 @@ async fn service_topology(
         .task_definition(ctx, &service.task_definition_arn)
         .await?;
     let location = resolve_log_location(&definition)?;
-    let selection = StreamSelection {
-        filter_pattern: Some(STARTUP_PHRASE.to_owned()),
-        ..location.selection(std::slice::from_ref(task), None, false)
-    };
     let range = TimeRange {
         start: started,
         end: Timestamp((started.0 + STARTUP_WINDOW).min(OffsetDateTime::now_utc())),
     };
-    let backfill = state
-        .logs
-        .backfill(ctx, &selection, range, STARTUP_EVENTS)
-        .await?;
-    let events = process(backfill.events);
+    // One search per phrase: a filter pattern matches one phrase, and the lines have different
+    // ones ("Creating …" consumers, "Starting FrameworkProducer …").
+    let mut raw = Vec::new();
+    for phrase in STARTUP_PHRASES {
+        let selection = StreamSelection {
+            filter_pattern: Some(phrase.to_owned()),
+            ..location.selection(std::slice::from_ref(task), None, false)
+        };
+        let backfill = state
+            .logs
+            .backfill(ctx, &selection, range, STARTUP_EVENTS)
+            .await?;
+        raw.extend(backfill.events);
+    }
+    raw.sort_by_key(|e| e.timestamp);
+    let events = process(raw);
     let topology = read_startup(events.iter().map(|e| e.line.message.as_str()));
     if topology.is_empty() {
         return Ok(None);
