@@ -65,9 +65,10 @@ test("a day in the life", async ({ page }) => {
   // the clicks below.
   await search.press("Enter");
   // Applied once every row on screen is one of them (the count may still show the previous search).
-  await expect(list.getByRole("button", { name: /^(?!.*Error while settling batch)/ })).toHaveCount(
-    0,
-  );
+  // (Rows, not the buttons on service event lines.)
+  await expect(
+    list.getByRole("button", { name: /^(?!.*Error while settling batch)/, expanded: false }),
+  ).toHaveCount(0);
   await list.getByText("Error while settling batch", { exact: true }).first().click();
   await list.getByRole("button", { name: "Hide lines like this" }).click();
   await expect(payments.getByText("No events match the search.")).toBeVisible();

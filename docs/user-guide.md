@@ -43,10 +43,18 @@ page has the details.
   shortened like Spring Boot does (`c.e.orders.OrderService`); hover for the full name. The wrap button (or **W**)
   wraps long messages instead of cutting them off. Times show the date too (`10-26 14:03:22.123`) on every row once
   the listed events reach back before today; hover a time, or expand the line, for the full timestamp.
+- **Surrounding lines** on an expanded line shows the lines of the same task just before and after it, without
+  the search (what happened right before an error the search found), with the line marked; more lines load on
+  request.
 - **Timeline** (above the list; the chart button in the toolbar hides it): events over time, stacked by level,
   following the search. Hover a bar for its time and counts; click a bar, or drag across bars, to focus the list on
   that part of the window. The time window and the loaded events stay as they are: the chip next to the time window
   shows the focus, and its × brings back the whole window instantly.
+- **Service events** (the rocket button in the toolbar hides them): deployments starting and finishing, stopped
+  tasks with their stop reason and exit codes, and the service's events ("has started 1 tasks", placement
+  problems; not the "steady state" ones) show as lines between the log lines at the time they happened, and on
+  the timeline (hover a bar to read them). A stopped task's line has **Its logs** to show only that task. They
+  come from the service's overview, without extra AWS calls.
 - **Time window:** click it in the toolbar (or press **T**) and type what you want: `15m`, `3h`, `2d`, `1w`, `1h30m`,
   `today`, `since 14:00`, `yesterday`, `oct 20`, `9:00-11:30` or `yesterday 9-11`. The picker shows what it understood
   before you press Enter, and whether the window will follow live, open paused or be a fixed range. Quick windows,

@@ -20,6 +20,7 @@ export function LogRow({
   withDate = false,
   marked = false,
   current = false,
+  local,
 }: {
   event: LogEvent;
   grid: string;
@@ -30,10 +31,16 @@ export function LogRow({
   marked?: boolean;
   /** The match last jumped to. */
   current?: boolean;
+  /**
+   * Expanded or not outside the view's list (the surrounding lines): its own state, and the
+   * details leave out what leads back to it.
+   */
+  local?: { expanded: boolean; toggle: () => void };
 }) {
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   const wrap = usePrefs((s) => s.prefs.settings.wrapLines);
-  const expanded = useLogs((s) => s.expanded[event.seq] ?? false);
+  const listExpanded = useLogs((s) => s.expanded[event.seq] ?? false);
+  const expanded = local ? local.expanded : listExpanded;
   const fresh = useLogs((s) => s.fresh[event.seq] ?? false);
   const toggle = useLogs((s) => s.toggleExpanded);
   const columns = useLogColumns();
@@ -46,7 +53,7 @@ export function LogRow({
       <button
         type="button"
         aria-expanded={expanded}
-        onClick={() => toggle(event.seq)}
+        onClick={() => (local ? local.toggle() : toggle(event.seq))}
         style={{ gridTemplateColumns: grid }}
         className={cn(
           "grid w-full items-baseline gap-x-2 px-3 text-left hover:bg-accent/50",
@@ -102,7 +109,7 @@ export function LogRow({
           )}
         </span>
       </button>
-      {expanded && <LogDetails event={event} />}
+      {expanded && <LogDetails event={event} nested={local !== undefined} />}
     </div>
   );
 }

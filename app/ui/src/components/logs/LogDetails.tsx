@@ -5,6 +5,7 @@ import {
   ExternalLinkIcon,
   EyeOffIcon,
   FileSearchIcon,
+  UnfoldVerticalIcon,
 } from "lucide-react";
 import { cn } from "cn";
 import { commands, type LogEvent } from "@/bindings";
@@ -25,6 +26,7 @@ import { usePrefs } from "@/stores/prefs";
 import { CopyButton } from "@/components/CopyButton";
 import { Ansi } from "./Ansi";
 import { columnValue } from "./columns";
+import { LineContextDialog } from "./LineContextDialog";
 import { TraceButton } from "./TraceButton";
 import { StateBadge } from "./StateBadge";
 
@@ -122,7 +124,14 @@ export function StatusSummary({ event, actions }: { event: LogEvent; actions?: R
 }
 
 /** The expanded view of one event in a service's log view: actions, then the event itself. */
-export function LogDetails({ event }: { event: LogEvent }) {
+export function LogDetails({
+  event,
+  nested = false,
+}: {
+  event: LogEvent;
+  /** Shown among the surrounding lines: no way to open them again from there. */
+  nested?: boolean;
+}) {
   const { line } = event;
   const query = useLogs((s) => s.search.query);
   const setSearch = useLogs((s) => s.setSearch);
@@ -138,6 +147,7 @@ export function LogDetails({ event }: { event: LogEvent }) {
   // A correlation or trace ID (e.g. an API's `traceId`) can be followed across services.
   const traceId = columnValue(event, "correlation");
   const documentId = event.status?.correlationId;
+  const [aroundOpen, setAroundOpen] = useState(false);
 
   return (
     <div className="space-y-3 border-l-2 border-primary/60 bg-muted/30 py-2 pr-4 pl-4">
@@ -145,6 +155,19 @@ export function LogDetails({ event }: { event: LogEvent }) {
         <CopyButton label="Copy message" text={line.message} />
         {rawPretty && <CopyButton label="Copy JSON" text={rawPretty} />}
         <CopyButton label="Copy as single line" text={event.raw.replace(/\s*\n\s*/g, " ")} />
+        {view && !nested && (
+          <Button
+            variant="outline"
+            size="xs"
+            tooltip="The lines of the same task before and after this one, without the search"
+            onClick={() => setAroundOpen(true)}
+          >
+            <UnfoldVerticalIcon /> Surrounding lines
+          </Button>
+        )}
+        {view && aroundOpen && (
+          <LineContextDialog viewId={view.viewId} event={event} open onOpenChange={setAroundOpen} />
+        )}
         {profile && service && noiseText && (
           <Button
             variant="outline"

@@ -58,6 +58,19 @@ pub struct LogBuffer {
 }
 
 /// What [`LogBuffer::insert`] did, so the UI knows which of its cached rows are stale.
+/// The lines around one event of a view, from its own stream (see [`LogBuffer::around`]).
+#[derive(Debug, Clone, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct LineContext {
+    /// Oldest first, the event itself included.
+    pub events: Vec<LogEvent>,
+    /// Where the event is in `events`.
+    pub line: u32,
+    /// More events of the stream are loaded before the first / after the last of `events`.
+    pub more_before: bool,
+    pub more_after: bool,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct InsertReport {
     pub added: usize,
@@ -179,6 +192,50 @@ impl LogBuffer {
     /// without the negative "insertion point" encoding).
     pub fn index_at(&self, at: Timestamp) -> usize {
         self.events.partition_point(|e| e.timestamp < at)
+    }
+
+    /// The event with sequence number `seq` and up to `before` older and `after` newer events of
+    /// the same stream (one task's output, so the lines a filter or other tasks hid in between are
+    /// back). `None` when the event isn't loaded (any more).
+    pub fn around(&self, seq: u32, before: usize, after: usize) -> Option<LineContext> {
+        let index = self.events.iter().position(|e| e.seq == seq)?;
+        let stream = &self.events[index].stream;
+        // `filter` hands the closure a reference to each item, here a `&LogEvent`: hence `&&`.
+        let same_stream = |e: &&LogEvent| &e.stream == stream;
+        // `range(..index).rev()` walks from the event towards the oldest. One more than asked
+        // says whether there are more.
+        let mut older: Vec<&LogEvent> = self
+            .events
+            .range(..index)
+            .rev()
+            .filter(same_stream)
+            .take(before + 1)
+            .collect();
+        let more_before = older.len() > before;
+        older.truncate(before);
+        older.reverse();
+        let mut newer: Vec<&LogEvent> = self
+            .events
+            .range(index + 1..)
+            .filter(same_stream)
+            .take(after + 1)
+            .collect();
+        let more_after = newer.len() > after;
+        newer.truncate(after);
+
+        let line = older.len() as u32;
+        let events = older
+            .into_iter()
+            .chain(std::iter::once(&self.events[index]))
+            .chain(newer)
+            .cloned()
+            .collect();
+        Some(LineContext {
+            events,
+            line,
+            more_before,
+            more_after,
+        })
     }
 
     /// Up to `limit` events starting at `offset` (oldest first), for the UI's visible window.
@@ -321,5 +378,27 @@ mod tests {
         assert_eq!(buffer.index_at(at(2)), 1);
         assert_eq!(buffer.index_at(at(3)), 3);
         assert_eq!(buffer.index_at(at(9)), 4);
+    }
+
+    #[test]
+    fn finds_the_lines_of_the_same_stream_around_an_event() {
+        let mut buffer = LogBuffer::new(20);
+        buffer.insert(
+            (0..10).map(|i| event(if i % 2 == 0 { "a" } else { "b" }, i, &format!("m{i}"))),
+        );
+        let seq = buffer.get(4).map(|e| e.seq).expect("event 4");
+        let context = buffer.around(seq, 1, 2).expect("loaded");
+        let messages: Vec<_> = context
+            .events
+            .iter()
+            .map(|e| e.line.message.as_str())
+            .collect();
+        // Only stream "a" (the even seconds): one before, the line, two after.
+        assert_eq!(messages, ["m2", "m4", "m6", "m8"]);
+        assert_eq!(context.line, 1);
+        assert!(context.more_before, "m0 is older still");
+        assert!(!context.more_after, "m8 is the stream's newest");
+
+        assert!(buffer.around(u32::MAX, 5, 5).is_none(), "not loaded");
     }
 }

@@ -4,10 +4,13 @@ import { ArrowDownToLineIcon, ArrowUpToLineIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { isToday } from "@/lib/logs";
+import { markersBetween } from "@/lib/markers";
 import { cachedIndexOf, PAGE_SIZE, type ScrollAnchor, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
 import { LogRow } from "./LogRow";
+import { MarkerBanner } from "./MarkerBanner";
+import { useServiceMarkers } from "./useServiceMarkers";
 import { OLDER_MARKER_HEIGHT, OlderMarker } from "./OlderMarker";
 
 /** Rows fetched beyond the visible ones in each direction, so scrolling finds them loaded. */
@@ -45,6 +48,10 @@ export function LogList({
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
   // Where the listed events start: the focus, or as far back as events are loaded.
   const from = useLogs((s) => s.focus?.start ?? s.view?.loadedFrom ?? null);
+  // Where they end: the focus, or the window's end. (A service event after it shows up between
+  // the lines once a newer line arrives.)
+  const until = useLogs((s) => s.focus?.end ?? s.view?.to ?? null);
+  const markers = useServiceMarkers();
   const pages = useLogs((s) => s.pages);
   const scrollTarget = useLogs((s) => s.scrollTarget);
   const prepended = useLogs((s) => s.prepended);
@@ -219,6 +226,16 @@ export function LogList({
           {items.map((item) => {
             const index = toData(item.index);
             const event = row(index);
+            // The service's markers between this event and the one before it (oldest first),
+            // and after the newest one.
+            const previous = index === 0 ? from : row(index - 1)?.timestamp;
+            const at = event && Date.parse(event.timestamp);
+            const before = at && previous ? markersBetween(markers, Date.parse(previous), at) : [];
+            const after =
+              at && index === total - 1
+                ? markersBetween(markers, at, until ? Date.parse(until) : Infinity)
+                : [];
+            const [above, below] = newestFirst ? [after, before] : [before, after];
             return (
               <div
                 key={item.key}
@@ -235,6 +252,7 @@ export function LogList({
                   transform: `translateY(${item.start - virtualizer.options.scrollMargin}px)`,
                 }}
               >
+                <MarkerBanner markers={above} />
                 {event ? (
                   <LogRow
                     event={event}
@@ -247,6 +265,7 @@ export function LogList({
                 ) : (
                   <div className="px-3 text-muted-foreground/50">…</div>
                 )}
+                <MarkerBanner markers={below} />
               </div>
             );
           })}

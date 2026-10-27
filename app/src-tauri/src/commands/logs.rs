@@ -7,8 +7,8 @@ use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::timeline::Timeline;
 use contrail_core::logs::{
-    BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LogBuffer, LogEvent, LogLocation,
-    TimeRange, TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location,
+    BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LineContext, LogBuffer, LogEvent,
+    LogLocation, TimeRange, TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location,
     write_events,
 };
 use contrail_core::prefs::ServiceKey;
@@ -237,6 +237,31 @@ pub fn get_log_rows(
         ApiError::new(ErrorCode::NotFound, format!("log view {view_id} is closed"))
     })?;
     Ok(view.window(offset as usize, limit as usize))
+}
+
+/// The lines around event `seq` of a view in its own stream (task), ignoring the search: up to
+/// `before` older and `after` newer ones.
+#[tauri::command]
+#[specta::specta]
+pub fn log_context(
+    state: State<'_, AppState>,
+    view_id: u32,
+    seq: u32,
+    before: u32,
+    after: u32,
+) -> ApiResult<LineContext> {
+    let views = state.views.lock().expect("views lock poisoned");
+    let view = views.get(&view_id).ok_or_else(|| {
+        ApiError::new(ErrorCode::NotFound, format!("log view {view_id} is closed"))
+    })?;
+    view.buffer
+        .around(seq, before as usize, after as usize)
+        .ok_or_else(|| {
+            ApiError::new(
+                ErrorCode::NotFound,
+                "This line is no longer loaded (older lines make room for new ones)",
+            )
+        })
 }
 
 /// A search as the UI sends it.

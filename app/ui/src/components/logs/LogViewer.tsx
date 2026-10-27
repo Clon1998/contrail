@@ -8,6 +8,7 @@ import {
   PlayIcon,
   ChartColumnIcon,
   RefreshCwIcon,
+  RocketIcon,
   WrapTextIcon,
   XIcon,
 } from "lucide-react";
@@ -283,10 +284,28 @@ function TimelineToggle() {
       size="icon-xs"
       aria-label="Timeline"
       aria-pressed={shown}
-      tooltip="Events over time, by level; drag across it to zoom in"
+      tooltip="Events over time, by level; click or drag across it to focus the list"
       onClick={() => void updateSettings({ showTimeline: !shown })}
     >
       <ChartColumnIcon />
+    </Button>
+  );
+}
+
+/** Shows or hides the service's deployments, stopped tasks and events in the list and timeline. */
+function MarkersToggle() {
+  const shown = usePrefs((s) => s.prefs.settings.showMarkers);
+  const updateSettings = usePrefs((s) => s.updateSettings);
+  return (
+    <Button
+      variant={shown ? "secondary" : "ghost"}
+      size="icon-xs"
+      aria-label="Service events"
+      aria-pressed={shown}
+      tooltip="Deployments, stopped tasks and service events between the lines and on the timeline"
+      onClick={() => void updateSettings({ showMarkers: !shown })}
+    >
+      <RocketIcon />
     </Button>
   );
 }
@@ -398,6 +417,7 @@ export function LogViewer() {
         <ExportMenu />
         <ShareMenu />
         <TimelineToggle />
+        <MarkersToggle />
         <WrapToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

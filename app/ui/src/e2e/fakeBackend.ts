@@ -3,6 +3,7 @@ import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import type {
   FieldMapping,
   FieldSummary,
+  LineContext,
   Outcome,
   ValueCount,
   FilterResult,
@@ -249,6 +250,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       newestFirst: false,
       wrapLines: false,
       showTimeline: true,
+      showMarkers: true,
       builtinLogin: false,
       checkForUpdates: true,
     },
@@ -821,6 +823,17 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           ? events(offset, limit)
           : events.slice(offset, offset + limit);
       }
+      case "log_context": {
+        const events = views.get(args?.viewId as number);
+        if (!events) throw apiError("notFound", "log view is closed");
+        const seq = args?.seq as number;
+        // Generated views: the rows near the event are enough (row `seq - 1` at most).
+        const near =
+          typeof events === "function" ? events(Math.max(0, seq - 1 - 5_000), 10_000) : events;
+        const context = lineContext(near, seq, args?.before as number, args?.after as number);
+        if (!context) throw apiError("notFound", "This line is no longer loaded");
+        return context;
+      }
       case "set_log_filter": {
         const viewId = args?.viewId as number;
         const spec = args?.spec as FilterSpec;
@@ -1200,6 +1213,28 @@ function emptyStats(): BufferStats {
     error: 0,
     unknown: 0,
     states: {},
+  };
+}
+
+/** As `LogBuffer::around`: the event and the events of its stream around it. */
+function lineContext(
+  events: LogEvent[],
+  seq: number,
+  before: number,
+  after: number,
+): LineContext | null {
+  const index = events.findIndex((e) => e.seq === seq);
+  const event = events[index];
+  if (!event) return null;
+  const same = (e: LogEvent) => e.stream === event.stream;
+  const older = events.slice(0, index).filter(same);
+  const newer = events.slice(index + 1).filter(same);
+  const shownBefore = older.slice(Math.max(0, older.length - before));
+  return {
+    events: [...shownBefore, event, ...newer.slice(0, after)],
+    line: shownBefore.length,
+    moreBefore: older.length > before,
+    moreAfter: newer.length > after,
   };
 }
 
