@@ -13,6 +13,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // A test that passes only on its retry still fails the run (and so uploads its trace): a
+  // retry is there to show a flaky test, not to hide one.
+  failOnFlakyTests: !!process.env.CI,
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: {
     baseURL: `http://localhost:${PORT}`,
