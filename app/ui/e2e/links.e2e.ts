@@ -88,3 +88,22 @@ test("the view and a single line open in the CloudWatch console", async ({ page 
   await list.getByRole("button").first().click();
   await expect(list.getByRole("button", { name: "CloudWatch console" })).toBeVisible();
 });
+
+test("a service opens in the ECS console", async ({ page }) => {
+  await page.goto("/");
+  const tree = page.getByRole("tree", { name: "Clusters" });
+  await tree.getByRole("treeitem", { name: "demo-core" }).getByRole("button").first().click();
+  await tree.getByRole("treeitem", { name: "orders-api" }).click();
+  await page.getByRole("button", { name: "ECS console" }).click();
+  const opened = () =>
+    page.evaluate(() =>
+      (
+        window as unknown as {
+          __TAURI_INTERNALS__: { invoke: (cmd: string) => Promise<string[]> };
+        }
+      ).__TAURI_INTERNALS__.invoke("fake_opened_console"),
+    );
+  await expect
+    .poll(opened)
+    .toEqual([expect.stringMatching(/\/ecs\/v2\/clusters\/demo-core\/services\/orders-api\//)]);
+});

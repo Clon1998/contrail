@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { CircleAlertIcon, RefreshCwIcon, StarIcon } from "lucide-react";
+import { CircleAlertIcon, ExternalLinkIcon, RefreshCwIcon, StarIcon } from "lucide-react";
+import { commands } from "@/bindings";
 import { LogViewer } from "@/components/logs/LogViewer";
 import { TraceView } from "@/components/logs/TraceView";
 import { Badge } from "@/components/ui/badge";
@@ -133,8 +134,18 @@ function Header() {
       </Button>
       <Button
         variant="ghost"
-        size="icon-sm"
+        size="sm"
         className="ml-auto"
+        tooltip="This service in the AWS console"
+        onClick={() =>
+          void commands.ecsConsoleLink(selected).then((url) => commands.openConsole(url))
+        }
+      >
+        <ExternalLinkIcon /> ECS console
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
         aria-label="Refresh service"
         onClick={() => void refresh()}
       >

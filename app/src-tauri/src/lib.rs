@@ -58,6 +58,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         links::view_link,
         links::parse_view_link,
         links::console_link,
+        links::ecs_console_link,
         links::open_console,
         trace::trace_id,
         update::check_for_update,

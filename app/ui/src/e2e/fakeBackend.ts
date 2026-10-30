@@ -289,6 +289,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
   >();
 
+  /** Console pages opened in the browser, in order. */
+  const openedConsole: string[] = [];
+
   /** Files "saved" through the export dialog. */
   const exports: { path: string; format?: string; count?: number }[] = [];
 
@@ -947,8 +950,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       }
       case "console_link":
         return `https://${args?.region as string}.console.aws.amazon.com/cloudwatch/home#logsV2:fake`;
+      case "ecs_console_link": {
+        const service = args?.service as ServiceRef;
+        const region = service.clusterArn.split(":")[3];
+        const cluster = service.clusterArn.split("/").pop();
+        return `https://${region}.console.aws.amazon.com/ecs/v2/clusters/${cluster}/services/${service.serviceName}/health?region=${region}`;
+      }
       case "open_console":
+        openedConsole.push(args?.url as string);
         return null;
+      // Not a real command: tests read which console pages were opened.
+      case "fake_opened_console":
+        return openedConsole;
       case "plugin:dialog|save": {
         const options = args?.options as { defaultPath?: string } | undefined;
         exports.push({ path: `/tmp/${options?.defaultPath ?? "export"}` });

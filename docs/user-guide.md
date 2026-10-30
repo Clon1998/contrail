@@ -22,7 +22,7 @@ page has the details.
 - Browse **Cluster → Service** in the sidebar (the filter box narrows it by name).
 - A service shows its tasks (running and recently stopped, with stop reasons and exit codes), deployments, task
   definition, recent events and the environment variables (secret-looking values masked until clicked). It
-  refreshes every 30 s.
+  refreshes every 30 s. **ECS console** in its header opens the service in the AWS console.
 - **Secrets:** variables filled from Secrets Manager or SSM show their reference; **Reveal** reads the value on that
   click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored or logged. It
   needs the optional `ContrailOptionalRevealSecrets` statement of the [IAM policy](iam-policy.json).

@@ -111,12 +111,14 @@ export const commands = {
 	viewLink: (link: ViewLink) => __TAURI_INVOKE<string>("view_link", { link }),
 	/**  Reads a `contrail://` link (one Contrail was opened with, or one pasted). */
 	parseViewLink: (url: string) => typedError<ViewLink, ApiError>(__TAURI_INVOKE("parse_view_link", { url })),
+	consoleLink: (viewId: number, region: string, eventSeq: number | null, filter: string | null) => typedError<string, ApiError>(__TAURI_INVOKE("console_link", { viewId, region, eventSeq, filter })),
 	/**
 	 *  The same logs in the CloudWatch console: an open view's log group and time range (its one
 	 *  stream when it shows one task), or one event (`event_seq`) with a minute around it. `region` is
 	 *  the service's region; `filter` the text to search for there, if any.
+	 *  A service's page in the ECS console (open it with [`open_console`]).
 	 */
-	consoleLink: (viewId: number, region: string, eventSeq: number | null, filter: string | null) => typedError<string, ApiError>(__TAURI_INVOKE("console_link", { viewId, region, eventSeq, filter })),
+	ecsConsoleLink: (service: ServiceRef) => __TAURI_INVOKE<string>("ecs_console_link", { service }),
 	/**
 	 *  Opens a page of the AWS console (a [`console_link`]) in the browser. Other addresses are
 	 *  refused, so this can't be used to open arbitrary pages.

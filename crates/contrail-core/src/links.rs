@@ -195,6 +195,20 @@ pub fn console_url(
     )
 }
 
+/// A service's page in the ECS console (its health tab), from the cluster's ARN
+/// (`arn:aws:ecs:<region>:<account>:cluster/<name>`) and the service name.
+pub fn ecs_console_url(cluster_arn: &str, service: &str) -> String {
+    let region = cluster_arn.split(':').nth(3).unwrap_or_default();
+    let cluster = cluster_arn.rsplit('/').next().unwrap_or_default();
+    // Cluster and service names are letters, digits, `-` and `_`; escaped all the same.
+    let escape = |s: &str| url::form_urlencoded::byte_serialize(s.as_bytes()).collect::<String>();
+    format!(
+        "https://{region}.console.aws.amazon.com/ecs/v2/clusters/{}/services/{}/health?region={region}",
+        escape(cluster),
+        escape(service)
+    )
+}
+
 /// Whether `url` is a page of the AWS console (`https://….console.aws.amazon.com/…`): the only
 /// pages Contrail opens in the browser on the UI's request.
 pub fn is_console_url(url: &str) -> bool {
@@ -292,6 +306,19 @@ mod tests {
              $3Fstart$3D1793005200000$26end$3D1793006100000$26filterPattern$3D$2522timeout$2522\
              $26logStreamNameFilter$3Decs$252Forders-api$252Fabc"
         );
+    }
+
+    #[test]
+    fn a_service_in_the_ecs_console() {
+        let url = ecs_console_url(
+            "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core",
+            "orders-api",
+        );
+        assert_eq!(
+            url,
+            "https://eu-central-1.console.aws.amazon.com/ecs/v2/clusters/demo-core/services/orders-api/health?region=eu-central-1"
+        );
+        assert!(is_console_url(&url));
     }
 
     #[test]
