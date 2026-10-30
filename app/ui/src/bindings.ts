@@ -26,6 +26,18 @@ export const commands = {
 	listClusters: (ctx: AwsCtx) => typedError<ClusterSummary[], ApiError>(__TAURI_INVOKE("list_clusters", { ctx })),
 	/**  All services of a cluster. */
 	listServices: (ctx: AwsCtx, clusterArn: string) => typedError<ServiceSummary[], ApiError>(__TAURI_INVOKE("list_services", { ctx, clusterArn })),
+	/**
+	 *  Stops tasks of a cluster (one at a time, stopping at the first that fails), with `reason`
+	 *  as the stop reason ECS records.
+	 */
+	stopTasks: (ctx: AwsCtx, clusterArn: string, taskIds: string[], reason: string) => typedError<null, ApiError>(__TAURI_INVOKE("stop_tasks", { ctx, clusterArn, taskIds, reason })),
+	/**
+	 *  Changes a service's desired count and/or task definition, or starts a new deployment (the
+	 *  console's quick update).
+	 */
+	updateService: (ctx: AwsCtx, service: ServiceRef, update: ServiceUpdate) => typedError<null, ApiError>(__TAURI_INVOKE("update_service", { ctx, service, update })),
+	/**  The revisions of a task definition family a quick update can deploy, newest first. */
+	taskDefinitionRevisions: (ctx: AwsCtx, family: string) => typedError<string[], ApiError>(__TAURI_INVOKE("task_definition_revisions", { ctx, family })),
 	/**  Counts, deployments, task definition and recent events of one service. */
 	describeService: (ctx: AwsCtx, service: ServiceRef) => typedError<ServiceDetail, ApiError>(__TAURI_INVOKE("describe_service", { ctx, service })),
 	/**  Running tasks, plus recently stopped ones with `include_stopped`. */
@@ -374,7 +386,9 @@ export type ErrorCode = "profileNotFound" | "notFound" | "notSso" | "cliMissing"
 /**  Checking for, downloading or installing an update failed. */
 "update" | 
 /**  The user cancelled (e.g. an update download). */
-"cancelled";
+"cancelled" | 
+/**  A change to AWS while changes are switched off in the settings. */
+"changesDisabled";
 
 export type ExportFormat = 
 /**  The original lines, as CloudWatch delivered them (stack traces joined). */
@@ -916,6 +930,18 @@ export type ServiceTrace = {
 	lastState: string | null,
 };
 
+/**
+ *  What a quick update changes on a service (like the console's "Update service"); `None`
+ *  leaves that part as it is.
+ */
+export type ServiceUpdate = {
+	desiredCount: number | null,
+	/**  The task definition to deploy, as `family:revision`. */
+	taskDefinition: string | null,
+	/**  Replace every task even when nothing else changes (picks up a re-pushed image tag). */
+	forceNewDeployment: boolean,
+};
+
 /**  The state of a profile's SSO session, as shown in the profile switcher. */
 export type SessionStatus = 
 /**  The access token is valid until `expires_at`. */
@@ -972,6 +998,11 @@ export type Settings = {
 	builtinLogin: boolean,
 	/**  Look for a new Contrail version on start (at most once a day). */
 	checkForUpdates: boolean,
+	/**
+	 *  Contrail may change ECS (stop tasks, update services). Off: read-only, the buttons are
+	 *  hidden and the commands refuse.
+	 */
+	allowChanges: boolean,
 };
 
 /**  What a status-change event says, for the state badge, the state chips and correlation. */

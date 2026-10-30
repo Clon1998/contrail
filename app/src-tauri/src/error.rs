@@ -40,6 +40,8 @@ pub enum ErrorCode {
     Update,
     /// The user cancelled (e.g. an update download).
     Cancelled,
+    /// A change to AWS while changes are switched off in the settings.
+    ChangesDisabled,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
