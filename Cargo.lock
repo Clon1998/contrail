@@ -1280,7 +1280,7 @@ dependencies = [
 
 [[package]]
 name = "contrail"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -1310,7 +1310,7 @@ dependencies = [
 
 [[package]]
 name = "contrail-aws"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "aws-config",
@@ -1332,7 +1332,7 @@ dependencies = [
 
 [[package]]
 name = "contrail-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "futures",
@@ -1350,7 +1350,7 @@ dependencies = [
 
 [[package]]
 name = "contrail-fake"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "contrail-core",

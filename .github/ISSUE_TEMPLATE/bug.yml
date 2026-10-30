@@ -24,7 +24,7 @@ body:
     attributes:
       label: Contrail version
       description: Settings → About shows it.
-      placeholder: "0.2.0"
+      placeholder: "0.3.0"
     validations:
       required: true
   - type: dropdown

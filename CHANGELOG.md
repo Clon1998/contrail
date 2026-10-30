@@ -2,6 +2,41 @@
 
 All notable changes to Contrail. Generated from the commit history ([Conventional Commits](https://www.conventionalcommits.org)).
 
+## 0.3.0 — 2026-10-30
+
+### Features
+
+- **logs:** Show on the timeline where the rows on screen are
+- **ecs:** Open a service in the ECS console
+- **ecs:** Stop tasks and update services, apart from the read-only source
+- **ecs:** Commands for changes, refused unless the user allows them
+- **ui:** Stop picked tasks and update a service, after a confirmation
+- **ui:** The service's actions beside its tabs
+- **ui:** Service actions in a menu next to its name
+- **logs:** Clear the timeline focus on the timeline itself
+- **logs:** Count how documents ended per topic and consumer group
+- **logs:** Route health of a log view, as a command
+- **ui:** Route health on a service's Routes card (M18, evaluation)
+
+### Fixes
+
+- **ui:** One smooth shimmer across all skeletons
+
+### Performance
+
+- **logs:** Show the newest events first, load the rest in the background
+
+### Documentation
+
+- Plan opt-in changes to ECS (M22)
+- Read-only by default, changes with a setting and an IAM statement
+- **rust-notes:** Try_join! and one Arc behind two trait objects
+- **plan:** Route health built on the Routes card, without the route map
+
+### Tests
+
+- **e2e:** Apply the cleared search before expanding a row
+
 ## 0.2.0 — 2026-10-27
 
 ### Features
