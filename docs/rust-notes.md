@@ -469,3 +469,18 @@ One short entry per pattern: what it is, why it's used here, where to find it.
   listing and every read (rows, counts, match positions) goes through it. `Range` isn't `Copy` (it is an
   iterator), hence the occasional `.clone()`.
 - **Where:** `LogView::focused_events` / `listed` in `app/src-tauri/src/state.rs`, `ViewFilter::matches_within`.
+
+## Two futures at once with `try_join!`
+
+- **What:** `tokio::try_join!(a, b)` runs two futures concurrently on the same task and returns both results as a
+  tuple, or the first error (the other future is dropped, i.e. cancelled). Like `CompletableFuture.allOf` in Java,
+  but failing fast and without threads: both calls wait on the network at the same time.
+- **Where:** `open_logs` in `app/src-tauri/src/commands/logs.rs` (describing the service and listing its tasks).
+
+## One object, two trait objects
+
+- **What:** `AwsEcs` implements both `EcsSource` (reads) and `EcsChanges` (changes). One `Arc<AwsEcs>` is cloned
+  into two fields typed `Arc<dyn EcsSource>` and `Arc<dyn EcsChanges>`: the compiler converts ("unsizes") the
+  pointer to each trait object, so both share the SDK client cache, but code holding the reading field can't call
+  the changes. Like one Java class implementing two interfaces, handed out under each interface separately.
+- **Where:** `AppState::aws` / `AppState::demo` in `app/src-tauri/src/state.rs`.
