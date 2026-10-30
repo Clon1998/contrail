@@ -83,6 +83,8 @@ export interface LogsState {
    * every loaded event, so clearing it is instant; the time window itself stays as it is.
    */
   focus: TimeRange | null;
+  /** The time range of the rows on screen (shown on the timeline while scrolling). */
+  viewport: TimeRange | null;
   /** Which tab of the service view is shown. */
   tab: "overview" | "logs";
   /** A task to show alone, set from the task list ("Logs" on a task row). */
@@ -127,6 +129,7 @@ export interface LogsState {
   setWindow: (timeWindow: TimeWindow) => void;
   /** Narrows the list to a part of the window (`null`: the whole window again). */
   setFocus: (focus: TimeRange | null) => Promise<void>;
+  setViewport: (viewport: TimeRange | null) => void;
   close: () => Promise<void>;
   /** Makes sure the rows `from..=to` are (being) loaded. */
   fetchRows: (from: number, to: number) => void;
@@ -352,6 +355,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     scrollTarget: null,
     timeWindow,
     focus: null,
+    viewport: null,
     tab: "overview",
     taskFilter: null,
     fieldsOpen: false,
@@ -377,6 +381,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         scrollAnchor: null,
         // A focus belongs to the window it was picked in.
         focus: null,
+        viewport: null,
         live: null,
         pages: new Map(),
         matchPositions: [],
@@ -461,6 +466,12 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     },
 
     setWindow: (timeWindow) => set({ timeWindow }),
+    setViewport: (viewport) => {
+      const current = get().viewport;
+      // Called on every scroll: only a change re-renders the timeline.
+      if (current?.start === viewport?.start && current?.end === viewport?.end) return;
+      set({ viewport });
+    },
     setFocus: async (focus) => {
       set({ focus });
       await get().applySearch();

@@ -141,8 +141,17 @@ test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", a
   const list = await openLogs(page, "demo-edge", "event-ingest");
   await expect(list).toHaveAttribute("aria-rowcount", "100000");
   await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  // The timeline shows where the rows on screen are: at the end of the window, then the start.
+  const chart = page.getByRole("img", { name: "Timeline of events" });
+  const onScreen = page.getByTestId("timeline-viewport");
+  const position = async () => {
+    const [box, mark] = [await chart.boundingBox(), await onScreen.boundingBox()];
+    return box && mark ? (mark.x - box.x) / box.width : null;
+  };
+  await expect.poll(position).toBeGreaterThan(0.9);
 
   await scrollList(list, 0, list.getByText("Ingested event #1 ", { exact: false }).first());
+  await expect.poll(position).toBeLessThan(0.1);
   // Only a window of rows exists in the DOM.
   expect(await list.getByRole("listitem").count()).toBeLessThan(200);
 

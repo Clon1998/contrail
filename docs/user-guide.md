@@ -48,7 +48,8 @@ page has the details.
   the search (what happened right before an error the search found), with the line marked; more lines load on
   request.
 - **Timeline** (above the list; the chart button in the toolbar hides it): events over time, stacked by level,
-  following the search. Hover a bar for its time and counts; click a bar, or drag across bars, to focus the list on
+  following the search. A light window over the bars (and the bar under them) shows where the rows on screen
+  are, so you see how much lies before and after while scrolling. Hover a bar for its time and counts; click a bar, or drag across bars, to focus the list on
   that part of the window. The time window and the loaded events stay as they are: the chip next to the time window
   shows the focus, and its × brings back the whole window instantly.
 - **Service events** (the rocket button in the toolbar hides them): deployments starting and finishing, stopped

@@ -137,6 +137,28 @@ export function LogList({
   };
   useEffect(() => () => setScrollAnchor(anchorNow.current()), [setScrollAnchor]);
 
+  // The time range of the rows on screen, for the timeline (where in the window the list is).
+  const setViewport = useLogs((s) => s.setViewport);
+  const publishViewport = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const top = virtualizer.getVirtualItemForOffset(el.scrollTop);
+    const bottom = virtualizer.getVirtualItemForOffset(el.scrollTop + el.clientHeight - 1);
+    const a = top && row(toData(top.index));
+    const b = bottom && row(toData(bottom.index));
+    // Rows still loading: the previous range stays until they are there.
+    if (!a || !b) return;
+    const [start, end] =
+      Date.parse(a.timestamp) <= Date.parse(b.timestamp)
+        ? [a.timestamp, b.timestamp]
+        : [b.timestamp, a.timestamp];
+    setViewport({ start, end });
+  };
+  const publishNow = useRef(publishViewport);
+  publishNow.current = publishViewport;
+  // Again when rows arrive or the list changes (new events, a search), not only on scrolling.
+  useEffect(() => publishNow.current(), [first, last, pages, total]);
+
   // A new view (or font size, or order) starts at the newest event. Right after mounting, the list
   // goes back to where it was instead. In development React runs effects twice: the second run
   // finds the same inputs and leaves the list alone.
@@ -213,6 +235,7 @@ export function LogList({
             : el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_SLACK;
           setAtNewest(newest);
           scrolled.current = { top: el.scrollTop, newest };
+          publishViewport();
         }}
         className="absolute inset-0 overflow-auto font-mono text-(length:--log-font-size) leading-[1.6]"
       >
