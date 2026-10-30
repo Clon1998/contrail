@@ -251,11 +251,13 @@ function WrapToggle() {
  * The part of the window the list is focused on (picked on the timeline), with a way back to the
  * whole window. It sits in the toolbar so it stays in sight when the timeline is hidden.
  */
+/** The focus picked on the timeline, when the timeline (which shows it itself) is hidden. */
 function FocusChip() {
   const focus = useLogs((s) => s.focus);
+  const timelineShown = usePrefs((s) => s.prefs.settings.showTimeline);
   const setFocus = useLogs((s) => s.setFocus);
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
-  if (!focus) return null;
+  if (!focus || timelineShown) return null;
   const [start, end] = [Date.parse(focus.start), Date.parse(focus.end)];
   const withDate = !isToday(start, timeZone);
   return (

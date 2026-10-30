@@ -7,6 +7,8 @@ import {
   timelineLabel,
   utcOffsetMinutes,
 } from "@/lib/timeline";
+import { XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServiceMarkers } from "./useServiceMarkers";
 import { markersBetween } from "@/lib/markers";
@@ -213,6 +215,22 @@ export function TimelineChart({ viewId }: { viewId: number }) {
             style={{ left: focused.left, width: Math.max(2, focused.width) }}
           />
         )}
+        {/* Clears the focus right where it is; its pointer-down mustn't start a new drag. */}
+        {focused && !drag && (
+          <button
+            type="button"
+            aria-label="Clear the focus"
+            title="Show the whole window again"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => void setFocus(null)}
+            className="absolute top-0.5 z-10 flex size-4 items-center justify-center rounded-full border border-primary/60 bg-background text-primary shadow-sm hover:bg-primary hover:text-primary-foreground"
+            style={{
+              left: Math.min(width - 16, Math.max(0, focused.left + focused.width - 18)),
+            }}
+          >
+            <XIcon className="size-3" />
+          </button>
+        )}
         {drag && Math.abs(drag.to - drag.from) > 4 && (
           <div
             aria-hidden
@@ -261,11 +279,26 @@ export function TimelineChart({ viewId }: { viewId: number }) {
         </div>
       )}
       {timeline && count > 0 && (
-        <div className="flex justify-between tabular-nums">
+        <div className="flex items-center justify-between tabular-nums">
           <span>{timelineLabel(bucketRange(timeline, 0)[0], timeZone, spansDays)}</span>
-          <span>
-            {focus ? "Click or drag to focus elsewhere" : "Click or drag to focus the list"}
-          </span>
+          {focus ? (
+            <span className="flex items-center gap-1.5 text-foreground">
+              Focused on {timelineLabel(Date.parse(focus.start), timeZone, spansDays)} –{" "}
+              {timelineLabel(Date.parse(focus.end), timeZone, spansDays)}
+              <Button
+                variant="outline"
+                size="xs"
+                className="h-5 px-1.5 text-[11px]"
+                aria-label="Show the whole time window"
+                tooltip="Show the whole time window again (or click or drag elsewhere)"
+                onClick={() => void setFocus(null)}
+              >
+                <XIcon /> Show all
+              </Button>
+            </span>
+          ) : (
+            <span>Click or drag to focus the list</span>
+          )}
           <span>{timelineLabel(bucketRange(timeline, count - 1)[1], timeZone, spansDays)}</span>
         </div>
       )}

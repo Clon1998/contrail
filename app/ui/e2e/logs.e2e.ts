@@ -598,11 +598,18 @@ test("the timeline shows events over time; clicking or dragging focuses the list
   await clear.click();
   await expect(clear).toHaveCount(0);
 
-  // A click focuses the bar under it.
+  // A click focuses the bar under it; the × on the focused part clears it too.
   await page.mouse.click(box.x + box.width - 3, box.y + box.height - 2);
   await expect(clear).toBeVisible();
+  await expect(page.getByText(/^Focused on /)).toBeVisible();
+  await page.getByRole("button", { name: "Clear the focus" }).click();
+  await expect(clear).toHaveCount(0);
 
-  // It can be hidden (a setting).
+  // It can be hidden (a setting); a focus then shows in the toolbar, to be cleared there.
+  await page.mouse.click(box.x + box.width - 3, box.y + box.height - 2);
   await page.getByRole("button", { name: "Timeline" }).click();
   await expect(chart).toHaveCount(0);
+  await expect(clear).toBeVisible();
+  await clear.click();
+  await expect(clear).toHaveCount(0);
 });
