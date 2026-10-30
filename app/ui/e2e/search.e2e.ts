@@ -46,7 +46,11 @@ test("field globs and click-to-filter", async ({ page }) => {
   await expect.poll(() => rowCount(page)).toBeGreaterThan(0);
 
   await search.fill("");
-  await list.getByRole("button").first().click();
+  // Applied now, not after the typing pause: applying a search collapses expanded rows.
+  await search.press("Enter");
+  const row = list.getByRole("button", { expanded: false }).first();
+  await row.click();
+  await expect(list.getByRole("button", { expanded: true })).toHaveCount(1);
   // Clicking a field value adds key:value to the search.
   await list.getByLabel("Fields").getByRole("button", { name: "DEMO" }).click();
   await expect(search).toHaveValue("service.environment:DEMO");
