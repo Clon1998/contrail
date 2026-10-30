@@ -21,7 +21,10 @@ async function allowChanges(page: Page) {
 test("read-only by default: no ways to change a service", async ({ page }) => {
   const view = await openOrders(page);
   await expect(view.getByRole("region", { name: "Tasks" })).toBeVisible();
-  await expect(view.getByRole("button", { name: "Update service…" })).toHaveCount(0);
+  await view.getByRole("button", { name: "Service actions" }).click();
+  await expect(page.getByRole("menuitem", { name: "Open in ECS console" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Update service…" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await expect(view.getByRole("checkbox", { name: /Pick task/ })).toHaveCount(0);
 });
 
@@ -49,7 +52,8 @@ test("stop picked tasks with a reason, after a confirmation", async ({ page }) =
 test("quick update: desired count and revision, listed before they apply", async ({ page }) => {
   const view = await openOrders(page);
   await allowChanges(page);
-  await view.getByRole("button", { name: "Update service…" }).click();
+  await view.getByRole("button", { name: "Service actions" }).click();
+  await page.getByRole("menuitem", { name: "Update service…" }).click();
   const dialog = page.getByRole("dialog", { name: "Update orders-api" });
   const changes = dialog.getByRole("region", { name: "Changes" });
   await expect(changes).toContainText("Nothing changes yet.");

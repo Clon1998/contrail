@@ -94,7 +94,8 @@ test("a service opens in the ECS console", async ({ page }) => {
   const tree = page.getByRole("tree", { name: "Clusters" });
   await tree.getByRole("treeitem", { name: "demo-core" }).getByRole("button").first().click();
   await tree.getByRole("treeitem", { name: "orders-api" }).click();
-  await page.getByRole("button", { name: "ECS console" }).click();
+  await page.getByRole("button", { name: "Service actions" }).click();
+  await page.getByRole("menuitem", { name: "Open in ECS console" }).click();
   const opened = () =>
     page.evaluate(() =>
       (

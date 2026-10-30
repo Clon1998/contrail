@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useState } from "react";
 import {
+  EllipsisIcon,
   CircleAlertIcon,
   ExternalLinkIcon,
   RefreshCwIcon,
@@ -12,6 +13,12 @@ import { LogViewer } from "@/components/logs/LogViewer";
 import { TraceView } from "@/components/logs/TraceView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginAgain } from "@/components/profile/LoginAgain";
 import { nameFromArn } from "@/lib/ecs";
@@ -73,14 +80,10 @@ function ServicePane() {
         onValueChange={(value) => setTab(value === "logs" ? "logs" : "overview")}
         className="flex min-h-0 flex-1 flex-col gap-0"
       >
-        {/* The service's actions sit beside its tabs: they're there on both. */}
-        <div className="mx-4 mt-2 flex flex-wrap items-center gap-2">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-          </TabsList>
-          <ServiceActions />
-        </div>
+        <TabsList className="mx-4 mt-2">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="logs">Logs</TabsTrigger>
+        </TabsList>
         <TabsContent value="overview" className="min-h-0 overflow-y-auto">
           {detail.state === "error" && (
             <p className="mx-4 mt-3 flex items-start gap-2 rounded-md border border-destructive/40 p-2 text-sm text-destructive">
@@ -143,44 +146,49 @@ function Header() {
       >
         <StarIcon className={pinned ? "fill-amber-400 text-amber-400" : undefined} />
       </Button>
+      <HeaderActions />
     </header>
   );
 }
 
-/** Right of the tabs: update (when changes are allowed), the ECS console and refresh. */
-function ServiceActions() {
+/**
+ * Right of the service's name: a menu of what can be done with it (update it, when changes are
+ * allowed; open it in the ECS console), and refresh. Quiet on purpose: they're used now and then.
+ */
+function HeaderActions() {
   const selected = useEcs((s) => s.selected);
   const detail = useEcs((s) => s.detail);
   const refresh = useEcs((s) => s.refreshService);
   const allowChanges = usePrefs((s) => s.prefs.settings.allowChanges);
   const [updating, setUpdating] = useState(false);
   if (!selected) return null;
-
+  const data = "data" in detail ? detail.data : undefined;
+  const openConsole = () =>
+    void commands.ecsConsoleLink(selected).then((url) => commands.openConsole(url));
   return (
-    <div className="ml-auto flex items-center gap-1.5">
-      {allowChanges && "data" in detail && detail.data && (
-        <>
+    <div className="ml-auto flex items-center gap-0.5">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
-            size="sm"
-            tooltip="Desired count, task definition revision or a new deployment"
-            onClick={() => setUpdating(true)}
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Service actions"
+            tooltip="Update the service, open it in the ECS console"
           >
-            <RocketIcon /> Update service…
+            <EllipsisIcon />
           </Button>
-          {updating && <UpdateServiceDialog detail={detail.data} open onOpenChange={setUpdating} />}
-        </>
-      )}
-      <Button
-        variant="ghost"
-        size="sm"
-        tooltip="This service in the AWS console"
-        onClick={() =>
-          void commands.ecsConsoleLink(selected).then((url) => commands.openConsole(url))
-        }
-      >
-        <ExternalLinkIcon /> ECS console
-      </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {allowChanges && data && (
+            <DropdownMenuItem onSelect={() => setUpdating(true)}>
+              <RocketIcon /> Update service…
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={openConsole}>
+            <ExternalLinkIcon /> Open in ECS console
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -190,6 +198,7 @@ function ServiceActions() {
       >
         <RefreshCwIcon className={detail.state === "loading" ? "animate-spin" : undefined} />
       </Button>
+      {updating && data && <UpdateServiceDialog detail={data} open onOpenChange={setUpdating} />}
     </div>
   );
 }
