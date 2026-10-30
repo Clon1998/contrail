@@ -73,10 +73,14 @@ function ServicePane() {
         onValueChange={(value) => setTab(value === "logs" ? "logs" : "overview")}
         className="flex min-h-0 flex-1 flex-col gap-0"
       >
-        <TabsList className="mx-4 mt-2">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-        </TabsList>
+        {/* The service's actions sit beside its tabs: they're there on both. */}
+        <div className="mx-4 mt-2 flex flex-wrap items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+          </TabsList>
+          <ServiceActions />
+        </div>
         <TabsContent value="overview" className="min-h-0 overflow-y-auto">
           {detail.state === "error" && (
             <p className="mx-4 mt-3 flex items-start gap-2 rounded-md border border-destructive/40 p-2 text-sm text-destructive">
@@ -106,12 +110,9 @@ function ServicePane() {
 function Header() {
   const selected = useEcs((s) => s.selected);
   const detail = useEcs((s) => s.detail);
-  const refresh = useEcs((s) => s.refreshService);
   const profile = useProfiles((s) => s.selected);
   const favorites = usePrefs((s) => s.prefs.favorites);
   const toggleFavorite = usePrefs((s) => s.toggleFavorite);
-  const allowChanges = usePrefs((s) => s.prefs.settings.allowChanges);
-  const [updating, setUpdating] = useState(false);
   if (!selected || !profile) return null;
 
   const summary = "data" in detail ? detail.data?.summary : undefined;
@@ -142,7 +143,21 @@ function Header() {
       >
         <StarIcon className={pinned ? "fill-amber-400 text-amber-400" : undefined} />
       </Button>
-      <span className="ml-auto" />
+    </header>
+  );
+}
+
+/** Right of the tabs: update (when changes are allowed), the ECS console and refresh. */
+function ServiceActions() {
+  const selected = useEcs((s) => s.selected);
+  const detail = useEcs((s) => s.detail);
+  const refresh = useEcs((s) => s.refreshService);
+  const allowChanges = usePrefs((s) => s.prefs.settings.allowChanges);
+  const [updating, setUpdating] = useState(false);
+  if (!selected) return null;
+
+  return (
+    <div className="ml-auto flex items-center gap-1.5">
       {allowChanges && "data" in detail && detail.data && (
         <>
           <Button
@@ -170,10 +185,11 @@ function Header() {
         variant="ghost"
         size="icon-sm"
         aria-label="Refresh service"
+        tooltip="Reload the service's tasks, deployments and events"
         onClick={() => void refresh()}
       >
         <RefreshCwIcon className={detail.state === "loading" ? "animate-spin" : undefined} />
       </Button>
-    </header>
+    </div>
   );
 }
