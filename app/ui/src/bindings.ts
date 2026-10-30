@@ -73,8 +73,12 @@ export const commands = {
 	 *  Async so it runs on Tauri's tokio runtime, where the live task is spawned.
 	 */
 	startLive: (viewId: number, onUpdate: Channel<LiveUpdate>, paused: boolean) => typedError<null, ApiError>(__TAURI_INVOKE("start_live", { viewId, onUpdate, paused })),
-	/**  Loads the next older events of a view's window (newest first, in slices). */
-	loadOlder: (viewId: number) => typedError<OlderEvents, ApiError>(__TAURI_INVOKE("load_older", { viewId })),
+	/**
+	 *  Loads the next older events of a view's window (newest first, in slices): at least
+	 *  `at_least` of them (by default as many as one scroll to the top asks for), unless the window
+	 *  starts first.
+	 */
+	loadOlder: (viewId: number, atLeast: number | null) => typedError<OlderEvents, ApiError>(__TAURI_INVOKE("load_older", { viewId, atLeast })),
 	/**
 	 *  The value of a secret-backed environment variable (`valueFrom` of the task definition), read
 	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.

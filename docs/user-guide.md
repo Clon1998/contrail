@@ -32,7 +32,8 @@ page has the details.
 
 ## Reading logs
 
-- A service's **Logs** tab loads the newest events of all its tasks (running and recently stopped) from CloudWatch.
+- A service's **Logs** tab loads the newest events of all its tasks (running and recently stopped) from CloudWatch:
+  the newest screenful shows right away, the rest of the first load follows in the background.
   The log group comes from the task definition (`awslogs` driver with a stream prefix).
 - ECS JSON (nested or dotted), Spring Boot's console pattern and plain text are parsed, and Java stack traces that
   CloudWatch split into one event per line are joined again. **Field mapping** (log toolbar) handles JSON logs with

@@ -487,6 +487,19 @@ test("deployments, stopped tasks and service events show between the lines", asy
   await expect(page.getByRole("group", { name: "Service events" })).toHaveCount(0);
 });
 
+test("the newest events show first, the rest of the first load follows by itself", async ({
+  page,
+}) => {
+  await page.goto("/?olderDelay=800");
+  const list = await openLogs(page, "demo-core", "orders-api");
+  await chooseWindow(page, "1h");
+  // Shown with the newest half; the older half comes in the background, without scrolling.
+  await expect(list).toBeVisible();
+  const marker = page.getByRole("status", { name: "Older events" });
+  await expect(marker).toContainText("Loading older events");
+  await expect(marker).toContainText("Start of the time window");
+});
+
 test("while logs load, placeholders in the shape of the list show", async ({ page }) => {
   await page.goto("/?loadDelay=800");
   const list = await openLogs(page, "demo-edge", "event-ingest");

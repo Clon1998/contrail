@@ -147,7 +147,7 @@ export interface LogsState {
   showTask: (service: ServiceRef, taskId: string | null) => void;
   toggleExpanded: (seq: number) => void;
   /** Loads the next older events of the window, unless all are loaded or the buffer is full. */
-  loadOlder: () => Promise<void>;
+  loadOlder: (atLeast?: number) => Promise<void>;
   /** Loads older events until the whole window is loaded (or the buffer is full). */
   loadAll: () => Promise<void>;
 }
@@ -171,6 +171,11 @@ const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, bac
 const NO_OLDER = { loading: false, full: false, error: null };
 /** How long a row that just arrived live stays highlighted. */
 const FRESH_MS = 1_500;
+/**
+ * How many events a view loads at first. Opening shows the newest screenful right away; the rest
+ * comes in the background (the older-events marker says so meanwhile).
+ */
+const FIRST_LOAD = 2_000;
 
 /**
  * The cached rows after a live update. Evicted rows shift every index down (the cached rows move
@@ -395,6 +400,18 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
       set({ view, loading: false, visible: view.stats.total, matches: null });
       // The search carries over to the new view.
       await get().applySearch();
+      // The rest of the first load, behind the newest events already shown.
+      void (async () => {
+        while (get().view?.viewId === view.viewId) {
+          const { view: current, older } = get();
+          const missing = FIRST_LOAD - (current?.stats.total ?? FIRST_LOAD);
+          if (!current || current.complete || older.full || older.error || missing <= 0) return;
+          await get().loadOlder(missing);
+          // Nothing came in (a load was running already, e.g. from scrolling up): stop rather
+          // than ask again right away, which would never give the page a moment.
+          if ((get().view?.stats.total ?? 0) === current.stats.total) return;
+        }
+      })();
 
       const mode = liveMode(timeWindow);
       if (mode === "off") return;
@@ -592,11 +609,11 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
       set({ taskFilter: taskId ? { service, taskId } : null, tab: "logs" }),
     toggleExpanded: (seq) => set((s) => ({ expanded: { ...s.expanded, [seq]: !s.expanded[seq] } })),
 
-    loadOlder: async () => {
+    loadOlder: async (atLeast) => {
       const { view, older } = get();
       if (!view || view.complete || older.loading || older.full) return;
       set({ older: { ...older, loading: true, error: null } });
-      const result = await commands.loadOlder(view.viewId);
+      const result = await commands.loadOlder(view.viewId, atLeast ?? null);
       const current = get().view;
       if (current?.viewId !== view.viewId) return;
       if (result.status === "error") {
