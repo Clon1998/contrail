@@ -1,6 +1,6 @@
 ---
 title: Contrail, the desktop log viewer for AWS ECS
-description: A fast desktop log viewer for AWS ECS services on macOS, Windows and Linux. Switch SSO profiles, browse clusters and services, and follow live, structured logs. Read-only, no credentials stored.
+description: A fast desktop log viewer for AWS ECS services on macOS, Windows and Linux. Switch SSO profiles, browse clusters and services, and follow live, structured logs. Read-only by default, no credentials stored.
 template: splash
 head:
   # Instead of Starlight's "<title> | Contrail".
@@ -25,7 +25,7 @@ import Showcase from "../../components/Showcase.astro";
   </div>
   <div>
     <strong>0<span> writes</span></strong>
-    <p>to AWS, ever. Contrail is read-only and keeps no credentials of its own.</p>
+    <p>to AWS unless you allow changes. Read-only by default, no credentials of its own.</p>
   </div>
   <div>
     <strong>⌘K<span> → logs</span></strong>

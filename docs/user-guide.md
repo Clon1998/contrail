@@ -23,6 +23,11 @@ page has the details.
 - A service shows its tasks (running and recently stopped, with stop reasons and exit codes), deployments, task
   definition, recent events and the environment variables (secret-looking values masked until clicked). It
   refreshes every 30 s. **ECS console** in its header opens the service in the AWS console.
+- **Changes** (only with **Settings → AWS → Allow changes to AWS**, off by default): tick tasks in the task list
+  and **Stop …** them with a reason; **Update service…** in the header changes the desired count or the task
+  definition revision, or forces a new deployment, like the console's quick update. Each change shows exactly what
+  it does before you confirm. Needs the optional `ContrailOptionalChanges` statement of the
+  [IAM policy](iam-policy.json).
 - **Secrets:** variables filled from Secrets Manager or SSM show their reference; **Reveal** reads the value on that
   click only (each read shows up in CloudTrail). Values are kept in memory while shown, never stored or logged. It
   needs the optional `ContrailOptionalRevealSecrets` statement of the [IAM policy](iam-policy.json).
