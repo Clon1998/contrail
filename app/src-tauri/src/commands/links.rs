@@ -1,5 +1,6 @@
 //! Shareable links: to a log view (`contrail://`) and to the same logs in the CloudWatch console.
 
+use contrail_core::ecs::ServiceRef;
 use contrail_core::links::{self, LinkError, ViewLink};
 use contrail_core::timestamp::Timestamp;
 use tauri::State;
@@ -35,6 +36,13 @@ const AROUND_EVENT: Duration = Duration::minutes(1);
 /// The same logs in the CloudWatch console: an open view's log group and time range (its one
 /// stream when it shows one task), or one event (`event_seq`) with a minute around it. `region` is
 /// the service's region; `filter` the text to search for there, if any.
+/// A service's page in the ECS console (open it with [`open_console`]).
+#[tauri::command]
+#[specta::specta]
+pub fn ecs_console_link(service: ServiceRef) -> String {
+    links::ecs_console_url(&service.cluster_arn, &service.service_name)
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn console_link(

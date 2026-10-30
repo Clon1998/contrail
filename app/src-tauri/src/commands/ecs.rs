@@ -1,7 +1,9 @@
 //! Clusters, services and tasks (read-only).
 
 use contrail_core::auth::AwsCtx;
-use contrail_core::ecs::{ClusterSummary, ServiceDetail, ServiceRef, ServiceSummary, Task};
+use contrail_core::ecs::{
+    ClusterSummary, ServiceDetail, ServiceRef, ServiceSummary, ServiceUpdate, Task,
+};
 use contrail_core::logs::{StreamSelection, TimeRange, process, resolve_log_location};
 use contrail_core::routes::{Endpoint, RouteProperty};
 use contrail_core::timestamp::Timestamp;
@@ -9,7 +11,7 @@ use contrail_core::topology::{ConsumedTopic, STARTUP_PHRASES, startup_topology a
 use tauri::State;
 use time::{Duration, OffsetDateTime};
 
-use crate::error::ApiResult;
+use crate::error::{ApiError, ApiResult, ErrorCode};
 use crate::route_index::{ClusterRoutes, ServiceRoutes};
 use crate::state::AppState;
 
@@ -44,6 +46,97 @@ pub async fn reveal_secret(
     value_from: String,
 ) -> ApiResult<String> {
     Ok(state.secrets.reveal(&ctx, &value_from).await?)
+}
+
+/// The longest stop reason ECS accepts.
+const MAX_STOP_REASON: usize = 255;
+
+/// Refuses unless the user allows changes to AWS (a setting, off by default): Contrail stays
+/// read-only until then, whatever the UI asks for.
+fn changes_allowed(state: &AppState) -> ApiResult<()> {
+    if state.prefs.get().settings.allow_changes {
+        Ok(())
+    } else {
+        Err(ApiError::new(
+            ErrorCode::ChangesDisabled,
+            "Changes to AWS are switched off",
+        )
+        .with_hint("Settings → AWS → Allow changes to AWS."))
+    }
+}
+
+/// Stops tasks of a cluster (one at a time, stopping at the first that fails), with `reason`
+/// as the stop reason ECS records.
+#[tauri::command]
+#[specta::specta]
+pub async fn stop_tasks(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    cluster_arn: String,
+    task_ids: Vec<String>,
+    reason: String,
+) -> ApiResult<()> {
+    stop_tasks_of(&state, &ctx, &cluster_arn, &task_ids, &reason).await
+}
+
+async fn stop_tasks_of(
+    state: &AppState,
+    ctx: &AwsCtx,
+    cluster_arn: &str,
+    task_ids: &[String],
+    reason: &str,
+) -> ApiResult<()> {
+    changes_allowed(state)?;
+    let reason = match reason.trim() {
+        "" => "Stopped in Contrail",
+        reason => reason,
+    };
+    // At most 255 characters, cut at a character boundary (`chars`, not bytes).
+    let reason: String = reason.chars().take(MAX_STOP_REASON).collect();
+    for task_id in task_ids {
+        state
+            .changes
+            .stop_task(ctx, cluster_arn, task_id, &reason)
+            .await?;
+    }
+    Ok(())
+}
+
+/// Changes a service's desired count and/or task definition, or starts a new deployment (the
+/// console's quick update).
+#[tauri::command]
+#[specta::specta]
+pub async fn update_service(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    service: ServiceRef,
+    update: ServiceUpdate,
+) -> ApiResult<()> {
+    update_service_of(&state, &ctx, &service, &update).await
+}
+
+async fn update_service_of(
+    state: &AppState,
+    ctx: &AwsCtx,
+    service: &ServiceRef,
+    update: &ServiceUpdate,
+) -> ApiResult<()> {
+    changes_allowed(state)?;
+    if update.is_empty() {
+        return Err(ApiError::new(ErrorCode::InvalidInput, "nothing to change"));
+    }
+    Ok(state.changes.update_service(ctx, service, update).await?)
+}
+
+/// The revisions of a task definition family a quick update can deploy, newest first.
+#[tauri::command]
+#[specta::specta]
+pub async fn task_definition_revisions(
+    state: State<'_, AppState>,
+    ctx: AwsCtx,
+    family: String,
+) -> ApiResult<Vec<String>> {
+    Ok(state.ecs.task_definition_revisions(&ctx, &family).await?)
 }
 
 /// Counts, deployments, task definition and recent events of one service.
@@ -418,6 +511,66 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn changes_refuse_until_the_setting_allows_them() {
+        let state = AppState::demo();
+        let core = "arn:aws:ecs:eu-central-1:111122223333:cluster/demo-core";
+        let orders = ServiceRef {
+            cluster_arn: core.into(),
+            service_name: "orders-api".into(),
+        };
+        let task = state.ecs.list_tasks(&ctx(), &orders, false).await.unwrap()[0]
+            .id
+            .clone();
+        let scale = ServiceUpdate {
+            desired_count: Some(1),
+            task_definition: None,
+            force_new_deployment: false,
+        };
+
+        // Off by default: nothing reaches ECS.
+        let refused = stop_tasks_of(&state, &ctx(), core, std::slice::from_ref(&task), "")
+            .await
+            .unwrap_err();
+        assert_eq!(refused.code, ErrorCode::ChangesDisabled);
+        let refused = update_service_of(&state, &ctx(), &orders, &scale)
+            .await
+            .unwrap_err();
+        assert_eq!(refused.code, ErrorCode::ChangesDisabled);
+        let running = state.ecs.list_tasks(&ctx(), &orders, false).await.unwrap();
+        assert!(running.iter().any(|t| t.id == task), "still running");
+
+        state
+            .prefs
+            .update(|p| p.settings.allow_changes = true)
+            .unwrap();
+        stop_tasks_of(&state, &ctx(), core, std::slice::from_ref(&task), "  ")
+            .await
+            .unwrap();
+        let all = state.ecs.list_tasks(&ctx(), &orders, true).await.unwrap();
+        let stopped = all.iter().find(|t| t.id == task).unwrap();
+        assert_eq!(
+            stopped.stopped_reason.as_deref(),
+            Some("Task stopped by user: Stopped in Contrail"),
+            "an empty reason gets a default"
+        );
+        update_service_of(&state, &ctx(), &orders, &scale)
+            .await
+            .unwrap();
+        let detail = state.ecs.describe_service(&ctx(), &orders).await.unwrap();
+        assert_eq!(detail.summary.desired, 1);
+
+        let nothing = ServiceUpdate {
+            desired_count: None,
+            task_definition: None,
+            force_new_deployment: false,
+        };
+        let refused = update_service_of(&state, &ctx(), &orders, &nothing)
+            .await
+            .unwrap_err();
+        assert_eq!(refused.code, ErrorCode::InvalidInput);
+    }
+
+    #[tokio::test]
     async fn finds_the_other_side_of_a_topic() {
         let state = AppState::demo();
         let links = find_topic_links(
@@ -533,6 +686,15 @@ mod tests {
         ) -> Result<Vec<Task>, SourceError> {
             self.record("list_tasks");
             self.inner.list_tasks(ctx, service, include_stopped).await
+        }
+
+        async fn task_definition_revisions(
+            &self,
+            ctx: &AwsCtx,
+            family: &str,
+        ) -> Result<Vec<String>, SourceError> {
+            self.record("task_definition_revisions");
+            self.inner.task_definition_revisions(ctx, family).await
         }
     }
 

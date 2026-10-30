@@ -1,4 +1,4 @@
-import type { ServiceSummary, TimeZone } from "@/bindings";
+import type { ServiceDetail, ServiceSummary, TimeZone } from "@/bindings";
 import { formatDuration } from "./session";
 
 /** How a service is doing, from its task counts. */
@@ -90,4 +90,12 @@ export function groupEvents(
     }
   }
   return groups;
+}
+
+/** The task definition a service runs: its primary deployment's (`family:revision`). */
+export function currentTaskDefinition(detail: ServiceDetail): string {
+  return (
+    detail.deployments.find((d) => d.status === "PRIMARY")?.taskDefinition ??
+    detail.summary.taskDefinition
+  );
 }

@@ -19,9 +19,11 @@ There are no ARM builds for Windows or Linux yet.
 
 ## Is it safe to point at production?
 
-Contrail is read-only: it never stops, restarts, scales or deploys anything, and a role with only the
-[IAM policy](iam-policy.json) can't, whatever the app does. It keeps no credentials of its own. Details:
-[Security & privacy](security.md).
+By default Contrail is read-only: it never stops, restarts, scales or deploys anything. Stopping tasks and updating
+services only works after you turn on **Allow changes to AWS** in the settings, and each change asks for a
+confirmation first. A role without the optional `ContrailOptionalChanges` statement of the
+[IAM policy](iam-policy.json) can't change anything, whatever the app does. It keeps no credentials of its own.
+Details: [Security & privacy](security.md).
 
 ## Is my data sent anywhere?
 

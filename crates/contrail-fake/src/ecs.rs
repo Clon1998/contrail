@@ -11,14 +11,15 @@
 //!
 //! All names, IDs and ARNs are invented. Times are relative to "now".
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{
-    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, EnvVar,
-    SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo,
-    sort_tasks,
+    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsChanges, EcsSource,
+    EnvVar, SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, ServiceUpdate,
+    Task, TaskDefinitionInfo, sort_tasks,
 };
 use contrail_core::error::SourceError;
 use contrail_core::routes::parse_routes;
@@ -416,6 +417,24 @@ pub struct FakeEcs {
     auth: Arc<FakeAuth>,
     /// A fixed "now" for reproducible output (the recorded UI test data); `None` = the clock.
     fixed_now: Option<OffsetDateTime>,
+    /// What demo changes did (stopped tasks, new desired counts, deployments), on top of the
+    /// fixed demo data, until the app quits.
+    changes: Mutex<Changes>,
+}
+
+/// The demo changes so far, by task ID and by `cluster/service`.
+#[derive(Default)]
+struct Changes {
+    stopped: HashMap<String, (String, OffsetDateTime)>,
+    desired: HashMap<String, u32>,
+    /// Deployments started by updates, newest first: task definition and when.
+    deployments: HashMap<String, Vec<(String, OffsetDateTime)>>,
+    /// Service events the changes caused, newest first.
+    events: HashMap<String, Vec<(String, OffsetDateTime)>>,
+}
+
+fn service_key(spec: &ServiceSpec) -> String {
+    format!("{}/{}", spec.cluster, spec.name)
 }
 
 impl FakeEcs {
@@ -423,6 +442,7 @@ impl FakeEcs {
         Self {
             auth,
             fixed_now: None,
+            changes: Mutex::default(),
         }
     }
 
@@ -431,12 +451,26 @@ impl FakeEcs {
         Self {
             auth,
             fixed_now: Some(now),
+            changes: Mutex::default(),
         }
     }
 
+    fn now(&self) -> OffsetDateTime {
+        self.fixed_now.unwrap_or_else(OffsetDateTime::now_utc)
+    }
+
     fn ago(&self, minutes: i64) -> Option<Timestamp> {
-        let now = self.fixed_now.unwrap_or_else(OffsetDateTime::now_utc);
-        Some(Timestamp(now - Duration::minutes(minutes)))
+        Some(Timestamp(self.now() - Duration::minutes(minutes)))
+    }
+
+    /// The demo data's summary with the desired count a change set.
+    fn summary(&self, spec: &ServiceSpec, region: &str, account: &str) -> ServiceSummary {
+        let mut s = summary(spec, region, account);
+        let changes = self.changes.lock().expect("changes lock poisoned");
+        if let Some(&desired) = changes.desired.get(&service_key(spec)) {
+            s.desired = desired;
+        }
+        s
     }
 
     /// Account ID and region for ARNs; fails like AWS does for unusable credentials.
@@ -569,7 +603,7 @@ impl EcsSource for FakeEcs {
         let mut services: Vec<ServiceSummary> = SERVICES
             .iter()
             .filter(|s| s.cluster == cluster)
-            .map(|s| summary(s, &region, &account))
+            .map(|s| self.summary(s, &region, &account))
             .collect();
         services.sort_by(|a, b| a.name.cmp(&b.name));
         Ok(services)
@@ -633,7 +667,7 @@ impl EcsSource for FakeEcs {
             });
         }
 
-        let events = spec
+        let mut events: Vec<ServiceEvent> = spec
             .events
             .iter()
             .enumerate()
@@ -644,8 +678,52 @@ impl EcsSource for FakeEcs {
             })
             .collect();
 
+        // What demo changes did: their deployments in front (the newest is the primary one),
+        // their events first.
+        let changes = self.changes.lock().expect("changes lock poisoned");
+        let key = service_key(spec);
+        if let Some(started) = changes.deployments.get(&key) {
+            deployments
+                .iter_mut()
+                .for_each(|d| d.status = "ACTIVE".to_owned());
+            let desired = changes.desired.get(&key).copied().unwrap_or(spec.desired);
+            for (i, (task_definition, at)) in started.iter().enumerate().rev() {
+                deployments.insert(
+                    0,
+                    Deployment {
+                        id: format!(
+                            "ecs-svc/{}",
+                            &hex_id(&format!("{task_definition}{at}"))[..19]
+                        ),
+                        status: if i == 0 { "PRIMARY" } else { "ACTIVE" }.to_owned(),
+                        rollout_state: Some("IN_PROGRESS".to_owned()),
+                        rollout_reason: Some("ECS deployment in progress.".to_owned()),
+                        task_definition: task_definition.clone(),
+                        desired,
+                        running: 0,
+                        pending: desired,
+                        failed: 0,
+                        created_at: Some(Timestamp(*at)),
+                        updated_at: Some(Timestamp(*at)),
+                    },
+                );
+            }
+        }
+        if let Some(caused) = changes.events.get(&key) {
+            let caused = caused
+                .iter()
+                .enumerate()
+                .map(|(i, (message, at))| ServiceEvent {
+                    id: hex_id(&format!("{key}-change-{i}-{at}")),
+                    created_at: Some(Timestamp(*at)),
+                    message: format!("(service {}) {message}", spec.name),
+                });
+            events.splice(0..0, caused);
+        }
+        drop(changes);
+
         Ok(ServiceDetail {
-            summary: summary(spec, &region, &account),
+            summary: self.summary(spec, &region, &account),
             created_at: self.ago(120 * 24 * 60),
             platform_version: (spec.launch_type == "FARGATE").then(|| "1.4.0".to_owned()),
             deployments,
@@ -755,8 +833,105 @@ impl EcsSource for FakeEcs {
                 tasks.push(t);
             }
         }
+        // Tasks a demo change stopped.
+        {
+            let changes = self.changes.lock().expect("changes lock poisoned");
+            for t in &mut tasks {
+                if let Some((reason, at)) = changes.stopped.get(&t.id) {
+                    t.last_status = "STOPPED".to_owned();
+                    t.desired_status = "STOPPED".to_owned();
+                    t.stopped_at = Some(Timestamp(*at));
+                    t.stop_code = Some("UserInitiated".to_owned());
+                    t.stopped_reason = Some(format!("Task stopped by user: {reason}"));
+                    t.health_status = None;
+                    t.containers[0].last_status = Some("STOPPED".to_owned());
+                    t.containers[0].exit_code = Some(143);
+                }
+            }
+            if !include_stopped {
+                tasks.retain(|t| !changes.stopped.contains_key(&t.id));
+            }
+        }
         sort_tasks(&mut tasks);
         Ok(tasks)
+    }
+
+    /// The current revision and the five before it (they all "exist" in the demo).
+    async fn task_definition_revisions(
+        &self,
+        ctx: &AwsCtx,
+        family: &str,
+    ) -> Result<Vec<String>, SourceError> {
+        self.account(ctx)?;
+        let spec = SERVICES
+            .iter()
+            .find(|s| s.family() == family)
+            .ok_or_else(|| SourceError::NotFound(format!("task definition family {family}")))?;
+        Ok((spec.revision.saturating_sub(5).max(1)..=spec.revision)
+            .rev()
+            .map(|revision| spec.task_definition(revision))
+            .collect())
+    }
+}
+
+/// Demo changes stay in memory: what they do shows in the overview until the app quits.
+#[async_trait]
+impl EcsChanges for FakeEcs {
+    async fn stop_task(
+        &self,
+        ctx: &AwsCtx,
+        cluster_arn: &str,
+        task_id: &str,
+        reason: &str,
+    ) -> Result<(), SourceError> {
+        self.account(ctx)?;
+        let cluster = contrail_core::ecs::name_from_arn(cluster_arn);
+        if !CLUSTERS.contains(&cluster) {
+            return Err(SourceError::NotFound(format!("cluster {cluster}")));
+        }
+        let now = self.now();
+        let mut changes = self.changes.lock().expect("changes lock poisoned");
+        changes
+            .stopped
+            .insert(task_id.to_owned(), (reason.to_owned(), now));
+        Ok(())
+    }
+
+    async fn update_service(
+        &self,
+        ctx: &AwsCtx,
+        service: &ServiceRef,
+        update: &ServiceUpdate,
+    ) -> Result<(), SourceError> {
+        self.account(ctx)?;
+        let spec = find_service(service)?;
+        let key = service_key(spec);
+        let now = self.now();
+        let mut changes = self.changes.lock().expect("changes lock poisoned");
+        if let Some(desired) = update.desired_count {
+            changes.desired.insert(key.clone(), desired);
+            changes
+                .events
+                .entry(key.clone())
+                .or_default()
+                .insert(0, (format!("desired count changed to {desired}."), now));
+        }
+        if update.task_definition.is_some() || update.force_new_deployment {
+            let task_definition = update
+                .task_definition
+                .clone()
+                .unwrap_or_else(|| spec.task_definition(spec.revision));
+            changes
+                .deployments
+                .entry(key.clone())
+                .or_default()
+                .insert(0, (task_definition.clone(), now));
+            changes.events.entry(key).or_default().insert(
+                0,
+                (format!("has begun a deployment of {task_definition}."), now),
+            );
+        }
+        Ok(())
     }
 }
 
@@ -884,5 +1059,45 @@ mod tests {
         assert!(id.chars().all(|c| c.is_ascii_hexdigit()));
         assert_eq!(id, hex_id("orders-api-run-0"));
         assert_ne!(id, hex_id("orders-api-run-1"));
+    }
+
+    #[tokio::test]
+    async fn demo_changes_show_in_what_it_returns() {
+        let ecs = fake();
+        let ctx = ctx("demo-dev");
+        let orders = service("demo-core", "orders-api");
+        let task = ecs.list_tasks(&ctx, &orders, false).await.unwrap()[0]
+            .id
+            .clone();
+
+        ecs.stop_task(&ctx, &orders.cluster_arn, &task, "stuck")
+            .await
+            .unwrap();
+        let running = ecs.list_tasks(&ctx, &orders, false).await.unwrap();
+        assert!(running.iter().all(|t| t.id != task), "no longer running");
+        let all = ecs.list_tasks(&ctx, &orders, true).await.unwrap();
+        let stopped = all.iter().find(|t| t.id == task).unwrap();
+        assert_eq!(stopped.stop_code.as_deref(), Some("UserInitiated"));
+        assert_eq!(
+            stopped.stopped_reason.as_deref(),
+            Some("Task stopped by user: stuck")
+        );
+
+        let revisions = ecs
+            .task_definition_revisions(&ctx, "orders-api")
+            .await
+            .unwrap();
+        let previous = revisions[1].clone();
+        let update = ServiceUpdate {
+            desired_count: Some(5),
+            task_definition: Some(previous.clone()),
+            force_new_deployment: false,
+        };
+        ecs.update_service(&ctx, &orders, &update).await.unwrap();
+        let detail = ecs.describe_service(&ctx, &orders).await.unwrap();
+        assert_eq!(detail.summary.desired, 5);
+        assert_eq!(detail.deployments[0].task_definition, previous);
+        assert_eq!(detail.deployments[0].status, "PRIMARY");
+        assert!(detail.events[0].message.contains(&previous));
     }
 }

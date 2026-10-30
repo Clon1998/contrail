@@ -6,7 +6,8 @@ description: The read-only IAM permissions Contrail needs, and what each optiona
 import { Aside, Code } from "@astrojs/starlight/components";
 import policy from "../../../../docs/iam-policy.json?raw";
 
-Contrail only reads from AWS. If your SSO role is an admin or read-only role, you're set. Teammates
+Contrail only reads from AWS unless you allow changes. If your SSO role is an admin or read-only role, you're set
+for reading. Teammates
 with narrower roles need the permissions below: give the policy to whoever manages your SSO
 permission sets.
 
@@ -17,6 +18,9 @@ permission sets.
   Narrow its `Resource` to the secrets your team may read. Each read shows up in CloudTrail.
 - **`ContrailOptionalInsightsTrace`**: only for "Use Logs Insights" when tracing across many
   services (billed per GB scanned).
+- **`ContrailOptionalChanges`**: only for stopping tasks and updating services from Contrail
+  (desired count, revision, new deployment), with **Allow changes to AWS** on in the settings.
+  Without it, a role can't change anything, whatever the app does.
 
 <Code code={policy} lang="json" title="docs/iam-policy.json" />
 

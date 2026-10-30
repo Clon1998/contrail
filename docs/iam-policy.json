@@ -39,6 +39,16 @@
         "logs:GetQueryResults"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "ContrailOptionalChanges",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:StopTask",
+        "ecs:UpdateService",
+        "ecs:ListTaskDefinitions"
+      ],
+      "Resource": "*"
     }
   ]
 }

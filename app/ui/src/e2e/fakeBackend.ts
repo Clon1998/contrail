@@ -24,6 +24,7 @@ import type {
   Prefs,
   Profile,
   ServiceDetail,
+  ServiceUpdate,
   SavedSearch,
   SearchEntry,
   ServiceKey,
@@ -251,6 +252,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       wrapLines: false,
       showTimeline: true,
       showMarkers: true,
+      allowChanges: false,
       builtinLogin: false,
       checkForUpdates: true,
     },
@@ -288,6 +290,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     number,
     { channel: { id: number }; sent: number; timer?: ReturnType<typeof setInterval> }
   >();
+
+  /** Console pages opened in the browser, in order. */
+  const openedConsole: string[] = [];
 
   /** Files "saved" through the export dialog. */
   const exports: { path: string; format?: string; count?: number }[] = [];
@@ -386,13 +391,79 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
     return ecsData(checkCredentials(ctx), ctx.region ?? "eu-central-1");
   }
 
+  /** What changes did (like the Rust fake): stopped tasks, desired counts, deployments. */
+  const changes = {
+    stopped: new Map<string, { reason: string; at: string }>(),
+    desired: new Map<string, number>(),
+    deployments: new Map<string, { taskDefinition: string; at: string }[]>(),
+    events: new Map<string, { message: string; at: string }[]>(),
+  };
+  const changeKey = (service: ServiceRef) =>
+    `${service.clusterArn.split("/").at(-1)}/${service.serviceName}`;
+
   function serviceData(ctx: AwsCtx, service: ServiceRef) {
     const data = ecs(ctx);
-    const cluster = service.clusterArn.split("/").at(-1);
-    const key = `${cluster}/${service.serviceName}`;
-    const detail = data.details[key];
-    if (!detail) throw apiError("notFound", `service ${service.serviceName} not found`);
-    return { detail, tasks: data.tasks[key] ?? [] };
+    const key = changeKey(service);
+    const recordedDetail = data.details[key];
+    if (!recordedDetail) throw apiError("notFound", `service ${service.serviceName} not found`);
+    const desired = changes.desired.get(key);
+    const started = changes.deployments.get(key) ?? [];
+    const caused = changes.events.get(key) ?? [];
+    const detail: ServiceDetail = {
+      ...recordedDetail,
+      summary: { ...recordedDetail.summary, desired: desired ?? recordedDetail.summary.desired },
+      deployments: [
+        ...started.map((d, i) => ({
+          id: `ecs-svc/fake-${i}`,
+          status: i === 0 ? "PRIMARY" : "ACTIVE",
+          rolloutState: "IN_PROGRESS",
+          rolloutReason: "ECS deployment in progress.",
+          taskDefinition: d.taskDefinition,
+          desired: desired ?? recordedDetail.summary.desired,
+          running: 0,
+          pending: desired ?? recordedDetail.summary.desired,
+          failed: 0,
+          createdAt: d.at,
+          updatedAt: d.at,
+        })),
+        ...recordedDetail.deployments.map((d) =>
+          started.length > 0 ? { ...d, status: "ACTIVE" } : d,
+        ),
+      ],
+      events: [
+        ...caused.map((e, i) => ({
+          id: `fake-change-${i}`,
+          createdAt: e.at,
+          message: `(service ${service.serviceName}) ${e.message}`,
+        })),
+        ...recordedDetail.events,
+      ],
+    };
+    const tasks: Task[] = (data.tasks[key] ?? []).map((t) => {
+      const stop = changes.stopped.get(t.id);
+      return stop
+        ? {
+            ...t,
+            lastStatus: "STOPPED",
+            desiredStatus: "STOPPED",
+            stoppedAt: stop.at,
+            stopCode: "UserInitiated",
+            stoppedReason: `Task stopped by user: ${stop.reason}`,
+          }
+        : t;
+    });
+    return { detail, tasks };
+  }
+
+  /** Like the Rust commands: changes only while the setting allows them. */
+  function changesAllowed() {
+    if (!prefs.settings.allowChanges) {
+      throw apiError(
+        "changesDisabled",
+        "Changes to AWS are switched off",
+        "Settings → AWS → Allow changes to AWS.",
+      );
+    }
   }
 
   /** Sends a live update for a view: its state and counts, and which rows changed. */
@@ -530,7 +601,12 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       case "list_services": {
         const services = ecs(args?.ctx as AwsCtx).services[args?.clusterArn as string];
         if (!services) throw apiError("notFound", "cluster not found");
-        return services;
+        return services.map((s) => {
+          const desired = changes.desired.get(
+            changeKey({ clusterArn: s.clusterArn, serviceName: s.name }),
+          );
+          return desired === undefined ? s : { ...s, desired };
+        });
       }
       case "services_on_topics":
       case "cluster_routes": {
@@ -701,6 +777,51 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
               );
         const outcome = states.includes("FAILED") ? "failed" : complete ? "completed" : "open";
         return { hits, services, hops, outcome, truncated: false, failures } satisfies Trace;
+      }
+      case "stop_tasks": {
+        changesAllowed();
+        checkCredentials(args?.ctx as AwsCtx);
+        const reason = (args?.reason as string).trim() || "Stopped in Contrail";
+        const at = new Date().toISOString();
+        for (const id of args?.taskIds as string[]) changes.stopped.set(id, { reason, at });
+        return null;
+      }
+      case "update_service": {
+        changesAllowed();
+        const service = args?.service as ServiceRef;
+        const update = args?.update as ServiceUpdate;
+        const { detail } = serviceData(args?.ctx as AwsCtx, service);
+        const key = changeKey(service);
+        const at = new Date().toISOString();
+        const events = changes.events.get(key) ?? [];
+        if (update.desiredCount !== null) {
+          changes.desired.set(key, update.desiredCount);
+          events.unshift({ message: `desired count changed to ${update.desiredCount}.`, at });
+        }
+        if (update.taskDefinition !== null || update.forceNewDeployment) {
+          const taskDefinition =
+            update.taskDefinition ??
+            detail.deployments.find((d) => d.status === "PRIMARY")?.taskDefinition ??
+            detail.summary.taskDefinition;
+          changes.deployments.set(key, [
+            { taskDefinition, at },
+            ...(changes.deployments.get(key) ?? []),
+          ]);
+          events.unshift({ message: `has begun a deployment of ${taskDefinition}.`, at });
+        }
+        changes.events.set(key, events);
+        return null;
+      }
+      case "task_definition_revisions": {
+        checkCredentials(args?.ctx as AwsCtx);
+        const family = args?.family as string;
+        // The current revision of the family's service and the five before it.
+        const current = Object.values(ecs(args?.ctx as AwsCtx).details)
+          .map((d) => d.summary.taskDefinition)
+          .find((td) => td.replace(/:\d+$/, "") === family);
+        if (!current) throw apiError("notFound", `task definition family ${family}`);
+        const revision = Number(current.split(":").at(-1));
+        return Array.from({ length: Math.min(6, revision) }, (_, i) => `${family}:${revision - i}`);
       }
       case "describe_service":
         return serviceData(args?.ctx as AwsCtx, args?.service as ServiceRef).detail;
@@ -947,8 +1068,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       }
       case "console_link":
         return `https://${args?.region as string}.console.aws.amazon.com/cloudwatch/home#logsV2:fake`;
+      case "ecs_console_link": {
+        const service = args?.service as ServiceRef;
+        const region = service.clusterArn.split(":")[3];
+        const cluster = service.clusterArn.split("/").pop();
+        return `https://${region}.console.aws.amazon.com/ecs/v2/clusters/${cluster}/services/${service.serviceName}/health?region=${region}`;
+      }
       case "open_console":
+        openedConsole.push(args?.url as string);
         return null;
+      // Not a real command: tests read which console pages were opened.
+      case "fake_opened_console":
+        return openedConsole;
       case "plugin:dialog|save": {
         const options = args?.options as { defaultPath?: string } | undefined;
         exports.push({ path: `/tmp/${options?.defaultPath ?? "export"}` });

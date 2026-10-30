@@ -147,6 +147,9 @@ pub struct Settings {
     pub builtin_login: bool,
     /// Look for a new Contrail version on start (at most once a day).
     pub check_for_updates: bool,
+    /// Contrail may change ECS (stop tasks, update services). Off: read-only, the buttons are
+    /// hidden and the commands refuse.
+    pub allow_changes: bool,
 }
 
 /// Written by hand (instead of derived) because the numbers don't default to 0.
@@ -169,6 +172,7 @@ impl Default for Settings {
             show_markers: true,
             builtin_login: false,
             check_for_updates: true,
+            allow_changes: false,
         }
     }
 }
@@ -206,6 +210,7 @@ impl Settings {
         read(value, "showMarkers", &mut settings.show_markers);
         read(value, "builtinLogin", &mut settings.builtin_login);
         read(value, "checkForUpdates", &mut settings.check_for_updates);
+        read(value, "allowChanges", &mut settings.allow_changes);
         settings
     }
 
@@ -680,6 +685,7 @@ mod tests {
         assert!(!settings.wrap_lines);
         assert!(settings.show_timeline, "on unless switched off");
         assert!(settings.show_markers, "on unless switched off");
+        assert!(!settings.allow_changes, "read-only unless switched on");
         assert!(settings.newest_first);
         let json = r#"{"settings":{"wrapLines":true}}"#;
         assert!(Prefs::from_json(json).unwrap().settings.wrap_lines);
@@ -776,7 +782,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true,"allowChanges":false}"#
         );
     }
 

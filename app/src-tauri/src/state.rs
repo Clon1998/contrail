@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
-use contrail_core::ecs::EcsSource;
+use contrail_core::ecs::{EcsChanges, EcsSource};
 use contrail_core::logs::timeline::{Timeline, timeline};
 use contrail_core::logs::{
     FieldMapping, FieldSummary, FilterMode, LogBuffer, LogEvent, LogSource, StreamSelection,
@@ -27,6 +27,9 @@ pub struct AppState {
     /// reference-counted) lets several owners share it across threads.
     pub auth: Arc<dyn AuthProvider>,
     pub ecs: Arc<dyn EcsSource>,
+    /// The calls that change ECS: made only while the user allows changes (see
+    /// `commands::ecs::changes_allowed`).
+    pub changes: Arc<dyn EcsChanges>,
     pub logs: Arc<dyn LogSource>,
     /// Secret values, read only when the user asks for one.
     pub secrets: Arc<dyn SecretSource>,
@@ -53,8 +56,11 @@ impl AppState {
     pub fn demo() -> Self {
         // One FakeAuth shared by the fake sources, so their calls see the demo session state.
         let auth = Arc::new(contrail_fake::FakeAuth::new());
+        // One fake for reading and changing, so the demo shows what a change did.
+        let ecs = Arc::new(contrail_fake::FakeEcs::new(auth.clone()));
         Self {
-            ecs: Arc::new(contrail_fake::FakeEcs::new(auth.clone())),
+            ecs: ecs.clone(),
+            changes: ecs,
             logs: Arc::new(contrail_fake::FakeLogs::new(auth.clone())),
             secrets: Arc::new(contrail_fake::FakeSecrets::new(auth.clone())),
             auth,
@@ -72,9 +78,12 @@ impl AppState {
     /// The real AWS setup of this machine; preferences live in `data_dir/prefs.json`.
     pub fn aws(data_dir: &Path) -> Result<Self, contrail_core::auth::AuthError> {
         let files = contrail_aws::AwsFiles::from_env()?;
+        // One SDK client cache for reading and changing.
+        let ecs = Arc::new(contrail_aws::AwsEcs::new());
         Ok(Self {
             auth: Arc::new(contrail_aws::AwsAuth::new(files)),
-            ecs: Arc::new(contrail_aws::AwsEcs::new()),
+            ecs: ecs.clone(),
+            changes: ecs,
             logs: Arc::new(contrail_aws::AwsLogs::new()),
             secrets: Arc::new(contrail_aws::AwsSecrets::new()),
             routes: RouteIndex::default(),

@@ -43,7 +43,7 @@ people talk about "orders-prod" or share a screenshot; Contrail keeps favorites 
 
 ## Permissions
 
-Contrail only reads. Admin and broad read-only roles usually cover it; for narrower roles, give
+Contrail only reads, unless you allow changes. Admin and broad read-only roles usually cover reading; for narrower roles, give
 [`docs/iam-policy.json`](iam-policy.json) to whoever manages your SSO permission sets (also on the
 [AWS permissions](https://clon1998.github.io/contrail/permissions/) page):
 
@@ -51,8 +51,10 @@ Contrail only reads. Admin and broad read-only roles usually cover it; for narro
 - `ContrailOptionalRevealSecrets` only to show values of secret environment variables. Leave it out, or narrow its
   `Resource` to the secrets the team may read; every read is in CloudTrail.
 - `ContrailOptionalInsightsTrace` only for tracing across many services with Logs Insights.
+- `ContrailOptionalChanges` only for teammates who may stop tasks and update services from Contrail (they also turn
+  on **Allow changes to AWS** in the settings).
 
-A role with only these statements can't change anything, whatever the app does.
+A role without `ContrailOptionalChanges` can't change anything, whatever the app does.
 
 ## What it costs
 

@@ -6,7 +6,7 @@
 
 <p align="center">
   <em>Your ECS logs, live and readable.</em><br>
-  A fast desktop log viewer for AWS ECS services. Read-only, no credentials stored.
+  A fast desktop log viewer for AWS ECS services. Read-only by default, no credentials stored.
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 
 Contrail replaces the round trip through the AWS console when you want to know what a service is doing: switch AWS
 SSO profiles, browse clusters and services, and follow their logs live as readable, searchable lines. It is built
-with Rust, Tauri 2 and React. There is no account, no server and no telemetry, it never changes anything in AWS, and
+with Rust, Tauri 2 and React. There is no account, no server and no telemetry, it changes nothing in AWS unless you allow it (stopping tasks, updating a service), and
 it keeps no credentials of its own.
 
 ## Features
@@ -77,7 +77,8 @@ CLI's cache.
 3. Choose a cluster and a service in the sidebar (or press Cmd/Ctrl+K) and open its **Logs** tab.
 4. Type into the search box: `timeout level>=WARN -healthcheck`.
 
-Teammates with narrower AWS roles need the read-only permissions in [docs/iam-policy.json](docs/iam-policy.json).
+Teammates with narrower AWS roles need the read-only permissions in [docs/iam-policy.json](docs/iam-policy.json)
+(changes need its optional `ContrailOptionalChanges` statement).
 The [user guide](docs/user-guide.md) explains everything in more detail.
 
 ### Try it without AWS
@@ -93,10 +94,10 @@ The same documents are on the [website](https://clon1998.github.io/contrail/), w
 |---|---|
 | [User guide](docs/user-guide.md) | Profiles, services, logs, live tail, search, tracing, settings, shortcuts |
 | [Using Contrail in a team](docs/teams.md) | AWS config, permissions, what it costs, logs that work well |
-| [Security & privacy](docs/security.md) | What is read, stored and sent, read-only towards AWS, secrets, updates |
+| [Security & privacy](docs/security.md) | What is read, stored and sent, read-only towards AWS unless you allow changes, secrets, updates |
 | [FAQ](docs/faq.md) | License, system requirements, limitations, stability, support |
 | [Search syntax](docs/query-syntax.md) | Words, fields, levels, comparisons, regular expressions |
-| [IAM policy](docs/iam-policy.json) | The read-only permissions Contrail needs, and the optional ones |
+| [IAM policy](docs/iam-policy.json) | The read-only permissions Contrail needs, and the optional ones (including changes) |
 | [Development](docs/development.md) | Setup, running, tests, CI builds, the website |
 | [Rust notes](docs/rust-notes.md) | The Rust patterns used in the code, explained for Java developers |
 | [plan.md](plan.md) | The specification and milestones |

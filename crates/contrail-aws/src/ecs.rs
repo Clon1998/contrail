@@ -1,16 +1,18 @@
-//! The real [`EcsSource`] on top of `aws-sdk-ecs`. Read-only: only `List*` and `Describe*` calls.
+//! The real [`EcsSource`] on top of `aws-sdk-ecs` (read-only: only `List*` and `Describe*`
+//! calls), and the real [`EcsChanges`] (`StopTask`, `UpdateService`), which the app calls only
+//! while the user allows changes.
 
 use std::collections::HashMap;
 use std::sync::Mutex;
 
 use async_trait::async_trait;
 use aws_sdk_ecs::Client;
-use aws_sdk_ecs::types::DesiredStatus;
+use aws_sdk_ecs::types::{DesiredStatus, SortOrder, TaskDefinitionStatus};
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{
-    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsSource, EnvVar,
-    SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, Task, TaskDefinitionInfo,
-    image_tag, name_from_arn, sort_tasks, task_definition_label,
+    ClusterSummary, ContainerDefinitionInfo, ContainerState, Deployment, EcsChanges, EcsSource,
+    EnvVar, SecretRef, ServiceDetail, ServiceEvent, ServiceRef, ServiceSummary, ServiceUpdate,
+    Task, TaskDefinitionInfo, image_tag, name_from_arn, sort_tasks, task_definition_label,
 };
 use contrail_core::error::SourceError;
 use contrail_core::routes::parse_routes;
@@ -27,6 +29,8 @@ const DESCRIBE_SERVICES_MAX: usize = 10;
 const DESCRIBE_TASKS_MAX: usize = 100;
 /// How many service events the overview shows.
 const MAX_EVENTS: usize = 10;
+/// How many revisions of a task definition a quick update offers (the newest).
+const MAX_REVISIONS: usize = 50;
 
 /// ECS via the AWS SDK, with an SDK client per profile + region and a task definition cache.
 #[derive(Default)]
@@ -84,6 +88,33 @@ impl EcsSource for AwsEcs {
         let client = self.client(ctx).await;
         self.cached_task_definition(&client, &ctx.profile, arn)
             .await
+    }
+
+    async fn task_definition_revisions(
+        &self,
+        ctx: &AwsCtx,
+        family: &str,
+    ) -> Result<Vec<String>, SourceError> {
+        // One page of the newest (no paging through years of revisions). `family_prefix`
+        // matches by prefix ("orders" also finds "orders-api"): only the family's are kept.
+        let page = self
+            .client(ctx)
+            .await
+            .list_task_definitions()
+            .family_prefix(family)
+            .status(TaskDefinitionStatus::Active)
+            .sort(SortOrder::Desc)
+            .max_results(100)
+            .send()
+            .await
+            .map_err(|err| map_sdk_error(&ctx.profile, err))?;
+        Ok(page
+            .task_definition_arns()
+            .iter()
+            .map(|arn| task_definition_label(arn).to_owned())
+            .filter(|label| label.rsplit_once(':').is_some_and(|(f, _)| f == family))
+            .take(MAX_REVISIONS)
+            .collect())
     }
 
     async fn list_tasks(
@@ -249,6 +280,48 @@ async fn describe_one_service(
 
 /// The service without its task definition, plus the ARN of the task definition of the
 /// `PRIMARY` deployment (or the service's own), which [`AwsEcs`] resolves through its cache.
+#[async_trait]
+impl EcsChanges for AwsEcs {
+    async fn stop_task(
+        &self,
+        ctx: &AwsCtx,
+        cluster_arn: &str,
+        task_id: &str,
+        reason: &str,
+    ) -> Result<(), SourceError> {
+        self.client(ctx)
+            .await
+            .stop_task()
+            .cluster(cluster_arn)
+            .task(task_id)
+            .reason(reason)
+            .send()
+            .await
+            .map_err(|err| map_sdk_error(&ctx.profile, err))?;
+        Ok(())
+    }
+
+    async fn update_service(
+        &self,
+        ctx: &AwsCtx,
+        service: &ServiceRef,
+        update: &ServiceUpdate,
+    ) -> Result<(), SourceError> {
+        self.client(ctx)
+            .await
+            .update_service()
+            .cluster(&service.cluster_arn)
+            .service(&service.service_name)
+            .set_desired_count(update.desired_count.map(|n| n.min(i32::MAX as u32) as i32))
+            .set_task_definition(update.task_definition.clone())
+            .force_new_deployment(update.force_new_deployment)
+            .send()
+            .await
+            .map_err(|err| map_sdk_error(&ctx.profile, err))?;
+        Ok(())
+    }
+}
+
 async fn describe_service(
     client: &Client,
     profile: &str,

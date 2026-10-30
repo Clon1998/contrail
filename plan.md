@@ -518,6 +518,17 @@ round. The numbers stay as they are (they're referenced in commits and docs).
   Done when: templating has unit and property tests (stable templates, no merging of unrelated lines) and
   stays fast at 100k lines; e2e covers hiding a group and filtering to one.
 
+#### M22 — Changes to ECS, opt-in (Patrick, 2026-10-30; before the rest of the round)
+- A setting **Allow changes to AWS** (off by default). While off, Contrail stays read-only: no buttons, and the
+  commands refuse. See decisions.md 2026-10-30.
+- **Stop task(s):** select tasks in the Overview, give a reason, confirm.
+- **Quick update:** desired count, task definition revision and "force new deployment" in one dialog, like the
+  console's; the confirmation lists what changes.
+- **Open in the ECS console** for a service (read-only, always there).
+- IAM policy: an optional statement for the change actions. Demo mode applies changes to the fake (in memory).
+- **Done when:** commands refuse while the setting is off (Rust tests); the fake records and shows changes; e2e
+  covers stopping a task and a quick update with confirmation; docs, security page and site wording updated.
+
 #### M11 — Stuck documents (moved to the end of this round)
 - **Document keys:** a document is followed by its correlation ID **or its object name** (`fw.objectName`,
   the key under which the framework stores a document). Hops that log only one of the two keys still join

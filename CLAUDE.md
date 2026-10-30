@@ -32,7 +32,9 @@ Work through the milestones in order. Do not start a milestone before the previo
   AWS types are mapped to domain types inside `contrail-aws`.
 - Log buffering, parsing and filtering run **in Rust**; the frontend renders windows of rows from a virtual list.
 - Stream log events to the frontend in batches over Tauri `Channel`s; no per-event IPC.
-- **Read-only towards AWS.** Never add calls that mutate AWS resources. Contrail never stores credentials.
+- **Read-only towards AWS by default.** Mutating calls (stop tasks, update a service) only through the `EcsChanges`
+  trait, behind the opt-in setting "Allow changes to AWS" (checked in Rust), each confirmed in the UI
+  (decisions.md 2026-10-30). Contrail never stores credentials.
 - **Demo mode** (`--demo` / `CONTRAIL_DEMO=1`) uses `contrail-fake` and must always work — it powers e2e tests and screenshots.
 
 ## Testing rules

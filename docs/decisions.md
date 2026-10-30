@@ -509,3 +509,18 @@ Patrick: dragging on the timeline changed the time window, which reloaded the vi
 searches on the time-ordered events and on the matches): the list, its counts, match positions and the Fields
 panel cover only the focus, while the timeline keeps the whole window. A chip next to the time window shows it;
 its × brings the whole window back without reloading. Opening another window clears the focus.
+
+## 2026-10-30 — Changes to ECS, opt-in (read-only stays the default)
+
+Patrick wants to stop tasks and do the console's "quick update" (desired count, task definition revision, force new
+deployment) from Contrail, and open a service in the ECS console. Until now Contrail never called a mutating AWS
+API (CLAUDE.md, the IAM policy, the security docs and the website say so).
+**Decision (Patrick):** changes are **opt-in**: a setting "Allow changes to AWS", off by default. While it is off
+the buttons aren't there and the Rust commands refuse, so a teammate who only reads logs keeps the read-only
+guarantee. The change calls live in their own trait (`EcsChanges`), next to the read-only `EcsSource`, so read
+paths can't reach them. Every change is confirmed in a dialog that shows exactly what changes (desired 2 → 4,
+`orders:41` → `orders:42`); stopping tasks asks for a reason, as the console does. The IAM policy gets an optional
+statement (`ecs:StopTask`, `ecs:UpdateService`, `ecs:ListTaskDefinitions` for the revisions to choose from). Opening
+a service in the ECS console is read-only and always there. Docs and site say "read-only unless you turn on
+changes" instead of "never writes".
+

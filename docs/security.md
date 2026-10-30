@@ -6,7 +6,7 @@ has to approve a tool before a team may use it. To report a vulnerability, see [
 ## In short
 
 - A desktop app with **no server component, no account, no cloud sync and no telemetry**.
-- **Read-only towards AWS.** Contrail never calls an API that changes a resource; the
+- **Read-only towards AWS unless you allow changes.** By default Contrail never calls an API that changes a resource; the
   [IAM policy](iam-policy.json) lists every action it uses.
 - **Contrail never stores credentials of its own.** Logins go through the AWS CLI, or through Contrail's built-in
   SSO login, which writes the SSO token to the same cache file the CLI uses (below); credentials come from the
@@ -74,13 +74,17 @@ Only these connections, each started by something you did:
 
 There is no analytics, crash reporting or usage tracking.
 
-## Read-only towards AWS
+## Read-only towards AWS, unless you allow changes
 
-Contrail uses `List*`, `Describe*`, `Get*`, `FilterLogEvents`, `StartLiveTail` and (optionally) `StartQuery`. It
-never stops, restarts, scales or deploys anything, and never creates, changes or deletes a resource. This is a
-design rule of the code base (the app only talks to AWS through read-only interfaces), and the
-[IAM policy](iam-policy.json) lets you enforce it: a role with only that policy can't do anything else, whatever the
-app tried.
+Contrail uses `List*`, `Describe*`, `Get*`, `FilterLogEvents`, `StartLiveTail` and (optionally) `StartQuery`. By
+default it never stops, restarts, scales or deploys anything, and never creates, changes or deletes a resource.
+
+**Settings → AWS → Allow changes to AWS** (off by default) lets it stop tasks and update services (desired count,
+task definition revision, a new deployment), each only after a confirmation that lists what changes. While the
+setting is off, the buttons aren't there and the app refuses such calls; the calls that change ECS are kept apart in
+the code (`EcsChanges`) from everything that reads. They need the optional `ContrailOptionalChanges` statement of the
+[IAM policy](iam-policy.json): a role without it can't change anything, whatever the app tried. Every change shows
+up in CloudTrail under your role.
 
 ## Secret values
 
