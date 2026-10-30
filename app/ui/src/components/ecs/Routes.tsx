@@ -26,6 +26,7 @@ import { useEcs } from "@/stores/ecs";
 import { SecretValue, Value } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
 import { GraphView } from "./RouteGraphView";
+import { RouteHealthSection } from "./RouteHealth";
 
 /** The same in every service's graph; the service shown is in "Written by" or "Read by". */
 const COLUMN_TITLES = ["Sources", "Written by", "Topics", "Read by", "Targets"] as const;
@@ -220,6 +221,11 @@ export function Routes({ containers }: { containers: ContainerDefinitionInfo[] }
           Click a topic or system for its settings.
         </p>
       )}
+      <RouteHealthSection
+        expected={routes.flatMap((r) =>
+          r.topic ? [{ topic: r.topic, group: r.input ? null : r.group }] : [],
+        )}
+      />
     </OverviewCard>
   );
 }

@@ -441,3 +441,21 @@ test("the route map comes back as it was after another tab", async ({ page }) =>
     })
     .toBeLessThan(2);
 });
+
+test("route health: how the service's documents ended, from its logs", async ({ page }) => {
+  const view = await openTreeService(page, "demo-edge", "legacy-gateway");
+  const health = view
+    .getByRole("region", { name: "Routes" })
+    .getByRole("region", { name: "Route health" });
+  // Nothing is read for it until the logs are there.
+  await health.getByRole("button", { name: "Load the logs" }).click();
+  const row = health.getByRole("row", { name: "Health of demo.events for legacy-gateway" });
+  await expect(row).toBeVisible();
+  await expect(row.getByRole("cell").nth(2)).toHaveText("2");
+  await expect(row.getByRole("img", { name: "Throughput over time" })).toBeVisible();
+  await expect(health).toContainText("from the logs loaded since");
+  // Its other topics logged nothing in the window: listed all the same.
+  await expect(
+    health.getByRole("row", { name: "Health of orders.created for legacy-gateway" }),
+  ).toContainText("no status events");
+});

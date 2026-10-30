@@ -51,6 +51,11 @@ export const commands = {
 	/**  Up to `limit` events of a view from `offset` (oldest first). */
 	getLogRows: (viewId: number, offset: number, limit: number) => typedError<LogEvent[], ApiError>(__TAURI_INVOKE("get_log_rows", { viewId, offset, limit })),
 	/**
+	 *  How the documents of a view's service ended, per topic and consumer group, in at most about
+	 *  `max_buckets` buckets over time.
+	 */
+	routeHealth: (viewId: number, maxBuckets: number) => typedError<RouteHealth, ApiError>(__TAURI_INVOKE("route_health", { viewId, maxBuckets })),
+	/**
 	 *  The lines around event `seq` of a view in its own stream (task), ignoring the search: up to
 	 *  `before` older and `after` newer ones.
 	 */
@@ -795,6 +800,15 @@ export type RouteConfig = {
 	routes: Route[],
 };
 
+/**  The health of every topic a view's status events name, in buckets of equal length. */
+export type RouteHealth = {
+	/**  The start of the first bucket. */
+	start: Timestamp,
+	bucketMs: number,
+	/**  The topics with failures first (most first), then by name. */
+	topics: TopicHealth[],
+};
+
 export type RouteProperty = {
 	key: string,
 	/**  Empty for a setting filled from a secret (see `value_from`). */
@@ -1088,6 +1102,20 @@ export type Timeline = {
 export type Timestamp = string;
 
 export type TopicDirection = "in" | "out";
+
+/**  How one topic did for one consumer group (none: the producing side). */
+export type TopicHealth = {
+	topic: string,
+	consumerGroup: string | null,
+	/**  Documents that went through: `COMPLETED` (read and handled) or `PUBLISHED` (written). */
+	done: number,
+	retrying: number,
+	failed: number,
+	/**  `done` per bucket, oldest first: the throughput. */
+	doneOverTime: number[],
+	/**  `failed` per bucket, oldest first. */
+	failedOverTime: number[],
+};
 
 /**  A route of a service of the cluster: the topic it writes or reads, and its other end. */
 export type TopicLink = {

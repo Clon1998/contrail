@@ -505,6 +505,9 @@ round. The numbers stay as they are (they're referenced in commits and docs).
   toggle (saved setting) hides them.
 - **M18 — Route health:** for the time window, counts of COMPLETED / FAILED / RETRYING per topic and
   consumer group, the failure rate and a throughput sparkline, on the Routes card and the route map.
+  **Built 2026-10-30 (Patrick kept it after trying it in demo mode):** on the Routes card, counted from the
+  status events of the service's log view (no extra AWS reads; "Load the logs" when none is open), topics
+  without events listed too. The route map is left out: it would need every service's logs.
 - **M19 — Partitions & offsets (evaluation):** link dead-letter events to the originals by partition and
   offset; show gaps and out-of-order offsets per partition.
 - **M20 — Framework packs:** move what Contrail knows about the pipeline framework (field prefix, states,

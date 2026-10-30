@@ -86,7 +86,11 @@ pub fn bucket_length(span: Duration, max_buckets: u32) -> u32 {
 
 /// The start of the bucket holding `at`: a multiple of `step_ms` on the clock of a time zone
 /// `utc_offset` ahead of UTC, so hours and days start at :00 and midnight where the user is.
-fn bucket_start(at: OffsetDateTime, step_ms: u32, utc_offset: Duration) -> OffsetDateTime {
+pub(crate) fn bucket_start(
+    at: OffsetDateTime,
+    step_ms: u32,
+    utc_offset: Duration,
+) -> OffsetDateTime {
     let local_ms = (at + utc_offset).unix_timestamp_nanos() / 1_000_000;
     let start_ms = local_ms.div_euclid(i128::from(step_ms)) * i128::from(step_ms);
     OffsetDateTime::from_unix_timestamp_nanos(start_ms * 1_000_000).expect("a valid time")

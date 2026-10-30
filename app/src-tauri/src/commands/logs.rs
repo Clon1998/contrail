@@ -5,6 +5,7 @@ use std::sync::atomic::Ordering;
 
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
+use contrail_core::logs::health::RouteHealth;
 use contrail_core::logs::timeline::Timeline;
 use contrail_core::logs::{
     BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LineContext, LogBuffer, LogEvent,
@@ -238,6 +239,20 @@ async fn load_older_events(
         rows_from: count(rows_from),
         rows: view.window(rows_from, added - rows_from + BOUNDARY_ROWS),
     })
+}
+
+/// How the documents of a view's service ended, per topic and consumer group, in at most about
+/// `max_buckets` buckets over time.
+#[tauri::command]
+#[specta::specta]
+pub fn route_health(
+    state: State<'_, AppState>,
+    view_id: u32,
+    max_buckets: u32,
+) -> ApiResult<RouteHealth> {
+    let views = state.views.lock().expect("views lock poisoned");
+    let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+    Ok(view.route_health(max_buckets))
 }
 
 /// Up to `limit` events of a view from `offset` (oldest first).
@@ -833,6 +848,26 @@ mod tests {
             noise: Vec::new(),
             focus: None,
         }
+    }
+
+    #[tokio::test]
+    async fn a_route_services_view_counts_how_its_documents_ended() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-edge", "legacy-gateway");
+        let info = open_logs(&state, ctx, service, TimeWindow::Last { minutes: 15 }, None)
+            .await
+            .unwrap();
+        let views = state.views.lock().unwrap();
+        let health = views[&info.view_id].route_health(30);
+        assert!(
+            !health.topics.is_empty(),
+            "the demo service logs status events"
+        );
+        assert!(
+            health.topics.iter().all(|t| t.consumer_group.is_some()),
+            "an output service"
+        );
+        assert!(health.topics.iter().map(|t| t.done).sum::<u32>() > 0);
     }
 
     #[tokio::test]
