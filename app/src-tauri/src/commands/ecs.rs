@@ -534,6 +534,15 @@ mod tests {
             self.record("list_tasks");
             self.inner.list_tasks(ctx, service, include_stopped).await
         }
+
+        async fn task_definition_revisions(
+            &self,
+            ctx: &AwsCtx,
+            family: &str,
+        ) -> Result<Vec<String>, SourceError> {
+            self.record("task_definition_revisions");
+            self.inner.task_definition_revisions(ctx, family).await
+        }
     }
 
     #[tokio::test]

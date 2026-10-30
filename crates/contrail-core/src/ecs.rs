@@ -181,7 +181,8 @@ pub struct ContainerState {
     pub image_digest: Option<String>,
 }
 
-/// Where clusters, services and tasks come from: AWS or the demo fake. Read-only by design.
+/// Where clusters, services and tasks come from: AWS or the demo fake. Read-only by design: the
+/// changes are in [`EcsChanges`].
 #[async_trait]
 pub trait EcsSource: Send + Sync {
     /// All clusters of the account/region, sorted by name.
@@ -215,6 +216,55 @@ pub trait EcsSource: Send + Sync {
         service: &ServiceRef,
         include_stopped: bool,
     ) -> Result<Vec<Task>, SourceError>;
+
+    /// The revisions of a task definition family that can be deployed (active ones), newest
+    /// first, as `family:revision`.
+    async fn task_definition_revisions(
+        &self,
+        ctx: &AwsCtx,
+        family: &str,
+    ) -> Result<Vec<String>, SourceError>;
+}
+
+/// What a quick update changes on a service (like the console's "Update service"); `None`
+/// leaves that part as it is.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ServiceUpdate {
+    pub desired_count: Option<u32>,
+    /// The task definition to deploy, as `family:revision`.
+    pub task_definition: Option<String>,
+    /// Replace every task even when nothing else changes (picks up a re-pushed image tag).
+    pub force_new_deployment: bool,
+}
+
+impl ServiceUpdate {
+    /// Nothing would change: not worth a call.
+    pub fn is_empty(&self) -> bool {
+        self.desired_count.is_none() && self.task_definition.is_none() && !self.force_new_deployment
+    }
+}
+
+/// The calls that change ECS: kept apart from [`EcsSource`] so code that only reads can't reach
+/// them. The app makes them only while the user allows changes (a setting, off by default).
+#[async_trait]
+pub trait EcsChanges: Send + Sync {
+    /// Stops one task of a cluster; ECS records `reason` as the stop reason.
+    async fn stop_task(
+        &self,
+        ctx: &AwsCtx,
+        cluster_arn: &str,
+        task_id: &str,
+        reason: &str,
+    ) -> Result<(), SourceError>;
+
+    /// Changes a service's desired count and/or task definition, or starts a new deployment.
+    async fn update_service(
+        &self,
+        ctx: &AwsCtx,
+        service: &ServiceRef,
+        update: &ServiceUpdate,
+    ) -> Result<(), SourceError>;
 }
 
 /// The last `/`-separated part of an ARN: a cluster, service or task name/ID.
