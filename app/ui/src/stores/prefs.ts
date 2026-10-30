@@ -53,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   wrapLines: false,
   showTimeline: true,
   showMarkers: true,
+  allowChanges: false,
   builtinLogin: false,
   checkForUpdates: true,
 };

@@ -1,8 +1,10 @@
-import { ScrollTextIcon } from "lucide-react";
+import { useState } from "react";
+import { CircleStopIcon, ScrollTextIcon } from "lucide-react";
 import { cn } from "cn";
 import type { Deployment, ServiceDetail, Task } from "@/bindings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -21,6 +23,7 @@ import { usePrefs } from "@/stores/prefs";
 import { Environment } from "./Environment";
 import { OverviewCard } from "./OverviewCard";
 import { Routes } from "./Routes";
+import { StopTasksDialog } from "./StopTasksDialog";
 
 /** The Overview's layout with placeholders, while a service is loaded for the first time. */
 export function OverviewSkeleton() {
@@ -297,25 +300,53 @@ function Tasks() {
   const setIncludeStopped = useEcs((s) => s.setIncludeStopped);
   const selected = useEcs((s) => s.selected);
   const showTask = useLogs((s) => s.showTask);
+  const allowChanges = usePrefs((s) => s.prefs.settings.allowChanges);
   const now = useNow();
   const timeZone = useTimeZone();
   const list = "data" in tasks ? (tasks.data ?? []) : [];
+  // Tasks picked for stopping (only while changes are allowed); stopped ones can't be picked.
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  const [confirming, setConfirming] = useState(false);
+  const stoppable = (t: Task) => t.desiredStatus !== "STOPPED";
+  const toStop = list.filter((t) => picked.has(t.id) && stoppable(t));
+  const pick = (id: string, on: boolean) =>
+    setPicked((current) => {
+      const next = new Set(current);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
 
   return (
     <OverviewCard
       title="Tasks"
       count={list.length}
       action={
-        <Button
-          variant="outline"
-          size="xs"
-          aria-pressed={includeStopped}
-          onClick={() => void setIncludeStopped(!includeStopped)}
-        >
-          {includeStopped ? "Hide stopped" : "Show stopped"}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {allowChanges && toStop.length > 0 && (
+            <Button variant="destructive" size="xs" onClick={() => setConfirming(true)}>
+              <CircleStopIcon /> Stop {toStop.length === 1 ? "1 task" : `${toStop.length} tasks`}…
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="xs"
+            aria-pressed={includeStopped}
+            onClick={() => void setIncludeStopped(!includeStopped)}
+          >
+            {includeStopped ? "Hide stopped" : "Show stopped"}
+          </Button>
+        </div>
       }
     >
+      {allowChanges && (
+        <StopTasksDialog
+          tasks={toStop}
+          open={confirming}
+          onOpenChange={setConfirming}
+          onStopped={() => setPicked(new Set())}
+        />
+      )}
       {tasks.state === "error" && <p className="text-sm text-destructive">{tasks.error.message}</p>}
       {list.length === 0 && tasks.state === "ok" && (
         <p className="text-sm text-muted-foreground">No tasks.</p>
@@ -324,6 +355,11 @@ function Tasks() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              {allowChanges && (
+                <TableHead className="h-8 w-6">
+                  <span className="sr-only">Pick</span>
+                </TableHead>
+              )}
               <TableHead className="h-8 text-muted-foreground">Task</TableHead>
               <TableHead className="h-8 text-muted-foreground">Status</TableHead>
               <TableHead className="h-8 text-muted-foreground">Image</TableHead>
@@ -340,6 +376,17 @@ function Tasks() {
               const container = task.containers[0];
               return (
                 <TableRow key={task.arn} aria-label={`Task ${shortTaskId(task.id)}`}>
+                  {allowChanges && (
+                    <TableCell className="align-top">
+                      {stoppable(task) && (
+                        <Checkbox
+                          aria-label={`Pick task ${shortTaskId(task.id)}`}
+                          checked={picked.has(task.id)}
+                          onCheckedChange={(on) => pick(task.id, on === true)}
+                        />
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell className="align-top font-mono text-xs" title={task.id}>
                     {shortTaskId(task.id)}
                   </TableCell>

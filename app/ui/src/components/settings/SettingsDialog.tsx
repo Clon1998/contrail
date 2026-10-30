@@ -281,6 +281,18 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     Log in without the AWS CLI
                   </label>
                 </Row>
+                <Row
+                  label="Changes"
+                  hint="Off, Contrail only reads from AWS. On, it can stop tasks and update services (desired count, task definition revision, new deployment), each after a confirmation. Needs the optional ContrailOptionalChanges statement of the IAM policy."
+                >
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.allowChanges}
+                      onCheckedChange={(checked) => void update({ allowChanges: checked === true })}
+                    />
+                    Allow changes to AWS
+                  </label>
+                </Row>
               </Rows>
             )}
 
@@ -308,8 +320,8 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                   <UpdateSettings />
                 </Row>
                 <Row
-                  label="Read-only"
-                  hint="Contrail only reads from AWS and never stores credentials; the AWS SDK uses your SSO token cache."
+                  label="AWS access"
+                  hint="Contrail only reads from AWS unless you allow changes (AWS settings), and never stores credentials; the AWS SDK uses your SSO token cache."
                 >
                   <span />
                 </Row>

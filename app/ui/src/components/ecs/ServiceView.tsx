@@ -1,5 +1,12 @@
 import { useEffect } from "react";
-import { CircleAlertIcon, ExternalLinkIcon, RefreshCwIcon, StarIcon } from "lucide-react";
+import { useState } from "react";
+import {
+  CircleAlertIcon,
+  ExternalLinkIcon,
+  RefreshCwIcon,
+  RocketIcon,
+  StarIcon,
+} from "lucide-react";
 import { commands } from "@/bindings";
 import { LogViewer } from "@/components/logs/LogViewer";
 import { TraceView } from "@/components/logs/TraceView";
@@ -17,6 +24,7 @@ import { HealthDot } from "./HealthDot";
 import { Overview, OverviewSkeleton } from "./Overview";
 import { RouteMap } from "./RouteMap";
 import { ServiceTabs } from "./ServiceTabs";
+import { UpdateServiceDialog } from "./UpdateServiceDialog";
 
 /** The active tab: the selected service inside the logs store of its tab, a trace or a map. */
 export function ServiceView() {
@@ -102,6 +110,8 @@ function Header() {
   const profile = useProfiles((s) => s.selected);
   const favorites = usePrefs((s) => s.prefs.favorites);
   const toggleFavorite = usePrefs((s) => s.toggleFavorite);
+  const allowChanges = usePrefs((s) => s.prefs.settings.allowChanges);
+  const [updating, setUpdating] = useState(false);
   if (!selected || !profile) return null;
 
   const summary = "data" in detail ? detail.data?.summary : undefined;
@@ -132,10 +142,23 @@ function Header() {
       >
         <StarIcon className={pinned ? "fill-amber-400 text-amber-400" : undefined} />
       </Button>
+      <span className="ml-auto" />
+      {allowChanges && "data" in detail && detail.data && (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            tooltip="Desired count, task definition revision or a new deployment"
+            onClick={() => setUpdating(true)}
+          >
+            <RocketIcon /> Update service…
+          </Button>
+          {updating && <UpdateServiceDialog detail={detail.data} open onOpenChange={setUpdating} />}
+        </>
+      )}
       <Button
         variant="ghost"
         size="sm"
-        className="ml-auto"
         tooltip="This service in the AWS console"
         onClick={() =>
           void commands.ecsConsoleLink(selected).then((url) => commands.openConsole(url))
