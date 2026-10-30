@@ -44,6 +44,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         ecs::list_tasks,
         logs::open_service_logs,
         logs::get_log_rows,
+        logs::route_health,
         logs::log_context,
         logs::close_log_view,
         logs::export_log_view,

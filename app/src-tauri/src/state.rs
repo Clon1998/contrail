@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 use contrail_core::auth::AuthProvider;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::{EcsChanges, EcsSource};
+use contrail_core::logs::health::{RouteHealth, route_health};
 use contrail_core::logs::timeline::{Timeline, timeline};
 use contrail_core::logs::{
     FieldMapping, FieldSummary, FilterMode, LogBuffer, LogEvent, LogSource, StreamSelection,
@@ -286,6 +287,15 @@ impl LogView {
                 utc_offset_minutes,
             ),
         }
+    }
+
+    /// How the documents of the service's routes ended, per topic and consumer group: from
+    /// every loaded event (a search doesn't change how documents ended), over the same range as
+    /// the timeline.
+    pub fn route_health(&self, max_buckets: u32) -> RouteHealth {
+        let newest = self.buffer.iter().last().map(|e| e.timestamp);
+        let to = newest.map_or(self.backfilled_until, |n| n.max(self.backfilled_until));
+        route_health(self.buffer.iter(), self.loaded_from, to, max_buckets)
     }
 
     /// The listed rows `offset..offset + limit`.
