@@ -25,6 +25,8 @@ import type {
   Profile,
   ServiceDetail,
   ServiceUpdate,
+  RouteHealth,
+  TopicHealth,
   SavedSearch,
   SearchEntry,
   ServiceKey,
@@ -943,6 +945,58 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         return typeof events === "function"
           ? events(offset, limit)
           : events.slice(offset, offset + limit);
+      }
+      case "route_health": {
+        // Like the Rust side, simpler: over the loaded events, in equal buckets.
+        const events = views.get(args?.viewId as number);
+        if (!events) throw apiError("notFound", "log view is closed");
+        const rows = typeof events === "function" ? [] : events;
+        const buckets = Math.max(1, args?.maxBuckets as number);
+        const times = rows.map((e) => Date.parse(e.timestamp));
+        const from = times.length > 0 ? Math.min(...times) : Date.now();
+        const to = times.length > 0 ? Math.max(...times) : from;
+        const bucketMs = Math.max(1_000, Math.ceil((to - from + 1) / buckets));
+        const topics = new Map<string, TopicHealth>();
+        for (const e of rows) {
+          const status = e.status;
+          const state = status?.state.toUpperCase();
+          const outcome =
+            state === "COMPLETED" || state === "PUBLISHED"
+              ? "done"
+              : state === "RETRYING"
+                ? "retrying"
+                : state === "FAILED"
+                  ? "failed"
+                  : null;
+          if (!status?.topic || !outcome) continue;
+          const key = `${status.topic}|${status.consumerGroup ?? ""}`;
+          const health = topics.get(key) ?? {
+            topic: status.topic,
+            consumerGroup: status.consumerGroup,
+            done: 0,
+            retrying: 0,
+            failed: 0,
+            doneOverTime: Array<number>(buckets).fill(0),
+            failedOverTime: Array<number>(buckets).fill(0),
+          };
+          const bucket = Math.min(
+            buckets - 1,
+            Math.floor((Date.parse(e.timestamp) - from) / bucketMs),
+          );
+          health[outcome] += 1;
+          if (outcome === "done")
+            health.doneOverTime[bucket] = (health.doneOverTime[bucket] ?? 0) + 1;
+          if (outcome === "failed")
+            health.failedOverTime[bucket] = (health.failedOverTime[bucket] ?? 0) + 1;
+          topics.set(key, health);
+        }
+        return {
+          start: new Date(from).toISOString(),
+          bucketMs,
+          topics: [...topics.values()].sort(
+            (a, b) => b.failed - a.failed || a.topic.localeCompare(b.topic),
+          ),
+        } satisfies RouteHealth;
       }
       case "log_context": {
         const events = views.get(args?.viewId as number);

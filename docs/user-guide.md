@@ -23,6 +23,10 @@ page has the details.
 - A service shows its tasks (running and recently stopped, with stop reasons and exit codes), deployments, task
   definition, recent events and the environment variables (secret-looking values masked until clicked). It
   refreshes every 30 s. The **⋯** menu next to its name has **Open in ECS console**.
+- **Route health** (Routes card of a routing-framework service): per topic and consumer group, how many documents
+  went through (completed or published), are retrying or failed in the logs loaded, the failure rate and the
+  throughput over time. Counted from the status events of the service's logs (its time window), so it needs the
+  logs loaded and reads nothing extra from AWS. Topics without events in the window are listed too.
 - **Changes** (only with **Settings → AWS → Allow changes to AWS**, off by default): tick tasks in the task list
   and **Stop …** them with a reason; **Update service…** in the **⋯** menu next to its name changes the desired count or the task
   definition revision, or forces a new deployment, like the console's quick update. Each change shows exactly what
