@@ -5,6 +5,7 @@ pub mod buffer;
 pub mod export;
 pub mod fields;
 pub mod filter;
+pub mod health;
 mod json;
 pub mod location;
 pub mod mapping;
