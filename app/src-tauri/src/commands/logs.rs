@@ -44,8 +44,10 @@ pub struct LogViewInfo {
     pub complete: bool,
 }
 
-/// How many events a view loads at first (the newest); scrolling up loads older ones.
-const INITIAL_EVENTS: usize = 2_000;
+/// How many events opening a view reads before it is shown (the newest, about a screenful):
+/// the UI then loads older ones in the background up to its usual first amount, and more when
+/// scrolled up.
+const FIRST_EVENTS: usize = 200;
 /// How many older events one `load_older` adds (at least, unless the window ends first).
 const OLDER_EVENTS: usize = 5_000;
 /// Listed rows on each side of the old first row that `load_older` returns along.
@@ -76,7 +78,12 @@ async fn open_logs(
 ) -> ApiResult<LogViewInfo> {
     // Check the window before calling AWS.
     let range = window.range(OffsetDateTime::now_utc())?;
-    let detail = state.ecs.describe_service(&ctx, &service).await?;
+    // Both calls at once: `try_join!` polls the two futures together and returns when both are
+    // done, or with the first error (like `CompletableFuture.allOf` in Java, failing fast).
+    let (detail, mut tasks) = tokio::try_join!(
+        state.ecs.describe_service(&ctx, &service),
+        state.ecs.list_tasks(&ctx, &service, true),
+    )?;
     let task_definition = detail.task_definition.ok_or_else(|| {
         ApiError::new(
             ErrorCode::LogsUnavailable,
@@ -84,7 +91,6 @@ async fn open_logs(
         )
     })?;
     let location = resolve_log_location(&task_definition)?;
-    let mut tasks = state.ecs.list_tasks(&ctx, &service, true).await?;
     if let Some(task_id) = &task_id {
         tasks.retain(|t| &t.id == task_id);
         if tasks.is_empty() {
@@ -109,7 +115,7 @@ async fn open_logs(
         &selection,
         range.end,
         range.start,
-        INITIAL_EVENTS,
+        FIRST_EVENTS,
         capacity,
     )
     .await?;
@@ -159,14 +165,25 @@ pub struct OlderEvents {
     pub rows: Vec<LogEvent>,
 }
 
-/// Loads the next older events of a view's window (newest first, in slices).
+/// Loads the next older events of a view's window (newest first, in slices): at least
+/// `at_least` of them (by default as many as one scroll to the top asks for), unless the window
+/// starts first.
 #[tauri::command]
 #[specta::specta]
-pub async fn load_older(state: State<'_, AppState>, view_id: u32) -> ApiResult<OlderEvents> {
-    load_older_events(&state, view_id).await
+pub async fn load_older(
+    state: State<'_, AppState>,
+    view_id: u32,
+    at_least: Option<u32>,
+) -> ApiResult<OlderEvents> {
+    let target = at_least.map_or(OLDER_EVENTS, |n| n as usize);
+    load_older_events(&state, view_id, target).await
 }
 
-async fn load_older_events(state: &AppState, view_id: u32) -> ApiResult<OlderEvents> {
+async fn load_older_events(
+    state: &AppState,
+    view_id: u32,
+    target: usize,
+) -> ApiResult<OlderEvents> {
     // Copy what the read needs and release the lock: it can't be held across an `.await`.
     let (ctx, selection, from, window_start, room) = {
         let views = state.views.lock().expect("views lock poisoned");
@@ -187,7 +204,7 @@ async fn load_older_events(state: &AppState, view_id: u32) -> ApiResult<OlderEve
             &selection,
             from,
             window_start,
-            OLDER_EVENTS,
+            target,
             room,
         )
         .await?;
@@ -819,6 +836,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn opens_with_a_screenful_and_tops_up_by_as_many_as_asked() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "orders-api");
+        let six_hours = TimeWindow::Last { minutes: 360 };
+        let info = open_logs(&state, ctx, service, six_hours, None)
+            .await
+            .unwrap();
+        // The first slices stop once a screenful is there (a slice is read whole, so a few more).
+        assert!(info.stats.total as usize >= FIRST_EVENTS);
+        assert!((info.stats.total as usize) < OLDER_EVENTS);
+
+        let small = load_older_events(&state, info.view_id, 50).await.unwrap();
+        let large = load_older_events(&state, info.view_id, OLDER_EVENTS)
+            .await
+            .unwrap();
+        assert!(small.added > 0 && small.added < large.added);
+    }
+
+    #[tokio::test]
     async fn a_long_window_opens_with_the_newest_events_and_loads_older_ones() {
         let state = AppState::demo();
         let (ctx, service) = demo_service("demo-core", "orders-api");
@@ -831,7 +867,9 @@ mod tests {
         let mut total = info.stats.total;
         let mut loaded_from = info.loaded_from;
         for _ in 0..50 {
-            let older = load_older_events(&state, info.view_id).await.unwrap();
+            let older = load_older_events(&state, info.view_id, OLDER_EVENTS)
+                .await
+                .unwrap();
             assert!(older.loaded_from <= loaded_from, "goes back in time");
             assert_eq!(older.stats.total, total + older.added);
             // The returned rows end right after the previous first row's neighbourhood.

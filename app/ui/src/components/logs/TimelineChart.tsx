@@ -47,6 +47,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const visible = useLogs((s) => s.visible);
   const revision = useLogs((s) => s.searchRevision);
   const focus = useLogs((s) => s.focus);
+  const viewport = useLogs((s) => s.viewport);
   const setFocus = useLogs((s) => s.setFocus);
   const markers = useServiceMarkers();
   const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
@@ -98,6 +99,9 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const spansDays = timeline ? count * timeline.bucketMs >= 86_400_000 : false;
   const hovered = hover !== null && timeline ? timeline.buckets[hover] : undefined;
   const focused = focus && timeline && count > 0 ? rangePixels(timeline, focus, width) : null;
+  // Where the rows on screen are in the window: a scrollbar thumb along the time axis.
+  const onScreen =
+    viewport && timeline && count > 0 ? rangePixels(timeline, viewport, width) : null;
   // Where the chart starts and ends, for the markers' positions.
   const [start, end] =
     timeline && count > 0
@@ -194,6 +198,14 @@ export function TimelineChart({ viewId }: { viewId: number }) {
             />
           ))}
         </svg>
+        {onScreen && !drag && (
+          <div
+            aria-hidden
+            data-testid="timeline-viewport"
+            className="pointer-events-none absolute inset-y-0 border-x border-foreground/40 bg-foreground/[0.06]"
+            style={{ left: onScreen.left, width: Math.max(3, onScreen.width) }}
+          />
+        )}
         {focused && !drag && (
           <div
             aria-hidden
@@ -238,6 +250,16 @@ export function TimelineChart({ viewId }: { viewId: number }) {
           </div>
         )}
       </div>
+      {timeline && count > 0 && (
+        <div aria-hidden className="relative mt-0.5 h-0.5 rounded-full bg-border">
+          {onScreen && (
+            <div
+              className="absolute inset-y-0 rounded-full bg-primary"
+              style={{ left: onScreen.left, width: Math.max(8, onScreen.width) }}
+            />
+          )}
+        </div>
+      )}
       {timeline && count > 0 && (
         <div className="flex justify-between tabular-nums">
           <span>{timelineLabel(bucketRange(timeline, 0)[0], timeZone, spansDays)}</span>

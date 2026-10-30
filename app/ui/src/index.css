@@ -126,15 +126,19 @@
   }
 }
 
-/* Skeletons: a soft light sweeping across placeholders while content loads. */
+/* Skeletons: a soft light sweeping across placeholders while content loads. The light is a
+   narrow band in an image three times as wide as the window, placed against the window
+   (`background-attachment: fixed` in the Skeleton): it starts and ends out of sight, so the loop
+   doesn't jump, and one band crosses every placeholder at once, whatever its width. Linear, so it
+   doesn't stall at the ends. */
 @theme {
-  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.8s linear infinite;
   @keyframes shimmer {
     from {
-      background-position: 150% 0;
+      background-position: 100% 0;
     }
     to {
-      background-position: -50% 0;
+      background-position: 0% 0;
     }
   }
 }
