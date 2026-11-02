@@ -495,6 +495,34 @@ test("surrounding lines: the lines of the same task around an expanded line", as
   await expect(lines).toContainText(`Ingested event #${100000 - 6 * 50} `);
 });
 
+test("right click on a line offers the actions of its details", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  const row = list.getByRole("listitem").filter({ hasText: "FAILED" }).first();
+  await row.getByRole("button").first().click({ button: "right" });
+  const menu = page.getByRole("menu");
+  for (const name of [
+    "Expand",
+    "Copy message",
+    "Copy JSON",
+    "Copy as single line",
+    "Surrounding lines",
+    "Hide lines like this",
+    "CloudWatch console",
+    "Show this document",
+    "Trace across services",
+  ]) {
+    await expect(menu.getByRole("menuitem", { name })).toBeVisible();
+  }
+  // The same as the buttons of the expanded line.
+  await menu.getByRole("menuitem", { name: "Expand" }).click();
+  await expect(row.getByRole("button", { name: "Surrounding lines" })).toBeVisible();
+
+  // An action that opens a dialog works from the menu too.
+  await row.getByRole("button").first().click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Surrounding lines" }).click();
+  await expect(page.getByRole("dialog", { name: "Surrounding lines" })).toBeVisible();
+});
+
 test("deployments, stopped tasks and service events show between the lines", async ({ page }) => {
   await openLogs(page, "demo-core", "payments-worker");
   const stopped = page

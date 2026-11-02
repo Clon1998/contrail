@@ -49,6 +49,7 @@ const GROUPS: { title: string; keys: [string[], string][] }[] = [
       [["Click"], "Hide or show a level (level chips)"],
       [["Middle click"], "Only this level (level chips)"],
       [["Right click"], "More level options (level chips)"],
+      [["Right click"], "A line's actions: copy, surrounding lines, trace…"],
       [MOD === "⌘" ? ["⌘", "↑"] : ["Ctrl", "Home"], "Top of the list (also Home)"],
       [MOD === "⌘" ? ["⌘", "↓"] : ["Ctrl", "End"], "Bottom of the list (also End)"],
       [["T"], "Change the time window (type 15m, 3h, yesterday…)"],
