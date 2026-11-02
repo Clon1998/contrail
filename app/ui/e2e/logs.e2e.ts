@@ -517,21 +517,26 @@ test("a session that ran out offers to log in where loading failed, then loads a
 
 test("surrounding lines: the lines of the same task around an expanded line", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "event-ingest");
-  await list.getByRole("button", { name: /Ingested event #100000 / }).click();
+  await expect(list).toHaveAttribute("aria-rowcount", /^10000\d$/);
+  // Paused, so no newer line of the task comes in while the dialog is open.
+  await page.getByRole("button", { name: "Pause live tail" }).click();
+  await expect(page.getByRole("status", { name: "Live tail: Paused" })).toBeVisible();
+  const newest = Number(await list.getAttribute("aria-rowcount"));
+  await list.getByRole("button", { name: new RegExp(`Ingested event #${newest} `) }).click();
   await list.getByRole("button", { name: "Surrounding lines" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Surrounding lines" });
   const lines = dialog.getByRole("list", { name: "Surrounding lines" });
-  await expect(lines.locator("[aria-current]")).toContainText("Ingested event #100000 ");
+  await expect(lines.locator("[aria-current]")).toContainText(`Ingested event #${newest} `);
   // Its task logs every sixth event of this service: the others are another task's.
-  await expect(lines).toContainText("Ingested event #99994 ");
-  await expect(lines).not.toContainText("Ingested event #99999 ");
+  await expect(lines).toContainText(`Ingested event #${newest - 6} `);
+  await expect(lines).not.toContainText(`Ingested event #${newest - 1} `);
   // The newest line: 25 before it, none after.
   await expect(lines.getByRole("listitem")).toHaveCount(26);
   await expect(dialog.getByRole("button", { name: "Later lines" })).toHaveCount(0);
   await dialog.getByRole("button", { name: "Earlier lines" }).click();
   await expect(lines.getByRole("listitem")).toHaveCount(51);
-  await expect(lines).toContainText(`Ingested event #${100000 - 6 * 50} `);
+  await expect(lines).toContainText(`Ingested event #${newest - 6 * 50} `);
 });
 
 test("right click on a line offers the actions of its details", async ({ page }) => {
