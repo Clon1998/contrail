@@ -22,7 +22,7 @@ use tauri::ipc::Channel;
 use time::OffsetDateTime;
 
 use crate::error::{ApiError, ApiResult, ErrorCode};
-use crate::live::{self, Control, LiveTask, LiveUpdate};
+use crate::live::{self, Control, LiveHandle, LiveTask, LiveUpdate};
 use crate::state::{AppState, LogView};
 
 /// What the UI needs to know about an opened log view.
@@ -461,7 +461,9 @@ pub fn log_timeline(
 ) -> ApiResult<Timeline> {
     let views = state.views.lock().expect("views lock poisoned");
     let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
-    Ok(view.timeline(max_buckets, utc_offset_minutes))
+    let running = view.live.as_ref().is_some_and(LiveHandle::is_running);
+    let now = running.then(|| Timestamp(OffsetDateTime::now_utc()));
+    Ok(view.timeline(max_buckets, utc_offset_minutes, now))
 }
 
 /// Frees a view's buffer and stops its live tail.
@@ -704,7 +706,7 @@ mod tests {
                 focus: None,
             };
             apply_filter(state, info.view_id, spec, &[]).unwrap();
-            let timeline = state.views.lock().unwrap()[&info.view_id].timeline(60, 0);
+            let timeline = state.views.lock().unwrap()[&info.view_id].timeline(60, 0, None);
             assert!(timeline.buckets.len() <= 61);
             timeline
                 .buckets

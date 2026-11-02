@@ -111,6 +111,11 @@ impl LiveHandle {
         // Fails only if the task has already ended, which is fine.
         let _ = self.control.send(control);
     }
+
+    /// Whether the tail is following new events: not paused, and not ended (e.g. by an error).
+    pub fn is_running(&self) -> bool {
+        *self.control.borrow() == Control::Run && !self.task.is_finished()
+    }
 }
 
 impl Drop for LiveHandle {
