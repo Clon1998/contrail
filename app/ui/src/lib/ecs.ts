@@ -35,6 +35,23 @@ export function shortTaskId(id: string): string {
   return id.slice(0, 8);
 }
 
+/**
+ * Hands out tone numbers `0..count` to task IDs in the order they are first asked for, and keeps
+ * them: a task keeps its colour while tasks come and go, and the tasks seen one after another get
+ * different ones.
+ */
+export function toneAssigner(count: number): (id: string) => number {
+  const tones = new Map<string, number>();
+  return (id) => {
+    let tone = tones.get(id);
+    if (tone === undefined) {
+      tone = tones.size % count;
+      tones.set(id, tone);
+    }
+    return tone;
+  };
+}
+
 /** `orders-api` from `arn:aws:ecs:…:cluster/orders-api`. */
 export function nameFromArn(arn: string): string {
   return arn.split("/").at(-1) ?? arn;

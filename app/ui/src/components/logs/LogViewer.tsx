@@ -47,6 +47,7 @@ import { LogListSkeleton } from "./LogListSkeleton";
 import { OlderMarker } from "./OlderMarker";
 import { SearchBar } from "./SearchBar";
 import { ShareMenu } from "./ShareMenu";
+import { TaskTag } from "./TaskTag";
 import { TimelineChart } from "./TimelineChart";
 import { TimeWindowPicker } from "./TimeWindowPicker";
 import { Hint } from "@/components/ui/tooltip";
@@ -340,7 +341,7 @@ function TaskPicker({ service, taskId }: { service: ServiceRef; taskId: string |
         {missing && <SelectItem value={taskId}>task {shortTaskId(taskId)}</SelectItem>}
         {sorted.map((task) => (
           <SelectItem key={task.id} value={task.id} className="font-mono text-xs">
-            task {shortTaskId(task.id)}
+            task <TaskTag taskId={task.id} />
             <span
               className={cn(
                 "text-muted-foreground",

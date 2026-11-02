@@ -1,7 +1,6 @@
 import { ChevronRightIcon } from "lucide-react";
 import { cn } from "cn";
 import type { LogEvent } from "@/bindings";
-import { shortTaskId } from "@/lib/ecs";
 import { highlightSegments } from "@/lib/highlight";
 import { formatFullTime, formatLogTime, stripAnsi } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
@@ -10,6 +9,7 @@ import { Ansi } from "./Ansi";
 import { columnText, columnValue, OPTIONAL_COLUMNS, useLogColumns } from "./columns";
 import { LEVEL_TONE } from "./levels";
 import { StateBadge } from "./StateBadge";
+import { TaskTag } from "./TaskTag";
 import { LogDetails } from "./LogDetails";
 
 /** One log line: time, level, task, optional columns and the message; expands on click. */
@@ -80,14 +80,7 @@ export function LogRow({
         >
           {line.level ?? "·"}
         </span>
-        {showTask && (
-          <span
-            className="truncate rounded bg-muted px-1 text-muted-foreground"
-            title={event.taskId}
-          >
-            {shortTaskId(event.taskId)}
-          </span>
-        )}
+        {showTask && <TaskTag taskId={event.taskId} className="truncate" />}
         {OPTIONAL_COLUMNS.filter((c) => columns.includes(c.id)).map((c) => (
           <span
             key={c.id}

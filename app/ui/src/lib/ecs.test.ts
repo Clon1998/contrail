@@ -7,6 +7,7 @@ import {
   serviceHealth,
   looksSecret,
   shortTaskId,
+  toneAssigner,
 } from "./ecs";
 
 describe("serviceHealth", () => {
@@ -94,5 +95,12 @@ describe("groupEvents", () => {
         earliest: "2026-10-23T00:00:00Z",
       },
     ]);
+  });
+});
+
+describe("toneAssigner", () => {
+  it("gives tasks different tones in the order they show up, and keeps them", () => {
+    const tone = toneAssigner(3);
+    expect(["a", "b", "a", "c", "d", "b"].map(tone)).toEqual([0, 1, 0, 2, 0, 1]);
   });
 });
