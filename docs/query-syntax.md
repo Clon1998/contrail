@@ -5,16 +5,16 @@ to CloudWatch. All terms must match.
 
 | Example | Matches |
 |---|---|
-| `timeout` | the message contains "timeout" (any case) |
-| `"read timed out"` | the message contains the phrase |
-| `/time(out\|d out)/` | the message matches the regular expression (any case, [Rust syntax](https://docs.rs/regex/latest/regex/#syntax)) |
+| `timeout` | the message or a field's value (e.g. `trace.id`) contains "timeout" (any case) |
+| `"read timed out"` | the message or a field's value contains the phrase |
+| `/time(out\|d out)/` | the message or a field's value matches the regular expression (any case, [Rust syntax](https://docs.rs/regex/latest/regex/#syntax)) |
 | `level:ERROR` | the level is ERROR |
 | `level>=WARN` | WARN or ERROR (also `>`, `<`, `<=`; order: TRACE < DEBUG < INFO < WARN < ERROR) |
 | `trace.id:abc123` | the field equals the value (any case) |
 | `log.logger:*Camel*` | the field matches the pattern (`*` any text, `?` one character) |
 | `http.response.status_code>=500` | a numeric field compared |
 | `task:5f2a` | the task ID starts with "5f2a" |
-| `message:x` | the message contains "x" (same as plain `x`) |
+| `message:x` | only the message contains "x" (not the fields) |
 | `stream:*orders*` | the log stream matches |
 | `-healthcheck` | excludes: any term can be negated |
 
@@ -27,8 +27,8 @@ Field names are the dotted names shown when a line is expanded (`log.logger`, `p
 - **Filter / Highlight:** filter lists only matching lines; highlight keeps all lines and marks matches.
 - **`.*` (regex mode):** the whole search is one regular expression (any case): no query syntax, so spaces,
   quotes and slashes need no escaping, e.g. `order \d+ (failed|timed out)`.
-- **whole line:** text and regular expressions search the whole raw line (all JSON fields, the full stack
-  trace) instead of just the message.
+- **whole line:** text and regular expressions search the whole raw line (also the keys and the full stack
+  trace) instead of the message and the field values.
 - **Level chips:** click a level to hide or show it (combined with the search); middle click shows only that
   level (again: all levels); right click offers "only", "and above" and "show all".
 - **Fields (F):** the panel beside the list shows every field of the events that match the search: in how many
