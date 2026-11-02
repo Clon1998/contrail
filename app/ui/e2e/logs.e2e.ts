@@ -160,6 +160,24 @@ test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", a
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
 });
 
+test("Ctrl+Home and Ctrl+End jump to the first and the last row", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+
+  await page.keyboard.press("Control+Home");
+  await expect(list.getByText("Ingested event #1 ", { exact: false }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+
+  await page.keyboard.press("Control+End");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+
+  // Not while typing: there they move the cursor.
+  await page.getByRole("textbox", { name: /Search/ }).focus();
+  await page.keyboard.press("Control+Home");
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+});
+
 test("live: new events arrive, pause stops them, resume continues", async ({ page }) => {
   const list = await openLogs(page, "demo-core", "orders-api");
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
