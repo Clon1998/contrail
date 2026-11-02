@@ -26,6 +26,8 @@ const MIN_BAR_PX = 5;
 const MAX_BAR_PX = 6;
 /** While events arrive live, the timeline is asked again at most this often. */
 const REFRESH_MS = 1_000;
+/** While the tail follows, the timeline is asked again this often even without new events. */
+const CLOCK_MS = 5_000;
 
 /** Bottom to top: errors first, so they stay visible at the foot of every bar. */
 const STACK: { key: keyof LevelCounts; label: string; fill: string }[] = [
@@ -62,6 +64,15 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   // on a busy machine ends before the state set on pointer down is rendered).
   const dragStart = useRef<number | null>(null);
   const lastFetch = useRef(0);
+  // The chart reaches up to now while the tail follows (Rust adds the time since the last event),
+  // so it moves along with the clock even when nothing is logged.
+  const following = useLogs((s) => s.live?.state === "live" || s.live?.state === "polling");
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!following) return;
+    const timer = setInterval(() => setTick((n) => n + 1), CLOCK_MS);
+    return () => clearInterval(timer);
+  }, [following]);
 
   // The chart's width decides how many buckets fit.
   useEffect(() => {
@@ -90,7 +101,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
       current = false;
       clearTimeout(timer);
     };
-  }, [viewId, total_, visible, revision, width, timeZone]);
+  }, [viewId, total_, visible, revision, width, timeZone, tick]);
 
   const count = timeline?.buckets.length ?? 0;
   const highest = timeline ? Math.max(1, ...timeline.buckets.map(total)) : 1;

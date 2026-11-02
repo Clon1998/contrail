@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownToLineIcon, ArrowUpToLineIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { isTyping } from "@/lib/keys";
 import { isToday } from "@/lib/logs";
 import { markersBetween } from "@/lib/markers";
 import { cachedIndexOf, PAGE_SIZE, type ScrollAnchor, useLogs } from "@/stores/logs";
@@ -216,6 +217,28 @@ export function LogList({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total, virtualizer]);
+
+  // Ctrl+Home / Ctrl+End (also plain Home / End, and ⌘↑ / ⌘↓ on macOS): to the top or the bottom
+  // of the list. The browser does this only while the list has the focus, which it rarely has.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target instanceof Element ? event.target : null;
+      // Not while typing, nor inside a dialog or an open menu (they use the keys themselves).
+      if (event.defaultPrevented || event.altKey || event.shiftKey || isTyping(target)) return;
+      if (target?.closest('[role="dialog"], [role="menu"], [role="listbox"]')) return;
+      const top = event.key === "Home" || (event.metaKey && event.key === "ArrowUp");
+      const bottom = event.key === "End" || (event.metaKey && event.key === "ArrowDown");
+      if ((!top && !bottom) || total === 0) return;
+      event.preventDefault();
+      if (top) virtualizer.scrollToOffset(0);
+      else if (newestFirst) virtualizer.scrollToIndex(total - 1, { align: "end" });
+      else scrollToNewest();
+      setAtNewest(newestFirst ? top : bottom);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total, newestFirst, virtualizer]);
 
   // Once the listed events reach back before today, every row shows its date: one format (and
   // column width) for the whole list.

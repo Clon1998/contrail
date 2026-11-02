@@ -48,7 +48,9 @@ page has the details.
   CloudWatch split into one event per line are joined again. **Field mapping** (log toolbar) handles JSON logs with
   other field names.
 - The list scrolls smoothly through up to 100,000 lines, starts at the newest, and expands a line into its fields,
-  raw JSON, embedded JSON and stack trace (with copy buttons). The task picker in the toolbar (or a task's **Logs**
+  raw JSON, embedded JSON and stack trace (with copy buttons); right-click a line for the same actions without
+  expanding it. **Ctrl+Home** / **Ctrl+End** (⌘↑ / ⌘↓ on macOS) jump to the top or bottom of the list. With
+  several tasks, each task's short ID has its own colour. The task picker in the toolbar (or a task's **Logs**
   button) shows only one task; the columns button adds logger, thread or correlation/trace ID. Logger names are
   shortened like Spring Boot does (`c.e.orders.OrderService`); hover for the full name. The wrap button (or **W**)
   wraps long messages instead of cutting them off. Times show the date too (`10-26 14:03:22.123`) on every row once
@@ -61,6 +63,7 @@ page has the details.
   are, so you see how much lies before and after while scrolling. Hover a bar for its time and counts; click a bar, or drag across bars, to focus the list on
   that part of the window. The time window and the loaded events stay as they are: the timeline says which part is
   focused, and **Show all** under it (or the × on the focused part) brings back the whole window instantly.
+  While the view follows live, the timeline reaches up to now: minutes without a new line show as empty bars.
 - **Service events** (the rocket button in the toolbar hides them): deployments starting and finishing, stopped
   tasks with their stop reason and exit codes, and the service's events ("has started 1 tasks", placement
   problems; not the "steady state" ones) show as lines between the log lines at the time they happened, and on
@@ -86,7 +89,8 @@ page has the details.
 
 ## Search
 
-- Search the loaded logs: `timeout level>=WARN trace.id:abc123 -healthcheck`, regular expressions, field globs and
+- Search the loaded logs (plain words look in the message and every field's value, e.g. a trace ID or an API
+  key): `timeout level>=WARN trace.id:abc123 -healthcheck`, regular expressions, field globs and
   comparisons (or one regular expression with `.*`), as a filter or highlighted with next/previous (Enter, F3).
   See [Search syntax](query-syntax.md).
 - **Earlier searches:** ↑ / ↓ in the search box step through the searches run before, this service's first, with

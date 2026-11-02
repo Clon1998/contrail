@@ -511,7 +511,7 @@ export function SearchBar() {
             </button>
           ))}
         </div>
-        <Hint content="Search all fields and the full stack trace, not just the message">
+        <Hint content="Search the whole raw line (keys and the full stack trace too), not just the message and field values">
           <label className="flex items-center gap-1.5 text-muted-foreground">
             <Checkbox
               checked={search.raw}

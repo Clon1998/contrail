@@ -160,6 +160,24 @@ test("100,000 lines: starts at the newest, scrolls to the oldest, jumps back", a
   await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
 });
 
+test("Ctrl+Home and Ctrl+End jump to the first and the last row", async ({ page }) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+
+  await page.keyboard.press("Control+Home");
+  await expect(list.getByText("Ingested event #1 ", { exact: false }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeVisible();
+
+  await page.keyboard.press("Control+End");
+  await expect(list.getByText("Ingested event #100000 ")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+
+  // Not while typing: there they move the cursor.
+  await page.getByRole("textbox", { name: /Search/ }).focus();
+  await page.keyboard.press("Control+Home");
+  await expect(page.getByRole("button", { name: "Jump to latest" })).toBeHidden();
+});
+
 test("live: new events arrive, pause stops them, resume continues", async ({ page }) => {
   const list = await openLogs(page, "demo-core", "orders-api");
   await expect(page.getByRole("status", { name: "Live tail: Live" })).toBeVisible();
@@ -475,6 +493,34 @@ test("surrounding lines: the lines of the same task around an expanded line", as
   await dialog.getByRole("button", { name: "Earlier lines" }).click();
   await expect(lines.getByRole("listitem")).toHaveCount(51);
   await expect(lines).toContainText(`Ingested event #${100000 - 6 * 50} `);
+});
+
+test("right click on a line offers the actions of its details", async ({ page }) => {
+  const list = await openLogs(page, "demo-core", "orders-api");
+  const row = list.getByRole("listitem").filter({ hasText: "FAILED" }).first();
+  await row.getByRole("button").first().click({ button: "right" });
+  const menu = page.getByRole("menu");
+  for (const name of [
+    "Expand",
+    "Copy message",
+    "Copy JSON",
+    "Copy as single line",
+    "Surrounding lines",
+    "Hide lines like this",
+    "CloudWatch console",
+    "Show this document",
+    "Trace across services",
+  ]) {
+    await expect(menu.getByRole("menuitem", { name })).toBeVisible();
+  }
+  // The same as the buttons of the expanded line.
+  await menu.getByRole("menuitem", { name: "Expand" }).click();
+  await expect(row.getByRole("button", { name: "Surrounding lines" })).toBeVisible();
+
+  // An action that opens a dialog works from the menu too.
+  await row.getByRole("button").first().click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Surrounding lines" }).click();
+  await expect(page.getByRole("dialog", { name: "Surrounding lines" })).toBeVisible();
 });
 
 test("deployments, stopped tasks and service events show between the lines", async ({ page }) => {

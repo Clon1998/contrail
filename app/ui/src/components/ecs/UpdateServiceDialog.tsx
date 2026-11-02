@@ -122,18 +122,24 @@ export function UpdateServiceDialog({
           />
           <span className="text-muted-foreground">Task definition</span>
           <Select value={revision} onValueChange={setRevision}>
-            <SelectTrigger size="sm" aria-label="Task definition revision" className="font-mono">
+            <SelectTrigger
+              size="sm"
+              aria-label="Task definition revision"
+              title={revision}
+              // Long family names: cut off in the trigger instead of widening the dialog.
+              className="w-full min-w-0 font-mono *:data-[slot=select-value]:block *:data-[slot=select-value]:truncate"
+            >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-w-[calc(100vw-2rem)]">
               {/* The current one even before the list is there (or if it isn't in it). */}
               {!(revisions ?? []).includes(current) && (
-                <SelectItem value={current} className="font-mono">
+                <SelectItem value={current} className="font-mono break-all">
                   {current} (current)
                 </SelectItem>
               )}
               {(revisions ?? []).map((r) => (
-                <SelectItem key={r} value={r} className="font-mono">
+                <SelectItem key={r} value={r} className="font-mono break-all">
                   {r}
                   {r === current && " (current)"}
                 </SelectItem>
@@ -157,11 +163,11 @@ export function UpdateServiceDialog({
                   <span className="text-muted-foreground">{c.label}</span>
                   {c.from !== null && (
                     <>
-                      <span className="font-mono">{c.from}</span>
+                      <span className="font-mono break-all">{c.from}</span>
                       <ArrowRightIcon className="size-3.5 text-muted-foreground" />
                     </>
                   )}
-                  <span className="font-mono font-medium">{c.to}</span>
+                  <span className="font-mono font-medium break-all">{c.to}</span>
                 </li>
               ))}
             </ul>

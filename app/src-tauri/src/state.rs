@@ -264,9 +264,17 @@ impl LogView {
     /// The listed events (the matches when filtering, every event otherwise) counted over time,
     /// from as far back as events are loaded (a long window loads newest first: what isn't
     /// loaded yet must not look like "no events") to the end or the newest event, if later.
-    pub fn timeline(&self, max_buckets: u32, utc_offset_minutes: i32) -> Timeline {
+    /// While the live tail runs, `now` is passed and the chart reaches it: a quiet stretch shows
+    /// as empty bars at the end instead of the last event sitting at the right edge.
+    pub fn timeline(
+        &self,
+        max_buckets: u32,
+        utc_offset_minutes: i32,
+        now: Option<Timestamp>,
+    ) -> Timeline {
         let newest = self.buffer.iter().last().map(|e| e.timestamp);
         let to = newest.map_or(self.backfilled_until, |n| n.max(self.backfilled_until));
+        let to = now.map_or(to, |now| to.max(now));
         let filtering = self
             .filter
             .as_ref()
@@ -378,6 +386,24 @@ mod tests {
             .iter()
             .map(|e| (e.timestamp.0 - start).whole_seconds())
             .collect()
+    }
+
+    #[test]
+    fn a_running_tail_stretches_the_timeline_to_now() {
+        let view = view().with_loaded(at(0), at(0));
+        // Paused or a past window: up to the newest event (or the backfill's end).
+        let still = view.timeline(100, 0, None);
+        let end = |t: &Timeline| {
+            t.start.0 + Duration::milliseconds(i64::from(t.bucket_ms) * t.buckets.len() as i64)
+        };
+        assert!(end(&still) <= at(12).0);
+        assert_eq!(still.buckets.iter().map(|b| b.total()).sum::<u32>(), 10);
+        // Live, with nothing logged for a minute: the quiet minute shows as empty bars at the end.
+        let live = view.timeline(100, 0, Some(at(70)));
+        assert!(end(&live) > at(70).0);
+        let counted: u32 = live.buckets.iter().map(|b| b.total()).sum();
+        assert_eq!(counted, 10);
+        assert_eq!(live.buckets.last().map(|b| b.total()), Some(0));
     }
 
     #[test]

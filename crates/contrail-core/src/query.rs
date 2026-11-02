@@ -1,7 +1,7 @@
 //! Session search: a small query language evaluated against the events of a view.
 //!
 //! ```text
-//! timeout                 free text (case-insensitive, in the message)
+//! timeout                 free text (case-insensitive, in the message or a field's value)
 //! "read timed out"        a phrase
 //! /time(out|d out)/       a regular expression (case-insensitive)
 //! level:ERROR level>=WARN the log level (TRACE < DEBUG < INFO < WARN < ERROR)
@@ -14,6 +14,8 @@
 //! ```
 //!
 //! All terms must match (AND).
+
+use std::borrow::Cow;
 
 use regex::{Regex, RegexBuilder};
 use serde::Serialize;
@@ -35,8 +37,10 @@ pub enum Op {
 /// What one term tests.
 #[derive(Debug, Clone)]
 pub enum Condition {
-    /// Contains this (lower-cased) text.
+    /// Contains this (lower-cased) text: the message or a field's value (see [`MatchOptions`]).
     Text(String),
+    /// The message contains this (lower-cased) text (`message:…`).
+    Message(String),
     Regex(Regex),
     Level(Op, Level),
     /// The task ID starts with this (lower-cased) text.
@@ -307,7 +311,7 @@ fn parse_term(body: &str, start: usize, end: usize) -> Result<Condition, QueryEr
             })?;
             Ok(Condition::Level(op, level))
         }
-        "message" | "msg" if op == Op::Is => Ok(Condition::Text(value.to_lowercase())),
+        "message" | "msg" if op == Op::Is => Ok(Condition::Message(value.to_lowercase())),
         "task" if op == Op::Is => Ok(Condition::Task(value.to_lowercase())),
         "state" if op == Op::Is => Ok(Condition::State(value.to_lowercase())),
         "correlation" if op == Op::Is => Ok(Condition::Correlation(value.to_lowercase())),
@@ -362,7 +366,8 @@ fn first_line(text: &str) -> &str {
 /// Options that change what text terms look at.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct MatchOptions {
-    /// Search the whole raw line (all JSON fields, the full stack trace), not just the message.
+    /// Search the whole raw line (also keys and the full stack trace), not just the message and
+    /// the field values.
     pub raw: bool,
 }
 
@@ -373,14 +378,24 @@ impl Query {
 
     /// Whether the event matches every term.
     pub fn matches(&self, event: &LogEvent, options: MatchOptions) -> bool {
-        // Lower-case the haystack once per event, only if a text term needs it.
-        let mut haystack: Option<String> = None;
+        // Lower-case the texts once per event, only if a text term needs them.
+        let mut lowered: Option<Vec<String>> = None;
         self.terms.iter().all(|term| {
             let hit = match &term.condition {
-                Condition::Text(needle) => haystack
-                    .get_or_insert_with(|| text_of(event, options).to_lowercase())
-                    .contains(needle.as_str()),
-                Condition::Regex(regex) => regex.is_match(text_of(event, options)),
+                Condition::Text(needle) => lowered
+                    .get_or_insert_with(|| {
+                        texts_of(event, options)
+                            .map(|text| text.to_lowercase())
+                            .collect()
+                    })
+                    .iter()
+                    .any(|text| text.contains(needle.as_str())),
+                Condition::Message(needle) => {
+                    event.line.message.to_lowercase().contains(needle.as_str())
+                }
+                Condition::Regex(regex) => {
+                    texts_of(event, options).any(|text| regex.is_match(&text))
+                }
                 Condition::Level(op, level) => event
                     .line
                     .level
@@ -425,7 +440,9 @@ impl Query {
             .iter()
             .filter(|t| !t.negated)
             .filter_map(|t| match &t.condition {
-                Condition::Text(text) if !text.is_empty() => Some(text.clone()),
+                Condition::Text(text) | Condition::Message(text) if !text.is_empty() => {
+                    Some(text.clone())
+                }
                 _ => None,
             })
             .collect()
@@ -443,12 +460,21 @@ fn compare(op: &Op, ordering: std::cmp::Ordering) -> bool {
     }
 }
 
-fn text_of(event: &LogEvent, options: MatchOptions) -> &str {
-    if options.raw {
-        &event.raw
+/// The texts that text and regex terms look at: the raw line, or the message and every field's
+/// value (an ID that only sits in a field, e.g. `trace.id`, is found by typing it). Each one on
+/// its own, so a phrase can't match across the end of one value and the start of the next. Text
+/// values are borrowed; only numbers and booleans are formatted into new strings.
+fn texts_of(event: &LogEvent, options: MatchOptions) -> impl Iterator<Item = Cow<'_, str>> {
+    let (first, fields) = if options.raw {
+        (&event.raw, &[][..])
     } else {
-        &event.line.message
-    }
+        (&event.line.message, &event.line.fields[..])
+    };
+    std::iter::once(Cow::Borrowed(first.as_str())).chain(fields.iter().map(|f| match &f.value {
+        FieldValue::Text(s) => Cow::Borrowed(s.as_str()),
+        FieldValue::Number(n) => Cow::Owned(n.to_string()),
+        FieldValue::Bool(b) => Cow::Owned(b.to_string()),
+    }))
 }
 
 /// A field's value as text (also `stream`, which isn't a parsed field).
@@ -590,6 +616,10 @@ mod tests {
         assert!(matches("task:5f2a", &e));
         assert!(!matches("task:9999", &e));
         assert!(matches("message:world", &e));
+        assert!(
+            !matches("message:abc123", &e),
+            "only the message, not the fields"
+        );
         assert!(matches("stream:*orders-api*", &e));
     }
 
@@ -600,7 +630,8 @@ mod tests {
         assert!(matches("-healthcheck GET", &e));
         assert!(!matches("GET POST", &e), "all terms must match");
         // A lone "-" is text, not a negation.
-        assert!(!matches("-", &e));
+        assert!(!matches("-", &event("GET /health")));
+        assert!(matches("-", &e), "the @timestamp value has dashes");
     }
 
     #[test]
@@ -609,6 +640,23 @@ mod tests {
         let query = parse_query("SocketTimeoutException").unwrap();
         assert!(!query.matches(&e, MatchOptions::default()));
         assert!(query.matches(&e, MatchOptions { raw: true }));
+    }
+
+    #[test]
+    fn text_terms_also_look_at_field_values() {
+        let e = ecs("INFO", "Order accepted");
+        // `trace.id` is ABC123, `log.logger` com.example.camel.Route.
+        assert!(matches("abc123", &e));
+        assert!(matches("\"camel.route\"", &e));
+        assert!(matches("/^abc\\d+$/", &e), "a regex is tried on each value");
+        assert!(
+            matches("accepted abc123", &e),
+            "terms may hit different places"
+        );
+        assert!(!matches("-abc123", &e));
+        // Values, not keys; and no match across the end of one value and the next.
+        assert!(!matches("trace.id", &e));
+        assert!(!matches("\"accepted com\"", &e));
     }
 
     #[test]

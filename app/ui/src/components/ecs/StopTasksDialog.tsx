@@ -73,11 +73,11 @@ export function StopTasksDialog({
             <li key={t.id} className="flex gap-3">
               <span>{shortTaskId(t.id)}</span>
               <span className="text-muted-foreground">{t.lastStatus}</span>
-              <span className="text-muted-foreground">{t.taskDefinition}</span>
+              <span className="min-w-0 break-all text-muted-foreground">{t.taskDefinition}</span>
             </li>
           ))}
         </ul>
-        <label className="space-y-1.5 text-sm">
+        <label className="grid gap-1.5 text-sm">
           <span className="text-muted-foreground">Reason (recorded by ECS)</span>
           <Input
             value={reason}
