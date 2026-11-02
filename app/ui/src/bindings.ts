@@ -97,6 +97,13 @@ export const commands = {
 	 */
 	loadOlder: (viewId: number, atLeast: number | null) => typedError<OlderEvents, ApiError>(__TAURI_INVOKE("load_older", { viewId, atLeast })),
 	/**
+	 *  Counts the events of the part of a view's window that isn't loaded, with Logs Insights, so
+	 *  the timeline shows the whole window. One query (billed per GB scanned); `false` when
+	 *  everything is loaded already. Fails when Insights isn't allowed: the timeline then marks the
+	 *  part as not loaded, without counts.
+	 */
+	countUnloaded: (viewId: number) => typedError<boolean, ApiError>(__TAURI_INVOKE("count_unloaded", { viewId })),
+	/**
 	 *  The value of a secret-backed environment variable (`valueFrom` of the task definition), read
 	 *  from Secrets Manager or SSM only when the user clicks "Reveal". Never logged or stored.
 	 */
@@ -1090,6 +1097,16 @@ export type Timeline = {
 	/**  The length of every bucket, in milliseconds (at most a week, so it fits a `u32`). */
 	bucketMs: number,
 	buckets: LevelCounts[],
+	/**
+	 *  Where the loaded events start: the buckets before it hold no loaded events yet (a long
+	 *  window loads newest first), which must not look like "no events".
+	 */
+	loadedFrom: Timestamp,
+	/**
+	 *  Per bucket, how many events Logs Insights counted before `loaded_from` (the search doesn't
+	 *  apply to them); empty when they weren't counted.
+	 */
+	counted: number[],
 };
 
 /**

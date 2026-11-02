@@ -46,6 +46,14 @@ export function rangePixels(
   return { left, width: x(range.end) - left };
 }
 
+/**
+ * Where the loaded events start on a timeline drawn `width` pixels wide: everything left of it
+ * isn't loaded yet (0 when everything is).
+ */
+export function loadedFromPixel(timeline: Timeline, width: number): number {
+  return rangePixels(timeline, { start: timeline.start, end: timeline.loadedFrom }, width).width;
+}
+
 /** A label for a time on the timeline: the time of day, with the date when it spans days. */
 export function timelineLabel(ms: number, timeZone: "local" | "utc", withDate: boolean): string {
   const date = new Date(ms);

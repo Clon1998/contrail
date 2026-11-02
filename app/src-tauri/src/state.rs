@@ -11,8 +11,8 @@ use contrail_core::ecs::{EcsChanges, EcsSource};
 use contrail_core::logs::health::{RouteHealth, route_health};
 use contrail_core::logs::timeline::{Timeline, timeline};
 use contrail_core::logs::{
-    FieldMapping, FieldSummary, FilterMode, LogBuffer, LogEvent, LogSource, StreamSelection,
-    TimeRange, ViewFilter, VisibleChange, summarize,
+    EventCount, FieldMapping, FieldSummary, FilterMode, LogBuffer, LogEvent, LogSource,
+    StreamSelection, TimeRange, ViewFilter, VisibleChange, summarize,
 };
 use contrail_core::secrets::SecretSource;
 use contrail_core::timestamp::Timestamp;
@@ -120,6 +120,18 @@ pub struct LogView {
     /// The part of the window the list is narrowed to (picked on the timeline), if any. Only the
     /// listing changes: the buffer keeps every loaded event, so going back needs no reload.
     pub focus: Option<TimeRange>,
+    /// Logs Insights' counts of the part of the window that wasn't loaded when they were asked
+    /// for, so the timeline shows the whole window.
+    pub counted: Option<Counted>,
+}
+
+/// Event counts per bin of `bin_ms` (see [`LogSource::count_events`]).
+///
+/// [`LogSource::count_events`]: contrail_core::logs::LogSource::count_events
+#[derive(Debug, Clone, Default)]
+pub struct Counted {
+    pub bin_ms: u32,
+    pub counts: Vec<EventCount>,
 }
 
 impl LogView {
@@ -140,6 +152,7 @@ impl LogView {
             filter: None,
             mapping: FieldMapping::default(),
             focus: None,
+            counted: None,
         }
     }
 
@@ -262,8 +275,9 @@ impl LogView {
     }
 
     /// The listed events (the matches when filtering, every event otherwise) counted over time,
-    /// from as far back as events are loaded (a long window loads newest first: what isn't
-    /// loaded yet must not look like "no events") to the end or the newest event, if later.
+    /// over the whole window: from its start to its end or the newest event, if later. A long
+    /// window loads newest first: the part before the loaded events is marked (it must not look
+    /// like "no events"), with Logs Insights' counts once they are there.
     /// While the live tail runs, `now` is passed and the chart reaches it: a quiet stretch shows
     /// as empty bars at the end instead of the last event sitting at the right edge.
     pub fn timeline(
@@ -275,26 +289,35 @@ impl LogView {
         let newest = self.buffer.iter().last().map(|e| e.timestamp);
         let to = newest.map_or(self.backfilled_until, |n| n.max(self.backfilled_until));
         let to = now.map_or(to, |now| to.max(now));
+        let from = self.window_start.min(self.loaded_from);
         let filtering = self
             .filter
             .as_ref()
             .filter(|f| f.mode == FilterMode::Filter);
-        match filtering {
+        let chart = match filtering {
             Some(filter) => timeline(
                 filter.matched().iter().filter_map(|&i| self.buffer.get(i)),
-                self.loaded_from,
+                from,
                 to,
                 max_buckets,
                 utc_offset_minutes,
             ),
             None => timeline(
                 self.buffer.iter(),
-                self.loaded_from,
+                from,
                 to,
                 max_buckets,
                 utc_offset_minutes,
             ),
-        }
+        };
+        // Everything loaded: nothing to mark (the chart starts on a round time before the window).
+        let loaded_from = if self.complete() {
+            chart.start
+        } else {
+            self.loaded_from
+        };
+        let counted = self.counted.clone().unwrap_or_default();
+        chart.with_unloaded(loaded_from, &counted.counts, counted.bin_ms)
     }
 
     /// How the documents of the service's routes ended, per topic and consumer group: from
@@ -386,6 +409,41 @@ mod tests {
             .iter()
             .map(|e| (e.timestamp.0 - start).whole_seconds())
             .collect()
+    }
+
+    #[test]
+    fn the_timeline_spans_the_whole_window_with_the_unloaded_part_counted() {
+        // A window from second -50, loaded from second 0 (events 0..10).
+        let mut view = view().with_loaded(at(-50), at(0));
+        let t = view.timeline(100, 0, None);
+        assert_eq!(t.start, at(-50));
+        assert_eq!(t.loaded_from, at(0));
+        assert!(t.counted.is_empty(), "not counted yet");
+        assert_eq!(t.buckets.iter().map(|b| b.total()).sum::<u32>(), 10);
+
+        view.counted = Some(Counted {
+            bin_ms: 10_000,
+            counts: vec![
+                EventCount {
+                    start: at(-50),
+                    count: 4,
+                },
+                EventCount {
+                    start: at(-20),
+                    count: 6,
+                },
+            ],
+        });
+        let t = view.timeline(100, 0, None);
+        assert_eq!(t.counted.iter().sum::<u32>(), 10);
+        // Complete: nothing before the loaded events, even on a chart starting before the window.
+        let complete = view.with_loaded(at(-47), at(-47)).timeline(5, 0, None);
+        assert!(complete.start < at(-47));
+        assert_eq!(complete.loaded_from, complete.start);
+        // In the buckets of their time, not in the loaded part.
+        let at_second = |s: i64| ((s + 50) * 1000 / i64::from(t.bucket_ms)) as usize;
+        assert_eq!(t.counted[at_second(-50)], 4);
+        assert_eq!(t.counted[at_second(-20)], 6);
     }
 
     #[test]

@@ -18,6 +18,8 @@ const ready =
           rowsDelayMs: Number(new URLSearchParams(location.search).get("rowsDelay") ?? 0),
           loadDelayMs: Number(new URLSearchParams(location.search).get("loadDelay") ?? 0),
           olderDelayMs: Number(new URLSearchParams(location.search).get("olderDelay") ?? 0),
+          // `?insights=denied`: Logs Insights isn't allowed (the timeline can't count).
+          insightsDenied: new URLSearchParams(location.search).get("insights") === "denied",
           update: new URLSearchParams(location.search).get("update") ?? undefined,
           // `?link=contrail://…`: a link Contrail was started with.
           link: new URLSearchParams(location.search).get("link") ?? undefined,

@@ -444,6 +444,45 @@ test("a long window starts with the newest events; scrolling up loads older ones
   await expect(list.getByText("Ingested event #50001 ")).toBeVisible();
 });
 
+test("the timeline shows a long window's unloaded part, counted, and loads it on a click", async ({
+  page,
+}) => {
+  const list = await openLogs(page, "demo-edge", "event-ingest");
+  await chooseWindow(page, "6h");
+  await expect(list).toHaveAttribute("aria-rowcount", "50000");
+  const chart = page.getByRole("img", { name: "Timeline of events" });
+  const unloaded = page.getByTestId("timeline-unloaded");
+  await expect(unloaded).toBeVisible();
+  // Counted by Logs Insights: faint bars in the hatched part.
+  await expect.poll(() => chart.locator("rect[data-counted]").count()).toBeGreaterThan(0);
+  await expect(page.getByText("hatched: not loaded yet")).toBeVisible();
+
+  const box = await chart.boundingBox();
+  if (!box) throw new Error("no timeline");
+  await page.mouse.move(box.x + 10, box.y + box.height / 2);
+  await expect(page.getByRole("tooltip")).toContainText("≈");
+  await expect(page.getByRole("tooltip")).toContainText("Not loaded yet: click to load");
+
+  // A click there loads the events back to it, then focuses the list on it.
+  await page.mouse.click(box.x + 10, box.y + box.height / 2);
+  await expect(list).toHaveAttribute("aria-rowcount", "100000");
+  await expect(page.getByText(/^Focused on/)).toBeVisible();
+  await expect(unloaded).toHaveCount(0);
+});
+
+test("without Logs Insights the unloaded part is marked, not counted", async ({ page }) => {
+  await page.goto("/?insights=denied");
+  await openLogs(page, "demo-edge", "event-ingest");
+  await chooseWindow(page, "6h");
+  const chart = page.getByRole("img", { name: "Timeline of events" });
+  await expect(page.getByTestId("timeline-unloaded")).toBeVisible();
+  const box = await chart.boundingBox();
+  if (!box) throw new Error("no timeline");
+  await page.mouse.move(box.x + 10, box.y + box.height / 2);
+  await expect(page.getByRole("tooltip")).toContainText("not counted (not authorized");
+  await expect(chart.locator("rect[data-counted]")).toHaveCount(0);
+});
+
 test("a long window that fits on screen loads its older events right away", async ({ page }) => {
   const list = await openLogs(page, "demo-edge", "legacy-gateway");
   const all = Number(await list.getAttribute("aria-rowcount"));

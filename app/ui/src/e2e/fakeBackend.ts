@@ -199,6 +199,8 @@ export interface FakeBackendOptions {
   loadDelayMs?: number;
   /** Delay of `load_older` (default: none). */
   olderDelayMs?: number;
+  /** Logs Insights isn't allowed: `count_unloaded` fails (default: it counts). */
+  insightsDenied?: boolean;
   /** A newer version the update check finds (default: none, up to date). */
   update?: string;
   /** A `contrail://` link the app was "started with" (the deep-link plugin's `getCurrent`). */
@@ -363,6 +365,9 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
 
   /** The start of each view's time window (`load_older` loads up to it). */
   const windowStarts = new Map<number, string>();
+
+  /** Views whose unloaded part was counted (`count_unloaded`). */
+  const counted = new Set<number>();
 
   /** Events a view holds back until `load_older` (long windows start with the newest). */
   const olderPending = new Map<number, LogEvent[]>();
@@ -892,7 +897,13 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
           truncated: big || (recordedService?.truncated ?? false),
           from,
           to,
-          loadedFrom: half > 0 ? (events[half]?.cwTimestamp ?? from) : from,
+          // Generated views: the newer half of the window (as the timeline draws it).
+          loadedFrom:
+            half === 0
+              ? from
+              : big
+                ? new Date((Date.parse(from) + Date.parse(to)) / 2).toISOString()
+                : (events[half]?.cwTimestamp ?? from),
           complete: half === 0,
         };
         return info;
@@ -1156,6 +1167,16 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         if (last) Object.assign(last, { format: args?.format as string, count });
         return count;
       }
+      case "count_unloaded": {
+        const viewId = args?.viewId as number;
+        if (!views.has(viewId)) throw apiError("notFound", "log view is closed");
+        if (options.insightsDenied) {
+          throw apiError("accessDenied", "not authorized to perform: logs:StartQuery");
+        }
+        const pending = olderPending.has(viewId) || bigHidden.has(viewId);
+        if (pending) counted.add(viewId);
+        return pending;
+      }
       case "log_timeline": {
         // A simpler version of the Rust bucketing: same round steps, aligned to UTC + offset.
         const viewId = args?.viewId as number;
@@ -1166,7 +1187,18 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
         const times = Array.isArray(rows)
           ? rows.map((e) => ({ at: Date.parse(e.timestamp), level: e.line.level }))
           : [];
-        const from = times.length > 0 ? Math.min(...times.map((t) => t.at)) : now - 15 * 60_000;
+        // Like the Rust side: the whole window, the part before the loaded events marked.
+        // Generated views with their older half held back: the newer half of the window loaded.
+        const pending = olderPending.get(viewId) ?? [];
+        const windowStart = Date.parse(windowStarts.get(viewId) ?? "");
+        const bigPending = !Array.isArray(rows) && bigHidden.has(viewId);
+        const loadedFrom = bigPending
+          ? (windowStart + now) / 2
+          : times.length > 0
+            ? Math.min(...times.map((t) => t.at))
+            : now - 15 * 60_000;
+        const unloaded = (pending.length > 0 || bigPending) && windowStart < loadedFrom;
+        const from = unloaded ? windowStart : loadedFrom;
         const to = times.length > 0 ? Math.max(...times.map((t) => t.at)) : now;
         const steps = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600, 86400];
         const bucketMs =
@@ -1182,11 +1214,32 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
             bucket[key] += 1;
           }
         } else {
-          // Generated views: spread evenly, mostly INFO.
-          const per = Math.floor(listedCount(viewId) / buckets.length);
-          buckets.forEach((b, i) => Object.assign(b, { info: per, warn: i % 7 === 0 ? 3 : 0 }));
+          // Generated views: spread evenly over the loaded part, mostly INFO.
+          const first = Math.max(0, Math.floor((loadedFrom - start) / bucketMs));
+          const per = Math.floor(listedCount(viewId) / (buckets.length - first));
+          buckets.forEach((b, i) => {
+            if (i >= first) Object.assign(b, { info: per, warn: i % 7 === 0 ? 3 : 0 });
+          });
         }
-        return { start: new Date(start).toISOString(), bucketMs, buckets };
+        const countedBuckets = unloaded && counted.has(viewId) ? buckets.map(() => 0) : [];
+        if (countedBuckets.length > 0) {
+          const hidden = bigHidden.get(viewId) ?? 0;
+          const before = Math.floor((loadedFrom - start) / bucketMs);
+          countedBuckets.forEach((_, i) => {
+            if (i < before) countedBuckets[i] = Math.floor(hidden / Math.max(1, before));
+          });
+          for (const e of pending) {
+            const i = Math.floor((Date.parse(e.timestamp) - start) / bucketMs);
+            if (i >= 0 && i < before) countedBuckets[i] = (countedBuckets[i] ?? 0) + 1;
+          }
+        }
+        return {
+          start: new Date(start).toISOString(),
+          bucketMs,
+          buckets,
+          loadedFrom: new Date(unloaded ? loadedFrom : start).toISOString(),
+          counted: countedBuckets,
+        };
       }
       case "close_log_view": {
         const viewId = args?.viewId as number;
