@@ -2,6 +2,29 @@
 
 All notable changes to Contrail. Generated from the commit history ([Conventional Commits](https://www.conventionalcommits.org)).
 
+## 0.4.0 — 2026-11-02
+
+### Features
+
+- **logs:** Colour each task's tag in the log list
+- **logs:** Right-click a line for the actions of its details
+- **logs:** Count events of a window's unloaded part, per timeline bucket
+- **aws:** Count events per bin with one Logs Insights query
+- **fake:** Count demo events per bin
+- **logs:** The timeline shows the whole window, with unloaded parts counted
+
+### Fixes
+
+- **ui:** Keep long task definitions inside the change dialogs
+- **logs:** Find free text in field values, not only the message
+- **logs:** Stretch the timeline to now while the tail follows
+- **logs:** Jump to the top or bottom with Ctrl+Home and Ctrl+End
+
+### Documentation
+
+- Line context menu, Ctrl+Home/End, task colours, field search
+- The timeline's unloaded part and its Logs Insights counts
+
 ## 0.3.0 — 2026-10-30
 
 ### Features
