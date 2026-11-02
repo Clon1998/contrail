@@ -64,6 +64,10 @@ page has the details.
   that part of the window. The time window and the loaded events stay as they are: the timeline says which part is
   focused, and **Show all** under it (or the × on the focused part) brings back the whole window instantly.
   While the view follows live, the timeline reaches up to now: minutes without a new line show as empty bars.
+  The timeline always spans the whole time window. A long window (say 6 hours) loads its newest events first: the
+  part not loaded yet is hatched, with faint bars counted by Logs Insights (all levels; the search doesn't apply
+  there), so you see right away whether anything was logged hours ago. Click or drag there to load the events back
+  to that point and focus the list on it. Without the Logs Insights permission the part stays hatched, uncounted.
 - **Service events** (the rocket button in the toolbar hides them): deployments starting and finishing, stopped
   tasks with their stop reason and exit codes, and the service's events ("has started 1 tasks", placement
   problems; not the "steady state" ones) show as lines between the log lines at the time they happened, and on

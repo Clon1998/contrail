@@ -50,7 +50,8 @@ Contrail only reads, unless you allow changes. Admin and broad read-only roles u
 - `ContrailReadOnly` is what everyone needs: ECS describe/list, reading log events and Live Tail.
 - `ContrailOptionalRevealSecrets` only to show values of secret environment variables. Leave it out, or narrow its
   `Resource` to the secrets the team may read; every read is in CloudTrail.
-- `ContrailOptionalInsightsTrace` only for tracing across many services with Logs Insights.
+- `ContrailOptionalInsightsTrace` for Logs Insights: counting the not-yet-loaded part of a long time window on the
+  timeline, and tracing across many services. Without it the timeline marks that part as "not loaded" instead.
 - `ContrailOptionalChanges` only for teammates who may stop tasks and update services from Contrail (they also turn
   on **Allow changes to AWS** in the settings).
 
@@ -64,8 +65,10 @@ Contrail is free; the AWS calls it makes are billed to your accounts like any ot
   time window is 15 minutes or shorter, tails of views you haven't looked at for 10 minutes pause, and all tails
   pause 30 seconds after Contrail is hidden (resuming with a catch-up when you're back). The limits are in
   **Settings**. Without the `logs:StartLiveTail` permission, Contrail checks for new events every 2 seconds instead.
-- **Logs Insights** (optional, for tracing across many services) is billed per GB scanned. It is only used when you
-  tick **Use Logs Insights** in the trace dialog; the default trace search uses `FilterLogEvents`.
+- **Logs Insights** (optional) is billed per GB scanned. Contrail uses it for one query when a long time window
+  (e.g. 6 hours) doesn't load completely at once: it counts the events of the part not loaded yet for the timeline,
+  scanning only that part of the one log group. Tracing uses it only when you tick **Use Logs Insights** in the trace
+  dialog; the default trace search uses `FilterLogEvents`.
 - Reading log events and describing ECS resources are ordinary API calls.
 
 See [CloudWatch pricing](https://aws.amazon.com/cloudwatch/pricing/) for the current prices.
