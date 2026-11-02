@@ -2,17 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { commands, type LevelCounts, type Timeline } from "@/bindings";
 import {
   bucketRange,
+  loadedFromPixel,
   rangePixels,
   selectionRange,
   timelineLabel,
   utcOffsetMinutes,
 } from "@/lib/timeline";
 import { XIcon } from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServiceMarkers } from "./useServiceMarkers";
 import { markersBetween } from "@/lib/markers";
-import { useLogs } from "@/stores/logs";
+import { type UnloadedCount, useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 
 /** The bars' height in pixels: a strip above the list, not a chart of its own. */
@@ -39,12 +41,24 @@ const STACK: { key: keyof LevelCounts; label: string; fill: string }[] = [
   { key: "none", label: "no level", fill: "fill-muted-foreground/35" },
 ];
 
+/** The tooltip's count for a bucket that isn't loaded yet. */
+function unloadedSummary(counted: number | undefined, unloaded: UnloadedCount): string {
+  if (counted !== undefined) return `≈ ${counted.toLocaleString()} events (counted, all levels)`;
+  if (unloaded.state === "counting") return "counting…";
+  if (unloaded.state === "failed") return `not counted (${unloaded.error.message})`;
+  return "not counted";
+}
+
 const total = (b: LevelCounts) => b.error + b.warn + b.info + b.debug + b.trace + b.none;
 
 /**
  * Events over time above the log list, stacked by level, counted in Rust from the listed events
  * (it follows the search). Clicking a bar, or dragging across bars, focuses the list on that part
  * of the window; the chart keeps showing the whole window, so another part can be picked.
+ *
+ * A long window loads newest first: the part before the loaded events is hatched, with faint bars
+ * from Logs Insights' counts (all events, not the search). Picking there loads the events back
+ * to it first.
  */
 export function TimelineChart({ viewId }: { viewId: number }) {
   const total_ = useLogs((s) => s.view?.stats.total ?? 0);
@@ -64,6 +78,9 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   // on a busy machine ends before the state set on pointer down is rendered).
   const dragStart = useRef<number | null>(null);
   const lastFetch = useRef(0);
+  const unloaded = useLogs((s) => s.unloaded);
+  const loadBack = useLogs((s) => s.loadBack);
+  const [loadingBack, setLoadingBack] = useState(false);
   // The chart reaches up to now while the tail follows (Rust adds the time since the last event),
   // so it moves along with the clock even when nothing is logged.
   const following = useLogs((s) => s.live?.state === "live" || s.live?.state === "polling");
@@ -101,10 +118,13 @@ export function TimelineChart({ viewId }: { viewId: number }) {
       current = false;
       clearTimeout(timer);
     };
-  }, [viewId, total_, visible, revision, width, timeZone, tick]);
+  }, [viewId, total_, visible, revision, width, timeZone, tick, unloaded.state]);
 
   const count = timeline?.buckets.length ?? 0;
-  const highest = timeline ? Math.max(1, ...timeline.buckets.map(total)) : 1;
+  const highest = timeline ? Math.max(1, ...timeline.buckets.map(total), ...timeline.counted) : 1;
+  // Left of this (pixels), events aren't loaded yet.
+  const notLoaded = timeline && count > 0 ? loadedFromPixel(timeline, width) : 0;
+  const loadedFromMs = timeline ? Date.parse(timeline.loadedFrom) : 0;
   const barWidth = count > 0 ? width / count : 0;
   const drawnWidth = Math.max(1, Math.min(MAX_BAR_PX, barWidth - 1));
   const indexAt = (x: number) => Math.min(count - 1, Math.max(0, Math.floor(x / barWidth)));
@@ -162,14 +182,50 @@ export function TimelineChart({ viewId }: { viewId: number }) {
           const to = localX(e.clientX);
           if (from !== null && timeline && count > 0) {
             const x1 = Math.abs(to - from) > 4 ? to : from;
-            void setFocus(selectionRange(timeline, from, x1, width));
+            const range = selectionRange(timeline, from, x1, width);
+            if (Date.parse(range.start) < loadedFromMs) {
+              // Not loaded yet: load back to it, then focus.
+              setLoadingBack(true);
+              void loadBack(range.start)
+                .then(() => setFocus(range))
+                .finally(() => setLoadingBack(false));
+            } else {
+              void setFocus(range);
+            }
           }
           dragStart.current = null;
           setDrag(null);
         }}
       >
         {!timeline && <Skeleton className="absolute inset-0" />}
+        {notLoaded > 0 && (
+          <div
+            aria-hidden
+            data-testid="timeline-unloaded"
+            className={cn(
+              "pointer-events-none absolute inset-y-0 left-0 border-r border-dashed border-muted-foreground/60 bg-[repeating-linear-gradient(135deg,var(--color-muted-foreground)_0_1px,transparent_1px_6px)] opacity-25",
+              (unloaded.state === "counting" || loadingBack) && "animate-pulse",
+            )}
+            style={{ width: notLoaded }}
+          />
+        )}
         <svg width={width} height={BARS_HEIGHT} aria-hidden className="block">
+          {timeline?.counted.map((n, i) => {
+            const height = (n / highest) * (BARS_HEIGHT - 2);
+            if (height <= 0) return null;
+            return (
+              <rect
+                key={`counted-${i}`}
+                data-counted
+                x={i * barWidth + (barWidth - drawnWidth) / 2}
+                y={BARS_HEIGHT - height}
+                width={drawnWidth}
+                height={height}
+                opacity={hover === null || hover === i ? 1 : 0.7}
+                className="fill-muted-foreground/40"
+              />
+            );
+          })}
           {timeline?.buckets.map((bucket, i) => {
             let y = BARS_HEIGHT;
             return (
@@ -261,8 +317,14 @@ export function TimelineChart({ viewId }: { viewId: number }) {
               {bucketRange(timeline, hover)
                 .map((ms) => timelineLabel(ms, timeZone, spansDays))
                 .join(" – ")}{" "}
-              · {total(hovered).toLocaleString()} events
+              ·{" "}
+              {bucketRange(timeline, hover)[0] < loadedFromMs
+                ? unloadedSummary(timeline.counted[hover], unloaded)
+                : `${total(hovered).toLocaleString()} events`}
             </p>
+            {bucketRange(timeline, hover)[0] < loadedFromMs && (
+              <p className="text-muted-foreground">Not loaded yet: click to load</p>
+            )}
             {STACK.filter(({ key }) => hovered[key] > 0).map(({ key, label }) => (
               <p key={key} className="tabular-nums">
                 {label} {hovered[key].toLocaleString()}
@@ -307,8 +369,13 @@ export function TimelineChart({ viewId }: { viewId: number }) {
                 <XIcon /> Show all
               </Button>
             </span>
+          ) : loadingBack ? (
+            <span className="text-foreground">Loading older events…</span>
           ) : (
-            <span>Click or drag to focus the list</span>
+            <span>
+              Click or drag to focus the list
+              {notLoaded > 0 && " · hatched: not loaded yet"}
+            </span>
           )}
           <span>{timelineLabel(bucketRange(timeline, count - 1)[1], timeZone, spansDays)}</span>
         </div>

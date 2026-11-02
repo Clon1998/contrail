@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering;
 use contrail_core::auth::AwsCtx;
 use contrail_core::ecs::ServiceRef;
 use contrail_core::logs::health::RouteHealth;
-use contrail_core::logs::timeline::Timeline;
+use contrail_core::logs::timeline::{Timeline, bucket_length};
 use contrail_core::logs::{
     BufferStats, ExportFormat, FieldSummary, FilterMode, Level, LineContext, LogBuffer, LogEvent,
     LogLocation, TimeRange, TimeWindow, ViewFilter, backfill_newest, process, resolve_log_location,
@@ -23,7 +23,7 @@ use time::OffsetDateTime;
 
 use crate::error::{ApiError, ApiResult, ErrorCode};
 use crate::live::{self, Control, LiveHandle, LiveTask, LiveUpdate};
-use crate::state::{AppState, LogView};
+use crate::state::{AppState, Counted, LogView};
 
 /// What the UI needs to know about an opened log view.
 #[derive(Debug, Clone, Serialize, Type)]
@@ -164,6 +164,45 @@ pub struct OlderEvents {
     /// don't have to be fetched again.
     pub rows_from: u32,
     pub rows: Vec<LogEvent>,
+}
+
+/// How many bins the unloaded part of a window is counted in: finer than the timeline's buckets
+/// (a few hundred), so they add up into them evenly.
+const COUNT_BINS: u32 = 1_440;
+
+/// Counts the events of the part of a view's window that isn't loaded, with Logs Insights, so
+/// the timeline shows the whole window. One query (billed per GB scanned); `false` when
+/// everything is loaded already. Fails when Insights isn't allowed: the timeline then marks the
+/// part as not loaded, without counts.
+#[tauri::command]
+#[specta::specta]
+pub async fn count_unloaded(state: State<'_, AppState>, view_id: u32) -> ApiResult<bool> {
+    count_unloaded_events(&state, view_id).await
+}
+
+pub(crate) async fn count_unloaded_events(state: &AppState, view_id: u32) -> ApiResult<bool> {
+    let (ctx, selection, range) = {
+        let views = state.views.lock().expect("views lock poisoned");
+        let view = views.get(&view_id).ok_or_else(|| closed(view_id))?;
+        if view.complete() {
+            return Ok(false);
+        }
+        let range = TimeRange {
+            start: view.window_start,
+            end: view.loaded_from,
+        };
+        (view.ctx.clone(), view.selection.clone(), range)
+    };
+    let bin_ms = bucket_length(range.end.0 - range.start.0, COUNT_BINS);
+    let counts = state
+        .logs
+        .count_events(&ctx, &selection, range, bin_ms / 1_000)
+        .await?;
+    let mut views = state.views.lock().expect("views lock poisoned");
+    if let Some(view) = views.get_mut(&view_id) {
+        view.counted = Some(Counted { bin_ms, counts });
+    }
+    Ok(true)
 }
 
 /// Loads the next older events of a view's window (newest first, in slices): at least
@@ -889,6 +928,48 @@ mod tests {
             .await
             .unwrap();
         assert!(small.added > 0 && small.added < large.added);
+    }
+
+    #[tokio::test]
+    async fn the_unloaded_part_of_a_long_window_is_counted_for_the_timeline() {
+        let state = AppState::demo();
+        let (ctx, service) = demo_service("demo-core", "orders-api");
+        let six_hours = TimeWindow::Last { minutes: 360 };
+        let info = open_logs(&state, ctx, service, six_hours, None)
+            .await
+            .unwrap();
+        let chart =
+            |state: &AppState| state.views.lock().unwrap()[&info.view_id].timeline(300, 0, None);
+        let before = chart(&state);
+        assert_eq!(
+            before.start.0,
+            before.start.0.min(info.from.0),
+            "from the window's start"
+        );
+        assert!(before.counted.is_empty());
+
+        assert!(count_unloaded_events(&state, info.view_id).await.unwrap());
+        let after = chart(&state);
+        assert_eq!(after.loaded_from, info.loaded_from);
+        let counted: u32 = after.counted.iter().sum();
+        // orders-api logs about every 4 s per task: hours of events, none of them loaded.
+        assert!(counted > 1_000, "{counted}");
+        let first_loaded = usize::try_from(
+            (info.loaded_from.0 - after.start.0).whole_milliseconds() / i128::from(after.bucket_ms),
+        )
+        .unwrap();
+        assert!(
+            after.counted[first_loaded + 1..].iter().all(|&c| c == 0),
+            "nothing counted twice"
+        );
+
+        // Once everything is loaded there's nothing left to count.
+        while !load_older_events(&state, info.view_id, OLDER_EVENTS)
+            .await
+            .unwrap()
+            .complete
+        {}
+        assert!(!count_unloaded_events(&state, info.view_id).await.unwrap());
     }
 
     #[tokio::test]

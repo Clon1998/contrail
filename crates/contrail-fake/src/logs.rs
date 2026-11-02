@@ -9,8 +9,8 @@ use async_trait::async_trait;
 use contrail_core::auth::AwsCtx;
 use contrail_core::error::SourceError;
 use contrail_core::logs::{
-    Backfill, GroupEvent, LiveError, LiveItem, LiveStream, LogSource, RawEvent, StreamSelection,
-    TimeRange,
+    Backfill, EventCount, GroupEvent, LiveError, LiveItem, LiveStream, LogSource, RawEvent,
+    StreamSelection, TimeRange,
 };
 use contrail_core::timestamp::Timestamp;
 use futures::StreamExt;
@@ -124,6 +124,35 @@ impl LogSource for FakeLogs {
 
     /// Demo Logs Insights: the same events, searched per log group (demo groups are
     /// `/ecs/<service>` with streams `ecs/<service>/<task>`).
+    /// Counts what a backfill of the whole range would return, per bin.
+    async fn count_events(
+        &self,
+        ctx: &AwsCtx,
+        selection: &StreamSelection,
+        range: TimeRange,
+        bin_seconds: u32,
+    ) -> Result<Vec<EventCount>, SourceError> {
+        let events = self
+            .backfill(ctx, selection, range, usize::MAX)
+            .await?
+            .events;
+        let bin = i64::from(bin_seconds.max(1));
+        let mut counts: Vec<EventCount> = Vec::new();
+        for event in events {
+            let seconds = event.timestamp.0.unix_timestamp();
+            let start = OffsetDateTime::from_unix_timestamp(seconds - seconds.rem_euclid(bin))
+                .map_err(|err| SourceError::Aws(err.to_string()))?;
+            match counts.last_mut() {
+                Some(last) if last.start.0 == start => last.count += 1,
+                _ => counts.push(EventCount {
+                    start: Timestamp(start),
+                    count: 1,
+                }),
+            }
+        }
+        Ok(counts)
+    }
+
     async fn insights_find(
         &self,
         ctx: &AwsCtx,
@@ -888,6 +917,18 @@ mod tests {
                 .windows(2)
                 .all(|w| w[0].timestamp <= w[1].timestamp)
         );
+    }
+
+    #[tokio::test]
+    async fn counts_match_the_events_of_a_backfill() {
+        let sel = selection("orders-api", &["task1", "task2"]);
+        let counts = fake()
+            .count_events(&ctx(), &sel, minutes(5), 60)
+            .await
+            .unwrap();
+        assert_eq!(counts.len(), 5, "one bin per minute");
+        assert_eq!(counts.iter().map(|c| c.count).sum::<u32>(), 150);
+        assert!(counts.windows(2).all(|w| w[0].start < w[1].start));
     }
 
     #[tokio::test]

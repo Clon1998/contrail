@@ -524,3 +524,15 @@ statement (`ecs:StopTask`, `ecs:UpdateService`, `ecs:ListTaskDefinitions` for th
 a service in the ECS console is read-only and always there. Docs and site say "read-only unless you turn on
 changes" instead of "never writes".
 
+## 2026-11-02 — The timeline spans the whole window; Logs Insights counts the unloaded part
+
+The timeline used to start where loading stopped, so "not loaded yet" never looked like "no events". Patrick
+wants to see the whole requested window (did we log anything 6 hours ago?). Options were: only hatch the unloaded
+part (free, but needs a click to find out), load the whole window in the background (capped by the buffer, many
+`FilterLogEvents` calls each time), or count it with Logs Insights. Patrick chose the counts: one
+`stats count(*) by bin()` query per view, over only the unloaded part of the view's log group, filtered to its
+streams, in about 1,440 bins that add up into the chart's buckets. The counts are all levels (the search doesn't
+apply to events that aren't loaded) and drawn faint over a hatched area. A click or drag there loads back to that
+point with the normal `load_older`, then focuses. When Insights isn't allowed, the area stays hatched without
+counts. Uses the existing optional `logs:StartQuery`/`logs:GetQueryResults` statement; no setting to turn it off
+for now (the scan is the unloaded part of one log group, usually well under a cent).

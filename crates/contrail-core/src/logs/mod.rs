@@ -33,7 +33,7 @@ pub use multiline::MultilineJoiner;
 pub use parse::parse_line;
 pub use slices::{Slices, backfill_newest};
 pub use source::{
-    Backfill, GroupEvent, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource,
+    Backfill, EventCount, GroupEvent, InvalidWindow, LiveError, LiveItem, LiveStream, LogSource,
     StreamSelection, TimeRange, TimeWindow,
 };
 pub use status::{StatusChange, correlation_id, status_change};

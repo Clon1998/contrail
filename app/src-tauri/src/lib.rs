@@ -54,6 +54,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
         logs::log_timeline,
         logs::start_live,
         logs::load_older,
+        logs::count_unloaded,
         ecs::reveal_secret,
         ecs::services_on_topics,
         ecs::cluster_routes,

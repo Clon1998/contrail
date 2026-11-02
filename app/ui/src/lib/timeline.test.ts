@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Timeline } from "@/bindings";
 import {
   bucketRange,
+  loadedFromPixel,
   rangePixels,
   selectionRange,
   timelineLabel,
@@ -13,6 +14,8 @@ const timeline: Timeline = {
   start: "2026-10-26T12:00:00.000Z",
   bucketMs: 60_000,
   buckets: Array.from({ length: 10 }, () => empty),
+  loadedFrom: "2026-10-26T12:00:00.000Z",
+  counted: [],
 };
 
 describe("timeline", () => {
@@ -56,5 +59,13 @@ describe("timeline", () => {
     expect(utcOffsetMinutes("local", new Date("2026-10-26T12:00:00Z"))).toBe(
       -new Date("2026-10-26T12:00:00Z").getTimezoneOffset(),
     );
+  });
+
+  it("knows where the loaded events start, in pixels", () => {
+    expect(loadedFromPixel(timeline, 500)).toBe(0);
+    const partly = { ...timeline, loadedFrom: "2026-10-26T12:04:00.000Z" };
+    expect(loadedFromPixel(partly, 500)).toBe(200);
+    // Bucket numbers past the chart are clamped.
+    expect(loadedFromPixel({ ...timeline, loadedFrom: "2026-10-27T00:00:00.000Z" }, 500)).toBe(500);
   });
 });

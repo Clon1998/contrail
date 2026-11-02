@@ -16,8 +16,9 @@ permission sets.
   2 seconds instead.
 - **`ContrailOptionalRevealSecrets`**: only to reveal secret values of environment variables.
   Narrow its `Resource` to the secrets your team may read. Each read shows up in CloudTrail.
-- **`ContrailOptionalInsightsTrace`**: only for "Use Logs Insights" when tracing across many
-  services (billed per GB scanned).
+- **`ContrailOptionalInsightsTrace`**: Logs Insights (billed per GB scanned), for counting the
+  not-yet-loaded part of a long time window on the timeline, and for "Use Logs Insights" when
+  tracing across many services. Without it, that part of the timeline is only marked as not loaded.
 - **`ContrailOptionalChanges`**: only for stopping tasks and updating services from Contrail
   (desired count, revision, new deployment), with **Allow changes to AWS** on in the settings.
   Without it, a role can't change anything, whatever the app does.

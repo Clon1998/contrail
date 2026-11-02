@@ -93,6 +93,8 @@ export interface LogsState {
   expanded: Record<number, boolean>;
   /** Loading older events of the window (the view starts with the newest). */
   older: { loading: boolean; full: boolean; error: ApiError | null };
+  /** Counting the part of the window the first load left out, for the timeline (Logs Insights). */
+  unloaded: UnloadedCount;
   /** Rows that just arrived live (by sequence number): they fade in briefly. */
   fresh: Record<number, true>;
   /** Rows just put in front of the list (`nonce` makes each load count), for keeping the scroll. */
@@ -153,6 +155,8 @@ export interface LogsState {
   loadOlder: (atLeast?: number) => Promise<void>;
   /** Loads older events until the whole window is loaded (or the buffer is full). */
   loadAll: () => Promise<void>;
+  /** Loads older events until they reach back to `until` (or the window's start, or a full buffer). */
+  loadBack: (until: string) => Promise<void>;
 }
 
 /** The event at the top of the list (by sequence number) and how far it was scrolled past. */
@@ -172,6 +176,13 @@ export function cachedIndexOf(pages: Map<number, LogEvent[]>, seq: number): numb
 
 const NO_PAUSE: Record<PauseReason, boolean> = { user: false, hidden: false, background: false };
 const NO_OLDER = { loading: false, full: false, error: null };
+
+/** Where counting the not-loaded part of a window stands (`none`: nothing to count). */
+export type UnloadedCount =
+  | { state: "none" }
+  | { state: "counting" }
+  | { state: "counted" }
+  | { state: "failed"; error: ApiError };
 /** How long a row that just arrived live stays highlighted. */
 const FRESH_MS = 1_500;
 /**
@@ -363,6 +374,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
     searchRevision: 0,
     expanded: {},
     older: NO_OLDER,
+    unloaded: { state: "none" },
     prepended: null,
     fresh: {},
     scrollAnchor: null,
@@ -387,6 +399,7 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         matchPositions: [],
         currentMatch: -1,
         older: NO_OLDER,
+        unloaded: { state: "none" },
         prepended: null,
         pauseReasons: { ...get().pauseReasons, user: false },
       });
@@ -410,12 +423,23 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
         while (get().view?.viewId === view.viewId) {
           const { view: current, older } = get();
           const missing = FIRST_LOAD - (current?.stats.total ?? FIRST_LOAD);
-          if (!current || current.complete || older.full || older.error || missing <= 0) return;
+          if (!current || current.complete || older.full || older.error || missing <= 0) break;
           await get().loadOlder(missing);
           // Nothing came in (a load was running already, e.g. from scrolling up): stop rather
           // than ask again right away, which would never give the page a moment.
-          if ((get().view?.stats.total ?? 0) === current.stats.total) return;
+          if ((get().view?.stats.total ?? 0) === current.stats.total) break;
         }
+        // What the first load left out is counted, so the timeline shows the whole window.
+        if (get().view?.viewId !== view.viewId || get().view?.complete) return;
+        set({ unloaded: { state: "counting" } });
+        const result = await commands.countUnloaded(view.viewId);
+        if (get().view?.viewId !== view.viewId) return;
+        set({
+          unloaded:
+            result.status === "ok"
+              ? { state: "counted" }
+              : { state: "failed", error: result.error },
+        });
       })();
 
       const mode = liveMode(timeWindow);
@@ -653,12 +677,20 @@ export function createLogsStore(timeWindow: TimeWindow): StoreApi<LogsState> {
       if (get().search.mode === "highlight") scheduleMatchRefresh();
     },
 
-    loadAll: async () => {
+    loadAll: () => get().loadBack(""),
+
+    loadBack: async (until) => {
       const viewId = get().view?.viewId;
+      const target = until === "" ? -Infinity : Date.parse(until);
       while (viewId !== undefined && get().view?.viewId === viewId) {
         const { view, older } = get();
         if (!view || view.complete || older.full || older.error) return;
+        if (Date.parse(view.loadedFrom) <= target) return;
         await get().loadOlder();
+        // Nothing came in (a load from scrolling was running): try again once it is done.
+        if (get().view?.loadedFrom === view.loadedFrom) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
       }
     },
   }));
