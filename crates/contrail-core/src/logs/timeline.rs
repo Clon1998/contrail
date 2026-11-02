@@ -6,7 +6,7 @@ use time::{Duration, OffsetDateTime};
 
 use crate::timestamp::Timestamp;
 
-use super::{Level, LogEvent};
+use super::{EventCount, Level, LogEvent};
 
 /// The events of one bucket, by level (`none`: lines without a level).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Type)]
@@ -47,6 +47,40 @@ pub struct Timeline {
     /// The length of every bucket, in milliseconds (at most a week, so it fits a `u32`).
     pub bucket_ms: u32,
     pub buckets: Vec<LevelCounts>,
+    /// Where the loaded events start: the buckets before it hold no loaded events yet (a long
+    /// window loads newest first), which must not look like "no events".
+    pub loaded_from: Timestamp,
+    /// Per bucket, how many events Logs Insights counted before `loaded_from` (the search doesn't
+    /// apply to them); empty when they weren't counted.
+    pub counted: Vec<u32>,
+}
+
+impl Timeline {
+    /// Marks everything before `loaded_from` as not loaded and adds the `counts` (in bins of
+    /// `bin_ms`) of that part. Only bins that end by `loaded_from` count: a bin reaching into
+    /// the loaded part would count its events twice.
+    pub fn with_unloaded(
+        mut self,
+        loaded_from: Timestamp,
+        counts: &[EventCount],
+        bin_ms: u32,
+    ) -> Self {
+        self.loaded_from = loaded_from;
+        if counts.is_empty() {
+            return self;
+        }
+        let mut counted = vec![0; self.buckets.len()];
+        let bin = Duration::milliseconds(i64::from(bin_ms));
+        for c in counts.iter().filter(|c| c.start.0 + bin <= loaded_from.0) {
+            let index =
+                (c.start.0 - self.start.0).whole_milliseconds() / i128::from(self.bucket_ms);
+            if let Some(slot) = usize::try_from(index).ok().and_then(|i| counted.get_mut(i)) {
+                *slot += c.count;
+            }
+        }
+        self.counted = counted;
+        self
+    }
 }
 
 /// The bucket lengths a timeline picks from: round numbers people read at a glance.
@@ -129,6 +163,8 @@ pub fn timeline<'a>(
         start: Timestamp(start),
         bucket_ms: step,
         buckets,
+        loaded_from: from,
+        counted: Vec::new(),
     }
 }
 
@@ -193,6 +229,43 @@ mod tests {
         assert_eq!(t.buckets[2].warn, 1);
         assert_eq!(t.buckets[2].none, 1);
         assert_eq!(t.buckets[5].error, 1);
+    }
+
+    #[test]
+    fn counts_of_the_unloaded_part_go_into_their_buckets() {
+        let from = Timestamp(datetime!(2026-10-26 12:00 UTC));
+        let to = Timestamp(datetime!(2026-10-26 12:06 UTC));
+        let loaded_from = Timestamp(datetime!(2026-10-26 12:04:30 UTC));
+        let events = [event(datetime!(2026-10-26 12:05 UTC), Some(Level::Info))];
+        let count = |minute: u8, second: u8, count| EventCount {
+            start: Timestamp(
+                datetime!(2026-10-26 12:00 UTC)
+                    .replace_minute(minute)
+                    .unwrap()
+                    .replace_second(second)
+                    .unwrap(),
+            ),
+            count,
+        };
+        // 30 s bins, one-minute buckets.
+        let counts = [
+            count(0, 0, 3),
+            count(0, 30, 4),
+            count(2, 0, 5),
+            count(4, 0, 6),
+            count(4, 30, 9),
+        ];
+        let t = timeline(&events, from, to, 6, 0).with_unloaded(loaded_from, &counts, 30_000);
+        assert_eq!(t.bucket_ms, 60_000);
+        assert_eq!(t.loaded_from, loaded_from);
+        // The 12:04:30 bin reaches into the loaded part: left out.
+        assert_eq!(t.counted, [7, 0, 5, 0, 6, 0, 0]);
+        assert_eq!(t.buckets[5].total(), 1);
+
+        // Nothing counted (e.g. Insights not allowed): only the boundary.
+        let t = timeline(&events, from, to, 6, 0).with_unloaded(loaded_from, &[], 30_000);
+        assert!(t.counted.is_empty());
+        assert_eq!(t.loaded_from, loaded_from);
     }
 
     #[test]

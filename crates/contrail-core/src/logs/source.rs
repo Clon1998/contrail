@@ -87,6 +87,14 @@ pub struct GroupEvent {
     pub event: RawEvent,
 }
 
+/// How many events fell into one stretch of time (a Logs Insights `bin()`), for the timeline of
+/// the part of a window that isn't loaded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EventCount {
+    pub start: Timestamp,
+    pub count: u32,
+}
+
 /// The result of a backfill.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Backfill {
@@ -152,6 +160,21 @@ pub trait LogSource: Send + Sync {
         _range: TimeRange,
         _limit: usize,
     ) -> Result<Vec<GroupEvent>, SourceError> {
+        Err(SourceError::Aws(
+            "Logs Insights isn't available here".to_owned(),
+        ))
+    }
+
+    /// Logs Insights: how many events of `selection` fall into each `bin_seconds` long stretch
+    /// of `range` (`stats count(*) by bin()`), oldest first; stretches without events are left
+    /// out. One query, billed per GB scanned. The default says it isn't available.
+    async fn count_events(
+        &self,
+        _ctx: &AwsCtx,
+        _selection: &StreamSelection,
+        _range: TimeRange,
+        _bin_seconds: u32,
+    ) -> Result<Vec<EventCount>, SourceError> {
         Err(SourceError::Aws(
             "Logs Insights isn't available here".to_owned(),
         ))
