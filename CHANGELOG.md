@@ -2,6 +2,24 @@
 
 All notable changes to Contrail. Generated from the commit history ([Conventional Commits](https://www.conventionalcommits.org)).
 
+## 0.5.0 — 2026-11-18
+
+### Features
+
+- **prefs:** Add date format and clock settings
+- **ui:** Write dates and times in the chosen format
+- **settings:** Choose time zone, date format and clock in Appearance
+- **prefs:** Add a setting to keep tabs across profiles
+- **tabs:** Keep tabs of several profiles open side by side
+
+### Fixes
+
+- **tabs:** Give tabs with a profile label room for the service name
+
+### Performance
+
+- **ecs:** Keep what was loaded per profile and region
+
 ## 0.4.0 — 2026-11-02
 
 ### Features
@@ -24,6 +42,10 @@ All notable changes to Contrail. Generated from the commit history ([Conventiona
 
 - Line context menu, Ctrl+Home/End, task colours, field search
 - The timeline's unloaded part and its Logs Insights counts
+
+### Tests
+
+- **e2e:** Pause the live tail before opening surrounding lines
 
 ## 0.3.0 — 2026-10-30
 
