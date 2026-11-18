@@ -63,6 +63,14 @@ export function ctxKey(ctx: AwsCtx): string {
   return `${ctx.profile}|${ctx.region ?? ""}`;
 }
 
+/** What is kept of a profile + region while another one is browsed. */
+interface Snapshot {
+  clusters: Loadable<ClusterSummary[]>;
+  services: Record<string, Loadable<ServiceSummary[]>>;
+  expanded: Record<string, boolean>;
+  cache: Record<string, CachedService>;
+}
+
 interface EcsState {
   /** The profile + region everything below belongs to. */
   ctx: AwsCtx | null;
@@ -76,10 +84,18 @@ interface EcsState {
   includeStopped: boolean;
   /** The services opened before, by cluster ARN and name. */
   cache: Record<string, CachedService>;
+  /** What was loaded for the profiles + regions browsed before, by `ctxKey`. */
+  kept: Record<string, Snapshot>;
 
-  /** Switches to `ctx` (clearing everything if it changed) and loads its clusters. */
+  /**
+   * Switches to `ctx` and loads its clusters. What was loaded for the profile + region left is
+   * kept: coming back shows it at once and refreshes it in the background.
+   */
   activate: (ctx: AwsCtx) => Promise<void>;
+  /** Forgets everything loaded for the current profile + region (reload from scratch). */
   reset: () => void;
+  /** Stops browsing (the profile isn't connected), keeping what was loaded for coming back. */
+  leave: () => void;
   toggleCluster: (clusterArn: string) => Promise<void>;
   loadServices: (clusterArn: string) => Promise<void>;
   /** Loads the services of every cluster (for the palette). */
@@ -107,6 +123,13 @@ const EMPTY = {
 } satisfies Partial<EcsState>;
 
 export const useEcs = create<EcsState>((set, get) => {
+  /** The snapshots, plus what is loaded for the current profile + region if it loaded fine. */
+  function kept(): Record<string, Snapshot> {
+    const { ctx, clusters, services, expanded, cache, kept } = get();
+    if (!ctx || clusters.state !== "ok") return kept;
+    return { ...kept, [ctxKey(ctx)]: { clusters, services, expanded, cache } };
+  }
+
   /** Whether the answer to a call made for `ctx` still applies (the user may have switched). */
   const current = (ctx: AwsCtx) => {
     const now = get().ctx;
@@ -136,6 +159,7 @@ export const useEcs = create<EcsState>((set, get) => {
 
   return {
     ...EMPTY,
+    kept: {},
     includeStopped: true,
 
     activate: async (ctx) => {
@@ -143,7 +167,20 @@ export const useEcs = create<EcsState>((set, get) => {
       if (previous && ctxKey(previous) === ctxKey(ctx) && get().clusters.state !== "error") {
         return;
       }
-      set({ ...EMPTY, ctx, clusters: { state: "loading" } });
+      const all = kept();
+      const snapshot = all[ctxKey(ctx)];
+      if (snapshot) {
+        // Shown at once; the clusters and the expanded clusters' services reload quietly
+        // (`loading` keeps the data on screen).
+        set({ ...EMPTY, ...snapshot, kept: all, ctx, clusters: loading(snapshot.clusters) });
+        const result = await commands.listClusters(ctx);
+        if (!current(ctx)) return;
+        set((s) => ({ clusters: settle(s.clusters, result) }));
+        const open = Object.keys(get().expanded).filter((arn) => get().expanded[arn]);
+        await Promise.all(open.map((arn) => get().loadServices(arn)));
+        return;
+      }
+      set({ ...EMPTY, kept: all, ctx, clusters: { state: "loading" } });
       const result = await commands.listClusters(ctx);
       if (!current(ctx)) return;
       set((s) => ({ clusters: settle(s.clusters, result) }));
@@ -153,7 +190,13 @@ export const useEcs = create<EcsState>((set, get) => {
       }
     },
 
-    reset: () => set(EMPTY),
+    reset: () => {
+      const { ctx, kept } = get();
+      const key = ctx ? ctxKey(ctx) : null;
+      set({ ...EMPTY, kept: Object.fromEntries(Object.entries(kept).filter(([k]) => k !== key)) });
+    },
+
+    leave: () => set({ ...EMPTY, kept: kept() }),
 
     toggleCluster: async (clusterArn) => {
       const open = !get().expanded[clusterArn];

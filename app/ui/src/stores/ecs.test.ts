@@ -108,6 +108,30 @@ describe("ecs store", () => {
     expect(state.clusters.state === "ok" && state.clusters.data[0]?.arn).toContain("us-west-2");
   });
 
+  it("keeps what was loaded for a profile + region and shows it again on coming back", async () => {
+    await useEcs.getState().activate(DEV);
+    await useEcs.getState().toggleCluster(CORE);
+    await useEcs.getState().activate({ profile: "demo-staging", region: null });
+    expect(useEcs.getState().expanded).toEqual({});
+
+    const listClusters = vi.spyOn(commands, "listClusters");
+    const back = useEcs.getState().activate(DEV);
+    // Shown at once, before the quiet reload answers.
+    expect(useEcs.getState().expanded).toEqual({ [CORE]: true });
+    expect(useEcs.getState().services[CORE]?.state).toBe("ok");
+    const shown = useEcs.getState().clusters;
+    expect(shown.state === "loading" && shown.data?.length).toBeGreaterThan(0);
+    await back;
+    expect(listClusters).toHaveBeenCalledTimes(1);
+    expect(useEcs.getState().clusters.state).toBe("ok");
+
+    // Reloading starts from scratch.
+    useEcs.getState().reset();
+    await useEcs.getState().activate({ profile: "demo-staging", region: null });
+    await useEcs.getState().activate(DEV);
+    expect(useEcs.getState().expanded).toEqual({});
+  });
+
   it("reports expired credentials", async () => {
     await useEcs.getState().activate({ profile: "demo-prod", region: null });
     const clusters = useEcs.getState().clusters;
