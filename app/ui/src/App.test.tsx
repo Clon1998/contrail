@@ -207,7 +207,7 @@ describe("App", () => {
     expect(within(recent).getByText("event-ingest")).toBeTruthy();
   });
 
-  it("changes theme, accent, sizes and time zone in the settings dialog", async () => {
+  it("changes theme, accent, sizes, time zone, dates and clock in the settings dialog", async () => {
     installFakeBackend();
     render(<App />);
     await screen.findByText("DemoReadOnly");
@@ -226,10 +226,15 @@ describe("App", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Violet" }));
     await waitFor(() => expect(document.documentElement.dataset.accent).toBe("violet"));
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "Logs" }));
-    const timestamps = within(dialog).getByRole("group", { name: "Timestamps" });
-    fireEvent.click(within(timestamps).getByRole("button", { name: "UTC" }));
+    const timeZone = within(dialog).getByRole("group", { name: "Time zone" });
+    fireEvent.click(within(timeZone).getByRole("button", { name: "UTC" }));
     await waitFor(() => expect(usePrefs.getState().prefs.settings.timeZone).toBe("utc"));
+    const dates = within(dialog).getByRole("group", { name: "Dates" });
+    fireEvent.click(within(dates).getByRole("button", { name: "18.11.2026" }));
+    await waitFor(() => expect(usePrefs.getState().prefs.settings.dateFormat).toBe("dayMonthYear"));
+    const clock = within(dialog).getByRole("group", { name: "Clock" });
+    fireEvent.click(within(clock).getByRole("button", { name: /12-hour/ }));
+    await waitFor(() => expect(usePrefs.getState().prefs.settings.clock).toBe("h12"));
   });
 
   it("shows a service's logs and expands a row into stack trace and fields", async () => {
