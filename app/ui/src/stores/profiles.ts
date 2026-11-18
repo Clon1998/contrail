@@ -38,6 +38,8 @@ interface ProfilesState {
   selected: string | null;
   identity: IdentityState;
   login: LoginState | null;
+  /** Identities confirmed by STS, by profile name, with when (see `IDENTITY_FRESH_MS`). */
+  confirmed: Record<string, { identity: CallerIdentity; at: number }>;
 
   /**
    * Reads all profiles and their session states, then selects the last used profile (from the
@@ -72,6 +74,13 @@ export function effectiveRegion(
   return regionOverrides[name] ?? profiles.find((p) => p.name === name)?.region ?? null;
 }
 
+/**
+ * A profile confirmed less than this long ago is taken as connected when selected again, without
+ * asking STS (switching between the tabs of two profiles shouldn't wait for it each time). A
+ * session that ran out in between shows on the next AWS call (`sessionRejected`).
+ */
+export const IDENTITY_FRESH_MS = 10 * 60_000;
+
 /** The region of the selected profile, as a hook (re-renders when it changes). */
 export function useCurrentRegion(): string | null {
   const profiles = useProfiles((s) => s.profiles);
@@ -85,6 +94,18 @@ export function currentRegion(): string | null {
   const { profiles, selected } = useProfiles.getState();
   if (!selected) return null;
   return effectiveRegion(profiles, usePrefs.getState().prefs.regionOverrides, selected);
+}
+
+/** `confirmed` with the outcome of checking `name` (`null`: AWS rejected its session). */
+function confirmedAfter(
+  confirmed: ProfilesState["confirmed"],
+  name: string,
+  result: { status: "ok"; data: CallerIdentity } | { status: "error" } | null,
+): ProfilesState["confirmed"] {
+  const rest = Object.fromEntries(Object.entries(confirmed).filter(([k]) => k !== name));
+  return result?.status === "ok"
+    ? { ...rest, [name]: { identity: result.data, at: Date.now() } }
+    : rest;
 }
 
 async function fetchStatuses(profiles: Profile[]): Promise<Record<string, SessionStatus>> {
@@ -105,6 +126,7 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
   selected: null,
   identity: { state: "idle" },
   login: null,
+  confirmed: {},
 
   load: async () => {
     set({ loading: true, loadError: null });
@@ -137,6 +159,11 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
     const profile = get().profiles.find((p) => p.name === name);
     // Don't call AWS when it can't work: the UI offers "Log in" instead.
     if (needsLogin(status) || profile?.auth.kind === "misconfigured") return;
+    const known = get().confirmed[name];
+    if (known && Date.now() - known.at < IDENTITY_FRESH_MS) {
+      set({ identity: { state: "ok", identity: known.identity } });
+      return;
+    }
     await get().checkIdentity();
   },
 
@@ -150,6 +177,7 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
     if (!name) return;
     set({ identity: { state: "checking" } });
     const result = await commands.callerIdentity({ profile: name, region: currentRegion() });
+    set((s) => ({ confirmed: confirmedAfter(s.confirmed, name, result) }));
     // The user may have switched profiles while the call was running.
     if (get().selected !== name) return;
     set({
@@ -191,7 +219,10 @@ export const useProfiles = create<ProfilesState>((set, get) => ({
   },
 
   sessionRejected: (error) => {
-    if (!get().selected || get().identity.state === "error") return;
+    const name = get().selected;
+    if (!name) return;
+    set((s) => ({ confirmed: confirmedAfter(s.confirmed, name, null) }));
+    if (get().identity.state === "error") return;
     set({ identity: { state: "error", error } });
     void get().refreshStatuses();
   },

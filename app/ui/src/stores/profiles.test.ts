@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { commands } from "@/bindings";
 import { installFakeBackend, uninstallFakeBackend } from "@/e2e/fakeBackend";
 import { EMPTY_PREFS, usePrefs } from "./prefs";
-import { currentRegion, useProfiles } from "./profiles";
+import { currentRegion, IDENTITY_FRESH_MS, useProfiles } from "./profiles";
 
 const initial = useProfiles.getState();
 
@@ -11,7 +12,11 @@ beforeEach(() => {
   usePrefs.setState({ prefs: EMPTY_PREFS });
 });
 
-afterEach(() => uninstallFakeBackend());
+afterEach(() => {
+  uninstallFakeBackend();
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
 
 describe("profiles store", () => {
   it("loads profiles with their session states and checks the first usable one", async () => {
@@ -31,6 +36,26 @@ describe("profiles store", () => {
     await useProfiles.getState().load();
     await useProfiles.getState().select("demo-prod");
     expect(useProfiles.getState().identity).toEqual({ state: "idle" });
+  });
+
+  it("takes a profile confirmed a moment ago as connected without asking AWS again", async () => {
+    installFakeBackend();
+    await useProfiles.getState().load();
+    await useProfiles.getState().select("demo-staging");
+    const callerIdentity = vi.spyOn(commands, "callerIdentity");
+
+    await useProfiles.getState().select("demo-dev");
+    expect(callerIdentity).not.toHaveBeenCalled();
+    expect(useProfiles.getState().identity).toMatchObject({ state: "ok" });
+
+    // Once AWS rejects the session, or after a while, it is checked again.
+    useProfiles.getState().sessionRejected({ code: "credentials", message: "expired", hint: null });
+    await useProfiles.getState().select("demo-staging");
+    await useProfiles.getState().select("demo-dev");
+    expect(callerIdentity).toHaveBeenCalledTimes(1);
+    vi.useFakeTimers({ now: Date.now() + IDENTITY_FRESH_MS });
+    await useProfiles.getState().select("demo-staging");
+    expect(callerIdentity).toHaveBeenCalledTimes(2);
   });
 
   it("logs in, streams the output and then checks the identity", async () => {

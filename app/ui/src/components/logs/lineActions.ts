@@ -10,6 +10,7 @@ import {
 import { commands, type LogEvent } from "@/bindings";
 import { prettyJson } from "@/lib/logs";
 import { regionOf } from "@/lib/links";
+import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
 import { usePrefs } from "@/stores/prefs";
 import { useTabs } from "@/stores/tabs";
@@ -61,14 +62,17 @@ export function useLineActions(
       label: "Trace across services",
       icon: RouteIcon,
       hint: "Find this ID in other services of the cluster and show the way it took (opens a tab)",
-      run: () =>
-        useTabs.getState().openTrace({
+      run: () => {
+        const ctx = useEcs.getState().ctx;
+        if (!ctx) return;
+        useTabs.getState().openTrace(ctx, {
           id,
           term,
           at: event.timestamp,
           clusterArn: service.clusterArn,
           origin: service.serviceName,
-        }),
+        });
+      },
     };
 
   const actions = [

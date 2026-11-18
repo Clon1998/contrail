@@ -36,9 +36,10 @@ import { UpdateServiceDialog } from "./UpdateServiceDialog";
 /** The active tab: the selected service inside the logs store of its tab, a trace or a map. */
 export function ServiceView() {
   const selected = useEcs((s) => s.selected);
+  const ctx = useEcs((s) => s.ctx);
   const tab = useTabs((s) => s.tabs.find((t) => t.key === s.activeKey));
   // Right after selecting another service its tab is activated (an effect in App): wait for it.
-  const ready = tab?.kind === "service" && selected && tab.key === tabKey(selected);
+  const ready = tab?.kind === "service" && selected && ctx && tab.key === tabKey(ctx, selected);
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <ServiceTabs />
@@ -49,6 +50,11 @@ export function ServiceView() {
       )}
       {tab?.kind === "trace" && <TraceView key={tab.key} tab={tab} />}
       {tab?.kind === "routes" && <RouteMap key={tab.key} tab={tab} />}
+      {!tab && !selected && (
+        <p className="m-auto text-sm text-muted-foreground">
+          Pick a service in the sidebar, or a tab above.
+        </p>
+      )}
     </div>
   );
 }

@@ -56,7 +56,8 @@ import { ConfigList } from "./RouteConfig";
  */
 export function RouteMap({ tab }: { tab: RoutesTab }) {
   const { clusterArn } = tab;
-  const ctx = useEcs((s) => s.ctx);
+  // The map's own profile + region (it is only shown while they are the browsed ones).
+  const ctx = tab.ctx;
   const loaded = useEcs((s) => s.services[clusterArn]);
   const loadServices = useEcs((s) => s.loadServices);
   const transformers = usePrefs((s) => s.prefs.transformers);

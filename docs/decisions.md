@@ -536,3 +536,22 @@ apply to events that aren't loaded) and drawn faint over a hatched area. A click
 point with the normal `load_older`, then focuses. When Insights isn't allowed, the area stays hatched without
 counts. Uses the existing optional `logs:StartQuery`/`logs:GetQueryResults` statement; no setting to turn it off
 for now (the scan is the unloaded part of one log group, usually well under a cent).
+
+## 2026-11-18 — Tabs of several profiles: one browsed profile, tabs that switch to theirs
+
+After a week of daily use Patrick wants to keep a service of one environment open while looking at another
+environment's service, and was open to listing every environment in the sidebar instead of the profile dropdown.
+**Decision:** an opt-in setting "Keep tabs open when switching profile or region" (off by default, the old
+behaviour). Each tab remembers its profile + region; while tabs of more than one are involved they carry a small
+profile label. The app keeps **one browsed profile + region**: showing a tab of another one switches to it, so the
+sidebar, the top bar (identity, login, region) and every view always agree with the tab shown. To make that
+switch quick, the ECS store keeps what was loaded per profile + region (shown at once, refreshed quietly) and a
+profile confirmed by STS in the last 10 minutes isn't checked again on every switch (an AWS call that is
+rejected still shows "Log in" at once).
+**Not done: every environment in one sidebar tree.** Each profile has its own SSO session, region override,
+login state and errors; a combined tree would load clusters for all profiles up front (many profiles, several
+expired at any time) and need per-node login and region handling, while the top bar, palette, links and change
+dialogs all assume one profile. With tabs that switch, the dropdown stays the one place to change profile, and
+the sidebar's favorites of every profile (with the setting on) and ⌘K's recent services of any profile cover
+"jump to that service in the other environment" without a rework.
+

@@ -26,10 +26,10 @@ import { HealthDot } from "./HealthDot";
  */
 async function runSavedSearch(saved: SavedSearch) {
   if (saved.service) await openServiceKey(saved.service);
-  const service = useEcs.getState().selected;
-  if (!service) return;
+  const { selected: service, ctx } = useEcs.getState();
+  if (!service || !ctx) return;
   // The tab of the service (the app opens it too, a moment later; activating twice is harmless).
-  useTabs.getState().activate(service);
+  useTabs.getState().activate(ctx, service);
   const tabs = useTabs.getState();
   const tab = tabs.tabs.find((t) => t.key === tabs.activeKey);
   if (tab?.kind !== "service") return;

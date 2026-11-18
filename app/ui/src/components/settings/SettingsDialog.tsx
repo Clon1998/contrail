@@ -185,6 +185,20 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     onChange={(logFontSize) => void update({ logFontSize })}
                   />
                 </Row>
+                <Row
+                  label="Tabs"
+                  hint="Open services of several profiles side by side. Showing a tab switches to its profile and region; the sidebar lists the favorites of every profile."
+                >
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={settings.tabsAcrossProfiles}
+                      onCheckedChange={(checked) =>
+                        void update({ tabsAcrossProfiles: checked === true })
+                      }
+                    />
+                    Keep tabs open when switching profile or region
+                  </label>
+                </Row>
                 <Row label="Time zone" hint="Log times, the timeline and dates everywhere.">
                   <div className="flex gap-1">
                     {TIME_ZONES.map((option) => (

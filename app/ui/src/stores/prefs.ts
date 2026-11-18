@@ -54,6 +54,7 @@ export const DEFAULT_SETTINGS: Settings = {
   newestFirst: false,
   wrapLines: false,
   showTimeline: true,
+  tabsAcrossProfiles: false,
   showMarkers: true,
   allowChanges: false,
   builtinLogin: false,

@@ -1028,6 +1028,8 @@ export type Settings = {
 	wrapLines: boolean,
 	/**  The timeline (events over time, by level) is shown above log lists. */
 	showTimeline: boolean,
+	/**  Switching profile or region keeps the open tabs (of every profile) instead of closing them. */
+	tabsAcrossProfiles: boolean,
 	/**
 	 *  Deployments, stopped tasks and service events are marked between the log lines and on
 	 *  the timeline.

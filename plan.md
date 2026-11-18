@@ -532,6 +532,14 @@ round. The numbers stay as they are (they're referenced in commits and docs).
 - **Done when:** commands refuse while the setting is off (Rust tests); the fake records and shows changes; e2e
   covers stopping a task and a quick update with confirmation; docs, security page and site wording updated.
 
+#### Feedback after a week of use (Patrick, 2026-11-18)
+- **Tabs across profiles** (setting, off by default): tabs of several profiles stay open; showing one switches to
+  its profile + region; favorites of every profile in the sidebar. See decisions.md 2026-11-18.
+- **Date and clock format** (settings): dates as `2026-11-18`, `18.11.2026` or `11/18/2026`, 24- or 12-hour
+  clock, everywhere a time is shown (log rows, details, timeline, tooltips, time picker). The time picker also
+  reads `20.10.` and `10/20`.
+- **Done when:** unit tests for the formats and the per-profile tabs; e2e covers tabs of two profiles side by side.
+
 #### M11 — Stuck documents (moved to the end of this round)
 - **Document keys:** a document is followed by its correlation ID **or its object name** (`fw.objectName`,
   the key under which the framework stores a document). Hops that log only one of the two keys still join
