@@ -257,6 +257,7 @@ export function createFakeBackend(options: FakeBackendOptions = {}) {
       newestFirst: false,
       wrapLines: false,
       showTimeline: true,
+      tabsAcrossProfiles: false,
       showMarkers: true,
       allowChanges: false,
       builtinLogin: false,

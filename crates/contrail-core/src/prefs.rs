@@ -166,6 +166,8 @@ pub struct Settings {
     pub wrap_lines: bool,
     /// The timeline (events over time, by level) is shown above log lists.
     pub show_timeline: bool,
+    /// Switching profile or region keeps the open tabs (of every profile) instead of closing them.
+    pub tabs_across_profiles: bool,
     /// Deployments, stopped tasks and service events are marked between the log lines and on
     /// the timeline.
     pub show_markers: bool,
@@ -197,6 +199,7 @@ impl Default for Settings {
             newest_first: false,
             wrap_lines: false,
             show_timeline: true,
+            tabs_across_profiles: false,
             show_markers: true,
             builtin_login: false,
             check_for_updates: true,
@@ -237,6 +240,11 @@ impl Settings {
         read(value, "newestFirst", &mut settings.newest_first);
         read(value, "wrapLines", &mut settings.wrap_lines);
         read(value, "showTimeline", &mut settings.show_timeline);
+        read(
+            value,
+            "tabsAcrossProfiles",
+            &mut settings.tabs_across_profiles,
+        );
         read(value, "showMarkers", &mut settings.show_markers);
         read(value, "builtinLogin", &mut settings.builtin_login);
         read(value, "checkForUpdates", &mut settings.check_for_updates);
@@ -812,7 +820,7 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","dateFormat":"iso","clock":"h24","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true,"allowChanges":false}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","dateFormat":"iso","clock":"h24","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"tabsAcrossProfiles":false,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true,"allowChanges":false}"#
         );
     }
 
