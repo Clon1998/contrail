@@ -1,5 +1,6 @@
 import type { TimeWindow, TimeZone } from "@/bindings";
 import { fromDateTimeLocal, toDateTimeLocal } from "@/lib/logs";
+import { formatClock, formatDayName, timeParts, type TimeFormat } from "./timeFormat";
 
 /**
  * Typed time windows, for the time picker: what the user typed, read as a window.
@@ -7,10 +8,11 @@ import { fromDateTimeLocal, toDateTimeLocal } from "@/lib/logs";
  * - Durations: `15m`, `3h`, `2d`, `1w`, `1h30m`, `90` (minutes), `last 2 hours`
  * - Since a point in time (followed live like any "last …" window): `today`, `since 14:00`,
  *   `since yesterday 9:00`
- * - Fixed ranges: `yesterday`, `2026-10-23`, `oct 23`, `9:00-11:30`, `yesterday 9-11`,
+ * - Fixed ranges: `yesterday`, `2026-10-23`, `oct 23`, `23.10.`, `10/23`, `9:00-11:30`, `yesterday 9-11`,
  *   `oct 22 22:00 - oct 23 2:00`, `2pm-3pm`
  *
- * Days and times are in the user's time zone setting (local time or UTC).
+ * Days and times are in the user's time zone setting (local time or UTC); titles follow the date
+ * and clock settings.
  */
 export type TimeInput =
   | { kind: "empty" }
@@ -52,13 +54,14 @@ interface Day {
   d: number;
 }
 
-const DAY = String.raw`today|yesterday|\d{4}-\d{1,2}-\d{1,2}|[a-z]{3,9}\.? \d{1,2}|\d{1,2}\.? [a-z]{3,9}`;
+const DAY = String.raw`today|yesterday|\d{4}-\d{1,2}-\d{1,2}|\d{1,2}\.\d{1,2}\.(?:\d{4})?|\d{1,2}/\d{1,2}(?:/\d{4})?|[a-z]{3,9}\.? \d{1,2}|\d{1,2}\.? [a-z]{3,9}`;
 const TIME = String.raw`\d{1,2}(?::\d{2})? ?(?:am|pm)?`;
 const RANGE = new RegExp(`^(?:(${DAY}) )?(${TIME}) ?- ?(?:(${DAY}) )?(${TIME})$`);
 const SINCE = new RegExp(`^(?:since|from) (?:(${DAY})(?: (${TIME}))?|(${TIME}))$`);
 const DURATION = /^(?:(?:last|past) )?((?:\d+(?:\.\d+)? ?[a-z]+ ?)+)$/;
 
-export function parseTimeInput(text: string, timeZone: TimeZone, now = Date.now()): TimeInput {
+export function parseTimeInput(text: string, format: TimeFormat, now = Date.now()): TimeInput {
+  const timeZone = format.timeZone;
   const input = text
     .toLowerCase()
     .replace(/[–—]/g, "-")
@@ -90,8 +93,8 @@ export function parseTimeInput(text: string, timeZone: TimeZone, now = Date.now(
     if (!day || !time) return invalid("Try since 14:00 or since yesterday 9:00.");
     const start = at(day, time.h, time.m, timeZone);
     const title = sameDay(day, today)
-      ? `Since ${clock(start, timeZone)}`
-      : `Since ${dayName(day, today)} ${clock(start, timeZone)}`;
+      ? `Since ${clock(start, format)}`
+      : `Since ${dayName(day, today, format)} ${clock(start, format)}`;
     return since(start, now, title);
   }
 
@@ -183,6 +186,19 @@ function parseDay(text: string, today: Day): Day | null {
   if (text === "yesterday") return addDays(today, -1);
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
   if (iso) return validDay({ y: Number(iso[1]), m: Number(iso[2]), d: Number(iso[3]) });
+  // `23.10.` / `23.10.2026` (day first) and `10/23` / `10/23/2026` (month first).
+  const dotted = /^(\d{1,2})\.(\d{1,2})\.(\d{4})?$/.exec(text);
+  const slashed = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/.exec(text);
+  const numeric = dotted
+    ? { d: dotted[1], m: dotted[2], y: dotted[3] }
+    : slashed
+      ? { m: slashed[1], d: slashed[2], y: slashed[3] }
+      : null;
+  if (numeric) {
+    const day = { m: Number(numeric.m), d: Number(numeric.d) };
+    if (numeric.y) return validDay({ ...day, y: Number(numeric.y) });
+    return lastSuch(day, today);
+  }
   const monthFirst = /^([a-z]{3,9})\.? (\d{1,2})$/.exec(text);
   const dayFirst = /^(\d{1,2})\.? ([a-z]{3,9})$/.exec(text);
   const [monthName, dayNumber] = monthFirst
@@ -193,8 +209,12 @@ function parseDay(text: string, today: Day): Day | null {
   if (!monthName || !dayNumber) return null;
   const month = MONTHS.indexOf(monthName.slice(0, 3)) + 1;
   if (month === 0) return null;
-  // Without a year: the last such day, this year or the year before.
-  const thisYear = validDay({ y: today.y, m: month, d: Number(dayNumber) });
+  return lastSuch({ m: month, d: Number(dayNumber) }, today);
+}
+
+/** A day without a year: the last such day, this year or the year before. */
+function lastSuch(day: { m: number; d: number }, today: Day): Day | null {
+  const thisYear = validDay({ y: today.y, ...day });
   if (!thisYear) return null;
   return compareDays(thisYear, today) > 0 ? validDay({ ...thisYear, y: today.y - 1 }) : thisYear;
 }
@@ -252,61 +272,66 @@ export function durationText(minutes: number, style: "short" | "long"): string {
     .join(" ");
 }
 
-/** `Today`, `Yesterday`, `Oct 20`, or `Dec 24, 2025` in another year. */
-function dayName(day: Day, today: Day): string {
+/** `Today`, `Yesterday`, `Oct 20` (or `20 Oct`), or `Dec 24, 2025` in another year. */
+function dayName(day: Day, today: Day, format: TimeFormat): string {
   if (sameDay(day, today)) return "Today";
   if (sameDay(day, addDays(today, -1))) return "Yesterday";
-  const month = MONTHS[day.m - 1] ?? "";
-  const name = `${month.charAt(0).toUpperCase()}${month.slice(1)} ${day.d}`;
-  return day.y === today.y ? name : `${name}, ${day.y}`;
+  return formatDayName(day, format.date, day.y !== today.y);
 }
 
-function clock(ms: number, timeZone: TimeZone): string {
-  return toDateTimeLocal(new Date(ms).toISOString(), timeZone).slice(11, 16);
+function clock(ms: number, format: TimeFormat): string {
+  return formatClock(timeParts(ms, format.timeZone), format.clock);
+}
+
+/** Whether `ms` is midnight in the time zone. */
+function isMidnight(ms: number, timeZone: TimeZone): boolean {
+  const t = timeParts(ms, timeZone);
+  return t.hour === 0 && t.minute === 0;
 }
 
 /**
  * What a window covers, in words: `Last 15 minutes`, `Yesterday`, `Yesterday 09:00 → 11:00`,
  * `Oct 22 22:00 → Oct 23 02:00`.
  */
-export function windowTitle(window: TimeWindow, timeZone: TimeZone, now = Date.now()): string {
+export function windowTitle(window: TimeWindow, format: TimeFormat, now = Date.now()): string {
   if (window.kind === "last") return `Last ${durationText(window.minutes, "long")}`;
+  const timeZone = format.timeZone;
   const today = dayOf(now, timeZone);
   const from = Date.parse(window.from);
   // A range ending at midnight belongs to the day before (`Yesterday`, not `… → Today 00:00`).
   const to = Date.parse(window.to);
   const fromDay = dayOf(from, timeZone);
   const lastDay = dayOf(to - 1, timeZone);
-  const wholeDays = clock(from, timeZone) === "00:00" && clock(to, timeZone) === "00:00";
+  const wholeDays = isMidnight(from, timeZone) && isMidnight(to, timeZone);
   if (wholeDays) {
     return sameDay(fromDay, lastDay)
-      ? dayName(fromDay, today)
-      : `${dayName(fromDay, today)} → ${dayName(lastDay, today)}`;
+      ? dayName(fromDay, today, format)
+      : `${dayName(fromDay, today, format)} → ${dayName(lastDay, today, format)}`;
   }
   const toDay = dayOf(to, timeZone);
   const end = sameDay(fromDay, toDay)
-    ? clock(to, timeZone)
-    : `${dayName(toDay, today)} ${clock(to, timeZone)}`;
-  return `${dayName(fromDay, today)} ${clock(from, timeZone)} → ${end}`;
+    ? clock(to, format)
+    : `${dayName(toDay, today, format)} ${clock(to, format)}`;
+  return `${dayName(fromDay, today, format)} ${clock(from, format)} → ${end}`;
 }
 
 /** The label of the time picker's button: `Last 15 min`, or the range's title. */
-export function windowChip(window: TimeWindow, timeZone: TimeZone, now = Date.now()): string {
+export function windowChip(window: TimeWindow, format: TimeFormat, now = Date.now()): string {
   return window.kind === "last"
     ? `Last ${durationText(window.minutes, "short")}`
-    : windowTitle(window, timeZone, now);
+    : windowTitle(window, format, now);
 }
 
 /** The other half of the picture: where a "last" window starts, or how long a range is. */
-export function windowDetail(window: TimeWindow, timeZone: TimeZone, now = Date.now()): string {
+export function windowDetail(window: TimeWindow, format: TimeFormat, now = Date.now()): string {
   if (window.kind === "range") {
     const minutes = Math.round((Date.parse(window.to) - Date.parse(window.from)) / MINUTE);
     return durationText(minutes, "long");
   }
   const start = now - window.minutes * MINUTE;
-  const day = dayOf(start, timeZone);
-  const today = dayOf(now, timeZone);
+  const day = dayOf(start, format.timeZone);
+  const today = dayOf(now, format.timeZone);
   return sameDay(day, today)
-    ? `since ${clock(start, timeZone)}`
-    : `since ${dayName(day, today)} ${clock(start, timeZone)}`;
+    ? `since ${clock(start, format)}`
+    : `since ${dayName(day, today, format)} ${clock(start, format)}`;
 }

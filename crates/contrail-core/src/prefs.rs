@@ -89,6 +89,30 @@ pub enum TimeZone {
     Utc,
 }
 
+/// How dates are written.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum DateFormat {
+    /// `2026-11-18`, the default.
+    #[default]
+    Iso,
+    /// `18.11.2026`, as in German and most of Europe.
+    DayMonthYear,
+    /// `11/18/2026`, as in the US.
+    MonthDayYear,
+}
+
+/// How times of day are written.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ClockFormat {
+    /// `14:05`, the default.
+    #[default]
+    H24,
+    /// `2:05 PM`.
+    H12,
+}
+
 /// Optional columns of the log list (time, level, task and message are always shown).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -119,6 +143,8 @@ pub struct Settings {
     pub color_mode: ColorMode,
     pub accent: Accent,
     pub time_zone: TimeZone,
+    pub date_format: DateFormat,
+    pub clock: ClockFormat,
     /// How far back a log view starts, in minutes.
     pub backfill_minutes: u32,
     /// The size of the whole UI, in percent.
@@ -159,6 +185,8 @@ impl Default for Settings {
             color_mode: ColorMode::default(),
             accent: Accent::default(),
             time_zone: TimeZone::default(),
+            date_format: DateFormat::default(),
+            clock: ClockFormat::default(),
             backfill_minutes: DEFAULT_BACKFILL_MINUTES,
             ui_scale: DEFAULT_UI_SCALE,
             log_font_size: DEFAULT_LOG_FONT_SIZE,
@@ -197,6 +225,8 @@ impl Settings {
         read(value, "colorMode", &mut settings.color_mode);
         read(value, "accent", &mut settings.accent);
         read(value, "timeZone", &mut settings.time_zone);
+        read(value, "dateFormat", &mut settings.date_format);
+        read(value, "clock", &mut settings.clock);
         read(value, "backfillMinutes", &mut settings.backfill_minutes);
         read(value, "uiScale", &mut settings.ui_scale);
         read(value, "logFontSize", &mut settings.log_font_size);
@@ -782,14 +812,15 @@ mod tests {
         assert_eq!(settings.time_zone, TimeZone::Local);
         assert_eq!(
             serde_json::to_string(&settings).unwrap(),
-            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true,"allowChanges":false}"#
+            r#"{"colorMode":"dark","accent":"sky","timeZone":"local","dateFormat":"iso","clock":"h24","backfillMinutes":15,"uiScale":100,"logFontSize":12,"pauseWhenHidden":true,"autoPauseMinutes":10,"bufferSize":100000,"logColumns":[],"newestFirst":false,"wrapLines":false,"showTimeline":true,"showMarkers":true,"builtinLogin":false,"checkForUpdates":true,"allowChanges":false}"#
         );
     }
 
     #[test]
     fn unknown_settings_fall_back_one_field_at_a_time() {
         let json = r#"{"favorites":[{"profile":"dev","region":"eu-west-1","clusterArn":"arn:aws:ecs:eu-west-1:1:cluster/c","serviceName":"s"}],
-                       "settings":{"colorMode":"light","accent":"chartreuse","timeZone":"utc"}}"#;
+                       "settings":{"colorMode":"light","accent":"chartreuse","timeZone":"utc",
+                                   "dateFormat":"dayMonthYear","clock":"h12"}}"#;
         let prefs = Prefs::from_json(json).unwrap();
         assert_eq!(prefs.favorites.len(), 1);
         // Known values are kept; the unknown accent and the missing fields get their defaults.
@@ -798,6 +829,8 @@ mod tests {
             Settings {
                 color_mode: ColorMode::Light,
                 time_zone: TimeZone::Utc,
+                date_format: DateFormat::DayMonthYear,
+                clock: ClockFormat::H12,
                 ..Settings::default()
             }
         );

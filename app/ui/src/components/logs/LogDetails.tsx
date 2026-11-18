@@ -12,9 +12,9 @@ import {
   type JsonToken,
   type TraceLineKind,
 } from "@/lib/logs";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { appendTerm, fieldTerm } from "@/lib/highlight";
 import { useLogs } from "@/stores/logs";
-import { usePrefs } from "@/stores/prefs";
 import { CopyButton } from "@/components/CopyButton";
 import { Ansi } from "./Ansi";
 import { LineContextDialog } from "./LineContextDialog";
@@ -181,7 +181,7 @@ export function EventBody({
   onField?: (term: string) => void;
 }) {
   const { line } = event;
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const embedded = splitEmbeddedJson(line.message, line.jsonSpan);
   const embeddedPretty = embedded ? prettyJson(embedded.json) : null;
   const rawPretty = line.kind === "ecs" || line.kind === "json" ? prettyJson(event.raw) : null;
@@ -220,7 +220,7 @@ export function EventBody({
         {/* The event's time with its date, whatever the line's format (the list shows less). */}
         <div className="contents">
           <dt className="text-muted-foreground">time</dt>
-          <dd className="tabular-nums">{formatFullTime(event.timestamp, timeZone)}</dd>
+          <dd className="tabular-nums">{formatFullTime(event.timestamp, format)}</dd>
         </div>
         {line.fields.map((field) => (
           <div key={field.key} className="contents">

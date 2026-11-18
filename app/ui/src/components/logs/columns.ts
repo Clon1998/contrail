@@ -1,5 +1,7 @@
 import type { LogColumn, LogEvent } from "@/bindings";
 import { usePrefs } from "@/stores/prefs";
+import { formatLogTime } from "@/lib/logs";
+import { DEFAULT_TIME_FORMAT, type TimeFormat } from "@/lib/timeFormat";
 
 /** The optional columns shown (a setting, the same for every view). */
 export function useLogColumns(): LogColumn[] {
@@ -72,11 +74,21 @@ export function abbreviateLogger(name: string, max: number): string {
   return short.length <= max ? short : `…${short.slice(short.length - max + 1)}`;
 }
 
-/** The CSS grid columns of a row: time, level, [task], [optional…], message. */
-export function gridTemplate(showTask: boolean, columns: LogColumn[], withDate = false): string {
+/**
+ * The CSS grid columns of a row: time, level, [task], [optional…], message. The time column is
+ * as wide as a time in `format` (with the date: `withDate`).
+ */
+export function gridTemplate(
+  showTask: boolean,
+  columns: LogColumn[],
+  format: TimeFormat = DEFAULT_TIME_FORMAT,
+  withDate = false,
+): string {
+  // Every log time has the same length in a format (fixed-width hours, zero-padded parts).
+  const timeChars = formatLogTime(new Date(0).toISOString(), format, withDate).length;
   return [
     "1.2em",
-    withDate ? "18.5ch" : "12.5ch",
+    `${timeChars + 0.5}ch`,
     "6ch",
     ...(showTask ? ["10.5ch"] : []),
     ...OPTIONAL_COLUMNS.filter((c) => columns.includes(c.id)).map((c) => c.width),

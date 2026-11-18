@@ -16,6 +16,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Hint } from "@/components/ui/tooltip";
 import { useNow } from "@/hooks/useNow";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { formatAgo, formatDateTime, groupEvents, shortTaskId } from "@/lib/ecs";
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
@@ -96,11 +97,6 @@ function StartTruncated({ text, align = "left" }: { text: string; align?: "left"
   );
 }
 
-/** The time zone setting, for absolute times in tooltips. */
-function useTimeZone() {
-  return usePrefs((s) => s.prefs.settings.timeZone);
-}
-
 /** `"512"` CPU units → `0.5 vCPU`; `"1024"` MiB → `1 GB`. */
 function formatResources(cpu: string | null, memory: string | null): string {
   const vcpu = cpu ? `${Number(cpu) / 1024} vCPU` : "—";
@@ -177,7 +173,7 @@ function Progress({ running, desired }: { running: number; desired: number }) {
 
 function Deployments({ deployments }: { deployments: Deployment[] }) {
   const now = useNow();
-  const timeZone = useTimeZone();
+  const format = useTimeFormat();
   return (
     <OverviewCard title="Deployments" count={deployments.length}>
       <Table className="table-fixed">
@@ -215,7 +211,7 @@ function Deployments({ deployments }: { deployments: Deployment[] }) {
               </TableCell>
               <TableCell
                 className="text-xs text-muted-foreground"
-                title={formatDateTime(d.updatedAt, timeZone)}
+                title={formatDateTime(d.updatedAt, format)}
               >
                 {formatAgo(d.updatedAt, now)}
               </TableCell>
@@ -262,15 +258,13 @@ function TaskStatus({ task }: { task: Task }) {
 /** Why a task stopped: when, the stop code, the exit code and the reasons. */
 function StopReason({ task }: { task: Task }) {
   const now = useNow();
-  const timeZone = useTimeZone();
+  const format = useTimeFormat();
   const container = task.containers[0];
   const exitCode = container?.exitCode;
   return (
     <div className="space-y-0.5 text-xs whitespace-normal">
       <div>
-        <span title={formatDateTime(task.stoppedAt, timeZone)}>
-          {formatAgo(task.stoppedAt, now)}
-        </span>
+        <span title={formatDateTime(task.stoppedAt, format)}>{formatAgo(task.stoppedAt, now)}</span>
         {task.stopCode && (
           <>
             <span className="mx-1">·</span>
@@ -302,7 +296,7 @@ function Tasks() {
   const showTask = useLogs((s) => s.showTask);
   const allowChanges = usePrefs((s) => s.prefs.settings.allowChanges);
   const now = useNow();
-  const timeZone = useTimeZone();
+  const format = useTimeFormat();
   const list = "data" in tasks ? (tasks.data ?? []) : [];
   // Tasks picked for stopping (only while changes are allowed); stopped ones can't be picked.
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
@@ -409,7 +403,7 @@ function Tasks() {
                   </TableCell>
                   <TableCell
                     className="align-top text-xs text-muted-foreground"
-                    title={formatDateTime(task.startedAt, timeZone)}
+                    title={formatDateTime(task.startedAt, format)}
                   >
                     {formatAgo(task.startedAt, now)}
                   </TableCell>
@@ -438,7 +432,7 @@ function Tasks() {
 
 function Events({ detail }: { detail: ServiceDetail }) {
   const now = useNow();
-  const timeZone = useTimeZone();
+  const format = useTimeFormat();
   const groups = groupEvents(detail.events, detail.summary.name);
   if (groups.length === 0) return null;
   return (
@@ -448,14 +442,14 @@ function Events({ detail }: { detail: ServiceDetail }) {
           <li key={group.id} className="text-sm">
             <p className="leading-snug">{group.message}</p>
             <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span title={formatDateTime(group.latest, timeZone)}>
+              <span title={formatDateTime(group.latest, format)}>
                 {formatAgo(group.latest, now)}
               </span>
               {group.count > 1 && (
                 <Badge
                   variant="secondary"
                   className="h-4 px-1.5 text-[10px] tabular-nums"
-                  title={`${group.count} times since ${formatDateTime(group.earliest, timeZone)}`}
+                  title={`${group.count} times since ${formatDateTime(group.earliest, format)}`}
                 >
                   ×{group.count}
                 </Badge>

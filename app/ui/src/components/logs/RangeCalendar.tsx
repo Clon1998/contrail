@@ -4,6 +4,7 @@ import { cn } from "cn";
 import type { TimeWindow, TimeZone } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { TimeFormat } from "@/lib/timeFormat";
 import {
   addDays,
   at,
@@ -51,15 +52,16 @@ function clockAt(day: Day, clock: { h: number; m: number }, timeZone: TimeZone):
  */
 export function RangeCalendar({
   value,
-  timeZone,
+  format,
   onApply,
 }: {
   value: TimeWindow;
-  timeZone: TimeZone;
+  format: TimeFormat;
   onApply: (window: TimeWindow) => void;
 }) {
   // "Now" as of opening the calendar: today's date and the latest end allowed.
   const [now] = useState(Date.now);
+  const timeZone = format.timeZone;
   const today = dayOf(now, timeZone);
   const initial =
     value.kind === "range"
@@ -192,7 +194,7 @@ export function RangeCalendar({
       <div className="flex items-center gap-2">
         <p className="min-w-0 flex-1 truncate text-muted-foreground" aria-live="polite">
           {window
-            ? `${windowTitle(window, timeZone, now)} · ${windowDetail(window, timeZone, now)}`
+            ? `${windowTitle(window, format, now)} · ${windowDetail(window, format, now)}`
             : "Pick days and times in the past."}
         </p>
         <Button size="xs" disabled={!window} onClick={() => window && onApply(window)}>

@@ -17,10 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { LoginAgain } from "@/components/profile/LoginAgain";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { nameFromArn } from "@/lib/ecs";
 import { formatLogTime, formatShortTime, prettyJson } from "@/lib/logs";
 import { useEcs } from "@/stores/ecs";
-import { usePrefs } from "@/stores/prefs";
 import { tabKey, useTabs, type TraceTab } from "@/stores/tabs";
 import { hitKey, TRACE_SPANS, type TraceState } from "@/stores/trace";
 import { Ansi } from "./Ansi";
@@ -328,7 +328,7 @@ function TraceRow({ store, hit }: { store: TraceTab["trace"]; hit: TraceHit }) {
   const key = hitKey(hit);
   const expanded = useStore(store, (s) => s.expanded[key] ?? false);
   const toggle = useStore(store, (s) => s.toggleExpanded);
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const { event } = hit;
   const { line } = event;
 
@@ -350,9 +350,9 @@ function TraceRow({ store, hit }: { store: TraceTab["trace"]; hit: TraceHit }) {
         />
         <span
           className="text-muted-foreground tabular-nums"
-          title={formatShortTime(event.timestamp, timeZone)}
+          title={formatShortTime(event.timestamp, format)}
         >
-          {formatLogTime(event.timestamp, timeZone)}
+          {formatLogTime(event.timestamp, format)}
         </span>
         <span className="truncate font-sans font-medium">{hit.service}</span>
         <span

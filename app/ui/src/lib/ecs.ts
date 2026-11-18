@@ -1,5 +1,12 @@
-import type { ServiceDetail, ServiceSummary, TimeZone } from "@/bindings";
+import type { ServiceDetail, ServiceSummary } from "@/bindings";
 import { formatDuration } from "./session";
+import {
+  DEFAULT_TIME_FORMAT,
+  formatClock,
+  formatDate,
+  timeParts,
+  type TimeFormat,
+} from "./timeFormat";
 
 /** How a service is doing, from its task counts. */
 export type ServiceHealth = "ok" | "warn" | "bad" | "idle";
@@ -18,16 +25,16 @@ export function formatAgo(timestamp: string | null | undefined, now: number): st
   return `${formatDuration(now - Date.parse(timestamp))} ago`;
 }
 
-/** An absolute date-time for tooltips, in local time or UTC (the time zone setting). */
+/** An absolute date-time for tooltips (`2026-11-18 14:05:07`), as the settings say. */
 export function formatDateTime(
   timestamp: string | null | undefined,
-  timeZone: TimeZone = "local",
+  format: TimeFormat = DEFAULT_TIME_FORMAT,
 ): string {
   if (!timestamp) return "";
-  const date = new Date(timestamp);
-  return timeZone === "utc"
-    ? `${date.toLocaleString(undefined, { timeZone: "UTC" })} UTC`
-    : date.toLocaleString();
+  const t = timeParts(Date.parse(timestamp), format.timeZone);
+  const date = formatDate({ y: t.year, m: t.month, d: t.day }, format.date);
+  const time = formatClock(t, format.clock, { seconds: true });
+  return `${date} ${time}${format.timeZone === "utc" ? " UTC" : ""}`;
 }
 
 /** The first characters of a task ID, enough to tell tasks apart (like the console's badges). */

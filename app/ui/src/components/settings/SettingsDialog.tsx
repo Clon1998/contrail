@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { CheckIcon, Loader2Icon, SettingsIcon } from "lucide-react";
 import { cn } from "cn";
-import type { Accent, ColorMode, TimeZone } from "@/bindings";
+import type { Accent, ClockFormat, ColorMode, DateFormat, TimeZone } from "@/bindings";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -55,6 +55,18 @@ const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
 const TIME_ZONES: { value: TimeZone; label: string }[] = [
   { value: "local", label: "Local time" },
   { value: "utc", label: "UTC" },
+];
+
+/** Each choice shows how it writes 18 November 2026. */
+const DATE_FORMATS: { value: DateFormat; label: string }[] = [
+  { value: "iso", label: "2026-11-18" },
+  { value: "dayMonthYear", label: "18.11.2026" },
+  { value: "monthDayYear", label: "11/18/2026" },
+];
+
+const CLOCKS: { value: ClockFormat; label: string }[] = [
+  { value: "h24", label: "24-hour · 14:05" },
+  { value: "h12", label: "12-hour · 2:05 PM" },
 ];
 
 /**
@@ -173,6 +185,51 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     onChange={(logFontSize) => void update({ logFontSize })}
                   />
                 </Row>
+                <Row label="Time zone" hint="Log times, the timeline and dates everywhere.">
+                  <div className="flex gap-1">
+                    {TIME_ZONES.map((option) => (
+                      <Button
+                        key={option.value}
+                        size="sm"
+                        variant={settings.timeZone === option.value ? "default" : "outline"}
+                        aria-pressed={settings.timeZone === option.value}
+                        onClick={() => void update({ timeZone: option.value })}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </Row>
+                <Row label="Dates">
+                  <div className="flex gap-1">
+                    {DATE_FORMATS.map((option) => (
+                      <Button
+                        key={option.value}
+                        size="sm"
+                        variant={settings.dateFormat === option.value ? "default" : "outline"}
+                        aria-pressed={settings.dateFormat === option.value}
+                        onClick={() => void update({ dateFormat: option.value })}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </Row>
+                <Row label="Clock">
+                  <div className="flex gap-1">
+                    {CLOCKS.map((option) => (
+                      <Button
+                        key={option.value}
+                        size="sm"
+                        variant={settings.clock === option.value ? "default" : "outline"}
+                        aria-pressed={settings.clock === option.value}
+                        onClick={() => void update({ clock: option.value })}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </Row>
               </Rows>
             )}
 
@@ -248,21 +305,6 @@ export function SettingsDialog({ version, demo }: { version?: string; demo: bool
                     format={(n) => `${n / 1000}k events`}
                     onChange={(bufferSize) => void update({ bufferSize })}
                   />
-                </Row>
-                <Row label="Timestamps" hint="Log times and dates in tooltips.">
-                  <div className="flex gap-1">
-                    {TIME_ZONES.map((tz) => (
-                      <Button
-                        key={tz.value}
-                        size="sm"
-                        variant={settings.timeZone === tz.value ? "default" : "outline"}
-                        aria-pressed={settings.timeZone === tz.value}
-                        onClick={() => void update({ timeZone: tz.value })}
-                      >
-                        {tz.label}
-                      </Button>
-                    ))}
-                  </div>
                 </Row>
               </Rows>
             )}

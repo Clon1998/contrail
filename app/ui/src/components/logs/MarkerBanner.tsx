@@ -1,10 +1,10 @@
 import { CircleStopIcon, InfoIcon, RocketIcon, ScrollTextIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { formatLogTime } from "@/lib/logs";
 import type { ServiceMarker } from "@/lib/markers";
 import { useLogs } from "@/stores/logs";
-import { usePrefs } from "@/stores/prefs";
 
 const ICON = { deployment: RocketIcon, task: CircleStopIcon, event: InfoIcon } as const;
 
@@ -13,7 +13,7 @@ const ICON = { deployment: RocketIcon, task: CircleStopIcon, event: InfoIcon } a
  * event), as thin lines across the list. A stopped task's line shows that task's logs on request.
  */
 export function MarkerBanner({ markers }: { markers: ServiceMarker[] }) {
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const service = useLogs((s) => s.service);
   const showTask = useLogs((s) => s.showTask);
   if (markers.length === 0) return null;
@@ -37,7 +37,7 @@ export function MarkerBanner({ markers }: { markers: ServiceMarker[] }) {
           >
             <Icon className="size-3.5 shrink-0" />
             <span className="font-mono tabular-nums">
-              {formatLogTime(new Date(m.at).toISOString(), timeZone)}
+              {formatLogTime(new Date(m.at).toISOString(), format)}
             </span>
             <span className="font-medium">{m.title}</span>
             {m.detail && <span className="min-w-0 truncate opacity-80">{m.detail}</span>}

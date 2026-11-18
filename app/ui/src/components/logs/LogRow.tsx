@@ -10,6 +10,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { highlightSegments } from "@/lib/highlight";
 import { formatFullTime, formatLogTime, stripAnsi } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
@@ -51,7 +52,7 @@ export function LogRow({
    */
   local?: { expanded: boolean; toggle: () => void };
 }) {
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const wrap = usePrefs((s) => s.prefs.settings.wrapLines);
   const listExpanded = useLogs((s) => s.expanded[event.seq] ?? false);
   const expanded = local ? local.expanded : listExpanded;
@@ -87,9 +88,9 @@ export function LogRow({
             />
             <span
               className="text-muted-foreground tabular-nums"
-              title={formatFullTime(event.timestamp, timeZone)}
+              title={formatFullTime(event.timestamp, format)}
             >
-              {formatLogTime(event.timestamp, timeZone, withDate)}
+              {formatLogTime(event.timestamp, format, withDate)}
             </span>
             <span
               className={cn(

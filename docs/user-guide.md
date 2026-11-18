@@ -74,9 +74,10 @@ page has the details.
   the timeline (hover a bar to read them). A stopped task's line has **Its logs** to show only that task. They
   come from the service's overview, without extra AWS calls.
 - **Time window:** click it in the toolbar (or press **T**) and type what you want: `15m`, `3h`, `2d`, `1w`, `1h30m`,
-  `today`, `since 14:00`, `yesterday`, `oct 20`, `9:00-11:30` or `yesterday 9-11`. The picker shows what it understood
+  `today`, `since 14:00`, `yesterday`, `oct 20`, `20.10.`, `10/20`, `9:00-11:30`, `2pm-3pm` or `yesterday 9-11`. The picker shows what it understood
   before you press Enter, and whether the window will follow live, open paused or be a fixed range. Quick windows,
-  your recent ones and a calendar for fixed ranges are there too. Days and times follow the time zone setting. A
+  your recent ones and a calendar for fixed ranges are there too. Days and times follow the time zone, date and clock
+  settings. A
   view loads the newest events first; scrolling to the oldest row loads more ("Load all" in the toolbar loads the
   whole window). The end of the list says whether older events are loading, can be loaded, or whether it is the
   start of the window. Search and export cover the loaded events.
@@ -138,7 +139,8 @@ screenshots.
 ## Settings and updates
 
 - **Settings** (gear icon or ⌘, / Ctrl+,): theme (dark / light / system), accent colour, UI size, log font size,
-  default log time window, newest-first order, wrapping long lines, timestamps in local time or UTC, and the live tail pause limits.
+  time zone (local or UTC), date format (`2026-11-18`, `18.11.2026` or `11/18/2026`), 24- or 12-hour clock,
+  default log time window, newest-first order, wrapping long lines and the live tail pause limits.
 - Favorites, recent services, the last profile and region overrides are kept in `prefs.json` in Contrail's app
   data folder (never credentials); see [Security & privacy](security.md#what-contrail-stores-and-where).
 - **Updates:** Contrail checks the GitHub releases on start (once a day, can be switched off) and installs a newer

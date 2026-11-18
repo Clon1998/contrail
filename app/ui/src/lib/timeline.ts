@@ -1,4 +1,5 @@
 import type { TimeRange, Timeline } from "@/bindings";
+import { formatClock, formatDate, timeParts, type TimeFormat } from "./timeFormat";
 
 /** Minutes ahead of UTC for the times shown (the timeline aligns hours and days to them). */
 export function utcOffsetMinutes(timeZone: "local" | "utc", at = new Date()): number {
@@ -55,27 +56,10 @@ export function loadedFromPixel(timeline: Timeline, width: number): number {
 }
 
 /** A label for a time on the timeline: the time of day, with the date when it spans days. */
-export function timelineLabel(ms: number, timeZone: "local" | "utc", withDate: boolean): string {
-  const date = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const utc = timeZone === "utc";
-  const [y, mo, d, h, mi, s] = utc
-    ? [
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
-        date.getUTCHours(),
-        date.getUTCMinutes(),
-        date.getUTCSeconds(),
-      ]
-    : [
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        date.getHours(),
-        date.getMinutes(),
-        date.getSeconds(),
-      ];
-  const time = `${pad(h)}:${pad(mi)}${s !== 0 ? `:${pad(s)}` : ""}`;
-  return withDate ? `${y}-${pad(mo + 1)}-${pad(d)} ${time}` : time;
+export function timelineLabel(ms: number, format: TimeFormat, withDate: boolean): string {
+  const t = timeParts(ms, format.timeZone);
+  const time = formatClock(t, format.clock, { seconds: t.second !== 0 });
+  return withDate
+    ? `${formatDate({ y: t.year, m: t.month, d: t.day }, format.date)} ${time}`
+    : time;
 }

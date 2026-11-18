@@ -1,4 +1,5 @@
 import type { LiveState, TimeWindow, TimeZone } from "@/bindings";
+import { formatClock, formatDate, formatDayName, timeParts, type TimeFormat } from "./timeFormat";
 
 /** Backfill windows offered for log views, in minutes. */
 export const BACKFILL_WINDOWS: { minutes: number; label: string }[] = [
@@ -89,26 +90,14 @@ export function fromDateTimeLocal(value: string, timeZone: TimeZone): string | n
   return date.toISOString();
 }
 
-/** `11:11` for today, `22 Oct, 08:05` for other days, in local time or UTC. */
-export function formatShortTime(timestamp: string, timeZone: TimeZone, now = Date.now()): string {
-  const zone = timeZone === "utc" ? "UTC" : undefined;
-  const day = (ms: number) =>
-    new Intl.DateTimeFormat("en-CA", { timeZone: zone, dateStyle: "short" }).format(ms);
-  const date = Date.parse(timestamp);
-  if (Number.isNaN(date)) return "";
-  const time = new Intl.DateTimeFormat("en-GB", {
-    timeZone: zone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-  if (day(date) === day(now)) return time;
-  const dayMonth = new Intl.DateTimeFormat("en-GB", {
-    timeZone: zone,
-    day: "numeric",
-    month: "short",
-  }).format(date);
-  return `${dayMonth}, ${time}`;
+/** `11:11` for today, `22 Oct, 08:05` (or `Oct 22, 08:05`) for other days. */
+export function formatShortTime(timestamp: string, format: TimeFormat, now = Date.now()): string {
+  const ms = Date.parse(timestamp);
+  if (Number.isNaN(ms)) return "";
+  const t = timeParts(ms, format.timeZone);
+  const time = formatClock(t, format.clock);
+  if (isToday(ms, format.timeZone, now)) return time;
+  return `${formatDayName({ y: t.year, m: t.month, d: t.day }, format.date)}, ${time}`;
 }
 
 /** Whether `ms` falls on today's date, in local time or UTC. */
@@ -122,37 +111,24 @@ export function isToday(ms: number, timeZone: TimeZone, now = Date.now()): boole
   return day(ms) === day(now);
 }
 
-/** An instant's date and time parts, in local time or UTC. */
-function timeParts(timestamp: string, timeZone: TimeZone) {
-  const date = new Date(timestamp);
-  const utc = timeZone === "utc";
-  return {
-    year: utc ? date.getUTCFullYear() : date.getFullYear(),
-    month: (utc ? date.getUTCMonth() : date.getMonth()) + 1,
-    day: utc ? date.getUTCDate() : date.getDate(),
-    hour: utc ? date.getUTCHours() : date.getHours(),
-    minute: utc ? date.getUTCMinutes() : date.getMinutes(),
-    second: utc ? date.getUTCSeconds() : date.getSeconds(),
-    ms: utc ? date.getUTCMilliseconds() : date.getMilliseconds(),
-  };
-}
-
-const pad = (n: number, width = 2) => String(n).padStart(width, "0");
-
 /**
- * `12:34:56.789` in local time or UTC (the time zone setting); `10-26 12:34:56.789` with
- * `withDate` (a list decides once for all its rows, so the column keeps one width).
+ * `12:34:56.789` in the time zone and clock of the settings; `10-26 12:34:56.789` (or
+ * `26.10. …`, `10/26 …`) with `withDate` (a list decides once for all its rows, so the column
+ * keeps one width).
  */
-export function formatLogTime(timestamp: string, timeZone: TimeZone, withDate = false): string {
-  const t = timeParts(timestamp, timeZone);
-  const time = `${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}.${pad(t.ms, 3)}`;
-  return withDate ? `${pad(t.month)}-${pad(t.day)} ${time}` : time;
+export function formatLogTime(timestamp: string, format: TimeFormat, withDate = false): string {
+  const t = timeParts(Date.parse(timestamp), format.timeZone);
+  const time = formatClock(t, format.clock, { ms: true, fixedWidth: true });
+  if (!withDate) return time;
+  return `${formatDate({ y: t.year, m: t.month, d: t.day }, format.date, false)} ${time}`;
 }
 
 /** `2026-10-26 12:34:56.789 UTC` (or `local`): the whole timestamp, for the details. */
-export function formatFullTime(timestamp: string, timeZone: TimeZone): string {
-  const year = timeParts(timestamp, timeZone).year;
-  return `${year}-${formatLogTime(timestamp, timeZone, true)} ${timeZone === "utc" ? "UTC" : "local"}`;
+export function formatFullTime(timestamp: string, format: TimeFormat): string {
+  const t = timeParts(Date.parse(timestamp), format.timeZone);
+  const date = formatDate({ y: t.year, m: t.month, d: t.day }, format.date);
+  const time = formatClock(t, format.clock, { ms: true });
+  return `${date} ${time} ${format.timeZone === "utc" ? "UTC" : "local"}`;
 }
 
 /** The text without ANSI colour codes (the debug view shows plain text). */
