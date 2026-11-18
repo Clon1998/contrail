@@ -137,7 +137,9 @@ function TabShell({
       }}
       onKeyDown={(e) => e.key === "Enter" && void show(tab)}
       className={cn(
-        "group flex max-w-48 shrink-0 cursor-default items-center gap-1.5 border-r border-border px-3 py-1.5 text-xs",
+        "group flex shrink-0 cursor-default items-center gap-1.5 border-r border-border px-3 py-1.5 text-xs",
+        // The profile label needs room of its own, not the service name's.
+        env ? "max-w-72" : "max-w-48",
         active
           ? "bg-background text-foreground shadow-[inset_0_-2px_0_var(--primary)]"
           : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
