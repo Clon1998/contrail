@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownToLineIcon, ArrowUpToLineIcon } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { isTyping } from "@/lib/keys";
 import { isToday } from "@/lib/logs";
 import { markersBetween } from "@/lib/markers";
@@ -46,7 +47,7 @@ export function LogList({
   const scrollRef = useRef<HTMLDivElement>(null);
   const fontSize = usePrefs((s) => s.prefs.settings.logFontSize);
   const columns = useLogColumns();
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   // Where the listed events start: the focus, or as far back as events are loaded.
   const from = useLogs((s) => s.focus?.start ?? s.view?.loadedFrom ?? null);
   // Where they end: the focus, or the window's end. (A service event after it shows up between
@@ -242,8 +243,8 @@ export function LogList({
 
   // Once the listed events reach back before today, every row shows its date: one format (and
   // column width) for the whole list.
-  const withDate = from !== null && !isToday(Date.parse(from), timeZone);
-  const grid = gridTemplate(showTask, columns, withDate);
+  const withDate = from !== null && !isToday(Date.parse(from), format.timeZone);
+  const grid = gridTemplate(showTask, columns, format, withDate);
 
   return (
     <div className="relative min-h-0 flex-1">

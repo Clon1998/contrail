@@ -13,9 +13,9 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useServiceMarkers } from "./useServiceMarkers";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { markersBetween } from "@/lib/markers";
 import { type UnloadedCount, useLogs } from "@/stores/logs";
-import { usePrefs } from "@/stores/prefs";
 
 /** The bars' height in pixels: a strip above the list, not a chart of its own. */
 const BARS_HEIGHT = 28;
@@ -68,7 +68,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
   const viewport = useLogs((s) => s.viewport);
   const setFocus = useLogs((s) => s.setFocus);
   const markers = useServiceMarkers();
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
@@ -109,7 +109,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
       lastFetch.current = Date.now();
       const buckets = Math.max(10, Math.floor(width / MIN_BAR_PX));
       void commands
-        .logTimeline(viewId, buckets, utcOffsetMinutes(timeZone))
+        .logTimeline(viewId, buckets, utcOffsetMinutes(format.timeZone))
         .then((result) => current && result.status === "ok" && setTimeline(result.data));
     };
     const wait = Math.max(0, lastFetch.current + REFRESH_MS - Date.now());
@@ -118,7 +118,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
       current = false;
       clearTimeout(timer);
     };
-  }, [viewId, total_, visible, revision, width, timeZone, tick, unloaded.state]);
+  }, [viewId, total_, visible, revision, width, format.timeZone, tick, unloaded.state]);
 
   const count = timeline?.buckets.length ?? 0;
   const highest = timeline ? Math.max(1, ...timeline.buckets.map(total), ...timeline.counted) : 1;
@@ -315,7 +315,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
           >
             <p className="font-medium tabular-nums">
               {bucketRange(timeline, hover)
-                .map((ms) => timelineLabel(ms, timeZone, spansDays))
+                .map((ms) => timelineLabel(ms, format, spansDays))
                 .join(" – ")}{" "}
               ·{" "}
               {bucketRange(timeline, hover)[0] < loadedFromMs
@@ -353,11 +353,11 @@ export function TimelineChart({ viewId }: { viewId: number }) {
       )}
       {timeline && count > 0 && (
         <div className="flex items-center justify-between tabular-nums">
-          <span>{timelineLabel(bucketRange(timeline, 0)[0], timeZone, spansDays)}</span>
+          <span>{timelineLabel(bucketRange(timeline, 0)[0], format, spansDays)}</span>
           {focus ? (
             <span className="flex items-center gap-1.5 text-foreground">
-              Focused on {timelineLabel(Date.parse(focus.start), timeZone, spansDays)} –{" "}
-              {timelineLabel(Date.parse(focus.end), timeZone, spansDays)}
+              Focused on {timelineLabel(Date.parse(focus.start), format, spansDays)} –{" "}
+              {timelineLabel(Date.parse(focus.end), format, spansDays)}
               <Button
                 variant="outline"
                 size="xs"
@@ -377,7 +377,7 @@ export function TimelineChart({ viewId }: { viewId: number }) {
               {notLoaded > 0 && " · hatched: not loaded yet"}
             </span>
           )}
-          <span>{timelineLabel(bucketRange(timeline, count - 1)[1], timeZone, spansDays)}</span>
+          <span>{timelineLabel(bucketRange(timeline, count - 1)[1], format, spansDays)}</span>
         </div>
       )}
     </div>

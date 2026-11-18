@@ -9,6 +9,9 @@ import {
   shortTaskId,
   toneAssigner,
 } from "./ecs";
+import { DEFAULT_TIME_FORMAT, type TimeFormat } from "./timeFormat";
+
+const UTC: TimeFormat = { ...DEFAULT_TIME_FORMAT, timeZone: "utc" };
 
 describe("serviceHealth", () => {
   it.each([
@@ -30,7 +33,7 @@ describe("formatting", () => {
   });
 
   it("formats absolute times in UTC on request", () => {
-    expect(formatDateTime("2026-10-22T11:55:00Z", "utc")).toMatch(/11:55:00.* UTC$/);
+    expect(formatDateTime("2026-10-22T11:55:00Z", UTC)).toMatch(/11:55:00.* UTC$/);
     expect(formatDateTime(null)).toBe("");
   });
 

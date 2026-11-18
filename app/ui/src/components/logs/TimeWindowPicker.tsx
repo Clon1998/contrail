@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Command as CommandPrimitive } from "cmdk";
 import { CalendarDaysIcon, CheckIcon, ChevronDownIcon, ClockIcon } from "lucide-react";
 import { cn } from "cn";
-import type { TimeWindow, TimeZone } from "@/bindings";
+import type { TimeWindow } from "@/bindings";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
+import type { TimeFormat } from "@/lib/timeFormat";
 import { isTyping } from "@/lib/keys";
 import { liveMode, sameWindow } from "@/lib/logs";
 import { recentWindows, rememberWindow } from "@/lib/recentWindows";
@@ -15,7 +17,6 @@ import {
   windowDetail,
   windowTitle,
 } from "@/lib/timeInput";
-import { usePrefs } from "@/stores/prefs";
 import { RangeCalendar } from "./RangeCalendar";
 
 /** The quick picks, as one would type them (the shortcut shown next to each). */
@@ -41,7 +42,7 @@ export function TimeWindowPicker({
   value: TimeWindow;
   onChange: (timeWindow: TimeWindow) => void;
 }) {
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const [open, setOpen] = useState(false);
   const mode = MODE[liveMode(value)];
 
@@ -68,7 +69,7 @@ export function TimeWindowPicker({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={`Time window: ${windowChip(value, timeZone)}`}
+          aria-label={`Time window: ${windowChip(value, format)}`}
           title="Time window (T)"
           className={cn(
             "flex h-6 items-center gap-1.5 rounded-md border border-border px-2 transition-colors hover:bg-accent",
@@ -76,13 +77,13 @@ export function TimeWindowPicker({
           )}
         >
           <ClockIcon className="size-3.5 text-muted-foreground" />
-          <span className="font-medium tabular-nums">{windowChip(value, timeZone)}</span>
+          <span className="font-medium tabular-nums">{windowChip(value, format)}</span>
           <span aria-hidden className={cn("size-1.5 rounded-full", mode.dot)} />
           <ChevronDownIcon className="size-3 text-muted-foreground" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto overflow-hidden p-0">
-        <TimePalette value={value} timeZone={timeZone} onApply={apply} />
+        <TimePalette value={value} format={format} onApply={apply} />
       </PopoverContent>
     </Popover>
   );
@@ -99,11 +100,11 @@ interface Choice {
 
 function TimePalette({
   value,
-  timeZone,
+  format,
   onApply,
 }: {
   value: TimeWindow;
-  timeZone: TimeZone;
+  format: TimeFormat;
   onApply: (window: TimeWindow) => void;
 }) {
   // "Now" for the labels and the typed window: taken when the palette opens and on each key.
@@ -111,15 +112,15 @@ function TimePalette({
   const [calendar, setCalendar] = useState(value.kind === "range");
   const [recent] = useState(recentWindows);
 
-  const typed = parseTimeInput(text, timeZone, now);
+  const typed = parseTimeInput(text, format, now);
   const query = text.trim().toLowerCase();
   const quick: Choice[] = QUICK.flatMap((shortcut) => {
-    const parsed = parseTimeInput(shortcut, timeZone, now);
+    const parsed = parseTimeInput(shortcut, format, now);
     if (parsed.kind !== "ok") return [];
     const matches =
       !query ||
       shortcut.startsWith(query) ||
-      windowTitle(parsed.window, timeZone, now).toLowerCase().includes(query);
+      windowTitle(parsed.window, format, now).toLowerCase().includes(query);
     return matches
       ? [{ key: `quick-${shortcut}`, window: parsed.window, title: parsed.title, shortcut }]
       : [];
@@ -166,7 +167,7 @@ function TimePalette({
                 prominent
                 choice={{ key: "typed", window: typed.window, title: typed.title }}
                 current={value}
-                timeZone={timeZone}
+                format={format}
                 now={now}
                 onApply={onApply}
               />
@@ -184,7 +185,7 @@ function TimePalette({
                   key={choice.key}
                   choice={choice}
                   current={value}
-                  timeZone={timeZone}
+                  format={format}
                   now={now}
                   onApply={onApply}
                 />
@@ -198,7 +199,7 @@ function TimePalette({
                   key={choice.key}
                   choice={choice}
                   current={value}
-                  timeZone={timeZone}
+                  format={format}
                   now={now}
                   onApply={onApply}
                 />
@@ -226,14 +227,14 @@ function TimePalette({
               </span>
             ))}
             <span className="border-l border-border pl-2.5 whitespace-nowrap">
-              {timeZone === "utc" ? "UTC" : "local time"}
+              {format.timeZone === "utc" ? "UTC" : "local time"}
             </span>
           </span>
         </div>
       </Command>
       {calendar && (
         <div className="border-l border-border">
-          <RangeCalendar value={value} timeZone={timeZone} onApply={onApply} />
+          <RangeCalendar value={value} format={format} onApply={onApply} />
         </div>
       )}
     </div>
@@ -244,26 +245,26 @@ function TimePalette({
 function WindowItem({
   choice,
   current,
-  timeZone,
+  format,
   now,
   onApply,
   prominent = false,
 }: {
   choice: Choice;
   current: TimeWindow;
-  timeZone: TimeZone;
+  format: TimeFormat;
   now: number;
   onApply: (window: TimeWindow) => void;
   prominent?: boolean;
 }) {
   const { window } = choice;
   const mode = MODE[liveMode(window)];
-  const title = choice.title ?? windowTitle(window, timeZone, now);
+  const title = choice.title ?? windowTitle(window, format, now);
   // With a title of its own (`Since 14:00`), the detail says how long that is.
   const detail =
     choice.title && window.kind === "last"
       ? durationText(window.minutes, "long")
-      : windowDetail(window, timeZone, now);
+      : windowDetail(window, format, now);
   return (
     <CommandItem
       value={choice.key}

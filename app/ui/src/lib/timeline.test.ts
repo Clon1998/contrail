@@ -8,6 +8,9 @@ import {
   timelineLabel,
   utcOffsetMinutes,
 } from "./timeline";
+import { DEFAULT_TIME_FORMAT, type TimeFormat } from "./timeFormat";
+
+const UTC: TimeFormat = { ...DEFAULT_TIME_FORMAT, timeZone: "utc" };
 
 const empty = { error: 0, warn: 0, info: 0, debug: 0, trace: 0, none: 0 };
 const timeline: Timeline = {
@@ -52,9 +55,9 @@ describe("timeline", () => {
 
   it("labels times in the zone shown", () => {
     const ms = Date.parse("2026-10-26T12:05:00Z");
-    expect(timelineLabel(ms, "utc", false)).toBe("12:05");
-    expect(timelineLabel(ms + 30_000, "utc", false)).toBe("12:05:30");
-    expect(timelineLabel(ms, "utc", true)).toBe("2026-10-26 12:05");
+    expect(timelineLabel(ms, UTC, false)).toBe("12:05");
+    expect(timelineLabel(ms + 30_000, UTC, false)).toBe("12:05:30");
+    expect(timelineLabel(ms, UTC, true)).toBe("2026-10-26 12:05");
     expect(utcOffsetMinutes("utc")).toBe(0);
     expect(utcOffsetMinutes("local", new Date("2026-10-26T12:00:00Z"))).toBe(
       -new Date("2026-10-26T12:00:00Z").getTimezoneOffset(),

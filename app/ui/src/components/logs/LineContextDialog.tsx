@@ -9,9 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { shortTaskId } from "@/lib/ecs";
 import { isToday } from "@/lib/logs";
-import { usePrefs } from "@/stores/prefs";
 import { gridTemplate, useLogColumns } from "./columns";
 import { LogListSkeleton } from "./LogListSkeleton";
 import { LogRow } from "./LogRow";
@@ -40,7 +40,7 @@ export function LineContextDialog({
   const [result, setResult] = useState<
     { kind: "done"; context: LineContext } | { kind: "error"; error: ApiError } | null
   >(null);
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const columns = useLogColumns();
   const scroller = useRef<HTMLDivElement>(null);
   const marked = useRef<HTMLDivElement>(null);
@@ -84,8 +84,8 @@ export function LineContextDialog({
 
   const context = result?.kind === "done" ? result.context : null;
   const first = context?.events[0];
-  const withDate = first ? !isToday(Date.parse(first.timestamp), timeZone) : false;
-  const grid = gridTemplate(false, columns, withDate);
+  const withDate = first ? !isToday(Date.parse(first.timestamp), format.timeZone) : false;
+  const grid = gridTemplate(false, columns, format, withDate);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

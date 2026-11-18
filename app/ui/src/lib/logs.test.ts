@@ -10,15 +10,29 @@ import {
   stripAnsi,
   toDateTimeLocal,
 } from "./logs";
+import { DEFAULT_TIME_FORMAT, type TimeFormat } from "./timeFormat";
+
+const UTC: TimeFormat = { ...DEFAULT_TIME_FORMAT, timeZone: "utc" };
 
 describe("log helpers", () => {
   it("formats times with milliseconds in UTC", () => {
-    expect(formatLogTime("2026-01-15T09:12:01.768108328Z", "utc")).toBe("09:12:01.768");
+    expect(formatLogTime("2026-01-15T09:12:01.768108328Z", UTC)).toBe("09:12:01.768");
   });
 
   it("puts the date in front when asked, keeping one width", () => {
-    expect(formatLogTime("2026-01-05T09:12:01.7Z", "utc", true)).toBe("01-05 09:12:01.700");
-    expect(formatFullTime("2026-01-05T09:12:01.7Z", "utc")).toBe("2026-01-05 09:12:01.700 UTC");
+    expect(formatLogTime("2026-01-05T09:12:01.7Z", UTC, true)).toBe("01-05 09:12:01.700");
+    expect(formatFullTime("2026-01-05T09:12:01.7Z", UTC)).toBe("2026-01-05 09:12:01.700 UTC");
+  });
+
+  it("formats log times as the date and clock settings say", () => {
+    const german: TimeFormat = { timeZone: "utc", date: "dayMonthYear", clock: "h24" };
+    const us: TimeFormat = { timeZone: "utc", date: "monthDayYear", clock: "h12" };
+    const at = "2026-01-05T21:12:01.7Z";
+    expect(formatLogTime(at, german, true)).toBe("05.01. 21:12:01.700");
+    expect(formatLogTime(at, us, true)).toBe("01/05 09:12:01.700 PM");
+    expect(formatFullTime(at, german)).toBe("05.01.2026 21:12:01.700 UTC");
+    expect(formatFullTime(at, us)).toBe("01/05/2026 9:12:01.700 PM UTC");
+    expect(formatShortTime(at, german, Date.parse("2026-01-06T10:00:00Z"))).toBe("5 Jan, 21:12");
   });
 
   it("knows whether a time is today", () => {
@@ -137,13 +151,13 @@ describe("liveHint", () => {
 describe("formatShortTime", () => {
   const now = Date.parse("2026-10-23T15:00:00Z");
   it("drops the date for today", () => {
-    expect(formatShortTime("2026-10-23T11:11:04Z", "utc", now)).toBe("11:11");
+    expect(formatShortTime("2026-10-23T11:11:04Z", UTC, now)).toBe("11:11");
   });
   it("shows nothing for a timestamp it can't read", () => {
-    expect(formatShortTime("", "utc", now)).toBe("");
+    expect(formatShortTime("", UTC, now)).toBe("");
   });
 
   it("adds day and month for other days", () => {
-    expect(formatShortTime("2026-10-22T08:05:00Z", "utc", now)).toBe("22 Oct, 08:05");
+    expect(formatShortTime("2026-10-22T08:05:00Z", UTC, now)).toBe("Oct 22, 08:05");
   });
 });

@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Hint } from "@/components/ui/tooltip";
 import { LoginAgain } from "@/components/profile/LoginAgain";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { formatShortTime } from "@/lib/logs";
 import { useLogs } from "@/stores/logs";
-import { usePrefs } from "@/stores/prefs";
 
 /** The marker's height in pixels (the list leaves room for it). */
 export const OLDER_MARKER_HEIGHT = 40;
@@ -21,10 +21,10 @@ export function OlderMarker() {
   const filtering = useLogs((s) => s.matches !== null && s.search.mode === "filter");
   const loadOlder = useLogs((s) => s.loadOlder);
   const loadAll = useLogs((s) => s.loadAll);
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   if (!view) return null;
-  const since = formatShortTime(view.loadedFrom, timeZone);
-  const start = formatShortTime(view.from, timeZone);
+  const since = formatShortTime(view.loadedFrom, format);
+  const start = formatShortTime(view.from, format);
 
   let label: React.ReactNode;
   let actions: React.ReactNode = null;

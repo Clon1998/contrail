@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { durationText, parseTimeInput, windowChip, windowDetail, windowTitle } from "./timeInput";
+import { DEFAULT_TIME_FORMAT, type TimeFormat } from "./timeFormat";
+
+const UTC: TimeFormat = { ...DEFAULT_TIME_FORMAT, timeZone: "utc" };
+const LOCAL: TimeFormat = DEFAULT_TIME_FORMAT;
 
 // Friday, 2026-10-23 15:30 UTC.
 const NOW = Date.parse("2026-10-23T15:30:00Z");
-const parse = (text: string) => parseTimeInput(text, "utc", NOW);
+const parse = (text: string) => parseTimeInput(text, UTC, NOW);
 const lastMinutes = (text: string) => {
   const result = parse(text);
   return result.kind === "ok" && result.window.kind === "last" ? result.window.minutes : result;
@@ -43,6 +47,14 @@ describe("parseTimeInput", () => {
     expect(range("2026-10-20")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
     expect(range("oct 20")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
     expect(range("20 Oct")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
+    expect(range("20.10.")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
+    expect(range("20.10.2026")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
+    expect(range("10/20")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
+    expect(range("10/20/2026")).toEqual(["2026-10-20T00:00:00.000Z", "2026-10-21T00:00:00.000Z"]);
+    expect(range("22.10. 22:00 - 23.10. 2:00")).toEqual([
+      "2026-10-22T22:00:00.000Z",
+      "2026-10-23T02:00:00.000Z",
+    ]);
     expect(range("9:00-11:30")).toEqual(["2026-10-23T09:00:00.000Z", "2026-10-23T11:30:00.000Z"]);
     expect(range("9 – 11")).toEqual(["2026-10-23T09:00:00.000Z", "2026-10-23T11:00:00.000Z"]);
     expect(range("2pm to 3pm")).toEqual(["2026-10-23T14:00:00.000Z", "2026-10-23T15:00:00.000Z"]);
@@ -73,7 +85,7 @@ describe("parseTimeInput", () => {
   });
 
   it("reads days and times in local time when that's the setting", () => {
-    const local = parseTimeInput("9:00-10:00", "local", NOW);
+    const local = parseTimeInput("9:00-10:00", LOCAL, NOW);
     expect(local).toEqual({
       kind: "ok",
       window: {
@@ -123,29 +135,43 @@ describe("window labels", () => {
   });
 
   it("titles windows by what they cover", () => {
-    expect(windowTitle({ kind: "last", minutes: 90 }, "utc", NOW)).toBe("Last 1 hour 30 minutes");
-    expect(windowTitle(r("2026-10-22T00:00:00Z", "2026-10-23T00:00:00Z"), "utc", NOW)).toBe(
+    expect(windowTitle({ kind: "last", minutes: 90 }, UTC, NOW)).toBe("Last 1 hour 30 minutes");
+    expect(windowTitle(r("2026-10-22T00:00:00Z", "2026-10-23T00:00:00Z"), UTC, NOW)).toBe(
       "Yesterday",
     );
-    expect(windowTitle(r("2026-10-19T00:00:00Z", "2026-10-21T00:00:00Z"), "utc", NOW)).toBe(
+    expect(windowTitle(r("2026-10-19T00:00:00Z", "2026-10-21T00:00:00Z"), UTC, NOW)).toBe(
       "Oct 19 → Oct 20",
     );
-    expect(windowTitle(r("2026-10-23T09:00:00Z", "2026-10-23T11:30:00Z"), "utc", NOW)).toBe(
+    expect(windowTitle(r("2026-10-23T09:00:00Z", "2026-10-23T11:30:00Z"), UTC, NOW)).toBe(
       "Today 09:00 → 11:30",
     );
-    expect(windowTitle(r("2026-10-22T22:00:00Z", "2026-10-23T02:00:00Z"), "utc", NOW)).toBe(
+    expect(windowTitle(r("2026-10-22T22:00:00Z", "2026-10-23T02:00:00Z"), UTC, NOW)).toBe(
       "Yesterday 22:00 → Today 02:00",
     );
-    expect(windowTitle(r("2025-12-24T08:00:00Z", "2025-12-24T09:00:00Z"), "utc", NOW)).toBe(
+    expect(windowTitle(r("2025-12-24T08:00:00Z", "2025-12-24T09:00:00Z"), UTC, NOW)).toBe(
       "Dec 24, 2025 08:00 → 09:00",
     );
   });
 
+  it("writes days and times as the date and clock settings say", () => {
+    const german: TimeFormat = { timeZone: "utc", date: "dayMonthYear", clock: "h24" };
+    const us: TimeFormat = { timeZone: "utc", date: "monthDayYear", clock: "h12" };
+    const afternoon = r("2026-10-20T14:00:00Z", "2026-10-20T16:30:00Z");
+    expect(windowTitle(afternoon, german, NOW)).toBe("20 Oct 14:00 → 16:30");
+    expect(windowTitle(afternoon, us, NOW)).toBe("Oct 20 2:00 PM → 4:30 PM");
+    expect(windowTitle(r("2025-12-24T00:00:00Z", "2025-12-25T00:00:00Z"), german, NOW)).toBe(
+      "24 Dec 2025",
+    );
+    expect(windowDetail({ kind: "last", minutes: 15 }, us, NOW)).toBe("since 3:15 PM");
+    const since = parseTimeInput("since yesterday 9:00", german, NOW);
+    expect(since.kind === "ok" && since.title).toBe("Since Yesterday 09:00");
+  });
+
   it("labels the button short and adds where a window starts or how long it is", () => {
-    expect(windowChip({ kind: "last", minutes: 15 }, "utc", NOW)).toBe("Last 15 min");
-    expect(windowDetail({ kind: "last", minutes: 15 }, "utc", NOW)).toBe("since 15:15");
-    expect(windowDetail({ kind: "last", minutes: 2880 }, "utc", NOW)).toBe("since Oct 21 15:30");
-    expect(windowDetail(r("2026-10-23T09:00:00Z", "2026-10-23T11:30:00Z"), "utc", NOW)).toBe(
+    expect(windowChip({ kind: "last", minutes: 15 }, UTC, NOW)).toBe("Last 15 min");
+    expect(windowDetail({ kind: "last", minutes: 15 }, UTC, NOW)).toBe("since 15:15");
+    expect(windowDetail({ kind: "last", minutes: 2880 }, UTC, NOW)).toBe("since Oct 21 15:30");
+    expect(windowDetail(r("2026-10-23T09:00:00Z", "2026-10-23T11:30:00Z"), UTC, NOW)).toBe(
       "2 hours 30 minutes",
     );
   });

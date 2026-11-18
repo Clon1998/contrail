@@ -31,9 +31,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { formatDateTime, shortTaskId } from "@/lib/ecs";
 import { isTyping } from "@/lib/keys";
-import { formatLogTime, isToday, liveHint, liveMode } from "@/lib/logs";
+import { formatShortTime, isToday, liveHint, liveMode } from "@/lib/logs";
 import { timelineLabel } from "@/lib/timeline";
 import { sameService, useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
@@ -126,14 +127,14 @@ function OlderControls() {
   const view = useLogs((s) => s.view);
   const older = useLogs((s) => s.older);
   const loadAll = useLogs((s) => s.loadAll);
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   if (!view || view.complete) return null;
   return (
     <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
       <Hint
-        content={`Loaded from ${formatDateTime(view.loadedFrom, timeZone)}. Search and export cover the loaded events; scroll to the oldest row or press "Load all" for the whole window.`}
+        content={`Loaded from ${formatDateTime(view.loadedFrom, format)}. Search and export cover the loaded events; scroll to the oldest row or press "Load all" for the whole window.`}
       >
-        <span>since {formatLogTime(view.loadedFrom, timeZone).slice(0, 5)}</span>
+        <span>since {formatShortTime(view.loadedFrom, format)}</span>
       </Hint>
       {older.loading ? (
         <Loader2Icon aria-label="Loading older events" className="size-3.5 animate-spin" />
@@ -257,13 +258,13 @@ function FocusChip() {
   const focus = useLogs((s) => s.focus);
   const timelineShown = usePrefs((s) => s.prefs.settings.showTimeline);
   const setFocus = useLogs((s) => s.setFocus);
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   if (!focus || timelineShown) return null;
   const [start, end] = [Date.parse(focus.start), Date.parse(focus.end)];
-  const withDate = !isToday(start, timeZone);
+  const withDate = !isToday(start, format.timeZone);
   return (
     <span className="flex items-center gap-1 rounded-md border border-primary/50 bg-primary/10 py-0.5 pr-0.5 pl-2 tabular-nums">
-      Focus {timelineLabel(start, timeZone, withDate)} – {timelineLabel(end, timeZone, false)}
+      Focus {timelineLabel(start, format, withDate)} – {timelineLabel(end, format, false)}
       <Button
         variant="ghost"
         size="icon-xs"

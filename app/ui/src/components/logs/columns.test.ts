@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Field, LogEvent } from "@/bindings";
-import { abbreviateLogger, columnText, columnValue } from "./columns";
+import { DEFAULT_TIME_FORMAT, type TimeFormat } from "@/lib/timeFormat";
+import { abbreviateLogger, columnText, columnValue, gridTemplate } from "./columns";
 
 function event(fields: Field[]): LogEvent {
   const timestamp = "2026-10-23T08:00:00Z";
@@ -70,5 +71,15 @@ describe("logger column", () => {
     const e = event([{ key: "log.logger", value: "com.example.pipeline.KafkaConsumer" }]);
     expect(columnText(e, "logger")).toBe("c.e.p.KafkaConsumer");
     expect(columnValue(e, "logger")).toBe("com.example.pipeline.KafkaConsumer");
+  });
+});
+
+describe("gridTemplate", () => {
+  it("fits the time column to the time format", () => {
+    const time = (format: TimeFormat, withDate = false) =>
+      gridTemplate(false, [], format, withDate).split(" ")[1];
+    expect(time(DEFAULT_TIME_FORMAT)).toBe("12.5ch");
+    expect(time(DEFAULT_TIME_FORMAT, true)).toBe("18.5ch");
+    expect(time({ timeZone: "utc", date: "dayMonthYear", clock: "h12" }, true)).toBe("22.5ch");
   });
 });

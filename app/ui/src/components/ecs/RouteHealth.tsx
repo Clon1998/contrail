@@ -3,10 +3,10 @@ import { ScrollTextIcon } from "lucide-react";
 import { cn } from "cn";
 import { commands, type RouteHealth as Health, type TopicHealth } from "@/bindings";
 import { Button } from "@/components/ui/button";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { formatShortTime } from "@/lib/logs";
 import { useEcs } from "@/stores/ecs";
 import { useLogs } from "@/stores/logs";
-import { usePrefs } from "@/stores/prefs";
 
 /** Buckets in a sparkline. */
 const BUCKETS = 40;
@@ -33,7 +33,7 @@ export function RouteHealthSection({
   const timeWindow = useLogs((s) => s.timeWindow);
   const taskId = useLogs((s) => s.taskId);
   const total = useLogs((s) => s.view?.stats.total ?? 0);
-  const timeZone = usePrefs((s) => s.prefs.settings.timeZone);
+  const format = useTimeFormat();
   const [health, setHealth] = useState<Health | null>(null);
   const lastFetch = useRef(0);
 
@@ -59,7 +59,7 @@ export function RouteHealthSection({
         <span className="font-medium tracking-wide text-muted-foreground uppercase">Health</span>
         {view && (
           <span className="text-muted-foreground">
-            from the logs loaded since {formatShortTime(view.loadedFrom, timeZone)}
+            from the logs loaded since {formatShortTime(view.loadedFrom, format)}
             {taskId && " (one task)"}
           </span>
         )}

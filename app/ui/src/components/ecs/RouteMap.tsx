@@ -28,6 +28,7 @@ import {
   type ClusterGraph,
   type PathScope,
 } from "@/lib/clusterGraph";
+import { useTimeFormat } from "@/hooks/useTimeFormat";
 import { formatDateTime, nameFromArn, shortTaskId } from "@/lib/ecs";
 import { isTyping, MOD } from "@/lib/keys";
 import { mapFileName } from "@/lib/mapExport";
@@ -556,13 +557,14 @@ function NodeDetails({
 
 /** Where a transformer's topics were read: which task's startup, and the consumer groups. */
 function StartupSource({ topology }: { topology: ServiceTopology }) {
+  const format = useTimeFormat();
   const groups = topology.reads
     .filter((r) => r.group)
     .map((r) => `${r.topic}: ${r.group}${r.concurrency ? ` ×${r.concurrency}` : ""}`);
   return (
     <span className="text-muted-foreground">
       · from the startup logs of task {shortTaskId(topology.taskId)} ({topology.taskDefinition},
-      started {formatDateTime(topology.startedAt)})
+      started {formatDateTime(topology.startedAt, format)})
       {groups.length > 0 && <> · consumer groups {groups.join(", ")}</>}
     </span>
   );
