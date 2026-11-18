@@ -42,6 +42,8 @@ export const DEFAULT_SETTINGS: Settings = {
   colorMode: "dark",
   accent: "sky",
   timeZone: "local",
+  dateFormat: "iso",
+  clock: "h24",
   backfillMinutes: 15,
   uiScale: 100,
   logFontSize: 12,

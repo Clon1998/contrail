@@ -274,6 +274,13 @@ export type CallerIdentity = {
 	userId: string,
 };
 
+/**  How times of day are written. */
+export type ClockFormat = 
+/**  `14:05`, the default. */
+"h24" | 
+/**  `2:05 PM`. */
+"h12";
+
 export type ClusterSummary = {
 	arn: string,
 	name: string,
@@ -336,6 +343,15 @@ export type ContainerState = {
 	 */
 	imageDigest: string | null,
 };
+
+/**  How dates are written. */
+export type DateFormat = 
+/**  `2026-11-18`, the default. */
+"iso" | 
+/**  `18.11.2026`, as in German and most of Europe. */
+"dayMonthYear" | 
+/**  `11/18/2026`, as in the US. */
+"monthDayYear";
 
 export type Deployment = {
 	id: string,
@@ -987,6 +1003,8 @@ export type Settings = {
 	colorMode: ColorMode,
 	accent: Accent,
 	timeZone: TimeZone,
+	dateFormat: DateFormat,
+	clock: ClockFormat,
 	/**  How far back a log view starts, in minutes. */
 	backfillMinutes: number,
 	/**  The size of the whole UI, in percent. */
