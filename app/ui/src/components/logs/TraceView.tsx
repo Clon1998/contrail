@@ -381,9 +381,12 @@ function TraceHitDetails({ store, hit }: { store: TraceTab["trace"]; hit: TraceH
 
   /** Opens the service's logs, searched for the ID; this trace tab stays open. */
   const openService = () => {
+    // The trace's profile + region: a trace tab is only shown while they are the browsed ones.
+    const ctx = useEcs.getState().ctx;
+    if (!ctx) return;
     const service: ServiceRef = { clusterArn: request.clusterArn, serviceName: hit.service };
-    useTabs.getState().activate(service);
-    const tab = useTabs.getState().tabs.find((t) => t.key === tabKey(service));
+    useTabs.getState().activate(ctx, service);
+    const tab = useTabs.getState().tabs.find((t) => t.key === tabKey(ctx, service));
     if (tab?.kind === "service") {
       tab.logs.getState().setTab("logs");
       void tab.logs.getState().setSearch({ query: request.term, mode: "filter" });

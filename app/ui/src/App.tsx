@@ -12,6 +12,7 @@ import { useAppearance } from "@/hooks/useAppearance";
 import { ctxKey, useEcs } from "@/stores/ecs";
 import { useCurrentRegion, useProfiles } from "@/stores/profiles";
 import { applyPendingLink, useLinks } from "@/stores/links";
+import { usePrefs } from "@/stores/prefs";
 import { useTabs } from "@/stores/tabs";
 import { useUpdate } from "@/stores/update";
 
@@ -33,6 +34,7 @@ export default function App() {
   const ctxId = useEcs((s) => (s.ctx ? ctxKey(s.ctx) : null));
   const profilesLoaded = useProfiles((s) => s.profiles.length > 0);
   const pendingLink = useLinks((s) => s.pending);
+  const keepTabs = usePrefs((s) => s.prefs.settings.tabsAcrossProfiles);
 
   useEffect(() => {
     void commands.appInfo().then(setInfo);
@@ -47,12 +49,22 @@ export default function App() {
     if (selected && connected) {
       void useEcs.getState().activate({ profile: selected, region });
     } else if (useEcs.getState().ctx?.profile !== selected) {
-      useEcs.getState().reset();
+      useEcs.getState().leave();
     }
   }, [selected, connected, region]);
 
-  // Tabs belong to one profile + region: switching closes them (and their live tails).
-  useEffect(() => useTabs.getState().closeAll(), [ctxId]);
+  // Switching profile or region closes the other profile's tabs (and their live tails), unless
+  // the setting keeps them; then the tab shown is hidden if it belongs to the profile left.
+  useEffect(() => {
+    const ctx = useEcs.getState().ctx;
+    const tabs = useTabs.getState();
+    if (!keepTabs) {
+      tabs.closeOutside(ctx);
+      return;
+    }
+    const shown = tabs.tabs.find((t) => t.key === tabs.activeKey);
+    if (ctx && shown && ctxKey(shown.ctx) !== ctxKey(ctx)) tabs.hide();
+  }, [ctxId, keepTabs]);
   // `contrail://` links: the one Contrail was started with, and those opened while it runs. Read
   // once the profiles are known (a link names its profile).
   useEffect(() => {
@@ -75,7 +87,8 @@ export default function App() {
 
   // The selected service is shown in its tab (opened if needed).
   useEffect(() => {
-    if (selectedService) useTabs.getState().activate(selectedService);
+    const ctx = useEcs.getState().ctx;
+    if (selectedService && ctx) useTabs.getState().activate(ctx, selectedService);
   }, [selectedService]);
 
   return (

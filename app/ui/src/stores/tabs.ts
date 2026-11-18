@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
-import type { ServiceRef } from "@/bindings";
+import type { AwsCtx, ServiceRef } from "@/bindings";
+import { ctxKey } from "./ecs";
 import { createLogsStore, type LogsState } from "./logs";
 import { usePrefs } from "./prefs";
 import { forgetRouteMap } from "./routeMaps";
@@ -9,30 +10,34 @@ import { createTraceStore, type TraceRequest, type TraceState } from "./trace";
 /** More open tabs than this: opening another closes the one used longest ago. */
 export const MAX_TABS = 10;
 
-/** An open service: its log view (and live tail) stays open while the tab exists. */
-export interface ServiceTab {
-  kind: "service";
+/**
+ * What every tab has: its key, the profile + region it belongs to (with "keep tabs across
+ * profiles", tabs of several profiles are open at once), and when it was last shown (for closing
+ * the oldest).
+ */
+interface TabBase {
   key: string;
+  ctx: AwsCtx;
+  lastActive: number;
+}
+
+/** An open service: its log view (and live tail) stays open while the tab exists. */
+export interface ServiceTab extends TabBase {
+  kind: "service";
   service: ServiceRef;
   logs: StoreApi<LogsState>;
-  /** When the tab was last shown (for closing the oldest). */
-  lastActive: number;
 }
 
 /** A trace across services: it keeps its result until the tab is closed (it isn't live). */
-export interface TraceTab {
+export interface TraceTab extends TabBase {
   kind: "trace";
-  key: string;
   trace: StoreApi<TraceState>;
-  lastActive: number;
 }
 
 /** A cluster's route map: every route service, linked by topic. */
-export interface RoutesTab {
+export interface RoutesTab extends TabBase {
   kind: "routes";
-  key: string;
   clusterArn: string;
-  lastActive: number;
 }
 
 /**
@@ -44,17 +49,24 @@ export type Tab = ServiceTab | TraceTab | RoutesTab;
 interface TabsState {
   tabs: Tab[];
   activeKey: string | null;
-  /** Shows the tab of `service`, opening one if needed. */
-  activate: (service: ServiceRef) => void;
+  /** Shows the tab of `service` in `ctx`, opening one if needed. */
+  activate: (ctx: AwsCtx, service: ServiceRef) => void;
   /** Shows the trace of `request.id` in its cluster, opening a tab if needed. */
-  openTrace: (request: TraceRequest) => void;
+  openTrace: (ctx: AwsCtx, request: TraceRequest) => void;
   /** Shows the route map of a cluster, opening a tab if needed. */
-  openRouteMap: (clusterArn: string) => void;
+  openRouteMap: (ctx: AwsCtx, clusterArn: string) => void;
   /** Shows an open tab. */
   show: (key: string) => void;
   /** Closes a tab; returns the tab to show next (the neighbour), if any. */
   close: (key: string) => Tab | null;
   closeAll: () => void;
+  /**
+   * Closes the tabs that don't belong to `ctx` (all of them for `null`). Without "keep tabs
+   * across profiles" this runs whenever the profile or region changes.
+   */
+  closeOutside: (ctx: AwsCtx | null) => void;
+  /** Shows no tab (the profile or region changed away from the shown one). */
+  hide: () => void;
 }
 
 /** What a service's view looked like when its tab closed (search, window, tab, task, panel). */
@@ -88,17 +100,38 @@ function remember(tab: ServiceTab) {
   });
 }
 
-export function tabKey(service: ServiceRef): string {
-  return `${service.clusterArn}|${service.serviceName}`;
+/**
+ * Keys start with the profile + region: the same cluster ARN can be browsed with two profiles
+ * (two roles in one account) or, after a region switch, belong to another region.
+ */
+export function tabKey(ctx: AwsCtx, service: ServiceRef): string {
+  return `${ctxKey(ctx)}|${service.clusterArn}|${service.serviceName}`;
 }
 
 /** Tracing the same ID in the same cluster again shows its tab. */
-export function traceKey(request: Pick<TraceRequest, "clusterArn" | "id">): string {
-  return `trace|${request.clusterArn}|${request.id}`;
+export function traceKey(ctx: AwsCtx, request: Pick<TraceRequest, "clusterArn" | "id">): string {
+  return `${ctxKey(ctx)}|trace|${request.clusterArn}|${request.id}`;
 }
 
-export function routesKey(clusterArn: string): string {
-  return `routes|${clusterArn}`;
+export function routesKey(ctx: AwsCtx, clusterArn: string): string {
+  return `${ctxKey(ctx)}|routes|${clusterArn}`;
+}
+
+/**
+ * Short names for the profiles + regions of `tabs`, by `ctxKey`, when they and the browsed one
+ * (`current`) are more than one (otherwise empty: there is nothing to tell apart). A profile open
+ * in two regions gets its region too: `prod · eu-west-1`.
+ */
+export function contextLabels(tabs: Tab[], current: AwsCtx | null): Map<string, string> {
+  const all = current ? [...tabs.map((t) => t.ctx), current] : tabs.map((t) => t.ctx);
+  const contexts = new Map(all.map((ctx) => [ctxKey(ctx), ctx]));
+  if (contexts.size < 2) return new Map();
+  const labels = new Map<string, string>();
+  for (const [key, ctx] of contexts) {
+    const regions = [...contexts.values()].filter((c) => c.profile === ctx.profile).length;
+    labels.set(key, regions > 1 && ctx.region ? `${ctx.profile} · ${ctx.region}` : ctx.profile);
+  }
+  return labels;
 }
 
 /** Ends what a tab keeps running (a service's log view and live tail) or remembers (a map). */
@@ -128,8 +161,8 @@ export const useTabs = create<TabsState>((set, get) => ({
   tabs: [],
   activeKey: null,
 
-  activate: (service) => {
-    const key = tabKey(service);
+  activate: (ctx, service) => {
+    const key = tabKey(ctx, service);
     let tabs = get().tabs;
     if (tabs.some((t) => t.key === key)) {
       tabs = touched(tabs, key);
@@ -138,30 +171,33 @@ export const useTabs = create<TabsState>((set, get) => ({
       const logs = createLogsStore({ kind: "last", minutes });
       const memory = remembered.get(key);
       if (memory) logs.setState(memory);
-      tabs = [...withRoom(tabs), { kind: "service", key, service, logs, lastActive: Date.now() }];
+      tabs = [
+        ...withRoom(tabs),
+        { kind: "service", key, ctx, service, logs, lastActive: Date.now() },
+      ];
     }
     set({ tabs, activeKey: key });
   },
 
-  openTrace: (request) => {
-    const key = traceKey(request);
+  openTrace: (ctx, request) => {
+    const key = traceKey(ctx, request);
     let tabs = get().tabs;
     if (tabs.some((t) => t.key === key)) {
       tabs = touched(tabs, key);
     } else {
       const trace = createTraceStore(request);
-      tabs = [...withRoom(tabs), { kind: "trace", key, trace, lastActive: Date.now() }];
+      tabs = [...withRoom(tabs), { kind: "trace", key, ctx, trace, lastActive: Date.now() }];
     }
     set({ tabs, activeKey: key });
   },
 
-  openRouteMap: (clusterArn) => {
-    const key = routesKey(clusterArn);
+  openRouteMap: (ctx, clusterArn) => {
+    const key = routesKey(ctx, clusterArn);
     let tabs = get().tabs;
     if (tabs.some((t) => t.key === key)) {
       tabs = touched(tabs, key);
     } else {
-      tabs = [...withRoom(tabs), { kind: "routes", key, clusterArn, lastActive: Date.now() }];
+      tabs = [...withRoom(tabs), { kind: "routes", key, ctx, clusterArn, lastActive: Date.now() }];
     }
     set({ tabs, activeKey: key });
   },
@@ -187,8 +223,19 @@ export const useTabs = create<TabsState>((set, get) => ({
     return next;
   },
 
-  closeAll: () => {
-    for (const tab of get().tabs) release(tab);
-    set({ tabs: [], activeKey: null });
+  closeAll: () => get().closeOutside(null),
+
+  closeOutside: (ctx) => {
+    const keep = ctx ? ctxKey(ctx) : null;
+    const { tabs, activeKey } = get();
+    const [kept, closed] = [
+      tabs.filter((t) => ctxKey(t.ctx) === keep),
+      tabs.filter((t) => ctxKey(t.ctx) !== keep),
+    ];
+    if (closed.length === 0) return;
+    for (const tab of closed) release(tab);
+    set({ tabs: kept, activeKey: kept.some((t) => t.key === activeKey) ? activeKey : null });
   },
+
+  hide: () => set({ activeKey: null }),
 }));

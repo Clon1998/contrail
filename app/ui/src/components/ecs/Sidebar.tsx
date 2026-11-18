@@ -14,13 +14,21 @@ import { useProfiles } from "@/stores/profiles";
 import { useTabs } from "@/stores/tabs";
 import { HealthDot } from "./HealthDot";
 
-/** Favorites of the selected profile and the Cluster → Service tree. */
+/**
+ * Favorites and the Cluster → Service tree. With "keep tabs across profiles" the favorites of
+ * every profile are listed (the selected profile's first); opening one of another profile
+ * switches to it.
+ */
 export function Sidebar() {
   const profile = useProfiles((s) => s.selected);
+  const acrossProfiles = usePrefs((s) => s.prefs.settings.tabsAcrossProfiles);
   // Select the stored array (stable between renders) and filter here: a selector returning a
   // new array each time would make zustand re-render endlessly.
   const allFavorites = usePrefs((s) => s.prefs.favorites);
-  const favorites = allFavorites.filter((f) => f.profile === profile);
+  const own = allFavorites.filter((f) => f.profile === profile);
+  const favorites = acrossProfiles
+    ? [...own, ...allFavorites.filter((f) => f.profile !== profile)]
+    : own;
   const clusters = useEcs((s) => s.clusters);
   const ctx = useEcs((s) => s.ctx);
   const activate = useEcs((s) => s.activate);
@@ -47,9 +55,10 @@ export function Sidebar() {
           </h2>
           {favorites.map((key) => (
             <button
-              key={`${key.clusterArn}/${key.serviceName}`}
+              key={`${key.profile}/${key.clusterArn}/${key.serviceName}`}
               type="button"
               onClick={() => void openServiceKey(key)}
+              title={`${key.serviceName} · ${nameFromArn(key.clusterArn)} · ${key.profile}`}
               className="flex w-full items-center gap-2 px-3 py-1 text-left hover:bg-accent"
             >
               <StarIcon className="size-3 shrink-0 fill-amber-400 text-amber-400" />
@@ -57,6 +66,11 @@ export function Sidebar() {
               <span className="ml-auto truncate text-xs text-muted-foreground">
                 {nameFromArn(key.clusterArn)}
               </span>
+              {key.profile !== profile && (
+                <span className="max-w-24 shrink-0 truncate rounded bg-muted px-1 text-[0.65rem] text-muted-foreground">
+                  {key.profile}
+                </span>
+              )}
             </button>
           ))}
         </section>
@@ -178,7 +192,10 @@ function ClusterNode({ arn, query }: { arn: string; query: string }) {
           aria-label={`Route map of ${cluster.name}`}
           tooltip="Route map: the cluster's services linked by topic"
           className="mr-1 ml-0.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-          onClick={() => useTabs.getState().openRouteMap(arn)}
+          onClick={() => {
+            const ctx = useEcs.getState().ctx;
+            if (ctx) useTabs.getState().openRouteMap(ctx, arn);
+          }}
         >
           <NetworkIcon />
         </Button>

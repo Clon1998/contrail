@@ -38,6 +38,10 @@ page has the details.
 - **⌘K / Ctrl+K** jumps to any service of the current profile, or to a recently opened one of any profile. Star a
   service to pin it to the sidebar.
 - **Tabs:** every opened service stays open in a tab with its search and live tail (⌘/Ctrl+1…9, Ctrl+Tab).
+  Switching profile or region closes them, unless **Settings → Appearance → Keep tabs open when switching profile
+  or region** is on: then tabs of several profiles stay open side by side, each labelled with its profile, and
+  showing one switches to its profile and region (the sidebar and top bar follow). The sidebar then lists the
+  favorites of every profile too.
 
 ## Reading logs
 

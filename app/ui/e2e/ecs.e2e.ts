@@ -126,6 +126,40 @@ test("recent services work across profiles", async ({ page }) => {
   await expect(page.getByRole("main", { name: "Service event-ingest" })).toBeVisible();
 });
 
+test("with the setting on, tabs of several profiles stay open side by side", async ({ page }) => {
+  const profile = page.getByRole("combobox", { name: "AWS profile" });
+  const tabs = page.getByRole("tablist", { name: "Open tabs" });
+  await page.keyboard.press("ControlOrMeta+,");
+  await page
+    .getByRole("dialog", { name: "Settings" })
+    .getByRole("checkbox", { name: "Keep tabs open when switching profile or region" })
+    .click();
+  await page.keyboard.press("Escape");
+
+  await openTreeService(page, "demo-core", "orders-api");
+  await profile.click();
+  await page.getByRole("option", { name: /demo-staging/ }).click();
+  await expect(profile).toContainText("demo-staging");
+  // The other profile's tab stays; nothing is shown until a service or tab is picked.
+  await expect(tabs.getByRole("tab", { name: "orders-api (demo-dev)" })).toBeVisible();
+  await expect(page.getByText("Pick a service in the sidebar, or a tab above.")).toBeVisible();
+
+  await openTreeService(page, "demo-core", "orders-api");
+  await expect(tabs.getByRole("tab", { name: "orders-api (demo-staging)" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  // Showing a tab switches to its profile; the sidebar follows.
+  await tabs.getByRole("tab", { name: "orders-api (demo-dev)" }).click();
+  await expect(profile).toContainText("demo-dev");
+  await expect(page.getByRole("main", { name: "Service orders-api" })).toBeVisible();
+  await expect(page.getByRole("treeitem", { name: "orders-api" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+});
+
 test("favorites are pinned to the sidebar", async ({ page }) => {
   const view = await openTreeService(page, "demo-core", "orders-api");
   await view.getByRole("button", { name: "Add to favorites" }).click();

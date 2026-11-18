@@ -71,7 +71,7 @@ export async function applyPendingLink() {
   useLinks.setState({ pending: null });
   const service = { clusterArn: link.clusterArn, serviceName: link.serviceName };
   await useEcs.getState().openService(service);
-  useTabs.getState().activate(service);
+  useTabs.getState().activate(ctx, service);
   const tabs = useTabs.getState();
   const tab = tabs.tabs.find((t) => t.key === tabs.activeKey);
   if (tab?.kind !== "service") return;
